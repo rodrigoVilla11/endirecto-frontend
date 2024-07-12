@@ -125,7 +125,7 @@ const SideMenu = ({isOpen} : any) => {
     <div
       className={`h-auto ${
         isOpen ? "w-68 items-start px-8" : "w-20 items-center"
-      } bg-header-color absolute py-20 flex flex-col justify-center gap-6`}
+      } bg-header-color absolute py-24 flex flex-col justify-center gap-6 transition-all duration-1000`}
     >
       {icons.map((icon, index) => (
         <ButtonsIcons key={index} icon={icon} isOpen={isOpen} />

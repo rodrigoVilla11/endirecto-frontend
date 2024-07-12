@@ -8,7 +8,7 @@ import Profile from './components/Profile'
 
 const NavBar = ({setIsOpen, isOpen} : any) => {
   return (
-    <div className='w-full h-20 bg-header-color fixed z-50 flex justify-between px-10'>
+    <nav className='w-full h-20 bg-header-color fixed z-50 flex justify-between px-10'>
       <div className='flex items-center gap-4'>
       <Logo />
       <ButtonSideMenu setIsOpen={setIsOpen} isOpen={isOpen}/>
@@ -21,7 +21,7 @@ const NavBar = ({setIsOpen, isOpen} : any) => {
         <ButtonsIcons />
         <Profile />
       </div>
-    </div>
+    </nav>
   )
 }
 

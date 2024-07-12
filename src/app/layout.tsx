@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBarAndSideMenu from "./components/NavBarAndSideMenu";
+import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
+import { SideMenuProvider } from "./context/SideMenuContext";
+import MainContent  from "./components/MainContent/MainContent"
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,13 +17,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   return (
     <html lang="en">
       <body className={inter.className}>
-        <NavBarAndSideMenu />
-        {children}
-        </body>
+        <SideMenuProvider>
+          <NavBarAndSideMenu />
+          <MainContent>{children}</MainContent>
+        </SideMenuProvider>
+      </body>
     </html>
   );
 }
