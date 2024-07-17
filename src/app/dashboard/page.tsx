@@ -1,9 +1,10 @@
 import React from 'react'
+import DashboardPage from '../components/Dashboard/DashboardPage'
 
 const Dashboard = () => {
   return (
-    <div className='h-screen w-full flex justify-start items-start '>
-      Dashboard
+    <div className='w-full'>
+      <DashboardPage />
     </div>
   )
 }

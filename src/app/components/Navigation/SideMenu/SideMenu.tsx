@@ -123,14 +123,14 @@ const SideMenu = ({isOpen} : any) => {
   ];
   return (
     <div
-      className={`h-auto ${
-        isOpen ? "w-68 items-start px-8" : "w-20 items-center"
-      } bg-header-color absolute py-24 flex flex-col justify-center gap-6 transition-all duration-1000`}
-    >
-      {icons.map((icon, index) => (
-        <ButtonsIcons key={index} icon={icon} isOpen={isOpen} />
-      ))}
-    </div>
+    className={`${
+      isOpen ? "w-68 items-start px-8 pb-128" : "w-20 items-center pb-112"
+    }  bg-header-color absolute top-0 left-0 min-h-full py-24 flex flex-col justify-center gap-6 transition-all duration-1000`}
+  >
+    {icons.map((icon, index) => (
+      <ButtonsIcons key={index} icon={icon} isOpen={isOpen} />
+    ))}
+  </div>  
   );
 };
 
