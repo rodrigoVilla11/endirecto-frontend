@@ -12,7 +12,9 @@ const config: Config = {
         "body-color": "#495057",
         "header-color": "#2e2e2e",
         "primary": "#2e2e2e",
-        "secondary": "#74788d"
+        "secondary": "#74788d",
+        "table": "#6d6d6d",
+        "profile": "rgba(52, 58, 64, 0.25)"
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

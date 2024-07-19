@@ -5,7 +5,7 @@ const Logo = () => {
   const { isOpen } = useSideMenu();
   return (
     <div>
-      <img src="LOGO-DMA.png" alt="logo-navbar" className={`${isOpen ? "h-20 pl-4 pt-2" : "h-10"} transition-all duration-300`} />
+      <img src="dma.png" alt="logo-navbar" className={`${isOpen ? "h-20 pl-4 pt-2" : "h-10"} transition-all duration-300`} />
     </div>
   )
 }

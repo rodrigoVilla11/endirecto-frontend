@@ -1,9 +1,10 @@
 import React from 'react'
+import SelectCustomerPage from '../components/SelectCustomer/SelectCustomerPage'
 
 const SelectCustomer = () => {
   return (
     <div>
-      SelectCustomer
+      <SelectCustomerPage />
     </div>
   )
 }
