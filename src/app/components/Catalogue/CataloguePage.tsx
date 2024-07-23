@@ -12,7 +12,7 @@ const CataloguePage = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
 
-  const toggleShowArticles = (type) => {
+  const toggleShowArticles = (type : any) => {
     setShowArticles(type);
   };
 
