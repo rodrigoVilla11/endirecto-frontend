@@ -4,8 +4,9 @@ import React from 'react';
 
 const MainContent = ({ children }: { children: React.ReactNode }) => {
   const { isOpen } = useSideMenu();
+  const isLogin = false;
   return (
-    <div className={`${isOpen ? "ml-80" : "ml-24"} mt-24 transition-all duration-300`}>
+    <div className={`${isLogin && `${isOpen ? "ml-80" : "ml-24"}`} mt-20 transition-all duration-300`}>
       {children}
     </div>
   );
