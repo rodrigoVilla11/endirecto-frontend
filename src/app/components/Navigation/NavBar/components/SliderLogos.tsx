@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Image from 'next/image';
 
 const SliderLogos = () => {
   const logos = [
@@ -27,7 +28,7 @@ const SliderLogos = () => {
     <div className="w-64 h-full flex justify-center items-center gap-4">
       {/* <img src="LOGO-DMA.png" alt="logo-navbar" className="h-16" /> */}
       <div className="h-16 w-32 flex justify-center items-center">
-        <img
+        <Image
           src={logos[currentLogoIndex]}
           alt="logo-navbar"
           className="h-full w-full object-contain"

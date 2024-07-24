@@ -11,7 +11,7 @@ const VehiclesBrands = () => {
     { id: 4, name: "CHEVROLET" },
   ];
 
-  const handleVehiclesBrandChange = (event) => {
+  const handleVehiclesBrandChange = (event : any) => {
     setSelectedVehiclesBrand(event.target.value);
   };
 
@@ -22,7 +22,7 @@ const VehiclesBrands = () => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="vehiclesBrands"
         >
-          Vehicle's Brands
+          Vehicle&#39;s Brands
         </label>
         <div className="flex gap-1 justify-center items-center">
           <select
@@ -32,7 +32,7 @@ const VehiclesBrands = () => {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="" disabled>
-              Select a Vehicle's Brands
+              Select a Vehicle&#39;s Brands
             </option>
             {vehiclesBrands.map((item) => (
               <option key={item.id} value={item.id}>
