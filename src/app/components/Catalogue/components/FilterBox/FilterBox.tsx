@@ -9,11 +9,11 @@ import Brands from './components/Brands';
 import Items from './components/Items';
 import VehiclesBrands from './components/VehiclesBrands';
 
-const FilterBox = ({ isVisible, onClose }) => {
+const FilterBox = ({ isVisible, onClose }: any) => {
   return (
     <>
       {isVisible && (
-        <div className='w-80 h-auto shadow-2xl rounded-md bg-white pb-4'>
+        <div className='w-112 h-auto shadow-2xl rounded-md bg-white pb-4'>
           <div className='p-2 flex justify-end items-center text-2xl'>
             <button onClick={onClose}><FaXmark /></button>
           </div>

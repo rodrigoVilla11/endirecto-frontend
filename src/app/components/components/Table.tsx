@@ -6,7 +6,6 @@ const Table = ({ headers }: any) => {
   return (
     <div className="h-screen m-5 bg-white flex flex-col text-sm">
       <div className="h-[calc(100vh-10px)] overflow-y-auto">
-        {/* Aquí va el contenido de la tabla */}
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-table sticky top-0 z-10 w-full">
             <tr>
