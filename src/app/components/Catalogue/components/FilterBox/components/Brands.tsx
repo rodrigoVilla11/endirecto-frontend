@@ -11,7 +11,7 @@ const Brands = () => {
     { id: 4, name: "CTR" },
   ];
 
-  const handleBrandChange = (event) => {
+  const handleBrandChange = (event : any) => {
     setSelectedBrand(event.target.value);
   };
 
