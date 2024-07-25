@@ -11,7 +11,7 @@ const Items = () => {
     { id: 4, name: "AMORTIGUADOR TRASERO" },
   ];
 
-  const handleItemChange = (event) => {
+  const handleItemChange = (event : any) => {
     setSelectedItem(event.target.value);
   };
 

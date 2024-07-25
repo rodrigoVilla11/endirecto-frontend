@@ -9,7 +9,7 @@ const Cart = () => {
     { id: 2, name: 'Budget' },
   ];
 
-  const handleOrderChange = (event) => {
+  const handleOrderChange = (event : any) => {
     setSelectedCart(event.target.value);
   };
 

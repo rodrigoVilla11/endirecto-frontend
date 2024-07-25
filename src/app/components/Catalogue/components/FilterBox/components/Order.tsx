@@ -13,7 +13,7 @@ const Order = () => {
     { id: 6, name: 'Stock' },
   ];
 
-  const handleOrderChange = (event) => {
+  const handleOrderChange = (event : any) => {
     setSelectedOrder(event.target.value);
   };
 
