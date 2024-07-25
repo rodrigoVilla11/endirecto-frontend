@@ -1,7 +1,6 @@
 'use client'
 import React, { useState } from "react";
 import { IoMdLock, IoMdEye, IoMdEyeOff } from "react-icons/io";
-import Image from "next/image";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +15,7 @@ const LoginPage = () => {
         <div className="bg-primary-subtle h-20 pt-4 pl-6 rounded-t-md">
           <p className="text-xl font-bold text-gray-700">Sign In</p>
           <div className="bg-primary rounded-full h-16 w-16 mt-2 flex justify-center items-center p-1">
-            <Image src="dma.png" alt="logo-navbar" />
+            <img src="/dma.png" alt="logo-navbar" />
           </div>
         </div>
 

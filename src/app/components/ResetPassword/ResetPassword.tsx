@@ -1,5 +1,4 @@
 'use client'
-import Image from "next/image";
 import React, { useState } from "react";
 import { IoMdLock, IoMdEye, IoMdEyeOff } from "react-icons/io";
 
@@ -16,7 +15,7 @@ const LoginPage = () => {
         <div className="bg-primary-subtle h-20 pt-4 pl-6 rounded-t-md">
           <p className="text-xl font-bold text-gray-700">Reset Password</p>
           <div className="bg-primary rounded-full h-16 w-16 mt-2 flex justify-center items-center p-1">
-            <Image src="dma.png" alt="logo-navbar" />
+            <img width={10} height={10} src="/dma.png" alt="logo-navbar" />
           </div>
         </div>
         <div className="border border-success rounded-md mx-10 mt-16 p-4 text-center text-sm bg-success-subtle">

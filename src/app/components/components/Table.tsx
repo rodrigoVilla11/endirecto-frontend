@@ -2,20 +2,22 @@ import React from "react";
 import { FaAddressBook } from "react-icons/fa";
 import { CiGps, CiMenuKebab } from "react-icons/ci";
 
-const Table = ({ headers } : any) => {
+const Table = ({ headers }: any) => {
   return (
     <div className="h-screen m-5 bg-white flex flex-col text-sm">
       <div className="h-[calc(100vh-10px)] overflow-y-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-table sticky top-0 z-10 w-full">
             <tr>
-              {headers.map((item: any, index: any) => (
+              {headers.map((header: any, index: any) => (
                 <th
-                  key={index}
+                  key={header.key || index}
                   scope="col"
                   className="px-1 py-1 text-xs font-medium text-white uppercase tracking-wider border border-x-white text-center"
                 >
-                  <div className="flex justify-center items-center">{item}</div>
+                  <div className="flex justify-center items-center">
+                    {header.component || header.name}
+                  </div>
                 </th>
               ))}
             </tr>

@@ -1,0 +1,43 @@
+import Header from '@/app/components/components/Header';
+import Input from '@/app/components/components/Input';
+import Table from '@/app/components/components/Table';
+import React from 'react'
+import { FaPlus } from "react-icons/fa6";
+import { FaPencil,FaTrashCan  } from "react-icons/fa6";
+
+const page = () => {
+    const tableHeader = [
+        { name: "Id", key: "id" },
+        { name: "User", key: "user" },
+        { name: "Email", key: "email" },
+        { name: "Role", key: "role" },
+        { name: "Branch", key: "branch" },
+        { name: "Salesman", key: "salesman" },
+        { component: <FaPencil className="text-center text-xl" />, key: "edit" },
+        { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+      ];
+      const headerBody = {
+        buttons: [
+          {
+            logo: <FaPlus/>,
+            title: "New",
+          }
+        ],
+        filters: [
+          {
+            content: <Input placeholder={"Search..."}/>,
+          }
+        ],
+        results: "20 Results",
+      };
+    
+      return (
+        <div className="gap-4">
+          <h3 className="text-bold p-4">USERS</h3>
+          <Header headerBody={headerBody} />
+          <Table headers={tableHeader} />
+        </div>
+      );
+}
+
+export default page

@@ -1,15 +1,15 @@
 import React from "react";
 import { CgProfile } from "react-icons/cg";
 import { CiMenuKebab } from "react-icons/ci";
-import Header from "../components/components/Header";
-import Table from "../components/components/Table";
 import { FiMapPin } from "react-icons/fi";
 import { AiOutlineDownload } from "react-icons/ai";
-import Input from "../components/components/Input";
-import Buttons from "../components/components/Buttons";
-import ButtonOnOff from "../components/components/ButtonOnOff";
+import Buttons from "@/app/components/components/Buttons";
+import Input from "@/app/components/components/Input";
+import ButtonOnOff from "@/app/components/components/ButtonOnOff";
+import Header from "@/app/components/components/Header";
+import Table from "@/app/components/components/Table";
 
-const SelectCustomer = () => {
+const page = () => {
   const tableHeader = [
     {
       component: <CgProfile className="text-center text-xl" />,
@@ -58,11 +58,11 @@ const SelectCustomer = () => {
 
   return (
     <div className="gap-4">
-      <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
+      <h3 className="text-bold p-4">VOUCHERS</h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} />
     </div>
   );
 };
 
-export default SelectCustomer;
+export default page;
