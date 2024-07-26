@@ -1,11 +1,10 @@
 import React from "react";
-import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { MdOutlineEmail } from "react-icons/md";
-import { FaRegFilePdf } from "react-icons/fa6";
+import { IoMdPin } from "react-icons/io";
+import ButtonOnOff from "../components/components/ButtonOnOff";
 
 const page = () => {
   const tableHeader = [
@@ -13,27 +12,30 @@ const page = () => {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
       key: "info",
     },
-    {
-      component: <MdOutlineEmail className="text-center text-xl" />,
-      key: "mail",
-    },
-    {
-      component: <FaRegFilePdf className="text-center text-xl" />,
-      key: "pdf",
-    },
-    { name: "Number", key: "number" },
+    { name: "Seller", key: "seller" },
+    { name: "Customer", key: "customer" },
+    { name: "Type", key: "type" },
     { name: "Date", key: "date" },
+    { name: "Payment", key: "payment" },
+    { name: "Order", key: "order" },
     { name: "Amount", key: "amount" },
     { name: "Status", key: "status" },
+    { name: "GPS", key: "gps" },
   ];
   const headerBody = {
     buttons: [
       {
-        logo: <AiOutlineDownload/>,
-        title: "Download",
+        logo: <IoMdPin />,
+        title: "View On Map",
       },
     ],
     filters: [
+      {
+        content: <ButtonOnOff title={"Contacted"} />,
+      },
+      {
+        content: <ButtonOnOff title={"Not Contacted"} />,
+      },
       {
         content: <Input placeholder={"Date From dd/mm/aaaa"} />,
       },
@@ -41,15 +43,29 @@ const page = () => {
         content: <Input placeholder={"Date To dd/mm/aaaa"} />,
       },
       {
-        content: <Input placeholder={"Search..."}/>,
-      }
+        content: (
+          <select>
+            <option value="order">STATUS</option>
+          </select>
+        ),
+      },
+      {
+        content: (
+          <select>
+            <option value="order">TYPE</option>
+          </select>
+        ),
+      },
+      {
+        content: <Input placeholder={"Search..."} />,
+      },
     ],
     results: "936 Results",
   };
 
   return (
     <div className="gap-4">
-      <h3 className="font-bold p-4">PAYMENTS</h3>
+      <h3 className="font-bold p-4">CRM</h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} />
     </div>

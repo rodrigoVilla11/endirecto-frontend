@@ -3,16 +3,16 @@ import React, { useState, useEffect } from "react";
 
 const SliderLogos = () => {
   const logos = [
-    "logo-elf.svg",
-    "mahle.svg",
-    "elf-moto.svg",
-    "dunlop.svg",
-    "falken-tire.svg",
-    "totalenergies.svg",
-    "corven-autopartes.png",
-    "ctr.png",
-    "moura.png",
-    "zetta.png",
+    "/logo-elf.svg",
+    "/mahle.svg",
+    "/elf-moto.svg",
+    "/dunlop.svg",
+    "/falken-tire.svg",
+    "/totalenergies.svg",
+    "/corven-autopartes.png",
+    "/ctr.png",
+    "/moura.png",
+    "/zetta.png",
   ];
   const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
 

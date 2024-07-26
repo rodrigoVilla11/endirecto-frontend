@@ -4,7 +4,6 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { MdOutlineEmail } from "react-icons/md";
 import { FaRegFilePdf } from "react-icons/fa6";
 
 const page = () => {
@@ -14,22 +13,19 @@ const page = () => {
       key: "info",
     },
     {
-      component: <MdOutlineEmail className="text-center text-xl" />,
-      key: "mail",
-    },
-    {
       component: <FaRegFilePdf className="text-center text-xl" />,
       key: "pdf",
     },
     { name: "Number", key: "number" },
     { name: "Date", key: "date" },
-    { name: "Amount", key: "amount" },
+    { name: "Total Without Taxes", key: "total-without-taxes" },
     { name: "Status", key: "status" },
+    { name: "Order", key: "order" }
   ];
   const headerBody = {
     buttons: [
       {
-        logo: <AiOutlineDownload/>,
+        logo: <AiOutlineDownload />,
         title: "Download",
       },
     ],
@@ -41,15 +37,29 @@ const page = () => {
         content: <Input placeholder={"Date To dd/mm/aaaa"} />,
       },
       {
-        content: <Input placeholder={"Search..."}/>,
-      }
+        content: (
+          <select>
+            <option value="branch">BRANCH</option>
+          </select>
+        ),
+      },
+      {
+        content: (
+          <select>
+            <option value="status">STATUS</option>
+          </select>
+        ),
+      },
+      {
+        content: <Input placeholder={"Search..."} />,
+      },
     ],
-    results: "936 Results",
+    results: "32 Results",
   };
 
   return (
     <div className="gap-4">
-      <h3 className="font-bold p-4">PAYMENTS</h3>
+      <h3 className="font-bold p-4">BUDGETS</h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} />
     </div>

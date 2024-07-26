@@ -1,0 +1,36 @@
+import React from "react";
+import Input from "@/app/components/components/Input";
+import Header from "@/app/components/components/Header";
+import Table from "@/app/components/components/Table";
+import { FaImage } from "react-icons/fa";
+
+const page = () => {
+  const tableHeader = [
+    {
+      component: <FaImage className="text-center text-xl" />,
+      key: "image",
+    },
+    { name: "Brand", key: "brand" },
+    { name: "File EXCEL", key: "excel" },
+    { name: "File TXT", key: "txt" },
+  ];
+  const headerBody = {
+    buttons: [],
+    filters: [
+      {
+        content: <Input placeholder={"Search..."} />,
+      },
+    ],
+    results: "1 Results",
+  };
+
+  return (
+    <div className="gap-4">
+      <h3 className="font-bold p-4">PRICES LISTS</h3>
+      <Header headerBody={headerBody} />
+      <Table headers={tableHeader} />
+    </div>
+  );
+};
+
+export default page;
