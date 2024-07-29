@@ -2,19 +2,16 @@ import React from "react";
 import {
   MdDashboard,
   MdOutlineShoppingBag,
-  MdWindow,
   MdOutlineMessage,
   MdNotificationsNone,
   MdOutlineInfo,
   MdOutlineQuestionMark,
 } from "react-icons/md";
 import {
-  FaStarOfLife,
-  FaRegLightbulb,
   FaDatabase,
   FaPowerOff,
 } from "react-icons/fa";
-import { BsFire, BsCash } from "react-icons/bs";
+import { BsCash } from "react-icons/bs";
 import { IoIosLaptop } from "react-icons/io";
 import { IoMegaphoneOutline, IoPersonOutline } from "react-icons/io5";
 import { CgProfile, CgShoppingCart } from "react-icons/cg";
@@ -27,20 +24,16 @@ const SideMenu = ({isOpen} : any) => {
   const icons = [
     { icon: <MdDashboard />, name: "Dashboard", path: "/dashboard" },
     { icon: <MdOutlineShoppingBag />, name: "Catalogue", path: "/catalogue" },
-    { icon: <FaStarOfLife />, name: "Offers", path: "/offers" },
-    { icon: <BsFire />, name: "Promos", path: "/promos" },
-    { icon: <FaRegLightbulb />, name: "Nuevos", path: "/nuevos" },
-    { icon: <MdWindow />, name: "Kits", path: "/kits" },
     {
       icon: <IoIosLaptop />,
       name: "Systems",
       subCategories: [
-        { name: "Users", path: "/systems/users" },
-        { name: "Searches Without Results", path: "/systems/searches-without-results" },
-        { name: "Logs", path: "/systems/logs" },
-        { name: "Parameters", path: "/systems/parameters" },
-        { name: "Database Tables", path: "/systems/tables" },
-        { name: "Scheduled Task", path: "/systems/crons" },
+        { name: "Users", path: "/system/users" },
+        { name: "Searches Without Results", path: "/system/searches" },
+        { name: "Logs", path: "/system/logs" },
+        { name: "Parameters", path: "/system/parameters" },
+        { name: "Database Tables", path: "/system/tables" },
+        { name: "Scheduled Task", path: "/system/crons" },
 
       ],
     },
@@ -54,13 +47,13 @@ const SideMenu = ({isOpen} : any) => {
         { name: "Items", path: "/data/items" },
         { name: "Subitems", path: "/data/subitems" },
         { name: "Files", path: "/data/files" },
-        { name: "Applications of Articles", path: "/data/applications-of-articles" },
+        { name: "Applications of Articles", path: "/data/application-of-articles" },
         { name: "Bank Accounts", path: "/data/bank-accounts" },
         { name: "Bonifications", path: "/data/bonifications" },
         { name: "Payment Conditions", path: "/data/payment-conditions" },
         { name: "Stock", path: "/data/stock" },
         { name: "Branches", path: "/data/branches" },
-        { name: "Transports", path: "/data/transorts" },
+        { name: "Transports", path: "/data/transports" },
         { name: "Sellers", path: "/data/sellers" },
       ],
     },
@@ -83,7 +76,7 @@ const SideMenu = ({isOpen} : any) => {
 
       ],
     },
-    { icon: <CgProfile />, name: "Select Customer", path: "/select-customer" },
+    { icon: <CgProfile />, name: "Select Customer", path: "/selectCustomer" },
     {
       icon: <BsCash />,
       name: "Current Accounts",
@@ -98,16 +91,16 @@ const SideMenu = ({isOpen} : any) => {
       icon: <BsCash />,
       name: "Collections Summaries",
       subCategories: [
-        { name: "Collections Summaries", path: "/collections-summaries/collections-summaries" },
-        { name: "Collections Unsummaries", path: "/collections-summaries/collections-unsummaries" },
+        { name: "Collections Summaries", path: "/collections/summaries" },
+        { name: "Collections Unsummaries", path: "/collections/unsummaries" },
       ],
     },
     {
       icon: <CgShoppingCart />,
       name: "Orders",
       subCategories: [
-        { name: "Pedidos", path: "/orders/pedidos" },
-        { name: "Presupuestos", path: "/orders/presupuestos" },
+        { name: "Pedidos", path: "/orders/orders" },
+        { name: "Presupuestos", path: "/orders/budgets" },
         { name: "Cart", path: "/orders/cart" },
       ],
     },
@@ -118,21 +111,21 @@ const SideMenu = ({isOpen} : any) => {
       icon: <PiDownloadSimpleBold />,
       name: "Downloads",
       subCategories: [
-        { name: "Lists Prices Downloads", path: "/downloads/lists-prices-downloads" },
-        { name: "Bonifications Downloads", path: "/downloads/bonifications-downloads" },
+        { name: "Lists Prices Downloads", path: "/downloads/prices-lists" },
+        { name: "Bonifications Downloads", path: "/downloads/articles-bonuses" },
       ],
     },
     { icon: <MdOutlineInfo />, name: "Reclaims", path: "/reclaims" },
     { icon: <ImStatsDots />, name: "Statistics", path: "/statistics" },
-    { icon: <MdOutlineQuestionMark />, name: "FAQ", path: "/faq" },
+    { icon: <MdOutlineQuestionMark />, name: "FAQ", path: "/faqs" },
     {
       icon: <IoPersonOutline />,
       name: "My Profile",
       subCategories: [
-        { name: "My Profile", path: "/my-profile/my-profile" },
-        { name: "Customers Users", path: "/my-profile/customers-users" },
-        { name: "Brand Margins", path: "/my-profile/brand-margins" },
-        { name: "Margins By Rubro", path: "/my-profile/margins-by-rubro" },
+        { name: "My Profile", path: "/profile/my-profile" },
+        { name: "Customers Users", path: "/profile/customers-users" },
+        { name: "Brand Margins", path: "/profile/brands-margin" },
+        { name: "Item Margins", path: "/profile/items-margin" },
       ],
     },
     { icon: <FaPowerOff />, name: "LogOut", path: "/logout" },
@@ -140,7 +133,7 @@ const SideMenu = ({isOpen} : any) => {
   return (
     <div
     className={`${
-      isOpen ? "w-68 items-start px-8 pb-128" : "w-20 items-center pb-112"
+      isOpen ? "w-68 items-start px-8" : "w-20 items-center"
     }  bg-header-color absolute top-0 left-0 min-h-full py-24 flex flex-col justify-center gap-6 transition-all duration-1000`}
   >
     {icons.map((icon:any, index: any) => (
