@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import { CgProfile } from "react-icons/cg";
 import { CiMenuKebab } from "react-icons/ci";
@@ -8,8 +9,15 @@ import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import Buttons from "../components/components/Buttons";
 import ButtonOnOff from "../components/components/ButtonOnOff";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+require("dotenv").config();
 
 const SelectCustomer = () => {
+  const { data, error, isLoading, refetch } = useGetCustomersQuery(null);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+
   const tableHeader = [
     {
       component: <CgProfile className="text-center text-xl" />,
@@ -58,7 +66,7 @@ const SelectCustomer = () => {
 
   return (
     <div className="gap-4">
-      <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
+      <h3 className="text-bold p-4">SELECT CUSTOMER </h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} />
     </div>
