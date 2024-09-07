@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -5,8 +6,14 @@ import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
 import { FaRegFilePdf } from "react-icons/fa";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 
 const page = () => {
+  const { data, error, isLoading, refetch } = useGetArticlesQuery(null);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+   console.log(data)
   const tableHeader = [
     { name: "Brand", key: "brand" },
     {

@@ -1,11 +1,18 @@
+'use client'
 import Header from '@/app/components/components/Header';
 import Input from '@/app/components/components/Input';
 import Table from '@/app/components/components/Table';
+import { useGetUsersQuery } from '@/redux/services/usersApi';
 import React from 'react'
 import { FaPlus } from "react-icons/fa6";
 import { FaPencil,FaTrashCan  } from "react-icons/fa6";
 
 const page = () => {
+  const { data, error, isLoading, refetch } = useGetUsersQuery(null);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+   console.log(data)
     const tableHeader = [
         { name: "Id", key: "id" },
         { name: "User", key: "user" },

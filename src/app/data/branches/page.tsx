@@ -1,9 +1,16 @@
+'use client'
 import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
 const page = () => {
+  const { data, error, isLoading, refetch } = useGetBranchesQuery(null);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+   console.log(data)
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
