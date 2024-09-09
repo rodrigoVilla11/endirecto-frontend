@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -10,7 +10,25 @@ const page = () => {
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-   console.log(data)
+  const tableData = data?.map((branch) => ({
+    key: branch.id,
+    id: branch.id,
+    name: branch.name,
+    address: branch.address,
+    postal_code: branch.postal_code,
+    phone: branch.phone,
+    whatsapp: branch.whatsapp,
+    gps: branch.gps,
+    schedule: branch.schedule,
+    mail_budgets: branch.mail_budgets,
+    mail_collections: branch.mail_collections,
+    mail_collections_summaries: branch.mail_collections_summaries,
+    mail_contacts: branch.mail_contacts,
+    mail_orders: branch.mail_orders,
+    mail_pendings: branch.mail_pendings,
+    mail_profile: branch.mail_profile,
+    mail_system: branch.mail_system,
+  }));
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
@@ -43,7 +61,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">BRANCHES</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

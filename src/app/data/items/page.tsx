@@ -11,7 +11,14 @@ const page = () => {
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-   console.log(data)
+  const tableData = data?.map((item) => ({
+    key: item.id,
+    id: item.id,
+    name: item.name,
+    image: item.image,
+    image_header: item.image_uri,
+    edit: <FaPencil className="text-center text-lg" />,
+  }));
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
@@ -38,7 +45,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">ITEMS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

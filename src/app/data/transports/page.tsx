@@ -10,7 +10,13 @@ const page = () => {
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-   console.log(data)
+   
+  const tableData = data?.map((transport) => ({
+    key: transport.id,
+    id: transport.id,
+    name: transport.name,
+    schedule: transport.schedule
+  }));
 
   const tableHeader = [
     { name: "Id", key: "id" },
@@ -31,7 +37,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">TRANSPORTS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

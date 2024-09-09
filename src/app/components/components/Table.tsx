@@ -1,8 +1,7 @@
 import React from "react";
-import { FaAddressBook } from "react-icons/fa";
 import { CiGps, CiMenuKebab } from "react-icons/ci";
 
-const Table = ({ headers }: any) => {
+const Table = ({ headers, data }: any) => {
   return (
     <div className="h-screen m-5 bg-white flex flex-col text-sm">
       <div className="h-[calc(100vh-10px)] overflow-y-auto">
@@ -23,47 +22,18 @@ const Table = ({ headers }: any) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {/* Filas de ejemplo */}
-            {[...Array(100).keys()].map((_, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
-                    <p>E</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  00001
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  EVER WEAR S.A
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  <FaAddressBook />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  CTA CTE 15 DIAS 10%DTO 30D 5%
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  $0,00
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  $0,00
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  0,00%
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  $0,00
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  0
-                </td>
-                <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  <CiGps className="text-xl text-red-600" />
-                </td>
-                <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200">
-                  <CiMenuKebab className="text-xl text-black" />
-                </td>
+            {data.map((row: any, index: any) => (
+              <tr key={row.key || index}>
+                {Object.keys(row).map((key, i) => (
+                  key !== 'key' && (
+                    <td
+                      key={i}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200 text-center"
+                    >
+                      {row[key]}
+                    </td>
+                  )
+                ))}
               </tr>
             ))}
           </tbody>

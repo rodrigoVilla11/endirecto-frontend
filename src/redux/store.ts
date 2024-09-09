@@ -10,6 +10,22 @@ import { stockApi } from "./services/stockApi";
 import { branchesApi } from "./services/branchesApi";
 import { transportsApi } from "./services/transportsApi";
 import { sellersApi } from "./services/sellersApi";
+import { articlesBonusesApi } from "./services/articlesBonusesApi";
+import { articlesDiscountsApi } from "./services/articlesDiscounts";
+import { articlesEquivalencesApi } from "./services/articlesEquivalences";
+import { articlesPricesApi } from "./services/articlesPricesApi";
+import { articlesTechnicalDetailsApi } from "./services/articlesTechnicalDetails";
+import { articlesVehiclesApi } from "./services/articlesVehicles";
+import { collectionsPaymentsTypesApi } from "./services/collectionsPaymentsTypes";
+import { crmPrenotesApi } from "./services/crmPrenotes";
+import { customersInformationsApi } from "./services/customersInformations";
+import { customersTransportsApi } from "./services/customersTransports";
+import { documentsApi } from "./services/documentsApi";
+import { documentsDetailsApi } from "./services/documentsDetailsApi";
+import { pendingsApi } from "./services/pendingsApi";
+import { pricesListsApi } from "./services/pricesListsApi";
+import { reclaimsTypesApi } from "./services/reclaimsTypes";
+import { technicalDetailsApi } from "./services/technicalDetails";
 
 export const store = configureStore({
   reducer: {
@@ -23,7 +39,22 @@ export const store = configureStore({
     branchesApi: branchesApi.reducer,
     transportsApi: transportsApi.reducer,
     sellersApi: sellersApi.reducer,
-    
+    articlesBonusesApi: articlesBonusesApi.reducer,
+    articlesDiscountsApi: articlesDiscountsApi.reducer,
+    articlesEquivalencesApi: articlesEquivalencesApi.reducer,
+    articlesPricesApi: articlesPricesApi.reducer,
+    articlesTechnicalDetailsApi: articlesTechnicalDetailsApi.reducer,
+    articlesVehiclesApi: articlesVehiclesApi.reducer,
+    collectionsPaymentsTypesApi: collectionsPaymentsTypesApi.reducer,
+    crmPrenotesApi: crmPrenotesApi.reducer,
+    customersInformationsApi: customersInformationsApi.reducer,
+    customersTransportsApi: customersTransportsApi.reducer,
+    documentsApi: documentsApi.reducer,
+    documentsDetailsApi: documentsDetailsApi.reducer,
+    pendingsApi: pendingsApi.reducer,
+    pricesListsApi: pricesListsApi.reducer,
+    reclaimsTypesApi: reclaimsTypesApi.reducer,
+    technicalDetailsApi: technicalDetailsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
@@ -37,6 +68,22 @@ export const store = configureStore({
       branchesApi.middleware,
       transportsApi.middleware,
       sellersApi.middleware,
+      articlesBonusesApi.middleware,
+      articlesDiscountsApi.middleware,
+      articlesEquivalencesApi.middleware,
+      articlesPricesApi.middleware,
+      articlesTechnicalDetailsApi.middleware,
+      articlesVehiclesApi.middleware,
+      collectionsPaymentsTypesApi.middleware,
+      crmPrenotesApi.middleware,
+      customersInformationsApi.middleware,
+      customersTransportsApi.middleware,
+      documentsApi.middleware,
+      documentsDetailsApi.middleware,
+      pendingsApi.middleware,
+      pricesListsApi.middleware,
+      reclaimsTypesApi.middleware,
+      technicalDetailsApi.middleware,
     ]),
 });
 

@@ -10,7 +10,15 @@ const page = () => {
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-   console.log(data)
+  const tableData = data?.map((stock) => ({
+    key: stock.id,
+    id: stock.id,
+    article_id: stock.article_id,
+    quantity: stock.quantity,
+    branch: stock.branch_id,
+    quantity_next: stock.quantity_next,
+    quantity_next_date: stock.quantity_next_date
+  }));
 
   const tableHeader = [
     { name: "Id", key: "id" },
@@ -36,7 +44,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">STOCK</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

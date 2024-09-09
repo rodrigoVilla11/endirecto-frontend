@@ -9,7 +9,14 @@ const page = () => {
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-   console.log(data)
+
+  const tableData = data?.map((seller) => ({
+    key: seller.id,
+    id: seller.id,
+    name: seller.name,
+    branch_id: seller.branch_id
+  }));
+
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },

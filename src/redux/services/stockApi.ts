@@ -6,6 +6,8 @@ type Stock = {
     quantity: string; // Cantidad en stock
     article_id: string; // ID del artículo
     branch_id: string; // ID de la sucursal
+    quantity_next: string;  // Cantidad del proximo ingreso
+    quantity_next_date: string; // Fecha del proximo ingreso
 };
 
 export const stockApi = createApi({

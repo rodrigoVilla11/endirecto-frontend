@@ -4,6 +4,7 @@ type Brands = {
     id: string; 
     name: string;
     image: string;
+    sequence: string;
 };
 
 export const brandsApi = createApi({
