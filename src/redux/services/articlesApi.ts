@@ -50,11 +50,13 @@ export const articlesApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
-    getArticles: builder.query<Article[], null>({
-      query: () => `/articles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    getArticles: builder.query<Article[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/articles?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
+          console.error("No se recibieron artículos en la respuesta");
           return [];
         }
         return response;

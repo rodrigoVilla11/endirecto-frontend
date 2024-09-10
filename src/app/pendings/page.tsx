@@ -6,6 +6,7 @@ import { FaImage, FaShoppingCart } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 
 const page = () => {
+  const tableData = [{}]
   const tableHeader = [
     { name: "Brand", key: "brand" },
     {
@@ -54,7 +55,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">PENDINGS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

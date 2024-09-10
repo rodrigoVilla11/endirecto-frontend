@@ -9,13 +9,13 @@ import TablePrices from './TablePrices';
 import TableTechnicalDetails from './TableTechnicalDetails';
 import TableEquivalences from './TableEquivalences';
 
-const Tables = () => {
+const Tables = ({article} : any) => {
   const [activeTable, setActiveTable] = useState('info');
 
   const renderTable = () => {
     switch (activeTable) {
       case 'info':
-        return <TableInfo />;
+        return <TableInfo article={article}/>;
       case 'prices':
         return <TablePrices />;
       case 'technical':

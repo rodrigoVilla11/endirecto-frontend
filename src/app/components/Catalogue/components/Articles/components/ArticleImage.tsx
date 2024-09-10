@@ -1,8 +1,8 @@
 import React from 'react'
 
-const ArticleImage = () => {
+const ArticleImage = ({img} : any) => {
   return (
-    <div className='w-68 h-48 border border-black'></div>
+    <img className='w-68 h-44 border border-black' src={img}></img>
   )
 }
 

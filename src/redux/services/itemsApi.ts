@@ -27,7 +27,7 @@ export const itemsApi = createApi({
       },
     }),
     getItemById: builder.query<Items, { id: string }>({
-      query: ({ id }) => `/items/${id}`,
+      query: ({ id }) => `/items/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });

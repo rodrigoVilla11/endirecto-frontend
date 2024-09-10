@@ -29,7 +29,10 @@ export const stockApi = createApi({
     getStockById: builder.query<Stock, { id: string }>({
       query: ({ id }) => `/stocks/${id}`,
     }),
+    getStockByArticleId: builder.query<Stock, { articleId: string }>({
+      query: ({ articleId }) => `/stocks/by-article/${articleId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),    
   }),
 });
 
-export const { useGetStockQuery ,useGetStockByIdQuery } = stockApi;
+export const { useGetStockQuery ,useGetStockByIdQuery, useGetStockByArticleIdQuery } = stockApi;

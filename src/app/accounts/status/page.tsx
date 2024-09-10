@@ -6,6 +6,7 @@ import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 
 const page = () => {
+  const tableData = [{}]
   const tableHeader = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -48,7 +49,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">STATUS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

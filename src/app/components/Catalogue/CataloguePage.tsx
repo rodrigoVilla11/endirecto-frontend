@@ -4,8 +4,11 @@ import FilterBox from "./components/FilterBox/FilterBox";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import Articles from "./components/Articles/Articles";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 
 const CataloguePage = () => {
+  const { data, error, isLoading, refetch } = useGetArticlesQuery({ page: 1, limit: 10 })
+
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
 
@@ -34,7 +37,7 @@ const CataloguePage = () => {
                   isFilterBoxVisible
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"
-                } text-white rounded`}
+                } rounded`}
               >
                 <FaFilter
                   className={`${
@@ -72,9 +75,9 @@ const CataloguePage = () => {
                 />
               </button>
             </div>
-            <p className="text-xs pr-4">8.289 Results</p>
+            <p className="text-xs pr-4">{data?.length || 0}</p>
           </div>
-          <Articles />
+          <Articles data={data}/>
         </div>
       </div>
     </div>

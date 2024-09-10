@@ -24,7 +24,7 @@ export const brandsApi = createApi({
       },
     }),
     getBrandById: builder.query<Brands, { id: string }>({
-      query: ({ id }) => `/brands/${id}`,
+      query: ({ id }) => `/brands/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });

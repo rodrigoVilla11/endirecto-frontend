@@ -11,22 +11,22 @@ import Modal from "@/app/components/components/Modal";
 import Description from "./Description/Description";
 import { IoMdClose } from "react-icons/io";
 
-const CardArticles = () => {
+const CardArticles = ({ article }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
- 
+
   const openModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
   return (
     <div>
-      <div className="h-116 w-72 bg-white rounded-sm" onClick={openModal}>
+      <div className="h-116 w-68 bg-white rounded-sm" onClick={openModal}>
         <ArticleMenu />
-        <ArticleImage />
-        <StripeStock hasStock={"IN STOCK"} />
-        <ArticleName />
-        <CostPrice />
+        <ArticleImage img={article.image}/>
+        <StripeStock articleId={article.id} />
+        <ArticleName name={article.name} id={article.id}/>
+        <CostPrice articleId={article.id}/>
         <hr />
-        <SuggestedPrice />
-        <AddToCart />
+        <SuggestedPrice articleId={article.id}/>
+        <AddToCart articleId={article.id}/>
       </div>
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <div className="flex justify-between">
@@ -35,7 +35,7 @@ const CardArticles = () => {
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
           >
-            <IoMdClose/>
+            <IoMdClose />
           </button>
         </div>
         <div className="flex gap-4">
@@ -44,15 +44,15 @@ const CardArticles = () => {
             onClick={openModal}
           >
             <ArticleMenu />
-            <ArticleImage />
-            <StripeStock hasStock={"IN STOCK"} />
-            <ArticleName />
-            <CostPrice />
+            <ArticleImage img={article.image}/>
+            <StripeStock articleId={article.id}  />
+            <ArticleName name={article.name} id={article.id}/>
+            <CostPrice articleId={article.id} />
             <hr />
-            <SuggestedPrice />
-            <AddToCart />
+            <SuggestedPrice articleId={article.id} />
+            <AddToCart articleId={article.id} />
           </div>
-          <Description />
+          <Description article={article} description={article.description}/>
         </div>
       </Modal>
     </div>

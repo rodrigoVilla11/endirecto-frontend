@@ -29,8 +29,11 @@ export const articlesPricesApi = createApi({
     getArticlePriceById: builder.query<ArticlePrice, { id: string }>({
       query: ({ id }) => `/articles-prices/${id}`,
     }),
+    getArticlePriceByArticleId: builder.query<ArticlePrice[], { articleId: string }>({
+      query: ({ articleId }) => `/articles-prices/by-article/${articleId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),    
   }),
 });
 
-export const { useGetArticlesPricesQuery, useGetArticlePriceByIdQuery } =
+export const { useGetArticlesPricesQuery, useGetArticlePriceByIdQuery, useGetArticlePriceByArticleIdQuery } =
   articlesPricesApi;
