@@ -14,7 +14,7 @@ import { articlesBonusesApi } from "./services/articlesBonusesApi";
 import { articlesDiscountsApi } from "./services/articlesDiscounts";
 import { articlesEquivalencesApi } from "./services/articlesEquivalences";
 import { articlesPricesApi } from "./services/articlesPricesApi";
-import { articlesTechnicalDetailsApi } from "./services/articlesTechnicalDetails";
+import { articlesTechnicalDetailsApi } from "./services/articlesTechnicalDetailsApi";
 import { articlesVehiclesApi } from "./services/articlesVehicles";
 import { collectionsPaymentsTypesApi } from "./services/collectionsPaymentsTypes";
 import { crmPrenotesApi } from "./services/crmPrenotes";

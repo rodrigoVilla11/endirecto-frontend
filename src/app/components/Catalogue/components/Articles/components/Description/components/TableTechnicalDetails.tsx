@@ -1,31 +1,35 @@
+import { useGetArticleTechnicalDetailByArticleIdQuery } from '@/redux/services/articlesTechnicalDetailsApi';
+import { useGetTechnicalDetailByIdQuery, useGetTechnicalDetailsQuery } from '@/redux/services/technicalDetails';
 import React from 'react';
+import TechnicalDetail from './TechnicalDetail';
 
-const TableTechnicalDetails = () => {
+const TableTechnicalDetails = ({ articleId }: any) => {
+  const encodedId = encodeURIComponent(articleId);
+  const { data, error, isLoading } = useGetArticleTechnicalDetailByArticleIdQuery({ articleId: encodedId });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+
+  
   return (
     <table className="min-w-full bg-white">
       <thead>
         <tr>
-          <th className="py-2 px-4 bg-gray-200 text-left max-w-36">Technical Characteristics</th>
+          <th className="py-2 px-4 bg-gray-200 text-left">Technical Characteristics</th>
           <th className="py-2 px-4 bg-gray-200 text-left">Value</th>
         </tr>
       </thead>
-      <tbody className="text-xs"> 
-        <tr>
-          <td className="border-t py-2 px-4">Type</td>
-          <td className="border-t py-2 px-4 max-w-28">Mineral</td>
-        </tr>
-        <tr>
-          <td className="border-t py-2 px-4">Viscosity</td>
-          <td className="border-t py-2 px-4 max-w-28">SAE 20w50</td>
-        </tr>
-        <tr>
-          <td className="border-t py-2 px-4">Rule</td>
-          <td className="border-t py-2 px-4 max-w-28">API SL // JASO MA2</td>
-        </tr>
-        <tr>
-          <td className="border-t py-2 px-4">Use</td>
-          <td className="border-t py-2 px-4 max-w-28">Motores 4T</td>
-        </tr>
+      <tbody className="text-xs">
+        {data && Array.isArray(data) && data.map((technicalDetail: any) => (
+          <tr key={technicalDetail.id}>
+            <td className="border-t py-2 px-4">
+              <TechnicalDetail technical_detail_id={technicalDetail.technical_detail_id}/>
+            </td>
+            <td className="border-t py-2 px-4 max-w-28">
+              {technicalDetail.value || 'No Value'}
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );

@@ -1,12 +1,12 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type ArticleEquivalence = {
-    id: string;
-    code: string;
-    brand: string;
-    article_id: string;
-    articles_group_id: string;
-    deleted_at: string;
+  id: string;
+  code: string;
+  brand: string;
+  article_id: string;
+  articles_group_id: string;
+  deleted_at: string;
 };
 
 export const articlesEquivalencesApi = createApi({
@@ -16,7 +16,8 @@ export const articlesEquivalencesApi = createApi({
   }),
   endpoints: (builder) => ({
     getArticlesEquivalences: builder.query<ArticleEquivalence[], null>({
-      query: () => `/articles-equivalences?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () =>
+        `/articles-equivalences?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticleEquivalence[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron articulos en la respuesta");
@@ -25,11 +26,24 @@ export const articlesEquivalencesApi = createApi({
         return response;
       },
     }),
-    getArticleEquivalenceById: builder.query<ArticleEquivalence, { id: string }>({
+    getArticleEquivalenceById: builder.query<
+      ArticleEquivalence,
+      { id: string }
+    >({
       query: ({ id }) => `/articles-equivalences/${id}`,
+    }),
+    getArticleEquivalenceByArticleId: builder.query<
+      ArticleEquivalence,
+      { articleId: string }
+    >({
+      query: ({ articleId }) =>
+        `/articles-equivalences/by-article/${articleId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
 
-export const { useGetArticlesEquivalencesQuery, useGetArticleEquivalenceByIdQuery } =
-articlesEquivalencesApi;
+export const {
+  useGetArticlesEquivalencesQuery,
+  useGetArticleEquivalenceByIdQuery,
+  useGetArticleEquivalenceByArticleIdQuery
+} = articlesEquivalencesApi;

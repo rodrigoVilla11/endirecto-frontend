@@ -23,7 +23,7 @@ export const technicalDetailsApi = createApi({
       },
     }),
     getTechnicalDetailById: builder.query<TechnicalDetail, { id: string }>({
-      query: ({ id }) => `/technical-details/${id}`,
+      query: ({ id }) => `/technical-details/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });

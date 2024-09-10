@@ -1,11 +1,33 @@
 import React from "react";
+import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 
-const TablePrices = () => {
+const TablePrices = ({ article }: any) => {
+  const encodedId = encodeURIComponent(article.id);
+  const { data, error, isLoading, refetch } =
+    useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
+
+  const priceEntryNoIva = data?.find((item) => item.price_list_id === "2");
+  const priceNoIva = priceEntryNoIva ? priceEntryNoIva.price : "N/A";
+  const formattedPriceNoIva =
+    typeof priceNoIva === "number" ? priceNoIva.toFixed(2) : priceNoIva;
+
+  const iva = 0.21;
+
+  const priceWithIva =
+    typeof priceNoIva === "number"
+      ? (priceNoIva * (1 + iva)).toFixed(2)
+      : "N/A";
+
+  const netPriceEntry = data?.find((item) => item.price_list_id === "1");
+  const netPrice = netPriceEntry ? netPriceEntry.price : "N/A";
+  const formattedNetPrice =
+    typeof netPrice === "number" ? netPrice.toFixed(2) : netPrice;
+
   return (
     <div className="">
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">List Price</p>
-        <p className="font-light">$ 6.352,70</p>
+        <p className="font-light">$ {formattedPriceNoIva}</p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
@@ -16,7 +38,7 @@ const TablePrices = () => {
 
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">List Price w/IVA</p>
-        <p className="font-light">$ 7.686,77</p>
+        <p className="font-light">$ {priceWithIva}</p>
       </div>
       <hr />
 
@@ -28,7 +50,7 @@ const TablePrices = () => {
 
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Net Price</p>
-        <p className="font-light max-w-40">$ 5.082,16</p>
+        <p className="font-light max-w-40">$ {formattedNetPrice}</p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">

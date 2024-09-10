@@ -8,7 +8,7 @@ const CostPrice = ({ articleId }: any) => {
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
 
-  const priceEntry = data?.find((item) => item.price_list_id === "2");
+  const priceEntry = data?.find((item) => item.price_list_id === "1");
   const price = priceEntry ? priceEntry.price : "N/A";
 
   const formattedPrice = typeof price === "number" ? price.toFixed(2) : price;

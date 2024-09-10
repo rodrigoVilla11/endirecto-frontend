@@ -17,11 +17,11 @@ const Tables = ({article} : any) => {
       case 'info':
         return <TableInfo article={article}/>;
       case 'prices':
-        return <TablePrices />;
+        return <TablePrices article={article}/>;
       case 'technical':
-        return <TableTechnicalDetails />;
+        return <TableTechnicalDetails articleId={article.id}/>;
       case 'equivalences':
-        return <TableEquivalences />;
+        return <TableEquivalences articleId={article.id}/>;
       default:
         return <TableInfo />;
     }

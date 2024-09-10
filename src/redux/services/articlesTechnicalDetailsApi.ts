@@ -16,7 +16,8 @@ export const articlesTechnicalDetailsApi = createApi({
   }),
   endpoints: (builder) => ({
     getArticlesTechnicalDetails: builder.query<ArticleTechnicalDetail[], null>({
-      query: () => `/articles-technical-details?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () =>
+        `/articles-technical-details?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticleTechnicalDetail[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron articulos en la respuesta");
@@ -25,11 +26,24 @@ export const articlesTechnicalDetailsApi = createApi({
         return response;
       },
     }),
-    getArticleTechnicalDetailById: builder.query<ArticleTechnicalDetail, { id: string }>({
+    getArticleTechnicalDetailById: builder.query<
+      ArticleTechnicalDetail,
+      { id: string }
+    >({
       query: ({ id }) => `/articles-technical-details/${id}`,
+    }),
+    getArticleTechnicalDetailByArticleId: builder.query<
+      ArticleTechnicalDetail,
+      { articleId: string }
+    >({
+      query: ({ articleId }) =>
+        `/articles-technical-details/by-article/${articleId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
 
-export const { useGetArticlesTechnicalDetailsQuery, useGetArticleTechnicalDetailByIdQuery } =
-articlesTechnicalDetailsApi;
+export const {
+  useGetArticlesTechnicalDetailsQuery,
+  useGetArticleTechnicalDetailByIdQuery,
+  useGetArticleTechnicalDetailByArticleIdQuery,
+} = articlesTechnicalDetailsApi;
