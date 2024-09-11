@@ -4,8 +4,38 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { useGetDocumentsQuery } from "@/redux/services/documentsApi";
 
 const page = () => {
+  const { data: customersData } = useGetCustomersQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const { data, error, isLoading, refetch } = useGetDocumentsQuery(null);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+
+  
+  const tableData = data?.map((document) => {
+    const customer = customersData?.find((data) => data.id == document.customer_id)
+    const seller = sellersData?.find((data) => data.id == document.seller_id)
+
+    return {
+      key: document.id,
+      id: <IoInformationCircleOutline className="text-center text-xl" />,
+      customer: customer ? `${customer?.id} - ${customer?.name}` : "NOT FOUND",
+      type: document.type,
+      number: document.number,
+      date: document.date,
+      amount: document.amount,
+      balance: document.amount,
+      expiration: document.expiration_date,
+      logistic: document.expiration_status,
+      seller: seller?.name || "NOT FOUND"
+    };
+  });
+
   const tableHeader = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -44,7 +74,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">VOUCHERS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

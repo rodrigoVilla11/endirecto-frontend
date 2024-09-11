@@ -39,7 +39,7 @@ export const branchesApi = createApi({
       },
     }),
     getBranchById: builder.query<Branch, { id: string }>({
-      query: ({ id }) => `/branches/${id}`,
+      query: ({ id }) => `/branches/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });

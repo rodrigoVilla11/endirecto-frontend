@@ -26,6 +26,7 @@ const page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
+    { name: "Sequence", key: "sequence" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
   ];
   const headerBody = {

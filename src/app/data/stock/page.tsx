@@ -4,21 +4,27 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { useGetStockQuery } from "@/redux/services/stockApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
 const page = () => {
+  const { data: branchData } = useGetBranchesQuery(null);
   const { data, error, isLoading, refetch } = useGetStockQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-  const tableData = data?.map((stock) => ({
-    key: stock.id,
-    id: stock.id,
-    article_id: stock.article_id,
-    quantity: stock.quantity,
-    branch: stock.branch_id,
-    quantity_next: stock.quantity_next,
-    quantity_next_date: stock.quantity_next_date
-  }));
+
+  const tableData = data?.map((stock) => {
+    const branch = branchData?.find((data) => data.id == stock.branch_id)
+    return {
+      key: stock.id,
+      id: stock.id,
+      article_id: stock.article_id,
+      quantity: stock.quantity,
+      branch: branch?.name,
+      quantity_next: stock.quantity_next,
+      quantity_next_date: stock.quantity_next_date
+    };
+  });
 
   const tableHeader = [
     { name: "Id", key: "id" },

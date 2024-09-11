@@ -38,7 +38,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">PAYMENT CONDITIONS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

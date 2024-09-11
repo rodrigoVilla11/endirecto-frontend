@@ -1,3 +1,4 @@
+"use client"
 import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -36,7 +37,7 @@ const page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">SELLERS</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      <Table headers={tableHeader} data={tableData}/>
     </div>
   );
 };

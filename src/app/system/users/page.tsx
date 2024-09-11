@@ -2,34 +2,41 @@
 import Header from "@/app/components/components/Header";
 import Input from "@/app/components/components/Input";
 import Table from "@/app/components/components/Table";
+import { useGetBranchByIdQuery, useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
 import React from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 
 const page = () => {
+  const { data: branchData } = useGetBranchesQuery(null);
   const { data, error, isLoading, refetch } = useGetUsersQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
-  const tableData = data?.map((user) => ({
-    key: user._id,
-    id: user._id,
-    name: user.username,
-    email: user.email,
-    role: user.role,
-    branch: user.branch,
-    zone: user.zone,
-    edit: <FaPencil className="text-center text-lg" />,
-    erase: <FaTrashCan className="text-center text-lg" />
-  }));
+
+  
+  const tableData = data?.map((user) => {
+    const branch = branchData?.find((data) => data.id == user.branch)
+    return {
+      key: user._id,
+      id: user._id,
+      name: user.username,
+      email: user.email,
+      role: user.role,
+      branch: branch?.name,
+      zone: user.zone ? user.zone : "No Zone",
+      edit: <FaPencil className="text-center text-lg" />,
+      erase: <FaTrashCan className="text-center text-lg" />,
+    };
+  });
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "User", key: "user" },
     { name: "Email", key: "email" },
     { name: "Role", key: "role" },
     { name: "Branch", key: "branch" },
-    { name: "Salesman", key: "salesman" },
+    { name: "Zone", key: "zone" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
