@@ -21,7 +21,7 @@ const Table = ({ headers, data }: any) => {
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 ">
             {data.map((row: any, index: any) => (
               <tr key={row.key || index}>
                 {Object.keys(row).map((key, i) => (

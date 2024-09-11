@@ -26,6 +26,8 @@ import { pendingsApi } from "./services/pendingsApi";
 import { pricesListsApi } from "./services/pricesListsApi";
 import { reclaimsTypesApi } from "./services/reclaimsTypes";
 import { technicalDetailsApi } from "./services/technicalDetails";
+import { faqsApi } from "./services/faqsApi";
+import { reclaimsApi } from "./services/reclaimsApi";
 
 export const store = configureStore({
   reducer: {
@@ -55,6 +57,8 @@ export const store = configureStore({
     pricesListsApi: pricesListsApi.reducer,
     reclaimsTypesApi: reclaimsTypesApi.reducer,
     technicalDetailsApi: technicalDetailsApi.reducer,
+    faqsApi: faqsApi.reducer,
+    reclaimsApi: reclaimsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
@@ -84,6 +88,8 @@ export const store = configureStore({
       pricesListsApi.middleware,
       reclaimsTypesApi.middleware,
       technicalDetailsApi.middleware,
+      faqsApi.middleware,
+      reclaimsApi.middleware,
     ]),
 });
 
