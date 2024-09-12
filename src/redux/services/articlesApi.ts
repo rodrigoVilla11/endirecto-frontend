@@ -7,7 +7,7 @@ type Article = {
   description_alt?: string; // DESCRIPCION ALTERNATIVA XRA SELECCION
   supplier_code: string; // CODIGO DE PROVEEDOR
   barcode?: string; // CODIGO DE BARRA
-  images?: string; // URL DE IMAGENES (SEPARADOS POR ;)
+  images?: string[]; // URL DE IMAGENES (SEPARADOS POR ;)
   images_status?: "DOWNLOADED" | "PENDING"; // ESTADO DE DESCARGA
   pdfs?: string; // URL DE PDFS (SEPARADOS POR ;)
   iva?: number; // PORCENTAJE IVA
@@ -44,6 +44,12 @@ type Article = {
   deleted_at: string; // FECHA DE ELIMINACIÓN
 };
 
+type UpdateArticlesPayload = {
+  id: string;
+  images?: string[]; // URL DE IMAGENES (SEPARADOS POR ;)
+  pdfs?: string[]; // URL DE PDFS (SEPARADOS POR ;)
+};
+
 export const articlesApi = createApi({
   reducerPath: "articlesApi",
   baseQuery: fetchBaseQuery({
@@ -75,7 +81,32 @@ export const articlesApi = createApi({
     getArticleById: builder.query<Article, { id: string }>({
       query: ({ id }) => `/articles/${id}`,
     }),
+    countArticles: builder.query<number, null>({
+      query: () => {
+        return `/articles/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
+    updateArticle: builder.mutation<Article, UpdateArticlesPayload>({
+      query: ({ id, ...updatedArticle }) => ({
+        url: `/articles/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: updatedArticle,
+      }),
+    }),
+    deleteArticle: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetArticlesQuery, useGetArticleByIdQuery, useGetAllArticlesQuery } = articlesApi;
+export const {
+  useGetArticlesQuery,
+  useGetArticleByIdQuery,
+  useGetAllArticlesQuery,
+  useCountArticlesQuery,
+  useDeleteArticleMutation,
+  useUpdateArticleMutation,
+} = articlesApi;

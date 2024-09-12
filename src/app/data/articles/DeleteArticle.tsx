@@ -1,27 +1,28 @@
-import React from 'react';
-import { useDeleteFaqMutation } from '@/redux/services/faqsApi';
+import { useDeleteArticleMutation } from '@/redux/services/articlesApi';
+import React from 'react'
 
-type DeleteFaqProps = {
-  faqId: string;
+
+type DeleteArticleProps = {
+  articleId: string;
   closeModal: () => void;
 };
 
-const DeleteFaq = ({ faqId, closeModal }: DeleteFaqProps) => {
-  const [deleteFaq, { isLoading, isSuccess, isError }] = useDeleteFaqMutation();
+const DeleteArticleComponent = ({ articleId, closeModal }: DeleteArticleProps) => {
+  const [deleteArticle, { isLoading, isSuccess, isError }] = useDeleteArticleMutation();
 
   const handleDelete = async () => {
     try {
-      await deleteFaq(faqId).unwrap();
+      await deleteArticle(articleId).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error deleting FAQ:', err);
+      console.error('Error deleting Article:', err);
     }
   };
 
   return (
-      <div className="p-4">
+    <div className="p-4">
         <h2 className="text-lg mb-4">Confirm Delete</h2>
-        <p>Are you sure you want to delete this FAQ?</p>
+        <p>Are you sure you want to delete this Article?</p>
         <div className="flex justify-end gap-4 mt-4">
           <button
             type="button"
@@ -38,11 +39,11 @@ const DeleteFaq = ({ faqId, closeModal }: DeleteFaqProps) => {
           >
             {isLoading ? 'Deleting...' : 'Delete'}
           </button>
-          {isSuccess && <p className="text-green-500">FAQ deleted successfully!</p>}
-          {isError && <p className="text-red-500">Error deleting FAQ</p>}
+          {isSuccess && <p className="text-green-500">Article deleted successfully!</p>}
+          {isError && <p className="text-red-500">Error deleting Article</p>}
         </div>
       </div>
-  );
-};
+  )
+}
 
-export default DeleteFaq;
+export default DeleteArticleComponent

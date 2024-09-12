@@ -5,7 +5,7 @@ export enum NotificationType {
   PRESUPUESTO = "presupuesto"
 }
 type Notifications= {
-  _id?: string;
+  _id: string;
   title: string;
   type: NotificationType;
   brand_id: string;
@@ -16,6 +16,17 @@ type Notifications= {
   read?: boolean;
   created_at?: Date;
   updated_at?: Date;
+};
+
+type CreateNotificationPayload = {
+  _id?: string;
+  title: string;
+  type: NotificationType;
+  brand_id: string;
+  schedule_from: string;
+  schedule_to: string;
+  description: string;
+  link: string;
 };
 
 export const notificationsApi = createApi({
@@ -37,7 +48,20 @@ export const notificationsApi = createApi({
     getNotificationById: builder.query<Notifications, { id: string }>({
       query: ({ id }) => `/notifications/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+    createNotification: builder.mutation<Notifications, CreateNotificationPayload>({
+      query: (newNotification) => ({
+        url: `/notifications?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: newNotification,
+      }),
+    }),
+    deleteNotification: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/notifications/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetNotificationsQuery, useGetNotificationByIdQuery } = notificationsApi;
+export const { useGetNotificationsQuery, useGetNotificationByIdQuery, useCreateNotificationMutation, useDeleteNotificationMutation } = notificationsApi;

@@ -7,8 +7,8 @@ import { useGetFaqsQuery } from "@/redux/services/faqsApi";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import { FaPlus } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
-import CreateFaqComponent from "./createFaq";
-import UpdateFaqComponent from "./updateFaq";
+import CreateFaqComponent from "./CreateFaq";
+import UpdateFaqComponent from "./UpdateFaq";
 import DeleteFaq from "./DeleteFaq";
 
 const Page = () => {
