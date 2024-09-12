@@ -11,6 +11,7 @@ type Customer = {
   cuit: string;
   branch_id: string;
   payment_condition_id: string;
+  notifications_id: string[];
   price_list_id: string;
   seller_id: string;
 };
@@ -18,7 +19,7 @@ type Customer = {
 export const customerApi = createApi({
   reducerPath: "customerApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || 'http://localhost:3000', // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || 'http://localhost:3000', 
   }),
   endpoints: (builder) => ({
     getCustomers: builder.query<Customer[], null>({

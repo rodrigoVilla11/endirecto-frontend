@@ -6,6 +6,16 @@ type Faqs = {
   answer: string;
 };
 
+type CreateFaqsPayload = {
+  question: string;
+  answer: string;
+};
+
+type UpdateFaqsPayload = {
+  _id: string;
+  question?: string;
+  answer?: string;
+};
 export const faqsApi = createApi({
   reducerPath: "faqsApi",
   baseQuery: fetchBaseQuery({
@@ -25,7 +35,28 @@ export const faqsApi = createApi({
     getFaqById: builder.query<Faqs, { id: string }>({
       query: ({ id }) => `/faqs/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+    createFaq: builder.mutation<Faqs, CreateFaqsPayload>({
+      query: (newFaq) => ({
+        url: `/faqs?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: newFaq,
+      }),
+    }),
+    updateFaq: builder.mutation<Faqs, UpdateFaqsPayload>({
+      query: ({ _id, ...updatedFaq }) => ({
+        url: `/faqs/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: updatedFaq,
+      }),
+    }),
+    deleteFaq: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/faqs/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetFaqsQuery, useGetFaqByIdQuery } = faqsApi;
+export const { useGetFaqsQuery, useGetFaqByIdQuery, useCreateFaqMutation, useUpdateFaqMutation, useDeleteFaqMutation } =
+  faqsApi;

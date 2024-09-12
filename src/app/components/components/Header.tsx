@@ -6,7 +6,7 @@ const Header = ({ headerBody }: any) => {
     <div className="h-auto m-5 bg-white p-2 flex flex-col justify-between text-sm">
       <div className="flex justify-end items-center w-full h-1/2 border-b-2 p-2 gap-4 ">
         {headerBody.buttons.map((button: any, index: any) => (
-          <Buttons key={index} logo={button.logo} title={button.title} />
+          <Buttons key={index} logo={button.logo} title={button.title} onClick={button.onClick}/>
         ))}
       </div>
       {headerBody.secondSection && <div className="flex justify-start items-center w-full h-1/2 border-b-2 p-2 py-4 gap-4">
