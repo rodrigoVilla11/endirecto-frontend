@@ -1,5 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useGetFaqByIdQuery, useUpdateFaqMutation } from '@/redux/services/faqsApi';
+import React, { useEffect, useState } from "react";
+import {
+  useGetFaqByIdQuery,
+  useUpdateFaqMutation,
+} from "@/redux/services/faqsApi";
 
 type UpdateFaqComponentProps = {
   faqId: string;
@@ -7,26 +10,42 @@ type UpdateFaqComponentProps = {
 };
 
 const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
-    
   const { data: faq, error, isLoading } = useGetFaqByIdQuery({ id: faqId });
-  const [updateFaq, { isLoading: isUpdating, isSuccess, isError }] = useUpdateFaqMutation();
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-    
+  const [updateFaq, { isLoading: isUpdating, isSuccess, isError }] =
+    useUpdateFaqMutation();
+  const [form, setForm] = useState({
+    _id: "",
+    question: "",
+    answer: "",
+  });
+  
   useEffect(() => {
     if (faq) {
-      setQuestion(faq.question);
-      setAnswer(faq.answer);
+      setForm({
+        _id: faq._id,
+        question: faq.question ?? "",
+        answer: faq.answer ?? "",
+      });
     }
   }, [faq]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateFaq({ _id: faqId, question, answer }).unwrap();
+      await updateFaq(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error al actualizar la FAQ:', err);
+      console.error("Error al actualizar la FAQ:", err);
     }
   };
 
@@ -40,18 +59,18 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
         <label className="flex flex-col">
           Question:
           <textarea
-            value={question}
-            placeholder= {question}
-            onChange={(e) => setQuestion(e.target.value)}
+            name="question"
+            value={form.question}
+            onChange={handleChange}
             className="border border-black rounded-md w-96 h-40 p-2"
           />
         </label>
         <label className="flex flex-col">
           Answer:
           <textarea
-            value={answer}
-            placeholder={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            name="answer"
+            value={form.answer}
+            onChange={handleChange}
             className="border border-black rounded-md w-96 h-40 p-2"
           />
         </label>
@@ -65,13 +84,17 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white ${isUpdating ? "bg-gray-500" : "bg-success"}`}
+            className={`rounded-md p-2 text-white ${
+              isUpdating ? "bg-gray-500" : "bg-success"
+            }`}
             disabled={isUpdating}
           >
             {isUpdating ? "Updating..." : "Update"}
           </button>
         </div>
-        {isSuccess && <p className="text-green-500">FAQ updated successfully!</p>}
+        {isSuccess && (
+          <p className="text-green-500">FAQ updated successfully!</p>
+        )}
         {isError && <p className="text-red-500">Error updating FAQ</p>}
       </form>
     </div>

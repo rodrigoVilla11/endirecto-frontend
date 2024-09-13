@@ -1,14 +1,37 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+export enum Roles {
+  ADMINISTRADOR = 'administrador',
+  OPERADOR = 'operador',
+  MARKETING = 'marketing',
+  VENDEDOR = 'vendedor'
+}
+
 type User = {
   _id: string;
   username: string;
   password: string;
   email: string;
-  role: string;
+  role: Roles;
   username_customer: string;
   branch: string;
   zone?: string;
+};
+type CreateUserPayload = {
+  _id?: string;
+  username: string;
+  password: string;
+  email: string;
+  role: Roles;
+  branch: string;
+};
+type UpdateUserPayload = {
+  _id: string;
+  username: string;
+  password: string;
+  email: string;
+  role: Roles;
+  branch: string;
 };
 
 export const usersApi = createApi({
@@ -18,7 +41,19 @@ export const usersApi = createApi({
   }),
   endpoints: (builder) => ({
     getUsers: builder.query<User[], null>({
-      query: () => `/users?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/users/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      transformResponse: (response: User[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron usuarios en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+    getUsersPag: builder.query<User[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/users?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron usuarios en la respuesta");
@@ -30,7 +65,33 @@ export const usersApi = createApi({
     getUserById: builder.query<User, { id: string }>({
       query: ({ id }) => `/users/${id}`,
     }),
+    createUser: builder.mutation<User, CreateUserPayload>({
+      query: (newUser) => ({
+        url: `/users/register?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: newUser,
+      }),
+    }),
+
+    countUsers: builder.query<number, null>({
+      query: () => {
+        return `/users/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
+    updateUser: builder.mutation<User, UpdateUserPayload>({
+      query: ({ _id, ...updatedUser }) => ({
+        url: `/users/update-one/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: updatedUser,
+      }),
+    }),
+    deleteUser: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/users/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetUsersQuery, useGetUserByIdQuery } = usersApi;
+export const { useGetUsersQuery, useGetUserByIdQuery, useCountUsersQuery, useDeleteUserMutation, useUpdateUserMutation, useGetUsersPagQuery, useCreateUserMutation } = usersApi;

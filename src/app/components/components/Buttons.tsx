@@ -1,6 +1,6 @@
 import React from 'react'
 interface ButtonsProps {
-  logo: React.ReactNode;
+  logo?: React.ReactNode;
   title: string;
   onClick?: () => void;
 }

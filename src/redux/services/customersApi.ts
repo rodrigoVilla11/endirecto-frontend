@@ -19,11 +19,24 @@ type Customer = {
 export const customerApi = createApi({
   reducerPath: "customerApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || 'http://localhost:3000', 
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getCustomers: builder.query<Customer[], null>({
-      query: () => `/customers?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/customers/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      transformResponse: (response: Customer[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron clientes en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+
+    getCustomersPag: builder.query<Customer[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/customers?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
       transformResponse: (response: Customer[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron clientes en la respuesta");
@@ -35,7 +48,12 @@ export const customerApi = createApi({
     getCustomerById: builder.query<Customer, { id: string }>({
       query: ({ id }) => `/customers/${id}`,
     }),
+    countCustomers: builder.query<number, null>({
+      query: () => {
+        return `/customers/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
   }),
 });
 
-export const { useGetCustomersQuery, useGetCustomerByIdQuery } = customerApi;
+export const { useGetCustomersQuery, useGetCustomerByIdQuery, useGetCustomersPagQuery, useCountCustomersQuery } = customerApi;

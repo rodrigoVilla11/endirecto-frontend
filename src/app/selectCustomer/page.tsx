@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { CgProfile } from "react-icons/cg";
 import { FaAddressBook } from "react-icons/fa";
 import { CiMenuKebab } from "react-icons/ci";
@@ -10,11 +10,20 @@ import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import Buttons from "../components/components/Buttons";
 import ButtonOnOff from "../components/components/ButtonOnOff";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useCountCustomersQuery, useGetCustomersPagQuery, useGetCustomersQuery } from "@/redux/services/customersApi";
 require("dotenv").config();
 
 const SelectCustomer = () => {
-  const { data, error, isLoading, refetch } = useGetCustomersQuery(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
+  const { data, error, isLoading, refetch } = useGetCustomersPagQuery({
+    page,
+    limit,
+  });
+
+  const { data: countCustomersData } = useCountCustomersQuery(null);
+
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -77,14 +86,46 @@ const SelectCustomer = () => {
       { content: <ButtonOnOff title={"Debt"} /> },
       { content: <ButtonOnOff title={"Expired D."} /> },
     ],
-    results: `${data?.length} Results`,
+    results: `${countCustomersData || 0} Results`,
   };
+  const handlePreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (page < Math.ceil((countCustomersData || 0) / limit)) {
+      setPage(page + 1);
+    }
+  };
+
 
   return (
     <div className="gap-4">
       <h3 className="text-bold p-4">SELECT CUSTOMER </h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} data={tableData} />
+
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <p>
+          Page {page} of {Math.ceil((countCustomersData || 0) / limit)}
+        </p>
+        <button
+          onClick={handleNextPage}
+          disabled={page === Math.ceil((countCustomersData || 0) / limit)}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

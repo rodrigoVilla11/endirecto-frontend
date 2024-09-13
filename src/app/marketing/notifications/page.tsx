@@ -14,7 +14,7 @@ import DeleteNotificationComponent from "./DeleteNotification";
 
 const page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false); // Estado para el modal de eliminación
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentNotificationId, setCurrentNotificationId] = useState<
     string | null
   >(null);

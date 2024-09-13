@@ -31,7 +31,6 @@ const Page = () => {
     limit,
   });
 
-  console.log(countArticlesData);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -119,7 +118,6 @@ const Page = () => {
     results: `${countArticlesData || 0} Results`,
   };
 
-  // Funciones para cambiar de página
   const handlePreviousPage = () => {
     if (page > 1) {
       setPage(page - 1);
