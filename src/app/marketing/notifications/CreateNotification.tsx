@@ -2,7 +2,7 @@ import { useGetBrandsQuery } from '@/redux/services/brandsApi';
 import { NotificationType, useCreateNotificationMutation } from '@/redux/services/notificationsApi';
 import React, { useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
-import { format } from 'date-fns'; // Importa la función 'format'
+import { format } from 'date-fns'; 
 
 const CreateNotificationComponent = ({ closeModal }: { closeModal: () => void }) => {
   const [form, setForm] = useState({
