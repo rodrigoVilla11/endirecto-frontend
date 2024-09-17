@@ -14,7 +14,7 @@ import DeleteFaq from "./DeleteFaq";
 const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false); // Estado para el modal de eliminación
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false); 
   const [currentFaqId, setCurrentFaqId] = useState<string | null>(null);
 
   const { data: faqs, error, isLoading, refetch } = useGetFaqsQuery(null);

@@ -41,7 +41,7 @@ export const usersApi = createApi({
   }),
   endpoints: (builder) => ({
     getUsers: builder.query<User[], null>({
-      query: () => `/users/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/users?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron usuarios en la respuesta");

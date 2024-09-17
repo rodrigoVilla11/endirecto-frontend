@@ -25,19 +25,38 @@ export const documentsApi = createApi({
   }),
   endpoints: (builder) => ({
     getDocuments: builder.query<Document[], null>({
-      query: () => `/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/documents/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Document[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
+          console.error("No se recibieron documentos en la respuesta");
           return [];
         }
         return response;
       },
     }),
+    getDocumentsPag: builder.query<Document[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/documents?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: Document[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron documentos en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+  
     getDocumentById: builder.query<Document, { id: string }>({
       query: ({ id }) => `/documents/${id}`,
     }),
+    countDocuments: builder.query<number, null>({
+      query: () => {
+        return `/documents/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
+  
   }),
 });
 
-export const { useGetDocumentsQuery, useGetDocumentByIdQuery } = documentsApi;
+export const { useGetDocumentsQuery, useGetDocumentByIdQuery, useGetDocumentsPagQuery, useCountDocumentsQuery } = documentsApi;
