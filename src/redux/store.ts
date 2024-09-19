@@ -31,6 +31,7 @@ import { reclaimsApi } from "./services/reclaimsApi";
 import { notificationsApi } from "./services/notificationsApi";
 import { marketingApi } from "./services/marketingApi";
 import { collectionsApi } from "./services/collectionsApi";
+import { crmApi } from "./services/crmApi";
 
 export const store = configureStore({
   reducer: {
@@ -65,6 +66,7 @@ export const store = configureStore({
     notificationsApi: notificationsApi.reducer,
     marketingApi: marketingApi.reducer,
     collectionsApi: collectionsApi.reducer,
+    crmApi: crmApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
@@ -98,7 +100,8 @@ export const store = configureStore({
       reclaimsApi.middleware,
       notificationsApi.middleware,
       marketingApi.middleware,
-      collectionsApi.middleware
+      collectionsApi.middleware,
+      crmApi.middleware
     ]),
 });
 

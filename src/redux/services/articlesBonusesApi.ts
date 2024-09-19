@@ -21,10 +21,10 @@ export const articlesBonusesApi = createApi({
   }),
   endpoints: (builder) => ({
     getArticlesBonuses: builder.query<ArticleBonus[], null>({
-      query: () => `/articles-bonuses?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/articles-bonuses/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticleBonus[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
+          console.error("No se recibieron bonificaciones de articulos en la respuesta");
           return [];
         }
         return response;
@@ -33,7 +33,24 @@ export const articlesBonusesApi = createApi({
     getArticleBonusById: builder.query<ArticleBonus, { id: string }>({
       query: ({ id }) => `/articles-bonuses/${id}`,
     }),
+    getArticlesBonusesPag: builder.query<ArticleBonus[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/articles-bonuses?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: ArticleBonus[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron bonificaciones de articlos en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+    countArticlesBonuses: builder.query<number, null>({
+      query: () => {
+        return `/articles-bonuses/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
   }),
 });
 
-export const { useGetArticlesBonusesQuery, useGetArticleBonusByIdQuery } = articlesBonusesApi;
+export const { useGetArticlesBonusesQuery, useGetArticleBonusByIdQuery, useGetArticlesBonusesPagQuery, useCountArticlesBonusesQuery } = articlesBonusesApi;

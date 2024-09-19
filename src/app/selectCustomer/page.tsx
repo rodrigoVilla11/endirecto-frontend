@@ -10,12 +10,13 @@ import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import Buttons from "../components/components/Buttons";
 import ButtonOnOff from "../components/components/ButtonOnOff";
-import { useCountCustomersQuery, useGetCustomersPagQuery, useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useCountCustomersQuery, useGetCustomersPagQuery } from "@/redux/services/customersApi";
 require("dotenv").config();
 
 const SelectCustomer = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const { data, error, isLoading, refetch } = useGetCustomersPagQuery({
     page,
@@ -24,13 +25,17 @@ const SelectCustomer = () => {
 
   const { data: countCustomersData } = useCountCustomersQuery(null);
 
-
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
+  // Función para manejar el clic en el menú Kebab
+  const toggleMenu = (customerId: string) => {
+    setActiveMenu(activeMenu === customerId ? null : customerId);
+  };
+
   const tableData =
     data?.map((customer) => ({
-      key: customer.id, 
+      key: customer.id,
       icon: (
         <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
           <p>{customer.name.charAt(0).toUpperCase()}</p>{" "}
@@ -41,7 +46,7 @@ const SelectCustomer = () => {
       address: (
         <div className="relative group">
           <span>
-            <FaAddressBook className="text-center text-xl"/>
+            <FaAddressBook className="text-center text-xl" />
           </span>
           <div className="absolute left-full bottom-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
             {customer.address}
@@ -49,13 +54,30 @@ const SelectCustomer = () => {
           </div>
         </div>
       ),
-      "payment-condition": customer.payment_condition_id, //Conectar populate
+      "payment-condition": customer.payment_condition_id, // Conectar populate
       "status-account": "$0,00",
       "expired-debt": "$0,00", // Conectar
       "use-days-web": "50%", // Conectar
       "articles-on-cart": "3", // Conectar
       gps: <FiMapPin />,
-      menu: <CiMenuKebab className="text-center text-xl" />,
+      menu: (
+        <div className="relative">
+          <CiMenuKebab
+            className="text-center text-xl cursor-pointer"
+            onClick={() => toggleMenu(customer.id)} 
+          />
+          {activeMenu === customer.id && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
+              <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+                Actualizar GPS
+              </button>
+              <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+                Resetear contraseña
+              </button>
+            </div>
+          )}
+        </div>
+      ),
     })) || [];
 
   const tableHeader = [
@@ -72,7 +94,10 @@ const SelectCustomer = () => {
     { name: "Use Days WEB (%)", key: "use-days-web" },
     { name: "Articles on Cart", key: "articles-on-cart" },
     { name: "GPS", key: "gps" },
-    { component: <CiMenuKebab className="text-center text-xl" />, key: "menu" },
+    {
+      component: <CiMenuKebab className="text-center text-xl" />,
+      key: "menu",
+    },
   ];
 
   const headerBody = {
@@ -88,6 +113,7 @@ const SelectCustomer = () => {
     ],
     results: `${countCustomersData || 0} Results`,
   };
+
   const handlePreviousPage = () => {
     if (page > 1) {
       setPage(page - 1);
@@ -100,10 +126,9 @@ const SelectCustomer = () => {
     }
   };
 
-
   return (
     <div className="gap-4">
-      <h3 className="text-bold p-4">SELECT CUSTOMER </h3>
+      <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} data={tableData} />
 

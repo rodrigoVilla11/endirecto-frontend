@@ -32,6 +32,23 @@ export const faqsApi = createApi({
         return response;
       },
     }),
+    getFaqsPag: builder.query<Faqs[], { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 } = {}) => {
+        return `/faqs?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: Faqs[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron faqs en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+    countFaqs: builder.query<number, null>({
+      query: () => {
+        return `/faqs/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
     getFaqById: builder.query<Faqs, { id: string }>({
       query: ({ id }) => `/faqs/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
@@ -58,5 +75,12 @@ export const faqsApi = createApi({
   }),
 });
 
-export const { useGetFaqsQuery, useGetFaqByIdQuery, useCreateFaqMutation, useUpdateFaqMutation, useDeleteFaqMutation } =
-  faqsApi;
+export const {
+  useGetFaqsQuery,
+  useGetFaqByIdQuery,
+  useCreateFaqMutation,
+  useUpdateFaqMutation,
+  useDeleteFaqMutation,
+  useCountFaqsQuery,
+  useGetFaqsPagQuery,
+} = faqsApi;
