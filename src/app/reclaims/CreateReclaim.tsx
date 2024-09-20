@@ -25,6 +25,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     valid: Valid.S,
     date: Date.now(),
     status: Status.PENDING,
+    cause: ""
   });
 
   const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } =
@@ -106,6 +107,17 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             className="border border-black rounded-md p-2"
           />
         </label>
+{/* 
+        <label className="flex flex-col">
+          Cause:
+          <textarea
+            name="cause"
+            value={form.cause}
+            placeholder="New cause"
+            onChange={handleChange}
+            className="border border-black rounded-md p-2"
+          />
+        </label> */}
 
         <label className="flex flex-col">
           Article:

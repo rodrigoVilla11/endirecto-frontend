@@ -18,6 +18,7 @@ import { useGetUsersQuery } from "@/redux/services/usersApi";
 import Modal from "../components/components/Modal";
 import CreateReclaimComponent from "./CreateReclaim";
 import DeleteReclaim from "./DeleteReclaim";
+import UpdateReclaimComponent from "./UpdateReclaim";
 // import UpdateReclaimComponent from "./UpdateReclaim";
 
 const page = () => {
@@ -84,8 +85,8 @@ const page = () => {
       user: user?.username,
       branch: branch?.name,
       data: reclaim.date,
-      edit: <FaPencil className="text-center text-lg" />,
-      erase: <FaTrashCan className="text-center text-lg" />,
+      edit: <FaPencil className="text-center text-lg hover:cursor-pointer" onClick={() => openUpdateModal(reclaim._id)}/>,
+      erase: <FaTrashCan className="text-center text-lg hover:cursor-pointer" onClick={() => openDeleteModal(reclaim._id)}/>,
     };
   });
   const tableHeader = [
@@ -167,14 +168,14 @@ const page = () => {
         <CreateReclaimComponent closeModal={closeCreateModal} />
       </Modal>
 
-      {/* <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
         {currentReclaimId && (
           <UpdateReclaimComponent
             reclaimId={currentReclaimId}
             closeModal={closeUpdateModal}
           />
         )}
-      </Modal> */}
+      </Modal>
 
       <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
         <DeleteReclaim

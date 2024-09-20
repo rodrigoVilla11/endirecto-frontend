@@ -115,7 +115,7 @@ export const reclaimsApi = createApi({
       },
     }),
     getReclaimById: builder.query<Reclaims, { id: string }>({
-      query: ({ id }) => `/faqs/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) => `/reclaims/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     createReclaim: builder.mutation<Reclaims, CreateReclaimsPayload>({
       query: (newReclaims) => ({
@@ -125,10 +125,10 @@ export const reclaimsApi = createApi({
       }),
     }),
     updateReclaim: builder.mutation<Reclaims, UpdateReclaimsPayload>({
-      query: ({ _id, ...updatedFaq }) => ({
+      query: ({ _id, ...updatedReclaims }) => ({
         url: `/reclaims/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PUT",
-        body: updatedFaq,
+        body: updatedReclaims,
       }),
     }),
     deleteReclaim: builder.mutation<void, string>({
