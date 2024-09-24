@@ -8,7 +8,7 @@ import { useCountCollectionQuery, useGetCollectionsPagQuery } from "@/redux/serv
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const status = "CHARGED"
@@ -79,4 +79,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

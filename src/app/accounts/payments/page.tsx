@@ -27,7 +27,7 @@ enum status {
   CANCELED = "CANCELED",
 }
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -201,4 +201,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
