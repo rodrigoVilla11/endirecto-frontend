@@ -60,7 +60,7 @@ const Page = () => {
     <div className="gap-4">
       <h3 className="font-bold p-4">CART</h3>
       <Header headerBody={headerBody} />
-      <Table headers={tableHeader} />
+      {/* <Table headers={tableHeader} /> */}
     </div>
   );
 };
