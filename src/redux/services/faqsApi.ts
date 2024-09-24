@@ -32,21 +32,27 @@ export const faqsApi = createApi({
         return response;
       },
     }),
-    getFaqsPag: builder.query<Faqs[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/faqs?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getFaqsPag: builder.query<
+      Faqs[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/faqs?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Faqs[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron faqs en la respuesta");
+          console.error(
+            "No se recibieron preguntas frecuentes en la respuesta"
+          );
           return [];
         }
         return response;
       },
     }),
+
     countFaqs: builder.query<number, null>({
       query: () => {
-        return `/faqs/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/faqs/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
     getFaqById: builder.query<Faqs, { id: string }>({

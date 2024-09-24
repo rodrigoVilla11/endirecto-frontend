@@ -99,9 +99,6 @@ const Page = () => {
           </select>
         ),
       },
-      {
-        content: <Input placeholder={"Search..."} />,
-      },
     ],
     results: `${countCrmData || 0} Results`,
   };

@@ -26,8 +26,33 @@ export const sellersApi = createApi({
     getSellerById: builder.query<Seller, { id: string }>({
       query: ({ id }) => `/sellers/${id}`,
     }),
+    getSellersPag: builder.query<
+      Seller[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/sellers?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: Seller[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron vendedores en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+
+    countSellers: builder.query<number, null>({
+      query: () => {
+        return `/sellers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
   }),
 });
 
-export const { useGetSellersQuery, useGetSellerByIdQuery } =
-sellersApi;
+export const {
+  useGetSellersQuery,
+  useGetSellerByIdQuery,
+  useGetSellersPagQuery,
+  useCountSellersQuery,
+} = sellersApi;

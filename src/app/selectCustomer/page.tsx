@@ -10,17 +10,22 @@ import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import Buttons from "../components/components/Buttons";
 import ButtonOnOff from "../components/components/ButtonOnOff";
-import { useCountCustomersQuery, useGetCustomersPagQuery } from "@/redux/services/customersApi";
+import {
+  useCountCustomersQuery,
+  useGetCustomersPagQuery,
+} from "@/redux/services/customersApi";
 require("dotenv").config();
 
 const SelectCustomer = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data, error, isLoading, refetch } = useGetCustomersPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
 
   const { data: countCustomersData } = useCountCustomersQuery(null);
@@ -64,7 +69,7 @@ const SelectCustomer = () => {
         <div className="relative">
           <CiMenuKebab
             className="text-center text-xl cursor-pointer"
-            onClick={() => toggleMenu(customer.id)} 
+            onClick={() => toggleMenu(customer.id)}
           />
           {activeMenu === customer.id && (
             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
@@ -107,11 +112,26 @@ const SelectCustomer = () => {
     ],
     filters: [
       { content: <Buttons title={"Seller"} /> },
-      { content: <Input placeholder={"Search..."} /> },
+      {
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
+      },
       { content: <ButtonOnOff title={"Debt"} /> },
       { content: <ButtonOnOff title={"Expired D."} /> },
     ],
-    results: `${countCustomersData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countCustomersData || 0} Results`,
   };
 
   const handlePreviousPage = () => {

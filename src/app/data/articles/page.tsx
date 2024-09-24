@@ -22,6 +22,7 @@ const Page = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: brandData } = useGetBrandsQuery(null);
   const { data: itemData } = useGetItemsQuery(null);
@@ -29,8 +30,8 @@ const Page = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
     limit,
+    query: searchQuery,
   });
-
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -112,10 +113,23 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${countArticlesData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countArticlesData || 0} Results`,
   };
 
   const handlePreviousPage = () => {

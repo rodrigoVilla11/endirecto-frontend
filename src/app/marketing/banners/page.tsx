@@ -6,7 +6,10 @@ import Table from "@/app/components/components/Table";
 import { FaPlus } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import Modal from "@/app/components/components/Modal";
-import { useCountMarketingQuery, useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
+import {
+  useCountMarketingQuery,
+  useGetMarketingByFilterQuery,
+} from "@/redux/services/marketingApi";
 import DeleteBannerComponent from "./DeleteBanner";
 import UpdateBannerComponent from "./UpdateBanner";
 import CreateBannerComponent from "./CreateBanner";
@@ -17,9 +20,9 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<
-    string | null
-  >(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const filterBy = "headers";
   const {
@@ -31,14 +34,12 @@ const Page = () => {
 
   const { data: countMarketingData } = useCountMarketingQuery(null);
 
-
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
     refetch();
   };
 
-  
   const openUpdateModal = (id: string) => {
     setCurrentMarketingId(id);
     setUpdateModalOpen(true);
@@ -70,14 +71,14 @@ const Page = () => {
         sequence: popup.headers.sequence,
         enable: popup.headers.enable ? "true" : "false",
         homeWeb: popup.headers.homeWeb,
-        headerWeb: popup.headers.headerWeb, 
+        headerWeb: popup.headers.headerWeb,
         url: popup.headers.url,
         edit: (
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openUpdateModal(popup._id)}
-            />
-          ),
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(popup._id)}
+          />
+        ),
         erase: (
           <FaTrashCan
             className="text-center text-lg hover:cursor-pointer"
@@ -105,15 +106,10 @@ const Page = () => {
         onClick: openCreateModal,
       },
     ],
-    filters: [
-      {
-        content: <Input placeholder={"Search..."} />,
-      },
-    ],
+    filters: [],
     results: `${marketing?.length} Results`,
   };
 
-  
   const handlePreviousPage = () => {
     if (page > 1) {
       setPage(page - 1);
@@ -125,7 +121,6 @@ const Page = () => {
       setPage(page + 1);
     }
   };
-
 
   return (
     <div className="gap-4">
@@ -171,7 +166,6 @@ const Page = () => {
           Next
         </button>
       </div>
-
     </div>
   );
 };

@@ -1,9 +1,15 @@
-import React from 'react'
+import React from "react";
 
-const Input = ({placeholder} : any) => {
+const Input = ({ placeholder, value, onChange, onKeyDown }: any) => {
   return (
-    <input placeholder={placeholder} className="border border-gray-300 p-2 rounded-md outline-none"/>
-  )
-}
+    <input
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+      className="border border-gray-300 p-2 rounded-md outline-none"
+    />
+  );
+};
 
-export default Input
+export default Input;

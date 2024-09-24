@@ -59,11 +59,11 @@ export const marketingApi = createApi({
     }),
 
     getMarketingById: builder.query<Marketing, { id: string }>({
-      query: ({ id }) => `/marketing/${id}`,
+      query: ({ id }) => `/marketing/findOne/${id}`,
     }),
     countMarketing: builder.query<number, null>({
       query: () => {
-        return `/marketing/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/marketing/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
     createMarketing: builder.mutation<Marketing, CreateMarketingPayload>({

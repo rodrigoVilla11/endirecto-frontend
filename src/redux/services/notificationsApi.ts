@@ -2,9 +2,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export enum NotificationType {
   NOVEDAD = "novedad",
   PEDIDO = "pedido",
-  PRESUPUESTO = "presupuesto"
+  PRESUPUESTO = "presupuesto",
 }
-type Notifications= {
+type Notifications = {
   _id: string;
   title: string;
   type: NotificationType;
@@ -46,9 +46,13 @@ export const notificationsApi = createApi({
       },
     }),
     getNotificationById: builder.query<Notifications, { id: string }>({
-      query: ({ id }) => `/notifications/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/notifications/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    createNotification: builder.mutation<Notifications, CreateNotificationPayload>({
+    createNotification: builder.mutation<
+      Notifications,
+      CreateNotificationPayload
+    >({
       query: (newNotification) => ({
         url: `/notifications?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "POST",
@@ -61,7 +65,35 @@ export const notificationsApi = createApi({
         method: "DELETE",
       }),
     }),
+    getNotificationsPag: builder.query<
+      Notifications[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/notifications?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: Notifications[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron usuarios en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
+
+    countNotifications: builder.query<number, null>({
+      query: () => {
+        return `/notifications/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
   }),
 });
 
-export const { useGetNotificationsQuery, useGetNotificationByIdQuery, useCreateNotificationMutation, useDeleteNotificationMutation } = notificationsApi;
+export const {
+  useGetNotificationsQuery,
+  useGetNotificationByIdQuery,
+  useCreateNotificationMutation,
+  useDeleteNotificationMutation,
+  useCountNotificationsQuery,
+  useGetNotificationsPagQuery,
+} = notificationsApi;

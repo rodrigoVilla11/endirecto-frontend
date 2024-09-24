@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export enum Roles {
-  ADMINISTRADOR = 'administrador',
-  OPERADOR = 'operador',
-  MARKETING = 'marketing',
-  VENDEDOR = 'vendedor'
+  ADMINISTRADOR = "administrador",
+  OPERADOR = "operador",
+  MARKETING = "marketing",
+  VENDEDOR = "vendedor",
 }
 
 type User = {
@@ -50,9 +50,12 @@ export const usersApi = createApi({
         return response;
       },
     }),
-    getUsersPag: builder.query<User[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/users?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getUsersPag: builder.query<
+      User[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/users?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
@@ -62,8 +65,14 @@ export const usersApi = createApi({
         return response;
       },
     }),
+
+    countUsers: builder.query<number, null>({
+      query: () => {
+        return `/users/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
     getUserById: builder.query<User, { id: string }>({
-      query: ({ id }) => `/users/${id}`,
+      query: ({ id }) => `/users/findOne/${id}`,
     }),
     createUser: builder.mutation<User, CreateUserPayload>({
       query: (newUser) => ({
@@ -73,11 +82,6 @@ export const usersApi = createApi({
       }),
     }),
 
-    countUsers: builder.query<number, null>({
-      query: () => {
-        return `/users/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
-    }),
     updateUser: builder.mutation<User, UpdateUserPayload>({
       query: ({ _id, ...updatedUser }) => ({
         url: `/users/update-one/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -94,4 +98,12 @@ export const usersApi = createApi({
   }),
 });
 
-export const { useGetUsersQuery, useGetUserByIdQuery, useCountUsersQuery, useDeleteUserMutation, useUpdateUserMutation, useGetUsersPagQuery, useCreateUserMutation } = usersApi;
+export const {
+  useGetUsersQuery,
+  useGetUserByIdQuery,
+  useCountUsersQuery,
+  useDeleteUserMutation,
+  useUpdateUserMutation,
+  useGetUsersPagQuery,
+  useCreateUserMutation,
+} = usersApi;

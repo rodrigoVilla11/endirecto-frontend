@@ -44,9 +44,6 @@ const Page = () => {
           </select>
         ),
       },
-      {
-        content: <Input placeholder={"Search..."} />,
-      },
     ],
     results: "936 Results",
   };

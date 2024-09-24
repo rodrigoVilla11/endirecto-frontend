@@ -33,6 +33,7 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [updateCollection, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCollectionMutation();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -46,13 +47,17 @@ const Page = () => {
   const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const handleChangeStatus = async (collectionId: string, newStatus: status) => {
+  const handleChangeStatus = async (
+    collectionId: string,
+    newStatus: status
+  ) => {
     try {
       await updateCollection({
         _id: collectionId,
@@ -150,10 +155,23 @@ const Page = () => {
         ),
       },
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${countCollectionsData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countCollectionsData || 0} Results`,
   };
 
   const handlePreviousPage = () => {

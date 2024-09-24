@@ -34,9 +34,12 @@ export const documentsApi = createApi({
         return response;
       },
     }),
-    getDocumentsPag: builder.query<Document[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/documents?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getDocumentsPag: builder.query<
+    Document[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/documents?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Document[]) => {
         if (!response || response.length === 0) {
@@ -46,14 +49,15 @@ export const documentsApi = createApi({
         return response;
       },
     }),
-  
-    getDocumentById: builder.query<Document, { id: string }>({
-      query: ({ id }) => `/documents/${id}`,
-    }),
+
     countDocuments: builder.query<number, null>({
       query: () => {
-        return `/documents/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/documents/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
+    }),
+  
+    getDocumentById: builder.query<Document, { id: string }>({
+      query: ({ id }) => `/documents/findOne/${id}`,
     }),
   
   }),

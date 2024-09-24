@@ -11,10 +11,12 @@ import {
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data, error, isLoading, refetch } = useGetFaqsPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
 
   const { data: countFaqsData } = useCountFaqsQuery(null);
@@ -35,10 +37,23 @@ const Page = () => {
     buttons: [],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${countFaqsData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countFaqsData || 0} Results`,
   };
   const handlePreviousPage = () => {
     if (page > 1) {

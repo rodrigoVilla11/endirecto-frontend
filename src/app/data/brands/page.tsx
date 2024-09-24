@@ -16,6 +16,7 @@ const Page = () => {
   const [limit] = useState(10);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: brands,
@@ -25,6 +26,7 @@ const Page = () => {
   } = useGetBrandsPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countBrandsData } = useCountBrandsQuery(null);
 
@@ -69,12 +71,23 @@ const Page = () => {
     buttons: [],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: <Input
+        placeholder={"Search..."}
+        value={searchQuery}
+        onChange={(e: any) => setSearchQuery(e.target.value)}
+        onKeyDown={(e: any) => {
+          if (e.key === "Enter") {
+            refetch(); 
+          }
+        }}
+      />,
       },
     ],
-    results: `${countBrandsData || 0} Results`,
+    results: searchQuery
+    ? `${brands?.length || 0} Results`
+    : `${countBrandsData || 0} Results`,
   };
-  
+
   const handlePreviousPage = () => {
     if (page > 1) {
       setPage(page - 1);

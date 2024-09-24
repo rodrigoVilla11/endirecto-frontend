@@ -3,10 +3,7 @@ import Header from "@/app/components/components/Header";
 import Input from "@/app/components/components/Input";
 import Modal from "@/app/components/components/Modal";
 import Table from "@/app/components/components/Table";
-import {
-  useGetBranchByIdQuery,
-  useGetBranchesQuery,
-} from "@/redux/services/branchesApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import {
   useCountUsersQuery,
   useGetUsersPagQuery,
@@ -25,11 +22,13 @@ const Page = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data, error, isLoading, refetch } = useGetUsersPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countUsersData } = useCountUsersQuery(null);
 
@@ -108,10 +107,23 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${countUsersData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countUsersData || 0} Results`,
   };
 
   const handlePreviousPage = () => {
@@ -139,7 +151,7 @@ const Page = () => {
       <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
         {currentUserId && (
           <UpdateUserComponent
-          userId={currentUserId}
+            userId={currentUserId}
             closeModal={closeUpdateModal}
           />
         )}

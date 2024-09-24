@@ -17,10 +17,12 @@ const Page = () => {
   const [limit] = useState(10);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
 
@@ -77,11 +79,24 @@ const Page = () => {
         content: <Input placeholder={"Date To dd/mm/aaaa"} />,
       },
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
     secondSection: { title: "Total Owed", amount: "$ 306.137.224,33" },
-    results: `${countDocumentsData || 0} Results`,
+    results: searchQuery
+      ? `${data?.length || 0} Results`
+      : `${countDocumentsData || 0} Results`,
   };
 
   const handlePreviousPage = () => {

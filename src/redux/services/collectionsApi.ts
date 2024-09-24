@@ -59,10 +59,10 @@ export const collectionsApi = createApi({
 
     getCollectionsPag: builder.query<
       Collections[],
-      { page?: number; limit?: number, status? : string }
+      { page?: number; limit?: number, status? : string, query?: string  }
     >({
-      query: ({ page = 1, limit = 10, status = "" } = {}) => {
-        return `/collections?page=${page}&limit=${limit}&status=${status}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, status = "" , query = "" } = {}) => {
+        return `/collections?page=${page}&limit=${limit}&status=${status}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Collections[]) => {
         if (!response || response.length === 0) {
@@ -98,7 +98,7 @@ export const collectionsApi = createApi({
     }),
     countCollection: builder.query<number, null>({
         query: () => {
-          return `/collections/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+          return `/collections/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
         },
       }),
   }),

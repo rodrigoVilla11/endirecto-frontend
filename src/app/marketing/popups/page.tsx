@@ -6,7 +6,10 @@ import Table from "@/app/components/components/Table";
 import { FaPlus } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import Modal from "@/app/components/components/Modal";
-import { useCountMarketingQuery, useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
+import {
+  useCountMarketingQuery,
+  useGetMarketingByFilterQuery,
+} from "@/redux/services/marketingApi";
 import DeletePopupComponent from "./DeletePopup";
 import CreatePopupComponent from "./CreatePopup";
 import UpdatePopupComponent from "./UpdatePopup";
@@ -17,9 +20,9 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<
-    string | null
-  >(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const filterBy = "popups";
   const {
@@ -31,14 +34,12 @@ const Page = () => {
 
   const { data: countMarketingData } = useCountMarketingQuery(null);
 
-
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
     refetch();
   };
 
-  
   const openUpdateModal = (id: string) => {
     setCurrentMarketingId(id);
     setUpdateModalOpen(true);
@@ -74,11 +75,11 @@ const Page = () => {
         url: popup.popups.url,
         visualization: popup.popups.visualization,
         edit: (
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openUpdateModal(popup._id)}
-            />
-          ),
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(popup._id)}
+          />
+        ),
         erase: (
           <FaTrashCan
             className="text-center text-lg hover:cursor-pointer"
@@ -107,15 +108,10 @@ const Page = () => {
         onClick: openCreateModal,
       },
     ],
-    filters: [
-      {
-        content: <Input placeholder={"Search..."} />,
-      },
-    ],
+    filters: [],
     results: `${marketing?.length} Results`,
   };
 
-  
   const handlePreviousPage = () => {
     if (page > 1) {
       setPage(page - 1);
@@ -127,7 +123,6 @@ const Page = () => {
       setPage(page + 1);
     }
   };
-
 
   return (
     <div className="gap-4">
@@ -173,7 +168,6 @@ const Page = () => {
           Next
         </button>
       </div>
-
     </div>
   );
 };

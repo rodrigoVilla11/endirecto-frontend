@@ -25,21 +25,25 @@ export const pricesListsApi = createApi({
     getPricesListById: builder.query<PricesList, { id: string }>({
       query: ({ id }) => `/prices-lists/${id}`,
     }),
-    getPricesListPag: builder.query<PricesList[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/prices-lists?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
-      transformResponse: (response: PricesList[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron listas de precios en la respuesta");
-          return [];
-        }
-        return response;
-      },
-    }),
+    getPricesListPag:builder.query<
+    PricesList[],
+    { page?: number; limit?: number; query?: string }
+  >({
+    query: ({ page = 1, limit = 10, query = "" } = {}) => {
+      return `/prices-lists?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    },
+    transformResponse: (response: PricesList[]) => {
+      if (!response || response.length === 0) {
+        console.error("No se recibieron listas de precios en la respuesta");
+        return [];
+      }
+      return response;
+    },
+  }),
+
     countPricesLists: builder.query<number, null>({
       query: () => {
-        return `/prices-lists/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/prices-lists/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
   }),

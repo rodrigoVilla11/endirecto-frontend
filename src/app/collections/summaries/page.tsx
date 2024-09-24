@@ -83,9 +83,6 @@ const Page = () => {
           </select>
         ),
       },
-      {
-        content: <Input placeholder={"Search..."}/>,
-      }
     ],
     results:  `${data?.length || 0} Results`,
   };

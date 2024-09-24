@@ -4,7 +4,11 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaPlus } from "react-icons/fa";
-import { useGetNotificationsQuery } from "@/redux/services/notificationsApi";
+import {
+  useCountNotificationsQuery,
+  useGetNotificationsPagQuery,
+  useGetNotificationsQuery,
+} from "@/redux/services/notificationsApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from "date-fns";
 import { FaTrashCan } from "react-icons/fa6";
@@ -13,6 +17,10 @@ import CreateNotificationComponent from "./CreateNotification";
 import DeleteNotificationComponent from "./DeleteNotification";
 
 const Page = () => {
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: countNotificationsData } = useCountNotificationsQuery(null);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentNotificationId, setCurrentNotificationId] = useState<
@@ -25,7 +33,7 @@ const Page = () => {
     error,
     isLoading,
     refetch,
-  } = useGetNotificationsQuery(null);
+  } = useGetNotificationsPagQuery({ page, limit, query: searchQuery });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -99,10 +107,35 @@ const Page = () => {
         ),
       },
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${notifications?.length} Results`,
+    results: searchQuery
+      ? `${notifications?.length || 0} Results`
+      : `${countNotificationsData || 0} Results`,
+  };
+
+  const handlePreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (page < Math.ceil((countNotificationsData || 0) / limit)) {
+      setPage(page + 1);
+    }
   };
 
   return (
@@ -121,6 +154,25 @@ const Page = () => {
           closeModal={closeDeleteModal}
         />
       </Modal>
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <p>
+          Page {page} of {Math.ceil((countNotificationsData || 0) / limit)}
+        </p>
+        <button
+          onClick={handleNextPage}
+          disabled={page === Math.ceil((countNotificationsData || 0) / limit)}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

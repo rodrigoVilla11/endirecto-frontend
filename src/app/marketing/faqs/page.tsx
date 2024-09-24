@@ -3,7 +3,11 @@ import React, { useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { useGetFaqsQuery } from "@/redux/services/faqsApi";
+import {
+  useCountFaqsQuery,
+  useGetFaqsPagQuery,
+  useGetFaqsQuery,
+} from "@/redux/services/faqsApi";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import { FaPlus } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
@@ -12,12 +16,22 @@ import UpdateFaqComponent from "./UpdateFaq";
 import DeleteFaq from "./DeleteFaq";
 
 const Page = () => {
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: countFaqsData } = useCountFaqsQuery(null);
+
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false); 
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentFaqId, setCurrentFaqId] = useState<string | null>(null);
 
-  const { data: faqs, error, isLoading, refetch } = useGetFaqsQuery(null);
+  const {
+    data: faqs,
+    error,
+    isLoading,
+    refetch,
+  } = useGetFaqsPagQuery({ page, limit, query: searchQuery });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -81,14 +95,39 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: `${faqs?.length} Results`,
+    results: searchQuery
+      ? `${faqs?.length || 0} Results`
+      : `${countFaqsData || 0} Results`,
   };
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
+
+  const handlePreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (page < Math.ceil((countFaqsData || 0) / limit)) {
+      setPage(page + 1);
+    }
+  };
 
   return (
     <div className="gap-4">
@@ -112,6 +151,25 @@ const Page = () => {
       <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
         <DeleteFaq faqId={currentFaqId || ""} closeModal={closeDeleteModal} />
       </Modal>
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <p>
+          Page {page} of {Math.ceil((countFaqsData || 0) / limit)}
+        </p>
+        <button
+          onClick={handleNextPage}
+          disabled={page === Math.ceil((countFaqsData || 0) / limit)}
+          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

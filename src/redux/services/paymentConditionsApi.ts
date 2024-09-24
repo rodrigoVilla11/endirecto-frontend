@@ -25,10 +25,27 @@ export const paymentConditionsApi = createApi({
         return response;
       },
     }),
+    getPaymentConditionsPag: builder.query<PaymentCondition[], { page?: number; limit?: number, query?: string }>({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/payment-conditions?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: PaymentCondition[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron condiciones de pago en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
     getPaymentConditionById: builder.query<PaymentCondition, { id: string }>({
       query: ({ id }) => `/payment-conditions/${id}`,
+    }),
+    countPaymentConditions: builder.query<number, null>({
+      query: () => {
+        return `/payment-conditions/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
     }),
   }),
 });
 
-export const { useGetPaymentConditionsQuery ,useGetPaymentConditionByIdQuery } = paymentConditionsApi;
+export const { useGetPaymentConditionsQuery ,useGetPaymentConditionByIdQuery, useCountPaymentConditionsQuery, useGetPaymentConditionsPagQuery } = paymentConditionsApi;

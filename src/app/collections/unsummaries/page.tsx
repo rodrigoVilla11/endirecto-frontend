@@ -56,9 +56,6 @@ const Page = () => {
     filters: [
      
       {
-        content: <Input placeholder={"Search..."}/>,
-      },
-      {
         content: (
           <select>
             <option value="status">SELLER</option>

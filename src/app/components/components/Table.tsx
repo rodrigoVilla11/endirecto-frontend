@@ -1,5 +1,4 @@
 import React from "react";
-import { CiGps, CiMenuKebab } from "react-icons/ci";
 
 const Table = ({ headers, data }: any) => {
   return (
@@ -22,20 +21,28 @@ const Table = ({ headers, data }: any) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 ">
-            {data.map((row: any, index: any) => (
-              <tr key={row.key || index}>
-                {Object.keys(row).map((key, i) => (
-                  key !== 'key' && (
-                    <td
-                      key={i}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200 text-center"
-                    >
-                      {row[key]}
-                    </td>
-                  )
-                ))}
+            {data.length === 0 ? ( 
+              <tr>
+                <td colSpan={headers.length} className="px-6 py-4 text-center text-gray-500">
+                  No se encontraron datos
+                </td>
               </tr>
-            ))}
+            ) : (
+              data.map((row: any, index: any) => (
+                <tr key={row.key || index}>
+                  {Object.keys(row).map((key, i) => (
+                    key !== 'key' && (
+                      <td
+                        key={i}
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border border-gray-200 text-center"
+                      >
+                        {row[key]}
+                      </td>
+                    )
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

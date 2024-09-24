@@ -1,14 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type Brands = {
-    id: string; 
-    name: string;
-    images: string[];
-    sequence: string;
+  id: string;
+  name: string;
+  images: string[];
+  sequence: string;
 };
 
 type UpdateBrandsPayload = {
-  id: string; 
+  id: string;
   images: string[];
   sequence: string;
 };
@@ -16,7 +16,7 @@ type UpdateBrandsPayload = {
 export const brandsApi = createApi({
   reducerPath: "brandsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || 'http://localhost:3000', // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
     getBrands: builder.query<Brands[], null>({
@@ -30,11 +30,15 @@ export const brandsApi = createApi({
       },
     }),
     getBrandById: builder.query<Brands, { id: string }>({
-      query: ({ id }) => `/brands/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/brands/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    getBrandsPag: builder.query<Brands[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/brands?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getBrandsPag: builder.query<
+      Brands[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/brands?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Brands[]) => {
         if (!response || response.length === 0) {
@@ -46,7 +50,7 @@ export const brandsApi = createApi({
     }),
     countBrands: builder.query<number, null>({
       query: () => {
-        return `/brands/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/brands/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
     updateBrand: builder.mutation<Brands, UpdateBrandsPayload>({
@@ -59,4 +63,10 @@ export const brandsApi = createApi({
   }),
 });
 
-export const { useGetBrandsQuery, useGetBrandByIdQuery, useCountBrandsQuery, useGetBrandsPagQuery, useUpdateBrandMutation } = brandsApi;
+export const {
+  useGetBrandsQuery,
+  useGetBrandByIdQuery,
+  useCountBrandsQuery,
+  useGetBrandsPagQuery,
+  useUpdateBrandMutation,
+} = brandsApi;

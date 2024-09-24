@@ -17,6 +17,7 @@ const Page = () => {
   const [limit] = useState(10);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: items,
@@ -26,6 +27,7 @@ const Page = () => {
   } = useGetItemsPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countItemsData } = useCountItemsQuery(null);
 
@@ -68,10 +70,23 @@ const Page = () => {
     buttons: [],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
-    results: "1 Results",
+    results: searchQuery
+      ? `${items?.length || 0} Results`
+      : `${countItemsData || 0} Results`,
   };
 
   const handlePreviousPage = () => {

@@ -1,13 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type Items = {
-    id: string; // ID del grupo de artículos
-    name: string; // Nombre del grupo de artículos
-    image?: string | null; // Imagen del grupo de artículos
-    image_uri?: string | null; // URI de la imagen del grupo de artículos
-    download_status: string; // Estado de descarga
-    family_id?: string | null; // ID de la familia del artículo (puede ser nulo)
-    parent_id?: string | null; // ID del grupo padre (puede ser nulo)
+  id: string; // ID del grupo de artículos
+  name: string; // Nombre del grupo de artículos
+  image?: string | null; // Imagen del grupo de artículos
+  image_uri?: string | null; // URI de la imagen del grupo de artículos
+  download_status: string; // Estado de descarga
+  family_id?: string | null; // ID de la familia del artículo (puede ser nulo)
+  parent_id?: string | null; // ID del grupo padre (puede ser nulo)
 };
 type UpdateItemsPayload = {
   id: string;
@@ -16,7 +16,7 @@ type UpdateItemsPayload = {
 export const itemsApi = createApi({
   reducerPath: "itemsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || 'http://localhost:3000', // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
     getItems: builder.query<Items[], null>({
@@ -30,11 +30,15 @@ export const itemsApi = createApi({
       },
     }),
     getItemById: builder.query<Items, { id: string }>({
-      query: ({ id }) => `/items/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/items/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    getItemsPag: builder.query<Items[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/items?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getItemsPag: builder.query<
+      Items[],
+      { page?: number; limit?: number; query?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "" } = {}) => {
+        return `/items?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Items[]) => {
         if (!response || response.length === 0) {
@@ -46,7 +50,7 @@ export const itemsApi = createApi({
     }),
     countItems: builder.query<number, null>({
       query: () => {
-        return `/items/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/items/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
     updateItem: builder.mutation<Items, UpdateItemsPayload>({
@@ -59,4 +63,10 @@ export const itemsApi = createApi({
   }),
 });
 
-export const { useGetItemsQuery, useGetItemByIdQuery, useUpdateItemMutation, useCountItemsQuery, useGetItemsPagQuery } = itemsApi;
+export const {
+  useGetItemsQuery,
+  useGetItemByIdQuery,
+  useUpdateItemMutation,
+  useCountItemsQuery,
+  useGetItemsPagQuery,
+} = itemsApi;
