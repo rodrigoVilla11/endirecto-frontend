@@ -9,11 +9,12 @@ import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({ page: 1, limit: 10 })
 
-  if (error) return (<p>Loading...</p>)
-    
+  
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
-
+  
+  if (error) return (<p>Loading...</p>)
+    
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
