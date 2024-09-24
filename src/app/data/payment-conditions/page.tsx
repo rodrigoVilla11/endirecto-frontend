@@ -5,7 +5,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 
-const page = () => {
+const Page = () => {
   const { data, error, isLoading, refetch } =
     useGetPaymentConditionsQuery(null);
 
@@ -43,4 +43,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

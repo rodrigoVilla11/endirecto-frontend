@@ -5,7 +5,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { useGetTransportsQuery } from "@/redux/services/transportsApi";
 
-const page = () => {
+const Page = () => {
   const { data, error, isLoading, refetch } = useGetTransportsQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
@@ -42,4 +42,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

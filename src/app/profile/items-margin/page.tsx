@@ -4,7 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     {
       component: <FaImage className="text-center text-xl" />,
@@ -33,4 +33,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

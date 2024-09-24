@@ -21,7 +21,7 @@ import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
 // import UpdateReclaimComponent from "./UpdateReclaim";
 
-const page = () => {
+const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -207,4 +207,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

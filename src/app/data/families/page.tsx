@@ -4,7 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
@@ -36,4 +36,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

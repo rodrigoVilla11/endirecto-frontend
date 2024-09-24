@@ -7,7 +7,7 @@ import { FaImage } from "react-icons/fa6";
 import { useGetArticlesVehiclesQuery } from "@/redux/services/articlesVehicles";
 import { useGetAllArticlesQuery, useGetArticlesQuery } from "@/redux/services/articlesApi";
 
-const page = () => {
+const Page = () => {
   const { data: articlesData } = useGetAllArticlesQuery(null);
   const { data, error, isLoading, refetch } = useGetArticlesVehiclesQuery(null);
 
@@ -56,4 +56,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

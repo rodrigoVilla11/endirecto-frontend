@@ -4,7 +4,7 @@ import Table from '@/app/components/components/Table';
 import React from 'react'
 import { FaTrashCan } from 'react-icons/fa6';
 
-const page = () => {
+const Page = () => {
     const tableHeader = [
         { name: "Searched Text", key: "searched-text" },
         { name: "Searches with no result", key: "searches-with-no-result" },
@@ -29,4 +29,4 @@ const page = () => {
       );
 }
 
-export default page
+export default Page

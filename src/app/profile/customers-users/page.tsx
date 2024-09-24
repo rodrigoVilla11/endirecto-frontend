@@ -4,7 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaPencil, FaPlus, FaTrashCan } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     { name: "Collaborator User", key: "collaborator-user" },
     { name: "Profile", key: "profile" },
@@ -35,4 +35,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

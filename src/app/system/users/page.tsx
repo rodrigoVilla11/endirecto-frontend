@@ -18,7 +18,7 @@ import UpdateUserComponent from "./UpdateUser";
 import DeleteUserComponent from "./DeleteUser";
 import CreateUserComponent from "./CreateUser";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -175,4 +175,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

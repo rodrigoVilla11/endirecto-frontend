@@ -5,7 +5,7 @@ import Table from "@/app/components/components/Table";
 import { FaImage, FaShoppingCart } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const tableData = [{}]
   const tableHeader = [
     { name: "Brand", key: "brand" },
@@ -60,4 +60,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

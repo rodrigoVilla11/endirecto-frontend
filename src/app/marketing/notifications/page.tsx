@@ -12,7 +12,7 @@ import Modal from "@/app/components/components/Modal";
 import CreateNotificationComponent from "./CreateNotification";
 import DeleteNotificationComponent from "./DeleteNotification";
 
-const page = () => {
+const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentNotificationId, setCurrentNotificationId] = useState<
@@ -125,4 +125,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

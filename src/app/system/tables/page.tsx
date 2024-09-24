@@ -4,7 +4,7 @@ import Table from '@/app/components/components/Table';
 import React from 'react'
 import { FaArrowRightArrowLeft } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
     const tableHeader = [
         { name: "Table", key: "table" },
         { name: "Status", key: "status" },
@@ -35,4 +35,4 @@ const page = () => {
       );
 }
 
-export default page
+export default Page

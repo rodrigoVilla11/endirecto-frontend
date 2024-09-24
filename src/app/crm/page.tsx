@@ -11,7 +11,7 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
@@ -146,4 +146,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

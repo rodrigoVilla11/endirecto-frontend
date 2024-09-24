@@ -1,7 +1,7 @@
 import React from "react";
 import CataloguePage from "../components/Catalogue/CataloguePage";
 
-const page = () => {
+const Page = () => {
   return (
     <div>
       <CataloguePage />
@@ -9,4 +9,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

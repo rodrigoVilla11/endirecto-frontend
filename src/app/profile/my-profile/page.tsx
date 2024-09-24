@@ -2,7 +2,7 @@ import React from "react";
 import Header from "@/app/components/components/Header";
 import { FaKey } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const headerBody = {
     buttons: [
       {
@@ -31,4 +31,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

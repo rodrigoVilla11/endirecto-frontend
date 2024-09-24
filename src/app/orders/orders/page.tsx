@@ -6,7 +6,7 @@ import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { FaRegFilePdf } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -66,4 +66,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

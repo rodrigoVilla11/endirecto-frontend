@@ -4,7 +4,7 @@ import Table from "@/app/components/components/Table";
 import React from "react";
 import { FaPencil } from "react-icons/fa6";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     { name: "Group", key: "group" },
     { name: "Description", key: "description" },
@@ -34,4 +34,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

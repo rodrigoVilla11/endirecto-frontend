@@ -5,7 +5,7 @@ import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa";
 import { IoMdMenu } from "react-icons/io";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     {
       component: <FaImage className="text-center text-xl" />,
@@ -36,4 +36,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

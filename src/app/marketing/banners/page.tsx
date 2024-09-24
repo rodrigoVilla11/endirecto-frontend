@@ -11,7 +11,7 @@ import DeleteBannerComponent from "./DeleteBanner";
 import UpdateBannerComponent from "./UpdateBanner";
 import CreateBannerComponent from "./CreateBanner";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -176,4 +176,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

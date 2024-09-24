@@ -6,7 +6,7 @@ import {  FaTrashCan } from "react-icons/fa6";
 import ButtonOnOff from "@/app/components/components/ButtonOnOff";
 import { FaImage, FaShoppingCart } from "react-icons/fa";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     { name: "Included", key: "included" },
     { name: "Date", key: "date" },
@@ -65,4 +65,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

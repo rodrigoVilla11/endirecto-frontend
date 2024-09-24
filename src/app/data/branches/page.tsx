@@ -5,7 +5,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
-const page = () => {
+const Page = () => {
   const { data, error, isLoading, refetch } = useGetBranchesQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
@@ -66,4 +66,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

@@ -4,7 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { AiOutlineDownload } from "react-icons/ai";
 
-const page = () => {
+const Page = () => {
   const tableHeader = [
     { name: "Client", key: "client" },
     { name: "Brand", key: "brand" },
@@ -38,4 +38,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

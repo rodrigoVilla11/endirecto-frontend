@@ -8,7 +8,7 @@ import { useGetNotificationsQuery } from "@/redux/services/notificationsApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from 'date-fns';
 
-const page = () => {
+const Page = () => {
   const { data: brandsData } = useGetBrandsQuery(null);
   const { data, error, isLoading, refetch } = useGetNotificationsQuery(null);
 
@@ -66,4 +66,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

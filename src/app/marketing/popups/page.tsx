@@ -11,7 +11,7 @@ import DeletePopupComponent from "./DeletePopup";
 import CreatePopupComponent from "./CreatePopup";
 import UpdatePopupComponent from "./UpdatePopup";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -178,4 +178,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

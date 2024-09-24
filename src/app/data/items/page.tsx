@@ -12,7 +12,7 @@ import {
 import Modal from "@/app/components/components/Modal";
 import UpdateItemComponent from "./UpdateItem";
 
-const page = () => {
+const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -122,4 +122,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

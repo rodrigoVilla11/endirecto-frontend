@@ -6,7 +6,7 @@ import Table from "@/app/components/components/Table";
 import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
-const page = () => {
+const Page = () => {
   const { data: branchData } = useGetBranchesQuery(null);
   const { data, error, isLoading, refetch } = useGetStockQuery(null);
 
@@ -55,4 +55,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

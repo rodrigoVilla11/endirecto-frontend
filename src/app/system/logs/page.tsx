@@ -4,7 +4,7 @@ import Table from '@/app/components/components/Table';
 import React from 'react'
 import { FaTrashCan } from 'react-icons/fa6';
 
-const page = () => {
+const Page = () => {
     const tableHeader = [
         { name: "Date", key: "date" },
         { name: "Code", key: "code" },
@@ -32,4 +32,4 @@ const page = () => {
       );
 }
 
-export default page
+export default Page
