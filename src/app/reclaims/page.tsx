@@ -19,6 +19,7 @@ import Modal from "../components/components/Modal";
 import CreateReclaimComponent from "./CreateReclaim";
 import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
+import PrivateRoute from "../context/PrivateRoutes";
 // import UpdateReclaimComponent from "./UpdateReclaim";
 
 const Page = () => {
@@ -85,8 +86,18 @@ const Page = () => {
       user: user?.username,
       branch: branch?.name,
       data: reclaim.date,
-      edit: <FaPencil className="text-center text-lg hover:cursor-pointer" onClick={() => openUpdateModal(reclaim._id)}/>,
-      erase: <FaTrashCan className="text-center text-lg hover:cursor-pointer" onClick={() => openDeleteModal(reclaim._id)}/>,
+      edit: (
+        <FaPencil
+          className="text-center text-lg hover:cursor-pointer"
+          onClick={() => openUpdateModal(reclaim._id)}
+        />
+      ),
+      erase: (
+        <FaTrashCan
+          className="text-center text-lg hover:cursor-pointer"
+          onClick={() => openDeleteModal(reclaim._id)}
+        />
+      ),
     };
   });
   const tableHeader = [
@@ -159,51 +170,53 @@ const Page = () => {
     }
   };
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">RECLAIMS</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">RECLAIMS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
 
-      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreateReclaimComponent closeModal={closeCreateModal} />
-      </Modal>
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreateReclaimComponent closeModal={closeCreateModal} />
+        </Modal>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
-        {currentReclaimId && (
-          <UpdateReclaimComponent
-            reclaimId={currentReclaimId}
-            closeModal={closeUpdateModal}
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentReclaimId && (
+            <UpdateReclaimComponent
+              reclaimId={currentReclaimId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+          <DeleteReclaim
+            reclaimId={currentReclaimId || ""}
+            closeModal={closeDeleteModal}
           />
-        )}
-      </Modal>
+        </Modal>
 
-      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-        <DeleteReclaim
-          reclaimId={currentReclaimId || ""}
-          closeModal={closeDeleteModal}
-        />
-      </Modal>
-
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countReclaimsData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countReclaimsData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countReclaimsData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countReclaimsData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
+    </PrivateRoute>
   );
 };
 

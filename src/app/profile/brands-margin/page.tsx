@@ -4,6 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa";
 import { IoMdMenu } from "react-icons/io";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -15,10 +16,12 @@ const Page = () => {
     { name: "Margin", key: "margin" },
   ];
   const headerBody = {
-    buttons: [{
+    buttons: [
+      {
         logo: <IoMdMenu />,
         title: "Massive Change",
-      },],
+      },
+    ],
     filters: [
       {
         content: <Input placeholder={"Search..."} />,
@@ -28,11 +31,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">MARGINS BY BRAND</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">MARGINS BY BRAND</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

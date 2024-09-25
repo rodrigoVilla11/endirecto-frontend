@@ -15,6 +15,7 @@ import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
 import DeleteArticleComponent from "./DeleteArticle";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -145,47 +146,49 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">ARTICLES</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">ARTICLES</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
 
-      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
-        {currentArticleId && (
-          <UpdateArticleComponent
-            articleId={currentArticleId}
-            closeModal={closeUpdateModal}
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentArticleId && (
+            <UpdateArticleComponent
+              articleId={currentArticleId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+          <DeleteArticleComponent
+            articleId={currentArticleId || ""}
+            closeModal={closeDeleteModal}
           />
-        )}
-      </Modal>
+        </Modal>
 
-      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-        <DeleteArticleComponent
-          articleId={currentArticleId || ""}
-          closeModal={closeDeleteModal}
-        />
-      </Modal>
-
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countArticlesData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countArticlesData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countArticlesData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countArticlesData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
+    </PrivateRoute>
   );
 };
 

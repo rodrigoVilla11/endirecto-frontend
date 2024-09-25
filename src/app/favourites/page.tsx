@@ -4,6 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaShoppingCart } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
+import PrivateRoute from "../context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -35,11 +36,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">FAVOURITES</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">FAVOURITES</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

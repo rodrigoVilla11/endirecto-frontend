@@ -2,7 +2,8 @@ import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import {  FaLink, FaPencil, FaPlus, FaTrashCan } from "react-icons/fa6";
+import { FaLink, FaPencil, FaPlus, FaTrashCan } from "react-icons/fa6";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -15,7 +16,6 @@ const Page = () => {
     },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
-
   ];
   const headerBody = {
     buttons: [
@@ -33,11 +33,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">FILES</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">FILES</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

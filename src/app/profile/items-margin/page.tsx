@@ -3,6 +3,7 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -25,11 +26,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">MARGINS BY ITEM</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">MARGINS BY ITEM</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

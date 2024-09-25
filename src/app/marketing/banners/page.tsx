@@ -13,6 +13,7 @@ import {
 import DeleteBannerComponent from "./DeleteBanner";
 import UpdateBannerComponent from "./UpdateBanner";
 import CreateBannerComponent from "./CreateBanner";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -123,6 +124,7 @@ const Page = () => {
   };
 
   return (
+    <PrivateRoute>
     <div className="gap-4">
       <h3 className="font-bold p-4">BANNERS</h3>
       <Header headerBody={headerBody} />
@@ -167,6 +169,7 @@ const Page = () => {
         </button>
       </div>
     </div>
+    </PrivateRoute>
   );
 };
 

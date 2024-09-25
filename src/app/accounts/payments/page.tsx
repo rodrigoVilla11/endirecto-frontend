@@ -18,6 +18,7 @@ import { FaPlus } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
 import CreatePaymentComponent from "./CreatePayment";
 import { format } from "date-fns";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 enum status {
   "PENDING" = "PENDING",
@@ -187,35 +188,37 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">PAYMENTS</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
+    <PrivateRoute requiredRole="administrador">
+      <div className="gap-4">
+        <h3 className="font-bold p-4">PAYMENTS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
 
-      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreatePaymentComponent closeModal={closeCreateModal} />
-      </Modal>
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreatePaymentComponent closeModal={closeCreateModal} />
+        </Modal>
 
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countCollectionsData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countCollectionsData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countCollectionsData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countCollectionsData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
+    </PrivateRoute>
   );
 };
 

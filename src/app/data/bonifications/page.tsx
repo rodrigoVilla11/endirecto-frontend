@@ -3,6 +3,7 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { AiOutlineDownload } from "react-icons/ai";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -12,7 +13,6 @@ const Page = () => {
     { name: "Aticle", key: "aticle" },
     { name: "Discount 1", key: "discount" },
     { name: "Seller", key: "seller" },
-
   ];
   const headerBody = {
     buttons: [
@@ -30,11 +30,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">BONUSES</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">BONUSES</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

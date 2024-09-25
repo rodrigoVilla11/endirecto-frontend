@@ -13,6 +13,7 @@ import {
 import DeletePopupComponent from "./DeletePopup";
 import CreatePopupComponent from "./CreatePopup";
 import UpdatePopupComponent from "./UpdatePopup";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -125,50 +126,52 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">POPUPS</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">POPUPS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
 
-      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreatePopupComponent closeModal={closeCreateModal} />
-      </Modal>
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreatePopupComponent closeModal={closeCreateModal} />
+        </Modal>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
-        {currentMarketingId && (
-          <UpdatePopupComponent
-            marketingId={currentMarketingId}
-            closeModal={closeUpdateModal}
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentMarketingId && (
+            <UpdatePopupComponent
+              marketingId={currentMarketingId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+          <DeletePopupComponent
+            marketingId={currentMarketingId || ""}
+            closeModal={closeDeleteModal}
           />
-        )}
-      </Modal>
-
-      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-        <DeletePopupComponent
-          marketingId={currentMarketingId || ""}
-          closeModal={closeDeleteModal}
-        />
-      </Modal>
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countMarketingData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countMarketingData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        </Modal>
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countMarketingData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countMarketingData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
+    </PrivateRoute>
   );
 };
 

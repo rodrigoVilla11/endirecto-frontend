@@ -11,6 +11,7 @@ import {
 } from "@/redux/services/notificationsApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from "date-fns";
+import PrivateRoute from "../context/PrivateRoutes";
 
 const Page = () => {
   const { data: brandsData } = useGetBrandsQuery(null);
@@ -79,8 +80,8 @@ const Page = () => {
       },
     ],
     results: searchQuery
-    ? `${data?.length || 0} Results`
-    : `${countNotificationsData || 0} Results`,
+      ? `${data?.length || 0} Results`
+      : `${countNotificationsData || 0} Results`,
   };
 
   const handlePreviousPage = () => {
@@ -95,32 +96,33 @@ const Page = () => {
     }
   };
 
-
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">NOTIFICATIONS</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countNotificationsData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countNotificationsData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">NOTIFICATIONS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countNotificationsData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countNotificationsData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
+    </PrivateRoute>
   );
 };
 

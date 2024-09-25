@@ -1,6 +1,7 @@
 import Header from "@/app/components/components/Header";
 import Input from "@/app/components/components/Input";
 import Table from "@/app/components/components/Table";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 import React from "react";
 import { FaPencil } from "react-icons/fa6";
 
@@ -16,7 +17,12 @@ const Page = () => {
     buttons: [],
     filters: [
       {
-        content: <select> <option value="GROUP">GROUP</option></select>,
+        content: (
+          <select>
+            {" "}
+            <option value="GROUP">GROUP</option>
+          </select>
+        ),
       },
       {
         content: <Input placeholder={"Search..."} />,
@@ -26,11 +32,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="text-bold p-4">PARAMETERS</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="text-bold p-4">PARAMETERS</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

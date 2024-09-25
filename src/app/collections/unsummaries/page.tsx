@@ -7,6 +7,7 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useCountCollectionQuery, useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -68,11 +69,13 @@ const Page = () => {
   };
 
   return (
+    <PrivateRoute>
     <div className="gap-4">
       <h3 className="font-bold p-4">COLLECTIONS UNSUMMARIES</h3>
       <Header headerBody={headerBody} />
       <Table headers={tableHeader} data={tableData}/>
     </div>
+    </PrivateRoute>
   );
 };
 

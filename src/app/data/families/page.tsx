@@ -3,6 +3,7 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil } from "react-icons/fa6";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -17,8 +18,7 @@ const Page = () => {
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
   ];
   const headerBody = {
-    buttons: [
-    ],
+    buttons: [],
     filters: [
       {
         content: <Input placeholder={"Search..."} />,
@@ -28,11 +28,13 @@ const Page = () => {
   };
 
   return (
-    <div className="gap-4">
-      <h3 className="font-bold p-4">FAMILIES</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute>
+      <div className="gap-4">
+        <h3 className="font-bold p-4">FAMILIES</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
+    </PrivateRoute>
   );
 };
 

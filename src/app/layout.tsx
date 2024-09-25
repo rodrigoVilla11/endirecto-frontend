@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
+import { Providers } from "@/redux/provider";
 import { SideMenuProvider } from "./context/SideMenuContext";
 import MainContent from "./components/MainContent/MainContent";
-import NavBarHome from "./components/Navigation/NavBarHome/NavBarHome";
-import { Providers } from "@/redux/provider";
+import { AuthProvider } from "./context/AuthContext";
+import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,10 +23,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <SideMenuProvider>
-            <NavBarAndSideMenu /> {/* PONER EN CONDICIONAL DE NAVBAR */}
-            <MainContent>{children}</MainContent>
-          </SideMenuProvider>
+          <AuthProvider>
+            <SideMenuProvider>
+              <NavBarAndSideMenu />
+              <MainContent>{children}</MainContent>
+            </SideMenuProvider>
+          </AuthProvider>
         </Providers>
       </body>
     </html>
