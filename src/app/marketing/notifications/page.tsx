@@ -5,22 +5,23 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaPlus } from "react-icons/fa";
 import {
+  NotificationType,
   useCountNotificationsQuery,
   useGetNotificationsPagQuery,
-  useGetNotificationsQuery,
 } from "@/redux/services/notificationsApi";
-import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from "date-fns";
 import { FaTrashCan } from "react-icons/fa6";
 import Modal from "@/app/components/components/Modal";
 import CreateNotificationComponent from "./CreateNotification";
 import DeleteNotificationComponent from "./DeleteNotification";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
+  const [notificationType, setNotificationType] = useState<NotificationType | undefined>(undefined)
   const { data: countNotificationsData } = useCountNotificationsQuery(null);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -34,7 +35,12 @@ const Page = () => {
     error,
     isLoading,
     refetch,
-  } = useGetNotificationsPagQuery({ page, limit, query: searchQuery });
+  } = useGetNotificationsPagQuery({
+    page,
+    limit,
+    query: searchQuery,
+    type: notificationType,
+  }); // Agregar type aquí
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -52,13 +58,20 @@ const Page = () => {
     refetch();
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as NotificationType | "all"; 
+    setNotificationType(value === "all" ? undefined : value);
+    setPage(1); 
+    refetch(); 
+  };
+  
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
   const tableData =
     notifications?.map((notification) => {
       const brand = brandsData?.find(
-        (data) => data.id === notification.brand_id
+        (data: any) => data.id === notification.brand_id
       );
       return {
         key: notification._id,
@@ -66,12 +79,8 @@ const Page = () => {
         type: notification.type,
         title: notification.title,
         description: notification.description,
-        validity: notification.schedule_to
-          ? format(new Date(notification.schedule_to), "dd/MM/yyyy HH:mm")
-          : "N/A",
-        date: notification.schedule_from
-          ? format(new Date(notification.schedule_from), "dd/MM/yyyy HH:mm")
-          : "N/A",
+        validity: notification.schedule_to,
+        date: notification.schedule_from,
 
         erase: (
           <FaTrashCan
@@ -102,8 +111,13 @@ const Page = () => {
     filters: [
       {
         content: (
-          <select>
-            <option value="order">TYPE</option>
+          <select onChange={handleFilterChange} value={notificationType}>
+            <option value="all">TYPE</option>
+            {Object.entries(NotificationType).map(([key, value]) => (
+              <option key={key} value={key}>
+                {value.toUpperCase()}
+              </option>
+            ))}
           </select>
         ),
       },

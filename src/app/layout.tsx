@@ -6,6 +6,7 @@ import { SideMenuProvider } from "./context/SideMenuContext";
 import MainContent from "./components/MainContent/MainContent";
 import { AuthProvider } from "./context/AuthContext";
 import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
+import "react-datepicker/dist/react-datepicker.css";
 
 const inter = Inter({ subsets: ["latin"] });
 

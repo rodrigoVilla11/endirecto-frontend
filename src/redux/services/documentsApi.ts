@@ -35,17 +35,57 @@ export const documentsApi = createApi({
       },
     }),
     getDocumentsPag: builder.query<
-    Document[],
-      { page?: number; limit?: number; query?: string }
+      Document[],
+      {
+        page?: number;
+        limit?: number;
+        query?: string;
+        startDate?: string;
+        endDate?: string;
+        expirationStatus?: string; 
+      }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/documents?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({
+        page = 1,
+        limit = 10,
+        query = "",
+        startDate,
+        endDate,
+        expirationStatus, 
+      } = {}) => {
+        const url = `/documents`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          q: query,
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+
+        if (expirationStatus) {
+          params.append("status", expirationStatus);
+        }
+
+        return `${url}?${params.toString()}`;
       },
-      transformResponse: (response: Document[]) => {
+      transformResponse: (response: Document[], meta, arg) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron documentos en la respuesta");
           return [];
         }
+
+        if (arg?.expirationStatus) {
+          return response.filter(
+            (doc) => doc.expiration_status === arg.expirationStatus
+          );
+        }
+
         return response;
       },
     }),
@@ -55,12 +95,36 @@ export const documentsApi = createApi({
         return `/documents/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
-  
+
     getDocumentById: builder.query<Document, { id: string }>({
       query: ({ id }) => `/documents/findOne/${id}`,
     }),
-  
+    sumExpiredAmounts: builder.query<number, null>({
+      query: () => {
+        return `/documents/sum-expired-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: { totalExpiredAmounts: string }) => {
+        console.log(response.totalExpiredAmounts);
+        return parseFloat(response.totalExpiredAmounts) || 0;
+      },
+    }),
+
+    sumAmounts: builder.query<number, null>({
+      query: () => {
+        return `/documents/sum-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: { totalAmounts: string }) => {
+        return parseFloat(response.totalAmounts) || 0;
+      },
+    }),
   }),
 });
 
-export const { useGetDocumentsQuery, useGetDocumentByIdQuery, useGetDocumentsPagQuery, useCountDocumentsQuery } = documentsApi;
+export const {
+  useGetDocumentsQuery,
+  useGetDocumentByIdQuery,
+  useGetDocumentsPagQuery,
+  useCountDocumentsQuery,
+  useSumExpiredAmountsQuery,
+  useSumAmountsQuery,
+} = documentsApi;

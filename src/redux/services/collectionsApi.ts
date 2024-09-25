@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type Collections = {
-    _id: string;
+  _id: string;
   tmp_id?: string; // ID TEMPORAL
   status: "PENDING" | "SENDED" | "SUMMARIZED" | "CHARGED" | "CANCELED"; // ESTADO
   number?: string; // NUMERO
@@ -57,21 +57,45 @@ export const collectionsApi = createApi({
       },
     }),
 
-    getCollectionsPag: builder.query<
-      Collections[],
-      { page?: number; limit?: number, status? : string, query?: string  }
-    >({
-      query: ({ page = 1, limit = 10, status = "" , query = "" } = {}) => {
-        return `/collections?page=${page}&limit=${limit}&status=${status}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getCollectionsPag: builder.query<Collections[], { 
+      page?: number; 
+      limit?: number; 
+      status?: string; 
+      query?: string; 
+      startDate?: string; 
+      endDate?: string; 
+    }>({
+      query: ({
+        page = 1,
+        limit = 10,
+        startDate,
+        endDate,
+        status,
+      } = {}) => {
+        const url = `/collections`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        
+    
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (status) params.append("status", status);
+        
+        return `${url}?${params.toString()}`;
       },
-      transformResponse: (response: Collections[]) => {
+      transformResponse: (response: Collections[], meta, arg) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron pagos en la respuesta");
-          return [];
+          console.error("No se recibieron documentos en la respuesta");
+          return []; 
         }
         return response;
       },
     }),
+    
     getCollectionById: builder.query<Collections, { id: string }>({
       query: ({ id }) =>
         `/collections/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -97,10 +121,10 @@ export const collectionsApi = createApi({
       }),
     }),
     countCollection: builder.query<number, null>({
-        query: () => {
-          return `/collections/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-        },
-      }),
+      query: () => {
+        return `/collections/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+    }),
   }),
 });
 
@@ -111,5 +135,5 @@ export const {
   useDeleteCollectionMutation,
   useUpdateCollectionMutation,
   useGetCollectionsPagQuery,
-  useCountCollectionQuery
+  useCountCollectionQuery,
 } = collectionsApi;

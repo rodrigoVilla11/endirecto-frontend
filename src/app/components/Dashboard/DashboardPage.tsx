@@ -14,9 +14,19 @@ import { ImStatsDots } from "react-icons/im";
 import CardShortcuts from "./components/CardShortcuts";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
+import { useCountCustomersQuery } from "@/redux/services/customersApi";
+import { useSumAmountsQuery, useSumExpiredAmountsQuery } from "@/redux/services/documentsApi";
 
 const DashboardPage = () => {
   const { isOpen } = useSideMenu();
+  const { data: countCustomersData } = useCountCustomersQuery(null);
+  const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
+  const { data: sumAmountsData } = useSumAmountsQuery(null);
+
+console.log(sumAmountsData, "sumAmountsData")
+console.log(sumExpiredAmountsData, "sumExpiredAmountsData")
+
+
   const itemsCard = [
     {
       logo: <MdOutlineShoppingBag />,
@@ -27,14 +37,14 @@ const DashboardPage = () => {
     {
       logo: <CgProfile />,
       title: "Select Customer",
-      subtitle: "9.999",
+      subtitle: countCustomersData,
       href: "/selectCustomer"
     },
     {
       logo: <MdTextSnippet />,
       title: "Status Account",
-      subtitle: "$ 0",
-      text: "Expired: $ 0",
+      subtitle: `$ ${sumAmountsData}`,
+      text: `Expired: $ ${sumExpiredAmountsData}`,
       href: "/accounts/status"
     },
     {

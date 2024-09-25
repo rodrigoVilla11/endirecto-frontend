@@ -19,9 +19,10 @@ import Modal from "@/app/components/components/Modal";
 import CreatePaymentComponent from "./CreatePayment";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import DatePicker from "react-datepicker";
 
-enum status {
-  "PENDING" = "PENDING",
+enum CollectionStatus {
+  PENDING = "PENDING",
   SENDED = "SENDED",
   SUMMARIZED = "SUMMARIZED",
   CHARGED = "CHARGED",
@@ -32,9 +33,14 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [updateCollection, { isLoading: isUpdating, isSuccess, isError }] =
+  const [updateCollection, { isLoading: isUpdating }] =
     useUpdateCollectionMutation();
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [searchParams, setSearchParams] = useState({
+    status: "",
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+  });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -44,59 +50,49 @@ const Page = () => {
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-
   const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
     page,
     limit,
-    query: searchQuery,
+    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
+    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
+    status: searchParams.status,
   });
+
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (error) return <p>Error fetching collections.</p>;
 
-  const handleChangeStatus = async (
-    collectionId: string,
-    newStatus: status
-  ) => {
+  const handleChangeStatus = async (collectionId: string, newStatus: CollectionStatus) => {
     try {
-      await updateCollection({
-        _id: collectionId,
-        status: newStatus,
-      }).unwrap();
-      refetch(); // Refrescar los datos después de la actualización
+      await updateCollection({ _id: collectionId, status: newStatus }).unwrap();
+      refetch(); 
     } catch (error) {
-      console.error("Error al actualizar el estado de la colección:", error);
+      console.error("Error updating collection status:", error);
     }
   };
 
   const tableData = data?.map((collection) => {
-    const customer = customersData?.find(
-      (data) => data.id == collection.customer_id
-    );
-    const seller = sellersData?.find((data) => data.id == collection.seller_id);
-
+    const customer = customersData?.find((data) => data.id === collection.customer_id);
+    const seller = sellersData?.find((data) => data.id === collection.seller_id);
+    
     return {
       key: collection._id,
       detail: <IoInformationCircleOutline className="text-center text-xl" />,
       email: <MdOutlineEmail className="text-center text-xl" />,
       pdf: <FaRegFilePdf className="text-center text-xl" />,
-      customer: customer ? `${customer?.id} - ${customer?.name}` : "NOT FOUND",
+      customer: customer ? `${customer.id} - ${customer.name}` : "NOT FOUND",
       number: collection.number,
-      date: collection.date
-        ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
-        : "N/A",
+      date: collection.date ? format(new Date(collection.date), "dd/MM/yyyy HH:mm") : "N/A",
       amount: collection.amount,
       status: collection.status,
       changeStatus: (
         <select
           value={collection.status}
-          onChange={(e) =>
-            handleChangeStatus(collection._id, e.target.value as status)
-          }
+          onChange={(e) => handleChangeStatus(collection._id, e.target.value as CollectionStatus)}
         >
           <option value="">Change Status</option>
-          {Object.values(status).map((st) => (
+          {Object.values(CollectionStatus).map((st) => (
             <option key={st} value={st}>
               {st}
             </option>
@@ -108,18 +104,9 @@ const Page = () => {
   });
 
   const tableHeader = [
-    {
-      component: <IoInformationCircleOutline className="text-center text-xl" />,
-      key: "info",
-    },
-    {
-      component: <MdOutlineEmail className="text-center text-xl" />,
-      key: "mail",
-    },
-    {
-      component: <FaRegFilePdf className="text-center text-xl" />,
-      key: "pdf",
-    },
+    { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
+    { component: <MdOutlineEmail className="text-center text-xl" />, key: "mail" },
+    { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
     { name: "Customer", key: "customer" },
     { name: "Number", key: "number" },
     { name: "Date", key: "date" },
@@ -131,69 +118,67 @@ const Page = () => {
 
   const headerBody = {
     buttons: [
-      {
-        logo: <FaPlus />,
-        title: "New",
-        onClick: openCreateModal,
-      },
-      {
-        logo: <AiOutlineDownload />,
-        title: "Download",
-      },
+      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
+      { logo: <AiOutlineDownload />, title: "Download" },
     ],
     filters: [
       {
-        content: <Input placeholder={"Date From dd/mm/aaaa"} />,
-      },
-      {
-        content: <Input placeholder={"Date To dd/mm/aaaa"} />,
-      },
-      {
         content: (
-          <select>
-            <option value="Status...">Status...</option>
-          </select>
-        ),
-      },
-      {
-        content: (
-          <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                refetch();
-              }
-            }}
+          <DatePicker
+            selected={searchParams.startDate}
+            onChange={(date) => setSearchParams({ ...searchParams, startDate: date })}
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
           />
         ),
       },
+      {
+        content: (
+          <DatePicker
+            selected={searchParams.endDate}
+            onChange={(date) => setSearchParams({ ...searchParams, endDate: date })}
+            placeholderText="Date To"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <select
+            value={searchParams.status}
+            onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
+          >
+            <option value="">Status...</option>
+            {Object.values(CollectionStatus).map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      ,
     ],
-    results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countCollectionsData || 0} Results`,
+    results: `${data?.length || 0} Results`,
   };
 
   const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
+    if (page > 1) setPage(page - 1);
   };
 
   const handleNextPage = () => {
-    if (page < Math.ceil((countCollectionsData || 0) / limit)) {
-      setPage(page + 1);
-    }
+    if (page < Math.ceil((countCollectionsData || 0) / limit)) setPage(page + 1);
   };
 
   return (
-    <PrivateRoute requiredRole="administrador">
+    <PrivateRoute>
       <div className="gap-4">
         <h3 className="font-bold p-4">PAYMENTS</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-
+        
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreatePaymentComponent closeModal={closeCreateModal} />
         </Modal>
@@ -206,12 +191,9 @@ const Page = () => {
           >
             Previous
           </button>
-          <p>
-            Page {page} of {Math.ceil((countCollectionsData || 0) / limit)}
-          </p>
           <button
             onClick={handleNextPage}
-            disabled={page === Math.ceil((countCollectionsData || 0) / limit)}
+            disabled={page >= Math.ceil((countCollectionsData || 0) / limit)}
             className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
           >
             Next

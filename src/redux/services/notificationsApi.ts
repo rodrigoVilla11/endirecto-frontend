@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export enum NotificationType {
-  NOVEDAD = "novedad",
-  PEDIDO = "pedido",
-  PRESUPUESTO = "presupuesto",
+  NOVEDAD = "NOVEDAD",
+  PEDIDO = "PEDIDO",
+  PRESUPUESTO = "PRESUPUESTO",
 }
 type Notifications = {
   _id: string;
@@ -67,14 +67,25 @@ export const notificationsApi = createApi({
     }),
     getNotificationsPag: builder.query<
       Notifications[],
-      { page?: number; limit?: number; query?: string }
+      {
+        page?: number;
+        limit?: number;
+        query?: string;
+        type?: NotificationType;
+      }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/notifications?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", type }) => {
+        let url = `/notifications?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+
+        if (type) {
+          url += `&type=${type}`;
+        }
+        console.log(url)
+        return url;
       },
       transformResponse: (response: Notifications[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron usuarios en la respuesta");
+          console.error("No se recibieron notificaciones en la respuesta");
           return [];
         }
         return response;

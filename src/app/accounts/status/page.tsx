@@ -9,22 +9,34 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import {
   useCountDocumentsQuery,
   useGetDocumentsPagQuery,
+  useSumAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import DatePicker from "react-datepicker"; // Importa el DatePicker
+import "react-datepicker/dist/react-datepicker.css"; // Importa el CSS del DatePicker
 
 const Page = () => {
+  const { data: sumAmountsData, isLoading: isLoadingSumAmounts } =
+    useSumAmountsQuery(null);
+
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
     limit,
     query: searchQuery,
+    startDate: startDate ? startDate.toISOString() : undefined, 
+    endDate: endDate ? endDate.toISOString() : undefined,
   });
+  console.log(startDate)
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
@@ -50,6 +62,7 @@ const Page = () => {
       seller: seller?.name || "NOT FOUND",
     };
   });
+
   const tableHeader = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -65,6 +78,7 @@ const Page = () => {
     { name: "Logistic", key: "logistic" },
     { name: "Seller", key: "seller" },
   ];
+
   const headerBody = {
     buttons: [
       {
@@ -74,10 +88,26 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Date From dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
-        content: <Input placeholder={"Date To dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            placeholderText="Date To"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
         content: (
@@ -94,7 +124,10 @@ const Page = () => {
         ),
       },
     ],
-    secondSection: { title: "Total Owed", amount: "$ 306.137.224,33" },
+    secondSection: {
+      title: "Total Owed",
+      amount: isLoadingSumAmounts ? "Loading..." : `${sumAmountsData}`,
+    },
     results: searchQuery
       ? `${data?.length || 0} Results`
       : `${countDocumentsData || 0} Results`,

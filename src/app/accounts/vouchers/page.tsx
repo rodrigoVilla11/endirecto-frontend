@@ -15,6 +15,7 @@ import {
   useGetDocumentsQuery,
 } from "@/redux/services/documentsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import DatePicker from "react-datepicker";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -22,11 +23,14 @@ const Page = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
     limit,
     query: searchQuery,
+    startDate: startDate ? startDate.toISOString() : undefined, 
+    endDate: endDate ? endDate.toISOString() : undefined,
   });
   const { data: countDocumentsData } = useCountCustomersQuery(null);
 
@@ -77,10 +81,26 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Date From dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
-        content: <Input placeholder={"Date To dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            placeholderText="Date To"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
         content: (
