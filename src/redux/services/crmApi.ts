@@ -21,7 +21,7 @@ type Crm = {
   date: string;
   type: ActionType;
   gps?: string;
-  insitu: boolean;
+  insitu?: boolean;
   status: StatusType;
   notes: string;
   collection_id?: string;
@@ -35,14 +35,14 @@ type CreateCrmPayload = {
   date: string;
   type: ActionType;
   gps?: string;
-  insitu: boolean;
+  insitu?: boolean;
   status: StatusType;
   notes: string;
   collection_id?: string;
   customer_id?: string;
   order_id?: string;
   seller_id?: string;
-  deleted_at: string;
+  deleted_at?: string;
 };
 
 type UpdateCrmPayload = {
@@ -50,7 +50,7 @@ type UpdateCrmPayload = {
   date: string;
   type: ActionType;
   gps?: string;
-  insitu: boolean;
+  insitu?: boolean;
   status: StatusType;
   notes: string;
   collection_id?: string;
@@ -75,9 +75,44 @@ export const crmApi = createApi({
         return response;
       },
     }),
-    getCrmPag: builder.query<Crm[], { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/crm?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getCrmPag: builder.query<
+      Crm[],
+      {
+        page?: number;
+        limit?: number;
+        startDate?: string;
+        endDate?: string;
+        seller_id?: string;
+        status?: string;
+        type?: string;
+        insitu?: string;
+      }
+    >({
+      query: ({
+        page = 1,
+        limit = 10,
+        startDate,
+        endDate,
+        status,
+        type,
+        insitu,
+      } = {}) => {
+        const url = `/crm`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (status) params.append("status", status);
+        if (type) params.append("type", type);
+        if (insitu) params.append("insitu", insitu);
+
+        const fullUrl = `${url}?${params.toString()}`;
+        console.log(fullUrl)
+        return fullUrl;
       },
       transformResponse: (response: Crm[]) => {
         if (!response || response.length === 0) {
@@ -125,4 +160,5 @@ export const {
   useCountCrmQuery,
   useCreateCrmMutation,
   useDeleteCrmMutation,
+  useUpdateCrmMutation,
 } = crmApi;

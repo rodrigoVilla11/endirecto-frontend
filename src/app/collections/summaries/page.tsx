@@ -13,6 +13,7 @@ import {
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import DatePicker from "react-datepicker";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -20,10 +21,19 @@ const Page = () => {
   const status = "SUMMARIZED";
   const { data: sellersData } = useGetSellersQuery(null);
 
+  const [searchParams, setSearchParams] = useState({
+    seller_id: "",
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+  });
+
   const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
     page,
     limit,
     status,
+    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
+    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
+    seller_id: searchParams.seller_id
   });
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
@@ -72,20 +82,53 @@ const Page = () => {
     buttons: [],
     filters: [
       {
-        content: <Input placeholder={"Date From dd/mm/aaaa"} />,
-      },
-      {
-        content: <Input placeholder={"Date To dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={searchParams.startDate}
+            onChange={(date) => setSearchParams({ ...searchParams, startDate: date })}
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
         content: (
-          <select>
-            <option value="status">SELLER</option>
-          </select>
+          <DatePicker
+            selected={searchParams.endDate}
+            onChange={(date) => setSearchParams({ ...searchParams, endDate: date })}
+            placeholderText="Date To"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
         ),
       },
+      {
+        content: (
+          <select
+            value={searchParams.seller_id}
+            onChange={(e) => setSearchParams({ ...searchParams, seller_id: e.target.value })}
+          >
+            <option value="">Seller...</option>
+            {sellersData?.map((seller) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.name}
+              </option>
+            ))}
+          </select>
+        ),
+      }
+      
     ],
     results: `${data?.length || 0} Results`,
+  };
+  
+  const handlePreviousPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
+  const handleNextPage = () => {
+    if (page < Math.ceil((countCollectionsData || 0) / limit)) setPage(page + 1);
   };
 
   return (
@@ -94,6 +137,25 @@ const Page = () => {
         <h3 className="font-bold p-4">COLLECTIONS SUMMARIES</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countCollectionsData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page >= Math.ceil((countCollectionsData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </PrivateRoute>
   );

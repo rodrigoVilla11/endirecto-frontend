@@ -4,7 +4,7 @@ type Collections = {
   _id: string;
   tmp_id?: string; // ID TEMPORAL
   status: "PENDING" | "SENDED" | "SUMMARIZED" | "CHARGED" | "CANCELED"; // ESTADO
-  number?: string; // NUMERO
+  number: string; // NUMERO
   date: string; // FECHA
   amount: number; // IMPORTE BRUTO
   netamount: number; // IMPORTE NETO
@@ -64,6 +64,8 @@ export const collectionsApi = createApi({
       query?: string; 
       startDate?: string; 
       endDate?: string; 
+      seller_id?: string; 
+
     }>({
       query: ({
         page = 1,
@@ -71,6 +73,7 @@ export const collectionsApi = createApi({
         startDate,
         endDate,
         status,
+        seller_id
       } = {}) => {
         const url = `/collections`;
         const params = new URLSearchParams({
@@ -84,8 +87,11 @@ export const collectionsApi = createApi({
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
-        
-        return `${url}?${params.toString()}`;
+        if (seller_id) params.append("seller_id", seller_id);
+      
+
+        const fullUrl = `${url}?${params.toString()}`;
+        return fullUrl;
       },
       transformResponse: (response: Collections[], meta, arg) => {
         if (!response || response.length === 0) {

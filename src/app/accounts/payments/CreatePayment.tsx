@@ -38,8 +38,8 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
   const { data: sellerData, isLoading: isLoadingSellers } =
     useGetSellersQuery(null);
   const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
-  const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
-
+  const { data: branchsData, isLoading: isLoadingBranchs } =
+    useGetBranchesQuery(null);
 
   const [createCollection, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateCollectionMutation();
@@ -77,141 +77,149 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
         </button>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label>
-          Número:
-          <input
-            type="text"
-            name="number"
-            value={form.number}
-            onChange={handleChange}
-          />
-        </label>
+        <div className="flex gap-4">
+          <div className="flex flex-col gap-4">
+            <label>
+              Número:
+              <input
+                type="text"
+                name="number"
+                value={form.number}
+                onChange={handleChange}
+              />
+            </label>
 
-        <label>
-          Estado:
-          <select name="status" value={form.status} onChange={handleChange}>
-            {Object.values(status).map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label>
+              Estado:
+              <select name="status" value={form.status} onChange={handleChange}>
+                {Object.values(status).map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          Fecha:
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Files:
-          <input
-            type="text"
-            name="files"
-            value={form.files}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Amount:
-          <input
-            type="text"
-            name="amount"
-            value={form.amount}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Net Amount:
-          <input
-            type="text"
-            name="netamount"
-            value={form.netamount}
-            onChange={handleChange}
-          />
-        </label>
+            <label>
+              Fecha:
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+              />
+            </label>
+            <label>
+              Files:
+              <input
+                type="text"
+                name="files"
+                value={form.files}
+                onChange={handleChange}
+              />
+            </label>
+            <label>
+              Amount:
+              <input
+                type="text"
+                name="amount"
+                value={form.amount}
+                onChange={handleChange}
+              />
+            </label>
+            <label>
+              Net Amount:
+              <input
+                type="text"
+                name="netamount"
+                value={form.netamount}
+                onChange={handleChange}
+              />
+            </label>
+          </div>
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col">
+              Customer:
+              <select
+                name="customer_id"
+                value={form.customer_id}
+                onChange={handleChange}
+                className="border border-black rounded-md p-2"
+              >
+                <option value="">Select customer</option>
+                {!isLoadingCustomers &&
+                  customersData?.map(
+                    (customer: { id: string; name: string }) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    )
+                  )}
+              </select>
+            </label>
+            <label className="flex flex-col">
+              Seller:
+              <select
+                name="seller_id"
+                value={form.seller_id}
+                onChange={handleChange}
+                className="border border-black rounded-md p-2"
+              >
+                <option value="">Select seller</option>
+                {!isLoadingSellers &&
+                  sellerData?.map((seller: { id: string; name: string }) => (
+                    <option key={seller.id} value={seller.id}>
+                      {seller.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="flex flex-col">
+              User:
+              <select
+                name="user_id"
+                value={form.user_id}
+                onChange={handleChange}
+                className="border border-black rounded-md p-2"
+              >
+                <option value="">Select user</option>
+                {!isLoadingUsers &&
+                  usersData?.map((user: { _id: string; username: string }) => (
+                    <option key={user._id} value={user._id}>
+                      {user.username}
+                    </option>
+                  ))}
+              </select>
+            </label>
 
-        <label className="flex flex-col">
-          Customer:
-          <select
-            name="customer_id"
-            value={form.customer_id}
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          >
-            <option value="">Select customer</option>
-            {!isLoadingCustomers &&
-              customersData?.map((customer: { id: string; name: string }) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label className="flex flex-col">
-          Seller:
-          <select
-            name="seller_id"
-            value={form.seller_id}
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          >
-            <option value="">Select seller</option>
-            {!isLoadingSellers &&
-              sellerData?.map((seller: { id: string; name: string }) => (
-                <option key={seller.id} value={seller.id}>
-                  {seller.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label className="flex flex-col">
-          User:
-          <select
-            name="user_id"
-            value={form.user_id}
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          >
-            <option value="">Select user</option>
-            {!isLoadingUsers &&
-              usersData?.map((user: { _id: string; username: string }) => (
-                <option key={user._id} value={user._id}>
-                  {user.username}
-                </option>
-              ))}
-          </select>
-        </label>
+            <label className="flex flex-col">
+              Branch:
+              <select
+                name="branch_id"
+                value={form.branch_id}
+                onChange={handleChange}
+                className="border border-black rounded-md p-2"
+              >
+                <option value="">Select branch</option>
+                {!isLoadingBranchs &&
+                  branchsData?.map((branch: { id: string; name: string }) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Notes:
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+              />
+            </label>
+          </div>
+        </div>
 
-        <label className="flex flex-col">
-          Branch:
-          <select
-            name="branch_id"
-            value={form.branch_id}
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          >
-            <option value="">Select branch</option>
-            {!isLoadingBranchs &&
-              branchsData?.map((branch: { id: string; name: string }) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
-          Notes:
-          <textarea
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
-          />
-        </label>
         <div className="flex justify-end gap-4 mt-4">
           <button
             type="button"
