@@ -96,10 +96,46 @@ export const reclaimsApi = createApi({
     }),
     getReclaimsPag: builder.query<
       Reclaims[],
-      { page?: number; limit?: number }
+      {
+        page?: number;
+        limit?: number;
+        startDate?: string;
+        endDate?: string;
+        query?: string;
+        document_type_number?: string;
+        valid?: string;
+        status?: string;
+      }
     >({
-      query: ({ page = 1, limit = 10 } = {}) => {
-        return `/reclaims?page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({
+        page = 1,
+        limit = 10,
+        startDate,
+        endDate,
+        query,
+        document_type_number,
+        status,
+        valid
+      } = {}) => {
+        const url = `/crm`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (status) params.append("status", status);
+        if (document_type_number) params.append("document_type_number", document_type_number);
+        if (query) params.append("q", query);
+        if (valid) params.append("valid", valid);
+
+
+
+        const fullUrl = `${url}?${params.toString()}`;
+        console.log(fullUrl);
+        return fullUrl;
       },
       transformResponse: (response: Reclaims[]) => {
         if (!response || response.length === 0) {
@@ -115,7 +151,8 @@ export const reclaimsApi = createApi({
       },
     }),
     getReclaimById: builder.query<Reclaims, { id: string }>({
-      query: ({ id }) => `/reclaims/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/reclaims/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     createReclaim: builder.mutation<Reclaims, CreateReclaimsPayload>({
       query: (newReclaims) => ({

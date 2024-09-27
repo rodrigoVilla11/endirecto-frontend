@@ -15,32 +15,75 @@ import {
   useGetCustomersPagQuery,
 } from "@/redux/services/customersApi";
 import PrivateRoute from "../context/PrivateRoutes";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { useGetDocumentsQuery } from "@/redux/services/documentsApi";
+import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
+import { useClient } from "../context/ClientContext";
 require("dotenv").config();
 
 const SelectCustomer = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { setSelectedClientId } = useClient();
 
+
+  const [searchParams, setSearchParams] = useState({
+    query: "",
+    hasDebt: "",
+    hasDebtExpired: "",
+    seller_id: "",
+  });
   const { data, error, isLoading, refetch } = useGetCustomersPagQuery({
     page,
     limit,
-    query: searchQuery,
+    query: searchParams.query,
+    hasDebtExpired: searchParams.hasDebtExpired,
+    hasDebt: searchParams.hasDebt,
+    seller_id: searchParams.seller_id,
   });
+
+  const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const { data: documentsData } = useGetDocumentsQuery(null);
 
   const { data: countCustomersData } = useCountCustomersQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  // Función para manejar el clic en el menú Kebab
   const toggleMenu = (customerId: string) => {
     setActiveMenu(activeMenu === customerId ? null : customerId);
   };
 
-  const tableData =
-    data?.map((customer) => ({
+  const tableData = data?.map((customer) => {
+    const filteredDocuments = documentsData
+      ?.filter((data) => customer.documents_balance.includes(data.id))
+      .map((data) => ({
+        amount: parseFloat(data.amount) || 0, // Asegúrate de convertir a número
+        expiration_status: data.expiration_status || "unknown",
+      }));
+
+    const debt = {
+      amount: 0,
+    };
+    const debtExpired = {
+      amount: 0,
+    };
+
+    // Sumar montos según expiration_status
+    filteredDocuments?.forEach((doc) => {
+      if (doc.expiration_status === "VENCIDO") {
+        debtExpired.amount = (debtExpired.amount || 0) + doc.amount;
+      } else {
+        debt.amount = (debt.amount || 0) + doc.amount; // Suma en debt
+      }
+    });
+    const paymentCondition = paymentsConditionsData?.find(
+      (data) => data.id === customer.payment_condition_id
+    );
+
+    return {
       key: customer.id,
       icon: (
         <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
@@ -48,7 +91,11 @@ const SelectCustomer = () => {
         </div>
       ),
       "customer-id": customer.id,
-      customer: customer.name,
+      customer: (
+        <span onClick={() => setSelectedClientId(customer.id)} className="hover:cursor-pointer">
+          {customer.name}
+        </span>
+      ),
       address: (
         <div className="relative group">
           <span>
@@ -60,9 +107,9 @@ const SelectCustomer = () => {
           </div>
         </div>
       ),
-      "payment-condition": customer.payment_condition_id, // Conectar populate
-      "status-account": "$0,00",
-      "expired-debt": "$0,00", // Conectar
+      "payment-condition": paymentCondition?.name || "NOT FOUND",
+      "status-account": debt.amount,
+      "expired-debt": debtExpired.amount,
       "use-days-web": "50%", // Conectar
       "articles-on-cart": "3", // Conectar
       gps: <FiMapPin />,
@@ -84,7 +131,8 @@ const SelectCustomer = () => {
           )}
         </div>
       ),
-    })) || [];
+    };
+  });
 
   const tableHeader = [
     {
@@ -106,33 +154,87 @@ const SelectCustomer = () => {
     },
   ];
 
+  const handleSearch = (e: any) => {
+    if (e.key === "Enter") {
+      setSearchParams({ ...searchParams, query: e.target.value });
+      setPage(1);
+      refetch();
+    }
+  };
+  const handleDebtFilter = () => {
+    setSearchParams((prev) => ({
+      ...prev,
+      hasDebt: prev.hasDebt === "true" ? "" : "true",
+    }));
+    setPage(1);
+    refetch();
+  };
+
+  const handleExpiredDebtFilter = () => {
+    setSearchParams((prev) => ({
+      ...prev,
+      hasDebtExpired: prev.hasDebtExpired === "true" ? "" : "true",
+    }));
+    setPage(1);
+    refetch();
+  };
+
   const headerBody = {
     buttons: [
-      { logo: <FiMapPin />, title: "View On Map" },
+      { logo: <FiMapPin />, title: "View On Map", onClick: () => {} },
       { logo: <AiOutlineDownload />, title: "Download" },
     ],
     filters: [
-      { content: <Buttons title={"Seller"} /> },
+      {
+        content: (
+          <select
+            value={searchParams.seller_id}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, seller_id: e.target.value })
+            }
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="">Seller...</option>
+            {sellersData?.map((seller) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.name}
+              </option>
+            ))}
+          </select>
+        ),
+      },
       {
         content: (
           <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                refetch();
-              }
-            }}
+            placeholder="Search..."
+            value={searchParams.query}
+            onChange={(e: any) =>
+              setSearchParams({ ...searchParams, query: e.target.value })
+            }
+            onKeyDown={handleSearch}
           />
         ),
       },
-      { content: <ButtonOnOff title={"Debt"} /> },
-      { content: <ButtonOnOff title={"Expired D."} /> },
+      {
+        content: (
+          <ButtonOnOff
+            title="Debt"
+            onChange={handleDebtFilter}
+            active={searchParams.hasDebt === "true"}
+          />
+        ),
+      },
+      {
+        content: (
+          <ButtonOnOff
+            title="Expired D."
+            onChange={handleExpiredDebtFilter}
+            active={searchParams.hasDebtExpired === "true"}
+          />
+        ),
+      },
     ],
-    results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countCustomersData || 0} Results`,
+    results: `${countCustomersData || 0} Results`,
   };
 
   const handlePreviousPage = () => {
@@ -148,7 +250,7 @@ const SelectCustomer = () => {
   };
 
   return (
-    <PrivateRoute requiredRole="administrador">
+    <PrivateRoute>
       <div className="gap-4">
         <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
         <Header headerBody={headerBody} />

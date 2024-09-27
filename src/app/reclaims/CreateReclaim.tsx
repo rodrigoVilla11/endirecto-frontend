@@ -14,8 +14,11 @@ import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { format } from "date-fns";
+import { useAuth } from "../context/AuthContext";
 
 const CreateReclaimComponent = ({ closeModal }: any) => {
+  const { userData } = useAuth();
+
   const [form, setForm] = useState({
     reclaims_type_id: "",
     description: "",
@@ -25,7 +28,8 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     valid: Valid.S,
     date: Date.now(),
     status: Status.PENDING,
-    cause: ""
+    cause: "",
+    user_id: userData?._id
   });
 
   const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } =
@@ -107,7 +111,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             className="border border-black rounded-md p-2"
           />
         </label>
-{/* 
+        {/* 
         <label className="flex flex-col">
           Cause:
           <textarea

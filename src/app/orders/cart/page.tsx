@@ -38,7 +38,7 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <ButtonOnOff title={"Select All"} />,
+        // content: <ButtonOnOff title={"Select All"} />,
       },
       {
         content: (

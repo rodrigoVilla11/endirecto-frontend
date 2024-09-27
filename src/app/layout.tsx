@@ -7,6 +7,7 @@ import MainContent from "./components/MainContent/MainContent";
 import { AuthProvider } from "./context/AuthContext";
 import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
 import "react-datepicker/dist/react-datepicker.css";
+import { ClientProvider } from "./context/ClientContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,10 +26,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           <AuthProvider>
-            <SideMenuProvider>
-              <NavBarAndSideMenu />
-              <MainContent>{children}</MainContent>
-            </SideMenuProvider>
+            <ClientProvider>
+              <SideMenuProvider>
+                <NavBarAndSideMenu />
+                <MainContent>{children}</MainContent>
+              </SideMenuProvider>
+            </ClientProvider>
           </AuthProvider>
         </Providers>
       </body>

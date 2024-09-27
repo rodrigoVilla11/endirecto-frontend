@@ -8,9 +8,10 @@ import { AiOutlineDownload } from "react-icons/ai";
 import { FaPlus } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import {
+  Status,
   useCountReclaimsQuery,
   useGetReclaimsPagQuery,
-  useGetReclaimsQuery,
+  Valid,
 } from "@/redux/services/reclaimsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
@@ -20,7 +21,7 @@ import CreateReclaimComponent from "./CreateReclaim";
 import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
 import PrivateRoute from "../context/PrivateRoutes";
-// import UpdateReclaimComponent from "./UpdateReclaim";
+import DatePicker from "react-datepicker";
 
 const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -29,13 +30,34 @@ const Page = () => {
   const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+
+
+  const [searchParams, setSearchParams] = useState({
+    status: "",
+    valid: "",
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    document_type_number: "",
+  });
+  console.log(searchParams);
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: customerData } = useGetCustomersQuery(null);
-  const { data: userData } = useGetUsersQuery(null);
+  const { data: userDatas } = useGetUsersQuery(null);
   const { data, error, isLoading, refetch } = useGetReclaimsPagQuery({
     page,
     limit,
+    query: searchQuery,
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
+    valid: searchParams.valid,
+    status: searchParams.status,
+    document_type_number: searchParams.document_type_number,
   });
   const { data: countReclaimsData } = useCountReclaimsQuery(null);
 
@@ -73,7 +95,7 @@ const Page = () => {
     const customer = customerData?.find(
       (data) => data.id == reclaim.customer_id
     );
-    const user = userData?.find((data) => data._id == reclaim.user_id);
+    const user = userDatas?.find((data) => data._id == reclaim.user_id);
 
     return {
       key: reclaim._id,
@@ -130,31 +152,97 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Date From dd/mm/aaaa"} />,
-      },
-      {
-        content: <Input placeholder={"Date To dd/mm/aaaa"} />,
+        content: (
+          <DatePicker
+            selected={searchParams.startDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, startDate: date })
+            }
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
       },
       {
         content: (
-          <select>
-            <option value="order">STATUS</option>
+          <DatePicker
+            selected={searchParams.endDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, endDate: date })
+            }
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <select
+            value={searchParams.status}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, status: e.target.value })
+            }
+          >
+            <option value="">Status...</option>
+            {Object.values(Status).map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
           </select>
         ),
       },
       {
         content: (
-          <select>
-            <option value="order">TYPE</option>
+          <select
+            value={searchParams.valid}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, valid: e.target.value })
+            }
+          >
+            <option value="">Valid...</option>
+            {Object.values(Valid).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
         ),
       },
       {
-        content: <Input placeholder={"Number"} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
       {
-        content: <Input placeholder={"Search..."} />,
-      },
+        content: (
+          <Input
+            placeholder={"Number..."}
+            value={searchParams.document_type_number}
+            onChange={(e : any) => setSearchParams((prev) => ({
+              ...prev,
+              document_type_number: e.target.value
+            }))}
+            onKeyDown={(e : any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
+      }
+      
     ],
     results: `${countReclaimsData || 0} Results`,
   };

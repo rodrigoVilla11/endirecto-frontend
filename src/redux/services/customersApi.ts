@@ -14,6 +14,8 @@ type Customer = {
   notifications_id: string[];
   price_list_id: string;
   seller_id: string;
+  documents_balance: string[];
+  shopping_cart: string[];
 };
 
 export const customerApi = createApi({
@@ -33,11 +35,39 @@ export const customerApi = createApi({
       },
     }),
     getCustomersPag: builder.query<
-    Customer[],
-      { page?: number; limit?: number; query?: string }
+      Customer[],
+      {
+        page?: number;
+        limit?: number;
+        query?: string;
+        hasDebt?: string;
+        hasDebtExpired?: string;
+        seller_id?: string;
+      }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/customers?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({
+        page = 1,
+        limit = 10,
+        query = "",
+        hasDebt = "",
+        hasDebtExpired = "",
+        seller_id = "",
+      } = {}) => {
+        const url = `/customers`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (query) params.append("q", query);
+        if (hasDebt) params.append("hasDebt", hasDebt);
+        if (hasDebtExpired) params.append("hasDebtExpired", hasDebtExpired);
+        if (seller_id) params.append("seller_id", seller_id);
+
+        const fullUrl = `${url}?${params.toString()}`;
+        console.log(fullUrl);
+        return fullUrl;
       },
       transformResponse: (response: Customer[]) => {
         if (!response || response.length === 0) {

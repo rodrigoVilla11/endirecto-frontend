@@ -25,7 +25,7 @@ export const documentsApi = createApi({
   }),
   endpoints: (builder) => ({
     getDocuments: builder.query<Document[], null>({
-      query: () => `/documents/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Document[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron documentos en la respuesta");

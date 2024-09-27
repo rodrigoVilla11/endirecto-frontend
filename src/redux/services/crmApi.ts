@@ -82,7 +82,6 @@ export const crmApi = createApi({
         limit?: number;
         startDate?: string;
         endDate?: string;
-        seller_id?: string;
         status?: string;
         type?: string;
         insitu?: string;
@@ -111,7 +110,6 @@ export const crmApi = createApi({
         if (insitu) params.append("insitu", insitu);
 
         const fullUrl = `${url}?${params.toString()}`;
-        console.log(fullUrl)
         return fullUrl;
       },
       transformResponse: (response: Crm[]) => {

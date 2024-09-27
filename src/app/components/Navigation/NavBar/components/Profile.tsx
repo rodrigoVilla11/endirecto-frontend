@@ -5,8 +5,14 @@ import { IoPersonOutline } from "react-icons/io5";
 import { FaPowerOff } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
 const Profile = () => {
+  const { selectedClientId, setSelectedClientId } = useClient();
+  const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
 
   const { setIsAuthenticated, setRole, userData } = useAuth();
   const router = useRouter();
@@ -24,10 +30,26 @@ const Profile = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    setIsMenuOpen(!isMenuOpen);
     router.push("/login");
     setIsAuthenticated(false);
-    setRole(null)
+    setRole(null);
   };
+
+  const getInitial = () => {
+    if (selectedClientId && data?.name) {
+      return data.name.charAt(0);
+    } else if (userData?.username) {
+      return userData.username.charAt(0);
+    }
+    return ""; 
+  };
+
+  const handleDeselectCustomer = () => {
+    setSelectedClientId("")
+    setIsMenuOpen(!isMenuOpen);
+
+  }
 
   return (
     <div className="relative">
@@ -36,10 +58,10 @@ const Profile = () => {
         onClick={toggleMenu}
       >
         <div className="rounded-full h-10 w-10 bg-white flex justify-center items-center">
-          <p>{userData?.username.charAt(0)}</p>
+          <p>{getInitial()}</p>
         </div>
         <div className="flex justify-center items-center text-white">
-          <p>{userData?.username}</p>
+          <p>{selectedClientId ? data?.name : userData?.username}</p>
           <IoIosArrowDown />
         </div>
       </button>
@@ -52,6 +74,17 @@ const Profile = () => {
             >
               <IoPersonOutline /> My Profile
             </li>
+            {selectedClientId && (
+              <>
+                <hr />
+                <li
+                  onClick={handleDeselectCustomer}
+                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
+                >
+                  <FaPowerOff /> Deselect Customer
+                </li>
+              </>
+            )}
             <hr />
             <li
               onClick={handleLogout}

@@ -7,6 +7,7 @@ import { FaTrashCan } from "react-icons/fa6";
 import PrivateRoute from "../context/PrivateRoutes";
 
 const Page = () => {
+  const tableData = [{}];
   const tableHeader = [
     { name: "Brand", key: "brand" },
     {

@@ -19,10 +19,13 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
 
+  console.log(searchQuery)
   const { data, error, isLoading, refetch } = useGetArticlesBonusesPagQuery({
     page,
     limit,
+    query: searchQuery,
   });
   const { data: countArticlesBonusesData } = useCountArticlesBonusesQuery(null);
   const { data: brandsData } = useGetBrandsQuery(null);
@@ -65,7 +68,18 @@ const Page = () => {
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
       },
     ],
     results: `${countArticlesBonusesData || 0} Results`,

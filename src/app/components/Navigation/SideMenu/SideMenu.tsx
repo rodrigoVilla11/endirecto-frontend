@@ -9,6 +9,7 @@ import {
 } from "react-icons/md";
 import {
   FaDatabase,
+  FaHeart,
   FaPowerOff,
 } from "react-icons/fa";
 import { BsCash } from "react-icons/bs";
@@ -105,7 +106,8 @@ const SideMenu = ({isOpen} : any) => {
       ],
     },
     { icon: <MdOutlineMessage />, name: "CRM", path: "/crm" },
-    { icon: <FaRegClock />, name: "Pendings", path: "/pendings" },
+    { icon: <FaHeart />, name: "Favourites", path: "/favourites" },
+    // { icon: <FaRegClock />, name: "Pendings", path: "/pendings" },
     { icon: <MdNotificationsNone />, name: "Notifications", path: "/notifications" },
     {
       icon: <PiDownloadSimpleBold />,

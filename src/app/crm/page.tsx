@@ -89,7 +89,6 @@ const Page = () => {
     setSearchParams((prev) => {
       let newInsitu;
       if (contacted === null) {
-        // Si se desactivan ambos botones
         newInsitu = "";
       } else if (contacted) {
         newInsitu = "true";
