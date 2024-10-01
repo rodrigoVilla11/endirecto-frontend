@@ -17,7 +17,7 @@ import DatePicker from "react-datepicker";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const status = "SUMMARIZED";
   const { data: sellersData } = useGetSellersQuery(null);
 
@@ -31,9 +31,13 @@ const Page = () => {
     page,
     limit,
     status,
-    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
-    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
-    seller_id: searchParams.seller_id
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
+    seller_id: searchParams.seller_id,
   });
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
@@ -47,8 +51,16 @@ const Page = () => {
 
     return {
       key: collection._id,
-      info: <AiOutlineDownload className="text-center text-xl" />,
-      pdf: <FaRegFilePdf className="text-center text-xl" />,
+      info: (
+        <div className="flex justify-center items-center">
+          <AiOutlineDownload className="text-center text-xl" />
+        </div>
+      ),
+      pdf: (
+        <div className="flex justify-center items-center">
+          <FaRegFilePdf className="text-center text-xl" />
+        </div>
+      ),
       number: collection.number,
       date: collection.date
         ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
@@ -85,7 +97,9 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.startDate}
-            onChange={(date) => setSearchParams({ ...searchParams, startDate: date })}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, startDate: date })
+            }
             placeholderText="Date From"
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -96,7 +110,9 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.endDate}
-            onChange={(date) => setSearchParams({ ...searchParams, endDate: date })}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, endDate: date })
+            }
             placeholderText="Date To"
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -107,7 +123,9 @@ const Page = () => {
         content: (
           <select
             value={searchParams.seller_id}
-            onChange={(e) => setSearchParams({ ...searchParams, seller_id: e.target.value })}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, seller_id: e.target.value })
+            }
           >
             <option value="">Seller...</option>
             {sellersData?.map((seller) => (
@@ -117,18 +135,18 @@ const Page = () => {
             ))}
           </select>
         ),
-      }
-      
+      },
     ],
     results: `${data?.length || 0} Results`,
   };
-  
+
   const handlePreviousPage = () => {
     if (page > 1) setPage(page - 1);
   };
 
   const handleNextPage = () => {
-    if (page < Math.ceil((countCollectionsData || 0) / limit)) setPage(page + 1);
+    if (page < Math.ceil((countCollectionsData || 0) / limit))
+      setPage(page + 1);
   };
 
   return (

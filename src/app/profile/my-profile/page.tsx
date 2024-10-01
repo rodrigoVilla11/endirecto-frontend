@@ -8,6 +8,7 @@ import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
 const Page = () => {
   const { userData } = useAuth();
+  console.log(userData)
   const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
 
   const branch = branchsData?.find((data) => data.id === userData?.branch);

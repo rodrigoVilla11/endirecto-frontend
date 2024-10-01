@@ -29,7 +29,7 @@ const Page = () => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
 
 
@@ -109,16 +109,18 @@ const Page = () => {
       branch: branch?.name,
       data: reclaim.date,
       edit: (
+        <div className="flex justify-center items-center">
         <FaPencil
           className="text-center text-lg hover:cursor-pointer"
           onClick={() => openUpdateModal(reclaim._id)}
-        />
+        /></div>
       ),
       erase: (
+        <div className="flex justify-center items-center">
         <FaTrashCan
           className="text-center text-lg hover:cursor-pointer"
           onClick={() => openDeleteModal(reclaim._id)}
-        />
+        /></div>
       ),
     };
   });

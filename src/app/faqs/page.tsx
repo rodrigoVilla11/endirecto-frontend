@@ -11,7 +11,7 @@ import PrivateRoute from "../context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data, error, isLoading, refetch } = useGetFaqsPagQuery({

@@ -18,16 +18,16 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
 
   const handleDelete = async () => {
     try {
-      console.log('Current shopping cart:', data.shopping_cart);
+      console.log('Current favourites:', data.favourites);
       console.log('Article ID to delete:', decodedArticleId);
 
-      const updatedShoppingCart = data.shopping_cart.filter((id: string) => id !== decodedArticleId);
+      const updatedFavourites = data.favourites.filter((id: string) => id !== decodedArticleId);
       
-      console.log('Updated shopping cart:', updatedShoppingCart);
+      console.log('Updated favourites:', updatedFavourites);
 
       const result = await updateCustomer({ 
         id: data.id, 
-        shopping_cart: updatedShoppingCart 
+        favourites: updatedFavourites 
       }).unwrap();
 
       console.log('Update result:', result);
@@ -35,17 +35,17 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
       if (result) {
         closeModal();
       } else {
-        throw new Error('Failed to update shopping cart');
+        throw new Error('Failed to update favourites');
       }
     } catch (err) {
-      console.error('Error deleting Article from cart:', err);
+      console.error('Error deleting Article:', err);
     }
   };
 
   return (
     <div className="p-4">
       <h2 className="text-lg mb-4">Confirm Delete</h2>
-      <p>Are you sure you want to delete this Article from Shopping Cart?</p>
+      <p>Are you sure you want to delete this Article from Favourites?</p>
       <p className="mt-2 text-sm text-gray-600">Article ID: {decodedArticleId}</p>
       <div className="flex justify-end gap-4 mt-4">
         <button
@@ -64,8 +64,8 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
           {isUpdating ? 'Deleting...' : 'Delete'}
         </button>
       </div>
-      {isSuccess && <p className="text-green-500 mt-2">Article deleted from cart successfully!</p>}
-      {isError && <p className="text-red-500 mt-2">Error deleting Article from cart</p>}
+      {isSuccess && <p className="text-green-500 mt-2">Article deleted successfully!</p>}
+      {isError && <p className="text-red-500 mt-2">Error deleting Article</p>}
     </div>
   );
 };

@@ -19,7 +19,7 @@ import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationType, setNotificationType] = useState<NotificationType | undefined>(undefined)
   const { data: countNotificationsData } = useCountNotificationsQuery(null);
@@ -83,10 +83,11 @@ const Page = () => {
         date: notification.schedule_from,
 
         erase: (
+          <div className="flex justify-center items-center">
           <FaTrashCan
             className="text-center text-lg hover:cursor-pointer"
             onClick={() => openDeleteModal(notification._id)}
-          />
+          /></div>
         ),
       };
     }) || [];

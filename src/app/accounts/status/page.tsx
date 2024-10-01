@@ -13,15 +13,15 @@ import {
 } from "@/redux/services/documentsApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import DatePicker from "react-datepicker"; // Importa el DatePicker
-import "react-datepicker/dist/react-datepicker.css"; // Importa el CSS del DatePicker
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Page = () => {
   const { data: sumAmountsData, isLoading: isLoadingSumAmounts } =
     useSumAmountsQuery(null);
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,10 +33,9 @@ const Page = () => {
     page,
     limit,
     query: searchQuery,
-    startDate: startDate ? startDate.toISOString() : undefined, 
+    startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
   });
-  console.log(startDate)
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
@@ -50,7 +49,11 @@ const Page = () => {
 
     return {
       key: document.id,
-      id: <IoInformationCircleOutline className="text-center text-xl" />,
+      id: (
+        <div className="flex justify-center items-center">
+          <IoInformationCircleOutline className="text-center text-xl" />
+        </div>
+      ),
       customer: customer ? `${customer?.id} - ${customer?.name}` : "NOT FOUND",
       type: document.type,
       number: document.number,
@@ -78,6 +81,11 @@ const Page = () => {
     { name: "Logistic", key: "logistic" },
     { name: "Seller", key: "seller" },
   ];
+
+  const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   const headerBody = {
     buttons: [
@@ -126,7 +134,7 @@ const Page = () => {
     ],
     secondSection: {
       title: "Total Owed",
-      amount: isLoadingSumAmounts ? "Loading..." : `${sumAmountsData}`,
+      amount: isLoadingSumAmounts ? "Loading..." : `$ ${formatedSumAmount}`,
     },
     results: searchQuery
       ? `${data?.length || 0} Results`

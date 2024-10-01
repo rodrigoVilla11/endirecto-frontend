@@ -15,7 +15,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,10 +52,12 @@ const Page = () => {
     name: item.name,
     image: item.image,
     edit: (
-      <FaPencil
-        className="text-center text-lg hover:cursor-pointer"
-        onClick={() => openUpdateModal(item.id)}
-      />
+      <div className="flex justify-center items-center">
+        <FaPencil
+          className="text-center text-lg hover:cursor-pointer"
+          onClick={() => openUpdateModal(item.id)}
+        />
+      </div>
     ),
   }));
   const tableHeader = [

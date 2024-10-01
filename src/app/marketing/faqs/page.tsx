@@ -18,7 +18,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: countFaqsData } = useCountFaqsQuery(null);
 
@@ -66,16 +66,18 @@ const Page = () => {
       question: faq.question,
       answer: faq.answer,
       edit: (
+        <div className="flex justify-center items-center">
         <FaPencil
           className="text-center text-lg hover:cursor-pointer"
           onClick={() => openUpdateModal(faq._id)}
-        />
+        /></div>
       ),
       erase: (
+        <div className="flex justify-center items-center">
         <FaTrashCan
           className="text-center text-lg hover:cursor-pointer"
           onClick={() => openDeleteModal(faq._id)}
-        />
+        /></div>
       ),
     })) || [];
 

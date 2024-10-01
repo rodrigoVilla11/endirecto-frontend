@@ -19,7 +19,7 @@ import DatePicker from "react-datepicker";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +29,7 @@ const Page = () => {
     page,
     limit,
     query: searchQuery,
-    startDate: startDate ? startDate.toISOString() : undefined, 
+    startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
   });
   const { data: countDocumentsData } = useCountCustomersQuery(null);
@@ -45,7 +45,11 @@ const Page = () => {
 
     return {
       key: document.id,
-      id: <IoInformationCircleOutline className="text-center text-xl" />,
+      id: (
+        <div className="flex justify-center items-center">
+          <IoInformationCircleOutline className="text-center text-xl" />
+        </div>
+      ),
       customer: customer ? `${customer?.id} - ${customer?.name}` : "NOT FOUND",
       type: document.type,
       number: document.number,

@@ -1,4 +1,5 @@
 "use client";
+import { jwtDecode } from "jwt-decode";
 import React, {
   createContext,
   useContext,
@@ -37,13 +38,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const storedUser = localStorage.getItem("userData");
       const token = localStorage.getItem("token");
-      if (token && storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUserData(parsedUser);
-        setRole(parsedUser.role);
-        setIsAuthenticated(true);
+      if (token) {
+        try {
+          const decodedToken: any = jwtDecode(token);
+          
+          const { _id, username, email, role, branch } = decodedToken;
+          const user: UserData = { _id, username, email, role, branch };
+          setUserData(user);
+          setRole(role);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Error decoding token:", error);
+          setIsAuthenticated(false);
+        }
       } else {
         setIsAuthenticated(false);
       }

@@ -27,7 +27,7 @@ const ButtonsIcons = () => {
       />
       <MdNotifications className="cursor-pointer" />
       <MdHome
-        onClick={() => handleRedirect("/home")}
+        onClick={() => handleRedirect("/")}
         className="cursor-pointer"
       />
     </div>

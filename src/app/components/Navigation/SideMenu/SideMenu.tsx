@@ -68,10 +68,10 @@ const SideMenu = ({isOpen} : any) => {
         { name: "Popups", path: "/marketing/popups" },
         // { name: "Files", path: "/marketing/files" },
         { name: "FAQS", path: "/marketing/faqs" },
-        { name: "Articles", path: "/data/articles" },
-        { name: "Brands", path: "/data/brands" },
+        // { name: "Articles", path: "/data/articles" },
+        // { name: "Brands", path: "/data/brands" },
         // { name: "Families", path: "/marketing/families" },
-        { name: "Items", path: "/data/items" },
+        // { name: "Items", path: "/data/items" },
         // { name: "Subitems", path: "/marketing/subitems" },
 
 

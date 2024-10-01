@@ -35,7 +35,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
 
   return (
     <div
-      className="relative flex items-center text-2xl text-white group"
+      className="relative flex items-center text-xl text-white group"
       onClick={icon.subCategories ? toggleSubCategories : (event) => handleRedirect(icon.path || "", event)}
     >
       {!isOpen ? (

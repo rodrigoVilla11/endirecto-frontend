@@ -14,7 +14,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const status = "CHARGED";
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchParams, setSearchParams] = useState({

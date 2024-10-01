@@ -16,7 +16,7 @@ import PrivateRoute from "../context/PrivateRoutes";
 const Page = () => {
   const { data: brandsData } = useGetBrandsQuery(null);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: countNotificationsData } = useCountNotificationsQuery(null);
 
@@ -30,6 +30,7 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData = data?.map((notification) => {
+    console.log(notification.schedule_to);
     const brand = brandsData?.find((data) => data.id == notification.brand_id);
     return {
       key: notification._id,
@@ -37,9 +38,13 @@ const Page = () => {
       type: notification.type,
       title: notification.title,
       description: notification.description,
-      validity: format(new Date(notification.schedule_to), "dd/MM/yyyy HH:mm"),
-      date: format(new Date(notification.schedule_from), "dd/MM/yyyy HH:mm"),
-      download: <FaDownload className="text-center text-xl" />,
+      validity: notification.schedule_to,
+      date: notification.schedule_from,
+      download: (
+        <div className="flex justify-center items-center">
+          <FaDownload className="text-center text-xl" />
+        </div>
+      ),
     };
   });
   const tableHeader = [

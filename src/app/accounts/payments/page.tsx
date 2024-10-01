@@ -31,7 +31,7 @@ enum CollectionStatus {
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [updateCollection, { isLoading: isUpdating }] =
     useUpdateCollectionMutation();

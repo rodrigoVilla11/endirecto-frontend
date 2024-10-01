@@ -19,7 +19,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
@@ -73,16 +73,20 @@ const Page = () => {
       supplier: article.supplier_code,
       name: article.name,
       edit: (
-        <FaPencil
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openUpdateModal(article.id)}
-        />
+        <div className="flex justify-center items-center">
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(article.id)}
+          />
+        </div>
       ),
       erase: (
-        <FaTrashCan
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openDeleteModal(article.id)}
-        />
+        <div className="flex justify-center items-center">
+          <FaTrashCan
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openDeleteModal(article.id)}
+          />
+        </div>
       ),
     };
   });

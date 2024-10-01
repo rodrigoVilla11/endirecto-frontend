@@ -42,7 +42,7 @@ export const documentsApi = createApi({
         query?: string;
         startDate?: string;
         endDate?: string;
-        expirationStatus?: string; 
+        expirationStatus?: string;
       }
     >({
       query: ({
@@ -51,7 +51,7 @@ export const documentsApi = createApi({
         query = "",
         startDate,
         endDate,
-        expirationStatus, 
+        expirationStatus,
       } = {}) => {
         const url = `/documents`;
         const params = new URLSearchParams({
@@ -103,9 +103,15 @@ export const documentsApi = createApi({
       query: () => {
         return `/documents/sum-expired-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: { totalExpiredAmounts: string }) => {
-        console.log(response.totalExpiredAmounts);
-        return parseFloat(response.totalExpiredAmounts) || 0;
+      transformResponse: (response: { totalExpiredAmount?: string }) => {
+        console.log("response", response);
+        const totalExpiredAmount = response?.totalExpiredAmount;
+
+        if (totalExpiredAmount && !isNaN(parseFloat(totalExpiredAmount))) {
+          return parseFloat(totalExpiredAmount);
+        }
+
+        return 0; 
       },
     }),
 
@@ -113,10 +119,18 @@ export const documentsApi = createApi({
       query: () => {
         return `/documents/sum-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: { totalAmounts: string }) => {
-        return parseFloat(response.totalAmounts) || 0;
+      transformResponse: (response: { totalAmount?: string }) => {
+        const totalAmount = response?.totalAmount;
+    
+        
+        if (totalAmount && !isNaN(parseFloat(totalAmount))) {
+          return parseFloat(totalAmount);
+        }
+    
+        return 0;
       },
     }),
+    
   }),
 });
 

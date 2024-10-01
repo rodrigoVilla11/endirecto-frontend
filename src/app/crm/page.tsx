@@ -24,7 +24,7 @@ import CreateCRMComponent from "./CreateCRM";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(15);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const [contactedStates, setContactedStates] = useState<boolean[]>([]);
@@ -112,11 +112,15 @@ const Page = () => {
       (data) => data._id === crm.seller_id
     );
 
-    const index = data?.indexOf(crm); // Encuentra el índice del crm actual
+    const index = data?.indexOf(crm);
 
     return {
       key: crm._id,
-      info: <IoInformationCircleOutline className="text-center text-xl" />,
+      info: (
+        <div className="flex justify-center items-center">
+          <IoInformationCircleOutline className="text-center text-xl" />
+        </div>
+      ),
       seller: seller?.name,
       customer: customer?.name,
       contacted: (
@@ -169,7 +173,11 @@ const Page = () => {
         content: (
           <ButtonOnOff
             title={"Contacted"}
-            onChange={() => handleContactedFilters(searchParams.insitu === "true" ? null : true)}
+            onChange={() =>
+              handleContactedFilters(
+                searchParams.insitu === "true" ? null : true
+              )
+            }
             active={searchParams.insitu === "true"}
           />
         ),
@@ -178,7 +186,11 @@ const Page = () => {
         content: (
           <ButtonOnOff
             title={"Not Contacted"}
-            onChange={() => handleContactedFilters(searchParams.insitu === "false" ? null : false)}
+            onChange={() =>
+              handleContactedFilters(
+                searchParams.insitu === "false" ? null : false
+              )
+            }
             active={searchParams.insitu === "false"}
           />
         ),

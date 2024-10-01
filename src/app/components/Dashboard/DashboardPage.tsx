@@ -22,9 +22,15 @@ const DashboardPage = () => {
   const { data: countCustomersData } = useCountCustomersQuery(null);
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
   const { data: sumAmountsData } = useSumAmountsQuery(null);
+  const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const formatedExpiredSumAmount = sumExpiredAmountsData?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
-console.log(sumAmountsData, "sumAmountsData")
-console.log(sumExpiredAmountsData, "sumExpiredAmountsData")
 
 
   const itemsCard = [
@@ -43,8 +49,8 @@ console.log(sumExpiredAmountsData, "sumExpiredAmountsData")
     {
       logo: <MdTextSnippet />,
       title: "Status Account",
-      subtitle: `$ ${sumAmountsData}`,
-      text: `Expired: $ ${sumExpiredAmountsData}`,
+      subtitle: `$ ${formatedSumAmount}`,
+      text: `Expired: $ ${formatedExpiredSumAmount}`,
       href: "/accounts/status"
     },
     {
