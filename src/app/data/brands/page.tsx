@@ -49,7 +49,7 @@ const Page = () => {
     key: brand.id,
     id: brand.id,
     name: brand.name,
-    image: brand.images,
+    image: <div className="flex justify-center items-center"><img src={brand.images && brand.images[0]} className="h-10"/></div> || "NOT FOUND",
     sequence: brand.sequence,
     edit: (
       <div className="flex justify-center items-center">

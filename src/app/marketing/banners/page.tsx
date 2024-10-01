@@ -71,22 +71,34 @@ const Page = () => {
         name: popup.headers.name,
         sequence: popup.headers.sequence,
         enable: popup.headers.enable ? "true" : "false",
-        homeWeb: popup.headers.homeWeb,
-        headerWeb: popup.headers.headerWeb,
+        homeWeb:
+          (
+            <div className="flex justify-center items-center">
+              <img src={popup.headers.homeWeb && popup.headers.homeWeb} className="h-10"/>
+            </div>
+          ) || "NOT FOUND",
+        headerWeb:
+          (
+            <div className="flex justify-center items-center">
+              <img className="h-10" src={popup.headers.headerWeb && popup.headers.headerWeb} />
+            </div>
+          ) || "NOT FOUND",
         url: popup.headers.url,
         edit: (
           <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openUpdateModal(popup._id)}
-          /></div>
+            <FaPencil
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openUpdateModal(popup._id)}
+            />
+          </div>
         ),
         erase: (
           <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(popup._id)}
-          /></div>
+            <FaTrashCan
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openDeleteModal(popup._id)}
+            />
+          </div>
         ),
       };
     }) || [];
@@ -127,50 +139,50 @@ const Page = () => {
 
   return (
     <PrivateRoute>
-    <div className="gap-4">
-      <h3 className="font-bold p-4">BANNERS</h3>
-      <Header headerBody={headerBody} />
-      <Table headers={tableHeader} data={tableData} />
+      <div className="gap-4">
+        <h3 className="font-bold p-4">BANNERS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
 
-      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreateBannerComponent closeModal={closeCreateModal} />
-      </Modal>
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreateBannerComponent closeModal={closeCreateModal} />
+        </Modal>
 
-      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
-        {currentMarketingId && (
-          <UpdateBannerComponent
-            marketingId={currentMarketingId}
-            closeModal={closeUpdateModal}
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentMarketingId && (
+            <UpdateBannerComponent
+              marketingId={currentMarketingId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+          <DeleteBannerComponent
+            marketingId={currentMarketingId || ""}
+            closeModal={closeDeleteModal}
           />
-        )}
-      </Modal>
-
-      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-        <DeleteBannerComponent
-          marketingId={currentMarketingId || ""}
-          closeModal={closeDeleteModal}
-        />
-      </Modal>
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={page === 1}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <p>
-          Page {page} of {Math.ceil((countMarketingData || 0) / limit)}
-        </p>
-        <button
-          onClick={handleNextPage}
-          disabled={page === Math.ceil((countMarketingData || 0) / limit)}
-          className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        </Modal>
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countMarketingData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countMarketingData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
     </PrivateRoute>
   );
 };

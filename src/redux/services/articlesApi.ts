@@ -99,6 +99,18 @@ export const articlesApi = createApi({
         method: "DELETE",
       }),
     }),
+    uploadImage: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        return {
+          url: "/products/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
   }),
 });
 

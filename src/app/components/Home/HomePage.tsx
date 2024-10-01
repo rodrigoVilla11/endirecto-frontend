@@ -9,10 +9,10 @@ import Footer from './components/Footer'
 
 const HomePage = () => {
   return (
-    <div>
+    <div className='w-full flex flex-col justify-center items-center'>
         <SliderImages />
         <SliderBrands />
-        <div className='flex justify-evenly items-center' id='tags'>
+        <div className='flex justify-between items-center w-full' id='tags'>
             <ButtonsImage />
             <ButtonsImage />
             <ButtonsImage />

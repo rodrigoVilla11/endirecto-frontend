@@ -2,6 +2,7 @@ import {
   useGetBrandByIdQuery,
   useUpdateBrandMutation,
 } from "@/redux/services/brandsApi";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 
@@ -23,6 +24,44 @@ const UpdateBrandComponent = ({
   });
   const [updateBrand, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateBrandMutation();
+
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadResponses, setUploadResponses] = useState<string[]>([]);
+  const [
+    uploadImage,
+    {
+      isLoading: isLoadingUpload,
+      isSuccess: isSuccessUpload,
+      isError: isErrorUpload,
+      error: errorUpload,
+    },
+  ] = useUploadImageMutation();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length > 0) {
+      try {
+        const responses = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const response = await uploadImage(file).unwrap();
+            return response.url;
+          })
+        );
+
+        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+      } catch (err) {
+        console.error("Error uploading images:", err);
+      }
+    } else {
+      console.error("No files selected");
+    }
+  };
+
 
   const [form, setForm] = useState({
     id: "",
@@ -63,7 +102,11 @@ const UpdateBrandComponent = ({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateBrand(form).unwrap();
+      const updatedForm = {
+        ...form,
+        images: [...form.images, ...uploadResponses],
+      };
+      await updateBrand(updatedForm).unwrap();
       closeModal();
     } catch (err) {
       console.error("Error updating the brand:", err);
@@ -121,13 +164,20 @@ const UpdateBrandComponent = ({
 
         <label className="flex flex-col">
           Images:
-          <input
-            name="images"
-            value={form.images.join(", ")}
-            placeholder="Images (comma separated)"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          />
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+            />
+            <button onClick={handleUpload} disabled={isLoadingUpload}>
+              {isLoadingUpload ? "Uploading..." : "Upload Images"}
+            </button>
+
+            {isSuccessUpload && <div>Images uploaded successfully!</div>}
+            {isErrorUpload && <div>Error uploading images</div>}
+          </div>
         </label>
 
         <div className="flex justify-end gap-4 mt-4">

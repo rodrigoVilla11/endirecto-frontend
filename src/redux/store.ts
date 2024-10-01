@@ -32,6 +32,7 @@ import { notificationsApi } from "./services/notificationsApi";
 import { marketingApi } from "./services/marketingApi";
 import { collectionsApi } from "./services/collectionsApi";
 import { crmApi } from "./services/crmApi";
+import { cloduinaryApi } from "./services/cloduinaryApi";
 
 export const store = configureStore({
   reducer: {
@@ -67,6 +68,7 @@ export const store = configureStore({
     marketingApi: marketingApi.reducer,
     collectionsApi: collectionsApi.reducer,
     crmApi: crmApi.reducer,
+    cloduinaryApi: cloduinaryApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
@@ -101,7 +103,8 @@ export const store = configureStore({
       notificationsApi.middleware,
       marketingApi.middleware,
       collectionsApi.middleware,
-      crmApi.middleware
+      crmApi.middleware,
+      cloduinaryApi.middleware,
     ]),
 });
 

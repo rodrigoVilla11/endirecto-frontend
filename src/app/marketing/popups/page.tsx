@@ -72,7 +72,11 @@ const Page = () => {
         sequence: popup.popups.sequence,
         location: popup.popups.location,
         enable: popup.popups.enable ? "true" : "false",
-        web: popup.popups.web,
+        web:   (
+          <div className="flex justify-center items-center">
+            <img src={popup.popups.web && popup.popups.web} className="h-10"/>
+          </div>
+        ) || "NOT FOUND",
         url: popup.popups.url,
         visualization: popup.popups.visualization,
         edit: (

@@ -1,4 +1,8 @@
-import { useGetArticleByIdQuery, useUpdateArticleMutation } from "@/redux/services/articlesApi";
+import {
+  useGetArticleByIdQuery,
+  useUpdateArticleMutation,
+} from "@/redux/services/articlesApi";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 
@@ -11,12 +15,50 @@ const UpdateArticleComponent = ({
   articleId,
   closeModal,
 }: UpdateArticleComponentProps) => {
-  const { data: article, error, isLoading } = useGetArticleByIdQuery({
-    id: articleId,
-  });
+  const {
+    data: article,
+    error,
+    isLoading,
+  } = useGetArticleByIdQuery({ id: articleId });
 
   const [updateArticle, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateArticleMutation();
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadResponses, setUploadResponses] = useState<string[]>([]);
+  const [
+    uploadImage,
+    {
+      isLoading: isLoadingUpload,
+      isSuccess: isSuccessUpload,
+      isError: isErrorUpload,
+      error: errorUpload,
+    },
+  ] = useUploadImageMutation();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length > 0) {
+      try {
+        const responses = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const response = await uploadImage(file).unwrap();
+            return response.url;
+          })
+        );
+
+        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+      } catch (err) {
+        console.error("Error uploading images:", err);
+      }
+    } else {
+      console.error("No files selected");
+    }
+  };
 
   const [form, setForm] = useState({
     id: "",
@@ -46,7 +88,7 @@ const UpdateArticleComponent = ({
     if (name === "images" || name === "pdfs") {
       setForm((prevForm) => ({
         ...prevForm,
-        [name]: value.split(",").map((item) => item.trim()), // Convert comma-separated string to array
+        [name]: value.split(",").map((item) => item.trim()),
       }));
     } else {
       setForm((prevForm) => ({
@@ -59,7 +101,11 @@ const UpdateArticleComponent = ({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateArticle(form).unwrap(); 
+      const updatedForm = {
+        ...form,
+        images: [...form.images, ...uploadResponses],
+      };
+      await updateArticle(updatedForm).unwrap();
       closeModal();
     } catch (err) {
       console.error("Error updating the article:", err);
@@ -117,13 +163,20 @@ const UpdateArticleComponent = ({
 
         <label className="flex flex-col">
           Images:
-          <input
-            name="images"
-            value={form.images.join(", ")}
-            placeholder="Images (comma separated)"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          />
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+            />
+            <button onClick={handleUpload} disabled={isLoadingUpload}>
+              {isLoadingUpload ? "Uploading..." : "Upload Images"}
+            </button>
+
+            {isSuccessUpload && <div>Images uploaded successfully!</div>}
+            {isErrorUpload && <div>Error uploading images</div>}
+          </div>
         </label>
 
         <label className="flex flex-col">

@@ -110,7 +110,7 @@ const CardArticles = ({ article }: any) => {
           isFavourite={isFavourite}
         />
         <div onClick={openModal}>
-          <ArticleImage img={article.image} />
+          <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <ArticleName name={article.name} id={article.id} />
           <CostPrice articleId={article.id} />

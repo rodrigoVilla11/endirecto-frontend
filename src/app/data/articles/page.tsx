@@ -24,6 +24,7 @@ const Page = () => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
 
   const { data: brandData } = useGetBrandsQuery(null);
   const { data: itemData } = useGetItemsQuery(null);
@@ -66,7 +67,7 @@ const Page = () => {
     return {
       key: article.id,
       brand: brand?.name || "NO BRAND",
-      image: article.images,
+      image: <div className="flex justify-center items-center"><img src={article.images && article.images[0]} className="h-10"/></div> || "NOT FOUND",
       pdf: article.pdfs,
       item: item?.name || "NO ITEM",
       id: article.id,
