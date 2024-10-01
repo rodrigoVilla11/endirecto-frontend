@@ -6,11 +6,30 @@ const Header = ({ headerBody }: any) => {
     <div className="h-auto m-5 bg-white p-2 flex flex-col justify-between text-sm">
       <div className="flex justify-end items-center w-full h-1/2 border-b-2 p-2 gap-4 ">
         {headerBody.buttons.map((button: any, index: any) => (
-          <Buttons key={index} logo={button.logo} title={button.title} onClick={button.onClick}/>
+          <Buttons
+            key={index}
+            logo={button.logo}
+            title={button.title}
+            onClick={button.onClick}
+            red={button.red}
+          />
         ))}
       </div>
-      {headerBody.secondSection && <div className="flex justify-start items-center w-full h-1/2 border-b-2 p-2 py-4 gap-4">
-      <p className="font-bold ">{headerBody.secondSection.title}<span className="font-bold pl-4 text-2xl">{headerBody.secondSection.amount}</span></p></div>}
+      {headerBody.secondSection && (
+        <div className="flex justify-between items-center  w-full border-b-2 p-2 py-4 ">
+          <div className="flex justify-start items-center w-full h-1/2   gap-4">
+            <p className="font-bold ">
+              {headerBody.secondSection.title}
+              <span className="font-bold pl-4 text-2xl">
+                {headerBody.secondSection.amount}
+              </span>
+            </p>
+          </div>
+          {headerBody.secondSection.total && (
+            <div className="flex justify-center items-center w-40 font-bold">{headerBody.secondSection.total}</div>
+          )}
+        </div>
+      )}
       <div className="flex justify-start items-center w-full h-1/2 p-2 gap-4">
         {headerBody.filters.map((filter: any, index: any) => (
           <div key={index}>{filter.content}</div>

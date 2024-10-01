@@ -3,8 +3,8 @@ import React from "react";
 
 const ButtonOnOff = ({ title, active, onChange }: {
   title: string;
-  active: boolean;
-  onChange: () => void;
+  active?: boolean;
+  onChange?: () => void;
 }) => {
   return (
     <div className="flex gap-2 justify-center items-center">

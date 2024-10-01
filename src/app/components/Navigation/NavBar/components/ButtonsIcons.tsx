@@ -1,9 +1,12 @@
-import React from 'react'
-import { IoNotificationsOffOutline } from "react-icons/io5";
+import React from "react";
 import { GiUsaFlag } from "react-icons/gi";
-import { MdFullscreen } from "react-icons/md";
-import { IoNotificationsOutline } from "react-icons/io5";
-import { IoHomeOutline } from "react-icons/io5";
+import {
+  MdFullscreen,
+  MdHome,
+  MdNotifications,
+  MdNotificationsOff,
+  MdShoppingCart,
+} from "react-icons/md";
 import { useRouter } from "next/navigation";
 
 const ButtonsIcons = () => {
@@ -14,14 +17,21 @@ const ButtonsIcons = () => {
     }
   };
   return (
-    <div className='w-60 flex items-center justify-between text-2xl text-white'>
-      <IoNotificationsOffOutline className='cursor-pointer'/>
-      <GiUsaFlag className='cursor-pointer'/>
-      <MdFullscreen className='cursor-pointer'/>
-      <IoNotificationsOutline className='cursor-pointer'/>
-      <IoHomeOutline onClick={()=>handleRedirect("/home")} className='cursor-pointer'/>
+    <div className="w-60 flex items-center justify-between text-2xl text-white">
+      <MdNotificationsOff className="cursor-pointer text-red-600" />
+      <GiUsaFlag className="cursor-pointer" />
+      <MdFullscreen className="cursor-pointer" />
+      <MdShoppingCart 
+      className="cursor-pointer" 
+      onClick={() => handleRedirect("/shopping-cart")}
+      />
+      <MdNotifications className="cursor-pointer" />
+      <MdHome
+        onClick={() => handleRedirect("/home")}
+        className="cursor-pointer"
+      />
     </div>
-  )
-}
+  );
+};
 
-export default ButtonsIcons
+export default ButtonsIcons;

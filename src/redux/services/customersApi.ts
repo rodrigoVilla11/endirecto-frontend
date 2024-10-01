@@ -16,6 +16,13 @@ type Customer = {
   seller_id: string;
   documents_balance: string[];
   shopping_cart: string[];
+  favourites: string[]
+};
+
+type UpdateCustomersPayload = {
+  id: string;
+  shopping_cart?: string[]; 
+  favourites?: string[]; 
 };
 
 export const customerApi = createApi({
@@ -78,6 +85,13 @@ export const customerApi = createApi({
       },
     }),
 
+    updateCustomer: builder.mutation<Customer, UpdateCustomersPayload>({
+      query: ({ id, ...updatedCustomer }) => ({
+        url: `/customers/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: updatedCustomer,
+      }),
+    }),
     countCustomers: builder.query<number, null>({
       query: () => {
         return `/customers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
@@ -94,4 +108,5 @@ export const {
   useGetCustomerByIdQuery,
   useGetCustomersPagQuery,
   useCountCustomersQuery,
+  useUpdateCustomerMutation
 } = customerApi;

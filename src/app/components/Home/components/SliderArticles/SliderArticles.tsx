@@ -30,6 +30,7 @@ const SliderArticles = () => {
         ref={sliderRef}
         className="flex transition-transform duration-1000 gap-10 p-10"
         style={{ transform: `translateX(-${(currentSlide / totalSlides) * 100}%)` }}
+        id='articles'
       >
         <CardArticles />
         <CardArticles />

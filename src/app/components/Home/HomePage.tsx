@@ -12,7 +12,7 @@ const HomePage = () => {
     <div>
         <SliderImages />
         <SliderBrands />
-        <div className='flex justify-evenly items-center'>
+        <div className='flex justify-evenly items-center' id='tags'>
             <ButtonsImage />
             <ButtonsImage />
             <ButtonsImage />

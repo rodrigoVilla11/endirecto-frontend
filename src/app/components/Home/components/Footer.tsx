@@ -4,7 +4,7 @@ import { FaPhoneAlt, FaCalendarAlt } from "react-icons/fa";
 import { MdAttachEmail } from "react-icons/md";
 const Footer = () => {
   return (
-    <div className='bg-primary flex justify-around items-center text-white p-10'>
+    <div className='bg-primary flex justify-around items-center text-white p-10' id='contact'>
         <div className='flex flex-col gap-2 justify-center items-start text-sm'>
         <h2 className='text-xl'>Distribuidora Mayorista de Autopiezas</h2>
         <button>Home</button>

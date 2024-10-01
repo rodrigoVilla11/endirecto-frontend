@@ -111,7 +111,7 @@ const SelectCustomer = () => {
       "status-account": debt.amount,
       "expired-debt": debtExpired.amount,
       "use-days-web": "50%", // Conectar
-      "articles-on-cart": "3", // Conectar
+      "articles-on-cart": customer.shopping_cart.length, // Conectar
       gps: <FiMapPin />,
       menu: (
         <div className="relative">

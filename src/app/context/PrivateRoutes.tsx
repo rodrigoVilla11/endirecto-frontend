@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 
 interface PrivateRouteProps {
   children: ReactNode;
-  requiredRoles?: string[]; // Múltiples roles permitidos
+  requiredRoles?: string[]; 
 }
 
 const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {

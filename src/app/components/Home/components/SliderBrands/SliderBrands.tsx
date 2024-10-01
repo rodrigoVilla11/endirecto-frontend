@@ -30,7 +30,7 @@ const SliderBrands: React.FC = () => {
   }, []);
 
   return (
-    <div className='flex justify-center items-center p-10 gap-10 transition-transform duration-1000'>
+    <div className='flex justify-center items-center p-10 gap-10 transition-transform duration-1000' id='brands'>
       {logos.map((logo, index) => (
         <BrandsCards key={index} logo={logo} />
       ))}
