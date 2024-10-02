@@ -85,6 +85,7 @@ export const crmApi = createApi({
         status?: string;
         type?: string;
         insitu?: string;
+        customer_id?: string
       }
     >({
       query: ({
@@ -95,6 +96,7 @@ export const crmApi = createApi({
         status,
         type,
         insitu,
+        customer_id
       } = {}) => {
         const url = `/crm`;
         const params = new URLSearchParams({
@@ -108,6 +110,7 @@ export const crmApi = createApi({
         if (status) params.append("status", status);
         if (type) params.append("type", type);
         if (insitu) params.append("insitu", insitu);
+        if (customer_id) params.append("customer_id", customer_id);
 
         const fullUrl = `${url}?${params.toString()}`;
         return fullUrl;

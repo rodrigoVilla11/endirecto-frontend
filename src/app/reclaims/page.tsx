@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -22,6 +22,7 @@ import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
 import PrivateRoute from "../context/PrivateRoutes";
 import DatePicker from "react-datepicker";
+import { useClient } from "../context/ClientContext";
 
 const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -31,6 +32,8 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
+  const { selectedClientId } = useClient();
+  const [customer_id, setCustomer_id] = useState("")
 
 
   const [searchParams, setSearchParams] = useState({
@@ -40,7 +43,6 @@ const Page = () => {
     endDate: null as Date | null,
     document_type_number: "",
   });
-  console.log(searchParams);
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: customerData } = useGetCustomersQuery(null);
@@ -58,8 +60,19 @@ const Page = () => {
     valid: searchParams.valid,
     status: searchParams.status,
     document_type_number: searchParams.document_type_number,
+    customer_id: customer_id
   });
   const { data: countReclaimsData } = useCountReclaimsQuery(null);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch
+    } else {
+      setCustomer_id("");
+      refetch
+    }
+  }, [selectedClientId]);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -14,12 +14,18 @@ import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
+import { useClient } from "@/app/context/ClientContext";
 
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const status = "SUMMARIZED";
   const { data: sellersData } = useGetSellersQuery(null);
+  const { selectedClientId } = useClient();
+
+  const [customer_id, setCustomer_id] = useState("")
+
+ 
 
   const [searchParams, setSearchParams] = useState({
     seller_id: "",
@@ -38,7 +44,17 @@ const Page = () => {
       ? searchParams.endDate.toISOString()
       : undefined,
     seller_id: searchParams.seller_id,
+    customer_id
   });
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch
+    } else {
+      setCustomer_id("");
+      refetch
+    }
+  }, [selectedClientId]);
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
 

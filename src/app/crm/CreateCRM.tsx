@@ -11,20 +11,24 @@ import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { format } from "date-fns";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useClient } from "../context/ClientContext";
+import { useAuth } from "../context/AuthContext";
 
 const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
   const currentDate = format(new Date(), "yyyy-MM-dd");
-
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
+  console.log("selectedId", selectedClientId)
   const [form, setForm] = useState({
     date: currentDate,
     type: ActionType.CALL,
     status: StatusType.PENDING,
     notes: "",
     collection_id: "",
-    customer_id: "",
+    customer_id: selectedClientId ? selectedClientId : "",
     order_id: "",
     seller_id: "",
-    user_id: "",
+    user_id: userData ? userData?._id : "",
   });
   console.log(form)
   const { data: customersData, isLoading: isLoadingCustomers } =
@@ -116,6 +120,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               value={form.customer_id}
               onChange={handleChange}
               className="border border-black rounded-md p-2"
+              disabled={!!selectedClientId}
             >
               <option value="">Select customer</option>
               {!isLoadingCustomers &&
@@ -169,6 +174,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               value={form.user_id}
               onChange={handleChange}
               className="border border-black rounded-md p-2"
+              disabled
             >
               <option value="">Select user</option>
               {!isLoadingUsers &&

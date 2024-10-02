@@ -105,6 +105,7 @@ export const reclaimsApi = createApi({
         document_type_number?: string;
         valid?: string;
         status?: string;
+        customer_id?: string;
       }
     >({
       query: ({
@@ -115,9 +116,10 @@ export const reclaimsApi = createApi({
         query,
         document_type_number,
         status,
-        valid
+        valid,
+        customer_id,
       } = {}) => {
-        const url = `/crm`;
+        const url = `/reclaims`;
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -127,11 +129,11 @@ export const reclaimsApi = createApi({
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
-        if (document_type_number) params.append("document_type_number", document_type_number);
+        if (document_type_number)
+          params.append("document_type_number", document_type_number);
         if (query) params.append("q", query);
         if (valid) params.append("valid", valid);
-
-
+        if (customer_id) params.append("customer_id", customer_id);
 
         const fullUrl = `${url}?${params.toString()}`;
         console.log(fullUrl);

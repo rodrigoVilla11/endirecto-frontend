@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -16,6 +16,7 @@ import {
 } from "@/redux/services/documentsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
+import { useClient } from "@/app/context/ClientContext";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -25,13 +26,27 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const { selectedClientId } = useClient();
+  const [customer_id, setCustomer_id] = useState("")
+
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
     limit,
     query: searchQuery,
     startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
+    customer_id
   });
+  
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch
+    } else {
+      setCustomer_id("");
+      refetch
+    }
+  }, [selectedClientId]);
   const { data: countDocumentsData } = useCountCustomersQuery(null);
 
   if (isLoading) return <p>Loading...</p>;

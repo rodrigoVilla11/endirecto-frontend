@@ -1,7 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
-import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
@@ -20,6 +19,7 @@ import CreatePaymentComponent from "./CreatePayment";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
+import { useClient } from "@/app/context/ClientContext";
 
 enum CollectionStatus {
   PENDING = "PENDING",
@@ -35,7 +35,11 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [updateCollection, { isLoading: isUpdating }] =
     useUpdateCollectionMutation();
-  
+  const { selectedClientId } = useClient();
+
+  const [customer_id, setCustomer_id] = useState("");
+
+
   const [searchParams, setSearchParams] = useState({
     status: "",
     startDate: null as Date | null,
@@ -53,29 +57,51 @@ const Page = () => {
   const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
     page,
     limit,
-    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
-    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
     status: searchParams.status,
+    customer_id: customer_id
   });
+
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch
+    } else {
+      setCustomer_id("");
+      refetch
+    }
+  }, [selectedClientId]);
 
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error fetching collections.</p>;
 
-  const handleChangeStatus = async (collectionId: string, newStatus: CollectionStatus) => {
+  const handleChangeStatus = async (
+    collectionId: string,
+    newStatus: CollectionStatus
+  ) => {
     try {
       await updateCollection({ _id: collectionId, status: newStatus }).unwrap();
-      refetch(); 
+      refetch();
     } catch (error) {
       console.error("Error updating collection status:", error);
     }
   };
 
   const tableData = data?.map((collection) => {
-    const customer = customersData?.find((data) => data.id === collection.customer_id);
-    const seller = sellersData?.find((data) => data.id === collection.seller_id);
-    
+    const customer = customersData?.find(
+      (data) => data.id === collection.customer_id
+    );
+    const seller = sellersData?.find(
+      (data) => data.id === collection.seller_id
+    );
+
     return {
       key: collection._id,
       detail: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -83,13 +109,20 @@ const Page = () => {
       pdf: <FaRegFilePdf className="text-center text-xl" />,
       customer: customer ? `${customer.id} - ${customer.name}` : "NOT FOUND",
       number: collection.number,
-      date: collection.date ? format(new Date(collection.date), "dd/MM/yyyy HH:mm") : "N/A",
+      date: collection.date
+        ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
+        : "N/A",
       amount: collection.amount,
       status: collection.status,
       changeStatus: (
         <select
           value={collection.status}
-          onChange={(e) => handleChangeStatus(collection._id, e.target.value as CollectionStatus)}
+          onChange={(e) =>
+            handleChangeStatus(
+              collection._id,
+              e.target.value as CollectionStatus
+            )
+          }
         >
           <option value="">Change Status</option>
           {Object.values(CollectionStatus).map((st) => (
@@ -104,8 +137,14 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
-    { component: <MdOutlineEmail className="text-center text-xl" />, key: "mail" },
+    {
+      component: <IoInformationCircleOutline className="text-center text-xl" />,
+      key: "info",
+    },
+    {
+      component: <MdOutlineEmail className="text-center text-xl" />,
+      key: "mail",
+    },
     { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
     { name: "Customer", key: "customer" },
     { name: "Number", key: "number" },
@@ -126,7 +165,9 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.startDate}
-            onChange={(date) => setSearchParams({ ...searchParams, startDate: date })}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, startDate: date })
+            }
             placeholderText="Date From"
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -137,7 +178,9 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.endDate}
-            onChange={(date) => setSearchParams({ ...searchParams, endDate: date })}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, endDate: date })
+            }
             placeholderText="Date To"
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -148,7 +191,9 @@ const Page = () => {
         content: (
           <select
             value={searchParams.status}
-            onChange={(e) => setSearchParams({ ...searchParams, status: e.target.value })}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, status: e.target.value })
+            }
           >
             <option value="">Status...</option>
             {Object.values(CollectionStatus).map((st) => (
@@ -169,7 +214,8 @@ const Page = () => {
   };
 
   const handleNextPage = () => {
-    if (page < Math.ceil((countCollectionsData || 0) / limit)) setPage(page + 1);
+    if (page < Math.ceil((countCollectionsData || 0) / limit))
+      setPage(page + 1);
   };
 
   return (
@@ -178,7 +224,7 @@ const Page = () => {
         <h3 className="font-bold p-4">PAYMENTS</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        
+
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreatePaymentComponent closeModal={closeCreateModal} />
         </Modal>

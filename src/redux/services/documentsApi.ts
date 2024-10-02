@@ -43,6 +43,7 @@ export const documentsApi = createApi({
         startDate?: string;
         endDate?: string;
         expirationStatus?: string;
+        customer_id?: string
       }
     >({
       query: ({
@@ -52,6 +53,7 @@ export const documentsApi = createApi({
         startDate,
         endDate,
         expirationStatus,
+        customer_id
       } = {}) => {
         const url = `/documents`;
         const params = new URLSearchParams({
@@ -60,6 +62,10 @@ export const documentsApi = createApi({
           q: query,
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
+
+        if (customer_id) {
+          params.append("customer_id", customer_id);
+        }
 
         if (startDate) {
           params.append("startDate", startDate);

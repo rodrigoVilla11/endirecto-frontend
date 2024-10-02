@@ -15,15 +15,17 @@ import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { format } from "date-fns";
 import { useAuth } from "../context/AuthContext";
+import { useClient } from "../context/ClientContext";
 
 const CreateReclaimComponent = ({ closeModal }: any) => {
   const { userData } = useAuth();
+  const { selectedClientId } = useClient();
 
   const [form, setForm] = useState({
     reclaims_type_id: "",
     description: "",
     branch_id: "",
-    customer_id: "",
+    customer_id: selectedClientId ? selectedClientId : "",
     article_id: "",
     valid: Valid.S,
     date: Date.now(),
@@ -40,7 +42,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     useGetCustomersQuery(null);
   const { data: articlesData, isLoading: isLoadingArticles } =
     useGetAllArticlesQuery(null);
-
+   console.log("reclaimsTypesData",reclaimsTypesData)
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement

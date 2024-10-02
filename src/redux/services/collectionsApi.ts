@@ -65,7 +65,7 @@ export const collectionsApi = createApi({
       startDate?: string; 
       endDate?: string; 
       seller_id?: string; 
-
+      customer_id?: string
     }>({
       query: ({
         page = 1,
@@ -73,7 +73,8 @@ export const collectionsApi = createApi({
         startDate,
         endDate,
         status,
-        seller_id
+        seller_id,
+        customer_id
       } = {}) => {
         const url = `/collections`;
         const params = new URLSearchParams({
@@ -88,6 +89,7 @@ export const collectionsApi = createApi({
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
         if (seller_id) params.append("seller_id", seller_id);
+        if (customer_id) params.append("customer_id", customer_id);
       
 
         const fullUrl = `${url}?${params.toString()}`;

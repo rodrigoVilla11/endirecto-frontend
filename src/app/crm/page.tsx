@@ -1,6 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import Input from "@/app/components/components/Input";
+import React, { useEffect, useState } from "react";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
@@ -21,6 +20,7 @@ import DatePicker from "react-datepicker";
 import { FaPlus } from "react-icons/fa";
 import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
+import { useClient } from "../context/ClientContext";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -28,6 +28,18 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const [contactedStates, setContactedStates] = useState<boolean[]>([]);
+  const { selectedClientId } = useClient();
+
+  const [customer_id, setCustomer_id] = useState("")
+
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+    } else {
+      setCustomer_id("");
+    }
+  }, [selectedClientId]);
+
 
   const [searchParams, setSearchParams] = useState({
     status: "",
@@ -42,7 +54,6 @@ const Page = () => {
     setCreateModalOpen(false);
     refetch();
   };
-  console.log(searchParams);
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
@@ -60,6 +71,7 @@ const Page = () => {
     type: searchParams.type,
     status: searchParams.status,
     insitu: searchParams.insitu,
+    customer_id: customer_id
   });
 
   const [updateCrm] = useUpdateCrmMutation();

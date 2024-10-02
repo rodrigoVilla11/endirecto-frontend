@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import { IoMdClose } from "react-icons/io";
 import { stringify } from "querystring";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useClient } from "@/app/context/ClientContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 enum status {
   "PENDING" = "PENDING",
@@ -19,6 +21,10 @@ enum status {
 const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
   const currentDate = format(new Date(), "yyyy-MM-dd");
 
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
+
+
   const [form, setForm] = useState({
     number: "",
     status: status.PENDING,
@@ -27,9 +33,9 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
     netamount: 0,
     branch_id: "",
     files: "",
-    customer_id: "",
+    customer_id: selectedClientId ? selectedClientId : "",
     seller_id: "",
-    user_id: "",
+    user_id: userData ? userData?._id : "",
     notes: "",
   });
 
@@ -145,6 +151,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
                 value={form.customer_id}
                 onChange={handleChange}
                 className="border border-black rounded-md p-2"
+                disabled={!!selectedClientId}
               >
                 <option value="">Select customer</option>
                 {!isLoadingCustomers &&
@@ -181,6 +188,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
                 value={form.user_id}
                 onChange={handleChange}
                 className="border border-black rounded-md p-2"
+                disabled
               >
                 <option value="">Select user</option>
                 {!isLoadingUsers &&

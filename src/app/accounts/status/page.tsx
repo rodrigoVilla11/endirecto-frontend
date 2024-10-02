@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -9,25 +9,28 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import {
   useCountDocumentsQuery,
   useGetDocumentsPagQuery,
+  useGetDocumentsQuery,
   useSumAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useClient } from "@/app/context/ClientContext";
 
 const Page = () => {
-  const { data: sumAmountsData, isLoading: isLoadingSumAmounts } =
-    useSumAmountsQuery(null);
-
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { selectedClientId } = useClient();
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [customer_id, setCustomer_id] = useState("")
+
+
 
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
@@ -35,8 +38,20 @@ const Page = () => {
     query: searchQuery,
     startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
+    customer_id
   });
+  
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch
+    } else {
+      setCustomer_id("");
+      refetch
+    }
+  }, [selectedClientId]);
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
+  const { data: sumAmountsData } = useSumAmountsQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -82,6 +97,14 @@ const Page = () => {
     { name: "Seller", key: "seller" },
   ];
 
+  const sumAmountsDataFilter = tableData?.reduce((acc, document) => {
+    const amount = parseFloat(document.amount);
+    return acc + amount;
+  }, 0);
+  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -134,7 +157,7 @@ const Page = () => {
     ],
     secondSection: {
       title: "Total Owed",
-      amount: isLoadingSumAmounts ? "Loading..." : `$ ${formatedSumAmount}`,
+      amount: selectedClientId ? `$ ${formatedSumAmountFilter}` :`$ ${formatedSumAmount}`,
     },
     results: searchQuery
       ? `${data?.length || 0} Results`
