@@ -68,7 +68,7 @@ const Page = () => {
     }
   };
   return (
-    <PrivateRoute>
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">FAQS</h3>
         <Header headerBody={headerBody} />

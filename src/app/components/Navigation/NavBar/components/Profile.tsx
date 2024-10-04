@@ -79,7 +79,7 @@ const Profile = () => {
                 <hr />
                 <li
                   onClick={handleDeselectCustomer}
-                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
+                  className="px-2 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
                 >
                   <FaPowerOff /> Deselect Customer
                 </li>

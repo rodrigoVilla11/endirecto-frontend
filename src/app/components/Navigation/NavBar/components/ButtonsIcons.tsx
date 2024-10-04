@@ -8,8 +8,11 @@ import {
   MdShoppingCart,
 } from "react-icons/md";
 import { useRouter } from "next/navigation";
+import { useClient } from "@/app/context/ClientContext";
 
 const ButtonsIcons = () => {
+  const { selectedClientId } = useClient();
+
   const router = useRouter();
   const handleRedirect = (path: string) => {
     if (path) {
@@ -21,15 +24,14 @@ const ButtonsIcons = () => {
       <MdNotificationsOff className="cursor-pointer text-red-600" />
       <GiUsaFlag className="cursor-pointer" />
       <MdFullscreen className="cursor-pointer" />
-      <MdShoppingCart 
-      className="cursor-pointer" 
-      onClick={() => handleRedirect("/shopping-cart")}
-      />
+      {selectedClientId && (
+        <MdShoppingCart
+          className="cursor-pointer"
+          onClick={() => handleRedirect("/shopping-cart")}
+        />
+      )}
       <MdNotifications className="cursor-pointer" />
-      <MdHome
-        onClick={() => handleRedirect("/")}
-        className="cursor-pointer"
-      />
+      <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
     </div>
   );
 };

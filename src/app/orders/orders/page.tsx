@@ -5,6 +5,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { FaRegFilePdf } from "react-icons/fa6";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -58,11 +59,13 @@ const Page = () => {
   };
 
   return (
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
     <div className="gap-4">
       <h3 className="font-bold p-4">ORDERS</h3>
       <Header headerBody={headerBody} />
       {/* <Table headers={tableHeader} /> */}
     </div>
+    </PrivateRoute>
   );
 };
 

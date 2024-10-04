@@ -19,14 +19,16 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetDocumentsQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useClient } from "../context/ClientContext";
+import { useRouter } from "next/navigation";
 require("dotenv").config();
 
 const SelectCustomer = () => {
+  const router = useRouter();
+
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { setSelectedClientId } = useClient();
-
 
   const [searchParams, setSearchParams] = useState({
     query: "",
@@ -54,6 +56,11 @@ const SelectCustomer = () => {
 
   const toggleMenu = (customerId: string) => {
     setActiveMenu(activeMenu === customerId ? null : customerId);
+  };
+
+  const handleSelectCustomer = (customerId: string) => {
+    setSelectedClientId(customerId);
+    router.push("/catalogue");
   };
 
   const tableData = data?.map((customer) => {
@@ -92,7 +99,10 @@ const SelectCustomer = () => {
       ),
       "customer-id": customer.id,
       customer: (
-        <span onClick={() => setSelectedClientId(customer.id)} className="hover:cursor-pointer">
+        <span
+          onClick={() => handleSelectCustomer(customer.id)}
+          className="hover:cursor-pointer"
+        >
           {customer.name}
         </span>
       ),
@@ -250,7 +260,7 @@ const SelectCustomer = () => {
   };
 
   return (
-    <PrivateRoute>
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
       <div className="gap-4">
         <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
         <Header headerBody={headerBody} />

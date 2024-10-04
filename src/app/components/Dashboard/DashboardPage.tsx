@@ -15,10 +15,15 @@ import CardShortcuts from "./components/CardShortcuts";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
-import { useSumAmountsQuery, useSumExpiredAmountsQuery } from "@/redux/services/documentsApi";
+import {
+  useSumAmountsQuery,
+  useSumExpiredAmountsQuery,
+} from "@/redux/services/documentsApi";
+import { useAuth } from "@/app/context/AuthContext";
 
 const DashboardPage = () => {
   const { isOpen } = useSideMenu();
+  const { role } = useAuth();
   const { data: countCustomersData } = useCountCustomersQuery(null);
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
   const { data: sumAmountsData } = useSumAmountsQuery(null);
@@ -26,32 +31,36 @@ const DashboardPage = () => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const formatedExpiredSumAmount = sumExpiredAmountsData?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-
+  const formatedExpiredSumAmount = sumExpiredAmountsData?.toLocaleString(
+    "es-ES",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  );
 
   const itemsCard = [
     {
       logo: <MdOutlineShoppingBag />,
       title: "Catalogue",
       text: "Access our catalog of articles",
-      href: "/catalogue"
+      href: "/catalogue",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <CgProfile />,
       title: "Select Customer",
       subtitle: countCustomersData,
-      href: "/selectCustomer"
+      href: "/selectCustomer",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <MdTextSnippet />,
       title: "Status Account",
       subtitle: `$ ${formatedSumAmount}`,
       text: `Expired: $ ${formatedExpiredSumAmount}`,
-      href: "/accounts/status"
+      href: "/accounts/status",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <TbClockExclamation />,
@@ -64,7 +73,8 @@ const DashboardPage = () => {
           With Stock: $ 9.999.999
         </>
       ),
-      href: ""
+      href: "",
+      allowedRoles: ["ADMINISTRADOR"],
     },
     {
       logo: <BsCash />,
@@ -77,7 +87,8 @@ const DashboardPage = () => {
           Last Year Month: $ 0
         </>
       ),
-      href: ""
+      href: "",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <BsCash />,
@@ -90,14 +101,16 @@ const DashboardPage = () => {
           Last Year Month: $ 0
         </>
       ),
-      href: ""
+      href: "",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <FaInfo />,
       title: "Pending Reclaims",
       subtitle: "0",
       text: "Total Reclaims: 0",
-      href: "/pendings"
+      href: "/pendings",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <CgProfile />,
@@ -110,53 +123,115 @@ const DashboardPage = () => {
           Total Customers: 9.999
         </>
       ),
-      href: "/crm"
+      href: "/crm",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoIosPaper />,
       title: "Monthly Orders",
       subtitle: "$ 9.999.999",
       text: "Quantity of Orders: 80",
-      href: "/orders/orders"
+      href: "/orders/orders",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoIosPaper />,
       title: "Monthly Invoices ",
       subtitle: "$ 999.999.999",
       text: "Number of Invoices: 350",
-      href: "/accounts/vouchers"
+      href: "/accounts/vouchers",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoNotificationsOutline />,
       title: "Notifications",
       subtitle: "0",
       text: "Without reading: 0",
-      href: "/notifications"
+      href: "/notifications",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <GoGraph />,
       title: "Days of WEB use Clients",
       subtitle: "1.95 %",
-      href: ""
+      href: "",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
   ];
   const itemsShortcuts = [
-    { logo: <IoIosPaper />, title: "Documents", href: "/accounts/vouchers" },
-    { logo: <BsCash />, title: "Collections", href: "/accounts/payments" },
-    { logo: <BsCash />, title: "Collections Summaries", href: "/collections/summaries" },
-    { logo: <BsCash />, title: "Collections Unsummaries", href: "/collections/unsummaries" },
-    { logo: <IoCalculatorSharp />, title: "Orders", href: "/orders/orders" },
-    { logo: <IoCalculatorSharp />, title: "Budget", href: "/orders/budget" },
-    { logo: <ImStatsDots />, title: "Statistic", href: "/stats" },
-    { logo: <CgProfile />, title: "My Profile", href: "/profile/my-profile" },
-    { logo: <FaPowerOff />, title: "Logout", href: "" },
+    {
+      logo: <IoIosPaper />,
+      title: "Documents",
+      href: "/accounts/vouchers",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <BsCash />,
+      title: "Collections",
+      href: "/accounts/payments",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <BsCash />,
+      title: "Collections Summaries",
+      href: "/collections/summaries",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <BsCash />,
+      title: "Collections Unsummaries",
+      href: "/collections/unsummaries",
+      allowedRoles: ["ADMINISTRADOR"],
+    },
+    {
+      logo: <IoCalculatorSharp />,
+      title: "Orders",
+      href: "/orders/orders",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <IoCalculatorSharp />,
+      title: "Budget",
+      href: "/orders/budget",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <ImStatsDots />,
+      title: "Statistic",
+      href: "/stats",
+      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+    },
+    {
+      logo: <CgProfile />,
+      title: "My Profile",
+      href: "/profile/my-profile",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <FaPowerOff />,
+      title: "Logout",
+      href: "",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
   ];
+
+  const filteredItemsCard = role
+    ? itemsCard.filter(
+        (icon) => !icon.allowedRoles || icon.allowedRoles.includes(role)
+      )
+    : itemsCard;
+
+  const filteredItemsShortcuts = role
+    ? itemsShortcuts.filter(
+        (icon) => !icon.allowedRoles || icon.allowedRoles.includes(role)
+      )
+    : itemsCard;
   return (
     <div className="gap-4">
       <h3 className="text-bold p-4">DASHBOARD</h3>
       <Header />
       <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} pr-4`}>
-        {itemsCard.map((item, index: any) => {
+        {filteredItemsCard.map((item, index: any) => {
           return (
             <Link key={index} href={item.href}>
               <Card
@@ -171,7 +246,7 @@ const DashboardPage = () => {
       </div>
       <h4 className="text-bold p-4">SHORTCUTS</h4>
       <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} pr-4`}>
-        {itemsShortcuts.map((item, index: any) => {
+        {filteredItemsShortcuts.map((item, index: any) => {
           return (
             <Link key={index} href={item.href}>
               <CardShortcuts title={item.title} logo={item.logo} />

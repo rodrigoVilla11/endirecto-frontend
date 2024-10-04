@@ -1,10 +1,12 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export enum Roles {
-  ADMINISTRADOR = "administrador",
-  OPERADOR = "operador",
-  MARKETING = "marketing",
-  VENDEDOR = "vendedor",
+  ADMINISTRADOR = "ADMINISTRADOR",
+  OPERADOR = "OPERADOR",
+  MARKETING = "MARKETING",
+  VENDEDOR = "VENDEDOR",
+  CUSTOMER = "CUSTOMER",
+  EMPLEADO = "EMPLEADO ",
 }
 
 type User = {

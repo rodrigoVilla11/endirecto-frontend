@@ -5,7 +5,9 @@ import PrivateRoute from "../context/PrivateRoutes";
 const Dashboard = () => {
   return (
     <div className="w-full">
-      <PrivateRoute>
+      <PrivateRoute
+        requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+      >
         <DashboardPage />
       </PrivateRoute>
     </div>

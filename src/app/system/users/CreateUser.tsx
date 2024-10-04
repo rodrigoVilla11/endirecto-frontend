@@ -115,10 +115,11 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             className="border border-black rounded-md p-2"
           >
             <option value="">Select role</option>
-            <option value={Roles.ADMINISTRADOR}>Administrador</option>
-            <option value={Roles.OPERADOR}>Operador</option>
-            <option value={Roles.MARKETING}>Marketing</option>
-            <option value={Roles.VENDEDOR}>Vendedor</option>
+            {Object.values(Roles).map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
           </select>
         </label>
 

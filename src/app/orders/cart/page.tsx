@@ -5,6 +5,7 @@ import Table from "@/app/components/components/Table";
 import {  FaTrashCan } from "react-icons/fa6";
 import ButtonOnOff from "@/app/components/components/ButtonOnOff";
 import { FaImage, FaShoppingCart } from "react-icons/fa";
+import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const tableHeader = [
@@ -57,11 +58,13 @@ const Page = () => {
   };
 
   return (
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
     <div className="gap-4">
       <h3 className="font-bold p-4">CART</h3>
       <Header headerBody={headerBody} />
       {/* <Table headers={tableHeader} /> */}
     </div>
+    </PrivateRoute>
   );
 };
 
