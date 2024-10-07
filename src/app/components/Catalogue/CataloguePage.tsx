@@ -7,20 +7,35 @@ import Articles from "./components/Articles/Articles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
 import PopUpModal from "./components/PopUpModal";
+import { useClient } from "@/app/context/ClientContext";
+import { useRouter } from "next/navigation";
 
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page: 1,
     limit: 10,
   });
+  const { selectedClientId } = useClient();
+  const router = useRouter();
 
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
   const [isModalVisible, setModalVisible] = useState(false); // Estado para el modal
 
   useEffect(() => {
-    setModalVisible(true);
-  }, []);
+    if (!selectedClientId) {
+      router.push("/selectCustomer"); //
+    } else {
+      setModalVisible(true);
+    }
+  }, [selectedClientId, router]);
+
+  const handleRedirect = (path: string) => {
+    if (path) {
+      router.push(path);
+    }
+  };
+
   if (error) return <p>Loading...</p>;
 
   const toggleFilterBox = () => {
@@ -31,9 +46,8 @@ const CataloguePage = () => {
     setShowArticles(type);
   };
 
-
   const closeModal = () => {
-    setModalVisible(false); 
+    setModalVisible(false);
   };
 
   return (
@@ -94,9 +108,9 @@ const CataloguePage = () => {
             <p className="text-xs pr-4">{data?.length || 0}</p>
           </div>
           <Articles data={data} />
-            <Modal isOpen={isModalVisible} onClose={closeModal}>
-              <PopUpModal closeModal={closeModal} />
-            </Modal>
+          <Modal isOpen={isModalVisible} onClose={closeModal}>
+            <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect}/>
+          </Modal>
         </div>
       </div>
     </div>

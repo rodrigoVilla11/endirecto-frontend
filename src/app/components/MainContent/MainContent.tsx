@@ -1,12 +1,9 @@
 "use client";
-import { useSideMenu } from '@/app/context/SideMenuContext';
-import React from 'react';
+import React from "react";
 
 const MainContent = ({ children }: { children: React.ReactNode }) => {
-  const { isOpen } = useSideMenu();
-  const isLogin = true;
   return (
-    <div className={`${isLogin && `${isOpen ? "ml-80" : "ml-24"}`} mt-20 transition-all duration-300`}>
+    <div className={`mt-16 transition-all duration-300 flex-1 overflow-y-auto`}>
       {children}
     </div>
   );

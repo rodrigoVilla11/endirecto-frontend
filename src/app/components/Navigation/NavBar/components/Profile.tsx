@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { SlLogout } from "react-icons/sl";
 
 const Profile = () => {
   const { selectedClientId, setSelectedClientId } = useClient();
@@ -81,7 +82,7 @@ const Profile = () => {
                   onClick={handleDeselectCustomer}
                   className="px-2 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
                 >
-                  <FaPowerOff /> Deselect Customer
+                  <SlLogout /> Deselect Customer
                 </li>
               </>
             )}

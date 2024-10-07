@@ -23,6 +23,7 @@ import { useAuth } from "@/app/context/AuthContext";
 
 const DashboardPage = () => {
   const { isOpen } = useSideMenu();
+ 
   const { role } = useAuth();
   const { data: countCustomersData } = useCountCustomersQuery(null);
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);

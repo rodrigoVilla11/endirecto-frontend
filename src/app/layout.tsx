@@ -28,8 +28,10 @@ export default function RootLayout({
           <AuthProvider>
             <ClientProvider>
               <SideMenuProvider>
-                <NavBarAndSideMenu />
-                <MainContent>{children}</MainContent>
+                <div className="flex h-screen">
+                  <NavBarAndSideMenu />
+                  <MainContent>{children}</MainContent>
+                </div>
               </SideMenuProvider>
             </ClientProvider>
           </AuthProvider>

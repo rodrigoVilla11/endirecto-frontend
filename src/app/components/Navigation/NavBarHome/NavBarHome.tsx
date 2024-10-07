@@ -4,7 +4,7 @@ import Buttons from './components/Buttons'
 
 const NavBarHome = () => {
   return (
-    <nav className='w-full h-20 bg-header-color fixed z-50 flex justify-around items-center top-0'>
+    <nav className='w-full h-16 bg-header-color fixed z-50 flex justify-around items-center top-0'>
       <Logo/>
       <Buttons />
     </nav>

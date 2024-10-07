@@ -1,9 +1,10 @@
-import { useUploadImageMutation } from "@/redux/services/cloduinaryApi"; 
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import {
   useGetMarketingByIdQuery,
   useUpdateMarketingMutation,
 } from "@/redux/services/marketingApi";
 import React, { useEffect, useState } from "react";
+import { IoMdClose } from "react-icons/io";
 
 type UpdateBannerComponentProps = {
   marketingId: string;
@@ -33,7 +34,9 @@ const UpdateBannerComponent = ({
   } = useGetMarketingByIdQuery({ id: marketingId });
 
   const [selectedHomeFile, setSelectedHomeFile] = useState<File | null>(null);
-  const [selectedHeaderFile, setSelectedHeaderFile] = useState<File | null>(null);
+  const [selectedHeaderFile, setSelectedHeaderFile] = useState<File | null>(
+    null
+  );
   const [homeUploadResponse, setHomeUploadResponse] = useState<string>("");
   const [headerUploadResponse, setHeaderUploadResponse] = useState<string>("");
 
@@ -53,7 +56,9 @@ const UpdateBannerComponent = ({
     }
   };
 
-  const handleHeaderFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeaderFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedHeaderFile(event.target.files[0]);
     }
@@ -87,7 +92,7 @@ const UpdateBannerComponent = ({
 
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
-  
+
   const [form, setForm] = useState<FormState>({
     _id: "",
     headers: {
@@ -164,7 +169,15 @@ const UpdateBannerComponent = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-auto">
-        <h2 className="text-lg font-semibold mb-4">Editar Banner</h2>
+        <div className="flex justify-between mb-4">
+          <h2 className="text-lg font-semibold mb-4">Editar Banner</h2>
+          <button
+            onClick={closeModal}
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
+          >
+            <IoMdClose className="text-lg" />
+          </button>
+        </div>
         <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
           <div className="flex gap-4">
             <div className="flex flex-col flex-1">
@@ -214,15 +227,24 @@ const UpdateBannerComponent = ({
                   onChange={handleHomeFileChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none"
                 />
-                <button 
-                  type="button" 
-                  onClick={handleUploadHome} 
-                  disabled={isLoadingUpload} 
-                  className="mt-2 bg-blue-500 text-white rounded-md p-2">
+                <button
+                  type="button"
+                  onClick={handleUploadHome}
+                  disabled={isLoadingUpload}
+                  className="mt-2 bg-blue-500 text-white rounded-md p-2"
+                >
                   {isLoadingUpload ? "Subiendo..." : "Subir Imagen"}
                 </button>
-                {isSuccessUpload && <div className="text-green-500 mt-1">¡Imagen de Home App subida con éxito!</div>}
-                {isErrorUpload && <div className="text-red-500 mt-1">Error al subir imagen de Home App</div>}
+                {isSuccessUpload && (
+                  <div className="text-green-500 mt-1">
+                    ¡Imagen de Home App subida con éxito!
+                  </div>
+                )}
+                {isErrorUpload && (
+                  <div className="text-red-500 mt-1">
+                    Error al subir imagen de Home App
+                  </div>
+                )}
               </label>
 
               <label className="flex flex-col mb-2">
@@ -233,15 +255,24 @@ const UpdateBannerComponent = ({
                   onChange={handleHeaderFileChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none"
                 />
-                <button 
-                  type="button" 
-                  onClick={handleUploadHeader} 
-                  disabled={isLoadingUpload} 
-                  className="mt-2 bg-blue-500 text-white rounded-md p-2">
+                <button
+                  type="button"
+                  onClick={handleUploadHeader}
+                  disabled={isLoadingUpload}
+                  className="mt-2 bg-blue-500 text-white rounded-md p-2"
+                >
                   {isLoadingUpload ? "Subiendo..." : "Subir Imagen"}
                 </button>
-                {isSuccessUpload && <div className="text-green-500 mt-1">¡Imagen de Encabezado Web subida con éxito!</div>}
-                {isErrorUpload && <div className="text-red-500 mt-1">Error al subir imagen de Encabezado Web</div>}
+                {isSuccessUpload && (
+                  <div className="text-green-500 mt-1">
+                    ¡Imagen de Encabezado Web subida con éxito!
+                  </div>
+                )}
+                {isErrorUpload && (
+                  <div className="text-red-500 mt-1">
+                    Error al subir imagen de Encabezado Web
+                  </div>
+                )}
               </label>
             </div>
           </div>

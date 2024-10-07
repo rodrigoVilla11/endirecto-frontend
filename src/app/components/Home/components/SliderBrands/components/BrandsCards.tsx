@@ -1,13 +1,15 @@
-import React from "react";
+import React from 'react';
 
-const BrandsCards = ({ logo }: any) => {
+interface BrandsCardsProps {
+  brand: string;
+  logo: string;
+  handleRedirect: (path: string) => void;
+}
+
+const BrandsCards: React.FC<BrandsCardsProps> = ({ brand, logo, handleRedirect }) => {
   return (
-    <div className="h-32 w-24 shadow-2xl flex justify-center items-center p-1 bg-white"> {/* Añadido fondo blanco para mayor visibilidad */}
-      <img
-        src={logo}
-        alt="logo-sliderBrands"
-        className="h-full w-full object-contain" // Asegúrate de que el logo mantenga su proporción
-      />
+    <div onClick={() => handleRedirect(`/brand/${brand}`)} className="w-24 h-24 bg-white shadow-2xl flex items-center justify-center">
+      <img src={logo} alt={brand} className="w-20 h-20 object-contain object-center bg-white " />
     </div>
   );
 };

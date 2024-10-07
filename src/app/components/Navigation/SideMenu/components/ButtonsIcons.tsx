@@ -36,14 +36,21 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
   return (
     <div
       className="relative flex items-center text-xl text-white group"
-      onClick={icon.subCategories ? toggleSubCategories : (event) => handleRedirect(icon.path || "", event)}
+      onClick={
+        icon.subCategories
+          ? toggleSubCategories
+          : (event) => handleRedirect(icon.path || "", event)
+      }
     >
       {!isOpen ? (
         <div className="flex items-center text-center flex-col cursor-pointer">
           <div className="relative z-10">{icon.icon}</div>
           <div className="relative z-10 text-xs">{icon.name}</div>
           {icon.subCategories && (
-            <IoIosArrowDown className="text-sm cursor-pointer" onClick={() => setIsOpen(true)} />
+            <IoIosArrowDown
+              className="text-sm cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            />
           )}
         </div>
       ) : (
@@ -51,12 +58,20 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
           <div className="flex items-center gap-4">
             <div className="text-left hover:cursor-pointer">{icon.icon}</div>
             <div className="text-sm hover:cursor-pointer">{icon.name}</div>
-            {icon.subCategories && <IoIosArrowDown className="text-sm cursor-pointer" />}
+            {icon.subCategories && (
+              <IoIosArrowDown className="text-sm cursor-pointer" />
+            )}
           </div>
-          {isOpen && showSubCategories && (
-            <div className="bg-header-color rounded-md px-2 w-48 text-start">
+          {isOpen && (
+            <div
+              className={`bg-header-color rounded-md px-2 w-48 text-start transition-all duration-300 ${
+                showSubCategories
+                  ? "max-h-60 opacity-100"
+                  : "max-h-0 opacity-0 overflow-hidden"
+              }`}
+            >
               <ul>
-                {icon.subCategories && icon.subCategories.map((subcategory, index) => (
+                {icon.subCategories?.map((subcategory, index) => (
                   <li
                     key={index}
                     className="text-sm p-1 hover:cursor-pointer"

@@ -12,7 +12,7 @@ const HomePage = () => {
     <div className='w-full flex flex-col justify-center items-center'>
         <SliderImages />
         <SliderBrands />
-        <div className='flex justify-between items-center w-full' id='tags'>
+        <div className='flex justify-evenly items-center w-full p-2' id='tags'>
             <ButtonsImage />
             <ButtonsImage />
             <ButtonsImage />

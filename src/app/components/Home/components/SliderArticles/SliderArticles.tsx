@@ -3,23 +3,31 @@ import React, { useState, useEffect, useRef } from "react";
 import CardArticles from "./components/CardArticles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from "next/navigation";
 
 const SliderArticles = () => {
   const { data, error, isLoading } = useGetArticlesQuery({ page: 1, limit: 10 });
   const [currentSlide, setCurrentSlide] = useState(0);
-  const sliderRef = useRef(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
-  const totalSlides = data?.length || 0;
-  const visibleSlides = 4; // Ajustado para mostrar 4 tarjetas a la vez
+  const articles = data ? [...data, ...data] : [];
+  const totalSlides = articles.length; 
+  const visibleSlides = 2; 
+
+  const router = useRouter();
+
+  const handleRedirect = (path: string) => {
+    if (path) {
+      router.push(path);
+    }
+  };
 
   const nextSlide = () => {
-    setCurrentSlide((prevSlide) => (prevSlide + 1) % Math.max(totalSlides - visibleSlides + 1, 1));
+    setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prevSlide) =>
-      prevSlide === 0 ? Math.max(totalSlides - visibleSlides, 0) : prevSlide - 1
-    );
+    setCurrentSlide((prevSlide) => (prevSlide === 0 ? totalSlides - 1 : prevSlide - 1));
   };
 
   useEffect(() => {
@@ -32,26 +40,26 @@ const SliderArticles = () => {
   if (!data || data.length === 0) return <div className="flex justify-center items-center h-64">No hay artículos disponibles.</div>;
 
   return (
-    <div className="relative overflow-hidden w-full p-4" id='articles'>
+    <div className="relative overflow-hidden w-full p-10" id='articles'>
       <div
         ref={sliderRef}
         className="flex transition-transform duration-1000 gap-4"
-        style={{ transform: `translateX(-${currentSlide * (100 / visibleSlides)}%)` }}
+        style={{ transform: `translateX(-${(currentSlide % (totalSlides / 2)) * (100 / visibleSlides)}%)` }}
       >
-        {data.map((article, index) => (
-          <div key={article.id || index} className="flex-none w-56">
-            <CardArticles article={article} />
+        {articles.map((article, index) => (
+          <div key={article.id || index} className="flex-none w-56"> 
+            <CardArticles handleRedirect={handleRedirect} article={article} />
           </div>
         ))}
       </div>
       <button
-        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
+        className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white p-2 rounded-full hover:bg-opacity-75 transition"
         onClick={prevSlide}
       >
         <ChevronLeft size={24} />
       </button>
       <button
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 rounded-full hover:bg-opacity-75 transition"
         onClick={nextSlide}
       >
         <ChevronRight size={24} />

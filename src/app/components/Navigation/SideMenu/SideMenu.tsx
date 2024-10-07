@@ -150,7 +150,7 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <BsCash />,
       name: "Collections Summaries",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-      getSubCategories: (role : any) => {
+      getSubCategories: (role: any) => {
         const baseSubCategory = [
           {
             name: "Collections Summaries",
@@ -249,7 +249,7 @@ const SideMenu = ({ isOpen }: any) => {
       name: "My Profile",
       path: "/profile/my-profile",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-      getSubCategories: (role: any, selectedClientId : any) => {
+      getSubCategories: (role: any, selectedClientId: any) => {
         const allSubCategories = [
           {
             name: "My Profile",
@@ -272,7 +272,7 @@ const SideMenu = ({ isOpen }: any) => {
           if (selectedClientId) {
             return allSubCategories;
           } else {
-            return [allSubCategories[0]]; // Solo "My Profile"
+            return [allSubCategories[0]];
           }
         }
         return [];
@@ -289,25 +289,27 @@ const SideMenu = ({ isOpen }: any) => {
 
   const filteredIcons = React.useMemo(() => {
     return role
-      ? icons.map((icon) => {
-          const hasAllowedRole =
-            !icon.allowedRoles || icon.allowedRoles.includes(role);
-          const isMyProfile = icon.name === "My Profile";
-          const shouldShow =
-            hasAllowedRole &&
-            (isMyProfile ||
-              selectedClientId ||
-              (icon.name !== "Favourites" && icon.name !== "Contact"));
+      ? icons
+          .map((icon) => {
+            const hasAllowedRole =
+              !icon.allowedRoles || icon.allowedRoles.includes(role);
+            const isMyProfile = icon.name === "My Profile";
+            const shouldShow =
+              hasAllowedRole &&
+              (isMyProfile ||
+                selectedClientId ||
+                (icon.name !== "Favourites" && icon.name !== "Contact"));
 
-          if (icon.getSubCategories) {
-            return {
-              ...icon,
-              subCategories: icon.getSubCategories(role, selectedClientId),
-            };
-          }
+            if (icon.getSubCategories) {
+              return {
+                ...icon,
+                subCategories: icon.getSubCategories(role, selectedClientId),
+              };
+            }
 
-          return shouldShow ? icon : null;
-        }).filter(Boolean)
+            return shouldShow ? icon : null;
+          })
+          .filter(Boolean)
       : icons;
   }, [role, selectedClientId]);
 
@@ -315,7 +317,7 @@ const SideMenu = ({ isOpen }: any) => {
     <div
       className={`${
         isOpen ? "w-68 items-start px-8" : "w-20 items-center"
-      }  bg-header-color absolute top-0 left-0 min-h-full py-24 flex flex-col justify-center gap-6 transition-all duration-1000`}
+      } bg-header-color h-full py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar mt-20`}
     >
       {filteredIcons.map((icon: any, index: any) => (
         <ButtonsIcons key={index} icon={icon} isOpen={isOpen} />
