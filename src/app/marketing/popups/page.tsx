@@ -72,26 +72,31 @@ const Page = () => {
         sequence: popup.popups.sequence,
         location: popup.popups.location,
         enable: popup.popups.enable ? "true" : "false",
-        web:   (
+        web: (
           <div className="flex justify-center items-center">
-            <img src={popup.popups.web && popup.popups.web} className="h-10"/>
+            <img
+              src={(popup.popups.web && popup.popups.web) || "NOT FOUND"}
+              className="h-10"
+            />
           </div>
-        ) || "NOT FOUND",
+        ),
         url: popup.popups.url,
         visualization: popup.popups.visualization,
         edit: (
           <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openUpdateModal(popup._id)}
-          /></div>
+            <FaPencil
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openUpdateModal(popup._id)}
+            />
+          </div>
         ),
         erase: (
           <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(popup._id)}
-          /></div>
+            <FaTrashCan
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openDeleteModal(popup._id)}
+            />
+          </div>
         ),
       };
     }) || [];

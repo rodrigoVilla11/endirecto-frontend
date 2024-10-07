@@ -1,26 +1,39 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import FilterBox from "./components/FilterBox/FilterBox";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import Articles from "./components/Articles/Articles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import Modal from "../components/Modal";
+import PopUpModal from "./components/PopUpModal";
 
 const CataloguePage = () => {
-  const { data, error, isLoading, refetch } = useGetArticlesQuery({ page: 1, limit: 10 })
+  const { data, error, isLoading, refetch } = useGetArticlesQuery({
+    page: 1,
+    limit: 10,
+  });
 
-  
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
-  
-  if (error) return (<p>Loading...</p>)
-    
+  const [isModalVisible, setModalVisible] = useState(false); // Estado para el modal
+
+  useEffect(() => {
+    setModalVisible(true);
+  }, []);
+  if (error) return <p>Loading...</p>;
+
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
 
   const toggleShowArticles = (type: any) => {
     setShowArticles(type);
+  };
+
+
+  const closeModal = () => {
+    setModalVisible(false); 
   };
 
   return (
@@ -80,7 +93,10 @@ const CataloguePage = () => {
             </div>
             <p className="text-xs pr-4">{data?.length || 0}</p>
           </div>
-          <Articles data={data}/>
+          <Articles data={data} />
+            <Modal isOpen={isModalVisible} onClose={closeModal}>
+              <PopUpModal closeModal={closeModal} />
+            </Modal>
         </div>
       </div>
     </div>
