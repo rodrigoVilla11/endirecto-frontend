@@ -4,6 +4,7 @@ import {
   useUpdateItemMutation,
 } from "@/redux/services/itemsApi";
 import React, { useEffect, useState } from "react";
+import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
 type UpdateItemComponentProps = {
   itemId: string;
@@ -18,14 +19,16 @@ const UpdateItemComponent = ({
     data: item,
     error,
     isLoading,
+    refetch
   } = useGetItemByIdQuery({
     id: itemId,
   });
   const [updateItem, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateItemMutation();
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadResponses, setUploadResponses] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadResponse, setUploadResponse] = useState<string>("");
+
   const [
     uploadImage,
     {
@@ -37,27 +40,21 @@ const UpdateItemComponent = ({
   ] = useUploadImageMutation();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setSelectedFiles(Array.from(event.target.files));
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
     }
   };
 
   const handleUpload = async () => {
-    if (selectedFiles.length > 0) {
+    if (selectedFile) {
       try {
-        const responses = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const response = await uploadImage(file).unwrap();
-            return response.url;
-          })
-        );
-
-        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+        const response = await uploadImage(selectedFile).unwrap();
+        setUploadResponse(response.url);
       } catch (err) {
-        console.error("Error uploading images:", err);
+        console.error("Error uploading image:", err);
       }
     } else {
-      console.error("No files selected");
+      console.error("No file selected");
     }
   };
 
@@ -68,6 +65,7 @@ const UpdateItemComponent = ({
   });
 
   useEffect(() => {
+    refetch()
     if (item) {
       setForm({
         id: item.id ?? "",
@@ -82,17 +80,10 @@ const UpdateItemComponent = ({
   ) => {
     const { name, value } = e.target;
 
-    if (name === "images" || name === "pdfs") {
-      setForm((prevForm) => ({
-        ...prevForm,
-        [name]: value.split(",").map((item) => item.trim()),
-      }));
-    } else {
-      setForm((prevForm) => ({
-        ...prevForm,
-        [name]: value,
-      }));
-    }
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -100,18 +91,25 @@ const UpdateItemComponent = ({
     try {
       const updatedForm = {
         ...form,
-        image: uploadResponses.length > 0 ? uploadResponses[0] : form.image, 
+        image: uploadResponse || form.image, 
       };
       await updateItem(updatedForm).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error updating the article:", err);
+      console.error("Error updating the item:", err);
     }
   };
-  
+
+  const handleRemoveImage = () => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      image: "",
+    }));
+    setUploadResponse("");
+  };
 
   if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the brand.</p>;
+  if (error) return <p>Error fetching the item.</p>;
 
   return (
     <div>
@@ -144,26 +142,38 @@ const UpdateItemComponent = ({
             value={form.name}
             placeholder="Name"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            readOnly
+            className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
 
         <label className="flex flex-col">
-          Images:
+          Image:
           <div>
             <input
               type="file"
               accept="image/*"
-              multiple
               onChange={handleFileChange}
             />
             <button onClick={handleUpload} disabled={isLoadingUpload}>
-              {isLoadingUpload ? "Uploading..." : "Upload Images"}
+              {isLoadingUpload ? "Uploading..." : "Upload Image"}
             </button>
 
-            {isSuccessUpload && <div>Images uploaded successfully!</div>}
-            {isErrorUpload && <div>Error uploading images</div>}
+            {isSuccessUpload && <div>Image uploaded successfully!</div>}
+            {isErrorUpload && <div>Error uploading image</div>}
           </div>
+          {form.image && (
+            <div className="flex mt-2">
+              <img src={form.image} alt="item_image" className="h-20 w-20" />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="text-red-500 mt-2"
+              >
+                <FaTrashCan /> 
+              </button>
+            </div>
+          )}
         </label>
 
         <div className="flex justify-end gap-4 mt-4">
@@ -186,9 +196,9 @@ const UpdateItemComponent = ({
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">Article updated successfully!</p>
+          <p className="text-green-500">Item updated successfully!</p>
         )}
-        {isError && <p className="text-red-500">Error updating article</p>}
+        {isError && <p className="text-red-500">Error updating item</p>}
       </form>
     </div>
   );

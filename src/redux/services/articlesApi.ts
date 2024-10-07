@@ -46,8 +46,9 @@ type Article = {
 
 type UpdateArticlesPayload = {
   id: string;
-  images?: string[]; // URL DE IMAGENES (SEPARADOS POR ;)
-  pdfs?: string[]; // URL DE PDFS (SEPARADOS POR ;)
+  images?: string[]; 
+  description?: string
+  pdfs?: string[];
 };
 
 export const articlesApi = createApi({

@@ -4,6 +4,7 @@ import {
 } from "@/redux/services/brandsApi";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import React, { useEffect, useState } from "react";
+import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
 
 type UpdateBrandComponentProps = {
@@ -19,13 +20,12 @@ const UpdateBrandComponent = ({
     data: brand,
     error,
     isLoading,
-  } = useGetBrandByIdQuery({
-    id: brandId,
-  });
+    refetch,
+  } = useGetBrandByIdQuery({ id: brandId });
   const [updateBrand, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateBrandMutation();
 
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadResponses, setUploadResponses] = useState<string[]>([]);
   const [
     uploadImage,
@@ -33,7 +33,6 @@ const UpdateBrandComponent = ({
       isLoading: isLoadingUpload,
       isSuccess: isSuccessUpload,
       isError: isErrorUpload,
-      error: errorUpload,
     },
   ] = useUploadImageMutation();
 
@@ -52,7 +51,6 @@ const UpdateBrandComponent = ({
             return response.url;
           })
         );
-
         setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
       } catch (err) {
         console.error("Error uploading images:", err);
@@ -62,7 +60,6 @@ const UpdateBrandComponent = ({
     }
   };
 
-
   const [form, setForm] = useState({
     id: "",
     images: [] as string[],
@@ -71,6 +68,7 @@ const UpdateBrandComponent = ({
   });
 
   useEffect(() => {
+    refetch();
     if (brand) {
       setForm({
         id: brand.id ?? "",
@@ -85,18 +83,10 @@ const UpdateBrandComponent = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-
-    if (name === "images" || name === "pdfs") {
-      setForm((prevForm) => ({
-        ...prevForm,
-        [name]: value.split(",").map((item) => item.trim()),
-      }));
-    } else {
-      setForm((prevForm) => ({
-        ...prevForm,
-        [name]: value,
-      }));
-    }
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -111,6 +101,14 @@ const UpdateBrandComponent = ({
     } catch (err) {
       console.error("Error updating the brand:", err);
     }
+  };
+
+  // Manejar la eliminación de imágenes
+  const handleRemoveImage = (index: number) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      images: prevForm.images.filter((_, i) => i !== index),
+    }));
   };
 
   if (isLoading) return <p>Loading...</p>;
@@ -147,7 +145,8 @@ const UpdateBrandComponent = ({
             value={form.name}
             placeholder="Name"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            readOnly
+            className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
 
@@ -164,7 +163,7 @@ const UpdateBrandComponent = ({
 
         <label className="flex flex-col">
           Images:
-          <div>
+          <div className="mb-2">
             <input
               type="file"
               accept="image/*"
@@ -174,9 +173,52 @@ const UpdateBrandComponent = ({
             <button onClick={handleUpload} disabled={isLoadingUpload}>
               {isLoadingUpload ? "Uploading..." : "Upload Images"}
             </button>
-
             {isSuccessUpload && <div>Images uploaded successfully!</div>}
             {isErrorUpload && <div>Error uploading images</div>}
+          </div>
+          {/* Lista de imágenes */}
+          <div className="border rounded-md p-2">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Link</th>
+                  <th>
+                    <FaTrashCan />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.images.map((image, index) => (
+                  <tr key={index}>
+                    <td>
+                      <img src={image} alt="brand_image" className="h-10" />
+                    </td>
+                    <td>
+                      <a
+                        href={image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500"
+                      >
+                        {image}
+                      </a>
+                    </td>
+                    <td>
+                      <div className="flex justify-center items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="text-red-500 "
+                        >
+                          <FaTrashCan />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </label>
 
@@ -200,9 +242,9 @@ const UpdateBrandComponent = ({
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">Article updated successfully!</p>
+          <p className="text-green-500">Brand updated successfully!</p>
         )}
-        {isError && <p className="text-red-500">Error updating article</p>}
+        {isError && <p className="text-red-500">Error updating brand</p>}
       </form>
     </div>
   );

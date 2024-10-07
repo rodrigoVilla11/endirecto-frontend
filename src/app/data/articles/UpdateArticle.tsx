@@ -4,6 +4,7 @@ import {
 } from "@/redux/services/articlesApi";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import React, { useEffect, useState } from "react";
+import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
 
 type UpdateArticleComponentProps = {
@@ -19,6 +20,7 @@ const UpdateArticleComponent = ({
     data: article,
     error,
     isLoading,
+    refetch
   } = useGetArticleByIdQuery({ id: articleId });
 
   const [updateArticle, { isLoading: isUpdating, isSuccess, isError }] =
@@ -70,6 +72,7 @@ const UpdateArticleComponent = ({
 
   useEffect(() => {
     if (article) {
+      refetch()
       setForm({
         id: article.id ?? "",
         supplier_code: article.supplier_code ?? "",
@@ -104,13 +107,23 @@ const UpdateArticleComponent = ({
       const updatedForm = {
         ...form,
         images: [...form.images, ...uploadResponses],
+        id: articleId
       };
+      console.log(updatedForm)
       await updateArticle(updatedForm).unwrap();
       closeModal();
     } catch (err) {
       console.error("Error updating the article:", err);
     }
   };
+
+  const handleRemoveImage = (index: number) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      images: prevForm.images.filter((_, i) => i !== index),
+    }));
+  };
+
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error fetching the article.</p>;
@@ -176,6 +189,49 @@ const UpdateArticleComponent = ({
 
             {isSuccessUpload && <div>Images uploaded successfully!</div>}
             {isErrorUpload && <div>Error uploading images</div>}
+          </div>
+          <div className="border rounded-md p-2">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Link</th>
+                  <th>
+                    <FaTrashCan />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.images.map((image, index) => (
+                  <tr key={index}>
+                    <td>
+                      <img src={image} alt="brand_image" className="h-10" />
+                    </td>
+                    <td>
+                      <a
+                        href={image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500"
+                      >
+                        {image}
+                      </a>
+                    </td>
+                    <td>
+                      <div className="flex justify-center items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="text-red-500 "
+                        >
+                          <FaTrashCan />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </label>
 

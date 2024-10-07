@@ -50,7 +50,7 @@ const Page = () => {
     key: item.id,
     id: item.id,
     name: item.name,
-    image: <div className="flex justify-center items-center"><img src={item?.image || ""} className="h-10"/></div> || "NOT FOUND",
+    image: <div className="flex justify-center items-center"><img src={item?.image || "NOT FOUND"} className="h-10"/></div> ,
     edit: (
       <div className="flex justify-center items-center">
         <FaPencil

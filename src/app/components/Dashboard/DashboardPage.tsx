@@ -230,7 +230,7 @@ const DashboardPage = () => {
     <div className="gap-4">
       <h3 className="text-bold p-4">DASHBOARD</h3>
       <Header />
-      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} pr-4`}>
+      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} `}>
         {filteredItemsCard.map((item, index: any) => {
           return (
             <Link key={index} href={item.href}>
@@ -245,7 +245,7 @@ const DashboardPage = () => {
         })}
       </div>
       <h4 className="text-bold p-4">SHORTCUTS</h4>
-      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} pr-4`}>
+      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"}`}>
         {filteredItemsShortcuts.map((item, index: any) => {
           return (
             <Link key={index} href={item.href}>

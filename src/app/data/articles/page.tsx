@@ -67,7 +67,7 @@ const Page = () => {
     return {
       key: article.id,
       brand: brand?.name || "NO BRAND",
-      image: <div className="flex justify-center items-center"><img src={article.images && article.images[0]} className="h-10"/></div> || "NOT FOUND",
+      image: <div className="flex justify-center items-center"><img src={article.images && article.images[0] || "NOT FOUND"} className="h-10"/></div>,
       pdf: article.pdfs,
       item: item?.name || "NO ITEM",
       id: article.id,

@@ -5,7 +5,7 @@ const Header = () => {
   const { userData } = useAuth();
   const firstLetter = userData?.username.charAt(0)
   return (
-    <div className='h-44 m-5 bg-white  p-10 flex justify-between'>
+    <div className='h-44 mx-5 bg-white  p-10 flex justify-between'>
         <div className='flex items-center gap-4'>
       <div className='rounded-full h-14 w-14 bg-secondary text-white flex justify-center items-center text-xl'>
           <p>{firstLetter}</p>
