@@ -103,8 +103,8 @@ const CardArticles = ({ article }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div>
-      <div className="h-116 w-68 bg-white rounded-sm">
+    <div className="border rounded-lg shadow-lg w-60  h-112 bg-gray-200  ">
+      <div className="relative bg-white">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
@@ -112,10 +112,12 @@ const CardArticles = ({ article }: any) => {
         <div onClick={openModal}>
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
+          <div className="bg-gray-200">
           <ArticleName name={article.name} id={article.id} />
           <CostPrice articleId={article.id} />
-          <hr />
+          <hr className="bg-white border-white m-4"/>
           <SuggestedPrice articleId={article.id} />
+          </div>
         </div>
         <AddToCart
           articleId={article.id}

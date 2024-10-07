@@ -17,11 +17,11 @@ const CostPrice = ({ articleId }: any) => {
     typeof price === "number" ? formattedPrice.split(".") : ["N/A", ""];
 
   return (
-    <div className="flex justify-between items-center font-bold p-2">
+    <div className="flex justify-between text-sm px-4 h-4">
       <p>Cost Price s/IVA</p>
       <p>
-        $<span className="text-xl">{integerPart}</span>
-        {decimalPart && <span className="text-md">.{decimalPart}</span>}
+        $<span className="font-semibold text-gray-800">{integerPart}</span>
+        {decimalPart && <span className="font-semibold text-gray-800">.{decimalPart}</span>}
       </p>
     </div>
   );

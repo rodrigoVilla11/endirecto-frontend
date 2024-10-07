@@ -9,7 +9,7 @@ const Articles = ({ data }: any) => {
     <div className="h-screen m-4 flex flex-col text-sm">
       <div
         className={`h-[calc(100vh-10px)] overflow-y-auto grid ${
-          isOpen ? "grid-cols-2" : "grid-cols-3"
+          isOpen ? "grid-cols-4" : "grid-cols-4"
         } gap-2`}
       >
         {data?.map((article: any, index: number) => (

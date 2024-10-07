@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGetStockByArticleIdQuery } from "@/redux/services/stockApi";
+import { FaShoppingCart } from 'react-icons/fa';
 
 interface AddToCartProps {
   articleId: string;
@@ -15,19 +16,19 @@ const AddToCart: React.FC<AddToCartProps> = ({ articleId, onAddToCart, quantity 
   });
 
   return (
-    <div className='flex justify-center items-center'>
+    <div className='flex items-center justify-center px-4 p-2 bg-gray-200 h-12'>
       <input 
         type="number" 
         value={quantity} 
         onChange={(e) => setQuantity(Number(e.target.value) || 1)} 
         min={1} 
-        className='rounded-l-sm border border-black p-2 text-xs w-12'
+       className="border rounded w-16 p-1 text-center text-sm"
       />
       <button
-        className='bg-black border border-black text-white rounded-r-sm p-2 text-xs font-bold'
+        className='bg-black text-white p-2 rounded flex items-center'
         onClick={() => onAddToCart(quantity)} 
       >
-        ADD TO CART
+        <FaShoppingCart />
       </button>
     </div>
   );

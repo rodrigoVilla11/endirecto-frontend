@@ -10,7 +10,7 @@ const StripeStock = ({ articleId }: any) => {
   const hasStock = data?.status;
   return (
     <div
-      className={`h-4 w-full ${
+      className={`${
         hasStock === "IN-STOCK"
           ? "bg-success" 
           : hasStock === "NO-STOCK"
@@ -18,7 +18,7 @@ const StripeStock = ({ articleId }: any) => {
           : hasStock === "LIMITED-STOCK"
           ? "bg-orange-600" 
           : "bg-gray-500" 
-      } font-bold text-white flex justify-center items-center`}
+      } font-bold text-white text-center pt-1  text-xs`}
     >
       <p>{hasStock}</p>
     </div>
