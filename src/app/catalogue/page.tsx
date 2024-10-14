@@ -5,8 +5,18 @@ import PrivateRoute from "../context/PrivateRoutes";
 const Page = () => {
   return (
     <div>
-      <PrivateRoute  requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
-        <CataloguePage />
+      <PrivateRoute
+        requiredRoles={[
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ]}
+      >
+        <div className="overflow-auto no-scrollbar">
+          <CataloguePage />
+        </div>
       </PrivateRoute>
     </div>
   );

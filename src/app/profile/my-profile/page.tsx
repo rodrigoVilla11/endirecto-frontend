@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React from "react";
 import Header from "@/app/components/components/Header";
 import { FaKey } from "react-icons/fa6";
@@ -8,8 +8,9 @@ import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 
 const Page = () => {
   const { userData } = useAuth();
-  console.log(userData)
-  const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
+  console.log(userData);
+  const { data: branchsData, isLoading: isLoadingBranchs } =
+    useGetBranchesQuery(null);
 
   const branch = branchsData?.find((data) => data.id === userData?.branch);
 
@@ -26,7 +27,14 @@ const Page = () => {
 
   return (
     <PrivateRoute
-    requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">MY PROFILE</h3>
         <Header headerBody={headerBody} />
@@ -38,7 +46,8 @@ const Page = () => {
             Name: <span className="font-bold">{userData?.username}</span>
           </p>
           <p>
-            Role: <span className="font-bold">{userData?.role?.toUpperCase()}</span>
+            Role:{" "}
+            <span className="font-bold">{userData?.role?.toUpperCase()}</span>
           </p>
           <p>
             Email: <span className="font-bold">{userData?.email}</span>
@@ -46,7 +55,11 @@ const Page = () => {
           <p>
             Branch:{" "}
             <span className="font-bold">
-              {branch ? branch.name : isLoadingBranchs ? "Loading branch..." : "Branch not found"}
+              {branch
+                ? branch.name
+                : isLoadingBranchs
+                ? "Loading branch..."
+                : "Branch not found"}
             </span>
           </p>
         </div>

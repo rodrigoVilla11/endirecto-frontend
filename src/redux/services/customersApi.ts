@@ -1,5 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+export enum InstanceType {
+  COLLECTION_CALL = "COLLECTION CALL",
+  WHATSAPP_MESSAGE = "WHATSAPP MESSAGE",
+  SEND_ACCOUNT_SUMMARY = "SEND ACCOUNT SUMMARY",
+  PAYMENT_CLAIM = "PAYMENT CLAIM"
+}
+
+export interface Instance {
+  type: InstanceType;
+  notes: string;
+}
+
 type Customer = {
   id: string;
   name: string;
@@ -16,13 +28,15 @@ type Customer = {
   seller_id: string;
   documents_balance: string[];
   shopping_cart: string[];
-  favourites: string[]
+  favourites: string[];
+  instance: Instance;
 };
 
 type UpdateCustomersPayload = {
   id: string;
-  shopping_cart?: string[]; 
-  favourites?: string[]; 
+  shopping_cart?: string[];
+  favourites?: string[];
+  instance?: Instance;
 };
 
 export const customerApi = createApi({
@@ -50,6 +64,7 @@ export const customerApi = createApi({
         hasDebt?: string;
         hasDebtExpired?: string;
         seller_id?: string;
+        instance?: string;
       }
     >({
       query: ({
@@ -59,6 +74,7 @@ export const customerApi = createApi({
         hasDebt = "",
         hasDebtExpired = "",
         seller_id = "",
+        instance = "",
       } = {}) => {
         const url = `/customers`;
         const params = new URLSearchParams({
@@ -71,6 +87,7 @@ export const customerApi = createApi({
         if (hasDebt) params.append("hasDebt", hasDebt);
         if (hasDebtExpired) params.append("hasDebtExpired", hasDebtExpired);
         if (seller_id) params.append("seller_id", seller_id);
+        if (instance) params.append("instance", instance);
 
         const fullUrl = `${url}?${params.toString()}`;
         console.log(fullUrl);
@@ -108,5 +125,5 @@ export const {
   useGetCustomerByIdQuery,
   useGetCustomersPagQuery,
   useCountCustomersQuery,
-  useUpdateCustomerMutation
+  useUpdateCustomerMutation,
 } = customerApi;

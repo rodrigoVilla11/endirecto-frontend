@@ -33,8 +33,7 @@ const Page = () => {
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const { selectedClientId } = useClient();
-  const [customer_id, setCustomer_id] = useState("")
-
+  const [customer_id, setCustomer_id] = useState("");
 
   const [searchParams, setSearchParams] = useState({
     status: "",
@@ -60,17 +59,17 @@ const Page = () => {
     valid: searchParams.valid,
     status: searchParams.status,
     document_type_number: searchParams.document_type_number,
-    customer_id: customer_id
+    customer_id: customer_id,
   });
   const { data: countReclaimsData } = useCountReclaimsQuery(null);
 
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch
+      refetch;
     } else {
       setCustomer_id("");
-      refetch
+      refetch;
     }
   }, [selectedClientId]);
 
@@ -123,17 +122,19 @@ const Page = () => {
       data: reclaim.date,
       edit: (
         <div className="flex justify-center items-center">
-        <FaPencil
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openUpdateModal(reclaim._id)}
-        /></div>
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(reclaim._id)}
+          />
+        </div>
       ),
       erase: (
         <div className="flex justify-center items-center">
-        <FaTrashCan
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openDeleteModal(reclaim._id)}
-        /></div>
+          <FaTrashCan
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openDeleteModal(reclaim._id)}
+          />
+        </div>
       ),
     };
   });
@@ -245,19 +246,20 @@ const Page = () => {
           <Input
             placeholder={"Number..."}
             value={searchParams.document_type_number}
-            onChange={(e : any) => setSearchParams((prev) => ({
-              ...prev,
-              document_type_number: e.target.value
-            }))}
-            onKeyDown={(e : any) => {
+            onChange={(e: any) =>
+              setSearchParams((prev) => ({
+                ...prev,
+                document_type_number: e.target.value,
+              }))
+            }
+            onKeyDown={(e: any) => {
               if (e.key === "Enter") {
                 refetch();
               }
             }}
           />
         ),
-      }
-      
+      },
     ],
     results: `${countReclaimsData || 0} Results`,
   };
@@ -273,7 +275,15 @@ const Page = () => {
     }
   };
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">RECLAIMS</h3>
         <Header headerBody={headerBody} />

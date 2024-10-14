@@ -15,15 +15,26 @@ interface Icon {
 interface ButtonsIconsProps {
   icon: Icon;
   isOpen: boolean;
+  openSubCategory: string | null;
+  setOpenSubCategory: (name: string | null) => void;
 }
 
-const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
+const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ 
+  icon, 
+  isOpen, 
+  openSubCategory, 
+  setOpenSubCategory 
+}) => {
   const { setIsOpen } = useSideMenu();
   const router = useRouter();
-  const [showSubCategories, setShowSubCategories] = useState(false);
 
   const toggleSubCategories = () => {
-    setShowSubCategories((prev) => !prev);
+    setIsOpen(true);
+    if (openSubCategory === icon.name) {
+      setOpenSubCategory(null);
+    } else {
+      setOpenSubCategory(icon.name);
+    }
   };
 
   const handleRedirect = (path: string, event: React.MouseEvent) => {
@@ -32,6 +43,8 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
       router.push(path);
     }
   };
+
+  const showSubCategories = openSubCategory === icon.name;
 
   return (
     <div
@@ -62,7 +75,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
               <IoIosArrowDown className="text-sm cursor-pointer" />
             )}
           </div>
-          {isOpen && (
+          {isOpen && icon.subCategories && (
             <div
               className={`bg-header-color rounded-md px-2 w-48 text-start transition-all duration-300 ${
                 showSubCategories
@@ -71,7 +84,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon, isOpen }) => {
               }`}
             >
               <ul>
-                {icon.subCategories?.map((subcategory, index) => (
+                {icon.subCategories.map((subcategory, index) => (
                   <li
                     key={index}
                     className="text-sm p-1 hover:cursor-pointer"

@@ -14,6 +14,7 @@ import {
   useGetCustomerByIdQuery,
   useUpdateCustomerMutation,
 } from "@/redux/services/customersApi";
+import ArticleDetails from "./ArticleDetails";
 
 interface FormState {
   id: string;
@@ -103,8 +104,8 @@ const CardArticles = ({ article }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="border rounded-lg shadow-lg w-60  h-112 bg-gray-200  ">
-      <div className="relative bg-white">
+    <div className=" w-60  h-112 bg-gray-200  ">
+      <div className="relative bg-white flex flex-col justify-between shadow-lg">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
@@ -113,50 +114,29 @@ const CardArticles = ({ article }: any) => {
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <div className="bg-gray-200">
-          <ArticleName name={article.name} id={article.id} />
-          <CostPrice articleId={article.id} />
-          <hr className="bg-white border-white m-4"/>
-          <SuggestedPrice articleId={article.id} />
+            <ArticleName name={article.name} id={article.id} />
+            <CostPrice articleId={article.id} />
+            <hr className="bg-white border-white m-4" />
+            <SuggestedPrice articleId={article.id} />
           </div>
         </div>
         <AddToCart
           articleId={article.id}
           onAddToCart={toggleShoppingCart}
-          quantity={quantity} 
+          quantity={quantity}
           setQuantity={setQuantity}
         />
       </div>
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <div className="flex justify-between">
-          <h2 className="text-lg mb-4">Article Details</h2>
-          <button
-            onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
-          >
-            <IoMdClose />
-          </button>
-        </div>
-        <div className="flex gap-4">
-          <div className="h-116 w-72 bg-white rounded-sm border border-black">
-            <ArticleMenu
-              onAddToFavourites={toggleFavourite}
-              isFavourite={isFavourite}
-            />
-            <ArticleImage img={article.image} />
-            <StripeStock articleId={article.id} />
-            <ArticleName name={article.name} id={article.id} />
-            <CostPrice articleId={article.id} />
-            <hr />
-            <SuggestedPrice articleId={article.id} />
-            <AddToCart
-              articleId={article.id}
-              onAddToCart={toggleShoppingCart}
-              quantity={quantity} 
-              setQuantity={setQuantity}
-            />
-          </div>
-          <Description article={article} description={article.description} />
-        </div>
+        <ArticleDetails
+          closeModal={closeModal}
+          toggleFavourite={toggleFavourite}
+          isFavourite={isFavourite}
+          article={article}
+          toggleShoppingCart={toggleShoppingCart}
+          quantity={quantity}
+          setQuantity={setQuantity}
+        />
       </Modal>
     </div>
   );

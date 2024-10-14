@@ -21,7 +21,7 @@ const Page = () => {
     { name: "Date", key: "date" },
     { name: "Total Without Taxes", key: "total-without-taxes" },
     { name: "Status", key: "status" },
-    { name: "Budget", key: "budget" }
+    { name: "Budget", key: "budget" },
   ];
   const headerBody = {
     buttons: [
@@ -59,12 +59,20 @@ const Page = () => {
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
-    <div className="gap-4">
-      <h3 className="font-bold p-4">ORDERS</h3>
-      <Header headerBody={headerBody} />
-      {/* <Table headers={tableHeader} /> */}
-    </div>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
+      <div className="gap-4">
+        <h3 className="font-bold p-4">ORDERS</h3>
+        <Header headerBody={headerBody} />
+        {/* <Table headers={tableHeader} /> */}
+      </div>
     </PrivateRoute>
   );
 };

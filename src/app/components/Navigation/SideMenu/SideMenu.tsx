@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import {
   MdDashboard,
   MdOutlineShoppingBag,
@@ -286,6 +287,7 @@ const SideMenu = ({ isOpen }: any) => {
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
   ];
+  const [openSubCategory, setOpenSubCategory] = useState<string | null>(null);
 
   const filteredIcons = React.useMemo(() => {
     return role
@@ -320,7 +322,13 @@ const SideMenu = ({ isOpen }: any) => {
       } bg-header-color h-full py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar mt-20`}
     >
       {filteredIcons.map((icon: any, index: any) => (
-        <ButtonsIcons key={index} icon={icon} isOpen={isOpen} />
+        <ButtonsIcons
+          key={index}
+          icon={icon}
+          isOpen={isOpen}
+          openSubCategory={openSubCategory}
+          setOpenSubCategory={setOpenSubCategory}
+        />
       ))}
     </div>
   );

@@ -27,7 +27,7 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const { selectedClientId } = useClient();
-  const [customer_id, setCustomer_id] = useState("")
+  const [customer_id, setCustomer_id] = useState("");
 
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
@@ -35,16 +35,16 @@ const Page = () => {
     query: searchQuery,
     startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
-    customer_id
+    customer_id,
   });
-  
+
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch
+      refetch;
     } else {
       setCustomer_id("");
-      refetch
+      refetch;
     }
   }, [selectedClientId]);
   const { data: countDocumentsData } = useCountCustomersQuery(null);
@@ -153,7 +153,15 @@ const Page = () => {
     }
   };
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">VOUCHERS</h3>
         <Header headerBody={headerBody} />

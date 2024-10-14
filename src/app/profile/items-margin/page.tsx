@@ -27,7 +27,14 @@ const Page = () => {
 
   return (
     <PrivateRoute
-    requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">MARGINS BY ITEM</h3>
         <Header headerBody={headerBody} />

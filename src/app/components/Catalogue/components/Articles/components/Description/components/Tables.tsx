@@ -28,7 +28,7 @@ const Tables = ({article} : any) => {
   };
 
   return (
-    <div className='w-68 border border-black rounded-sm m-2'>
+    <div className='w-68 border border-gray-200  rounded-sm m-2'>
       <div className='flex h-8 w-full justify-evenly'>
         <button
           className={`w-1/4 flex justify-center items-center rounded-sm ${activeTable === 'info' ? 'bg-gray-300' : ''}`}

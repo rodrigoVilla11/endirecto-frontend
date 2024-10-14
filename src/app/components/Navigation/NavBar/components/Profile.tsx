@@ -34,6 +34,7 @@ const Profile = () => {
     setIsMenuOpen(!isMenuOpen);
     router.push("/login");
     setIsAuthenticated(false);
+    setSelectedClientId("")
     setRole(null);
   };
 

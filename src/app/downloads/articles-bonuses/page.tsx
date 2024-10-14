@@ -21,7 +21,7 @@ const Page = () => {
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
 
-  console.log(searchQuery)
+  console.log(searchQuery);
   const { data, error, isLoading, refetch } = useGetArticlesBonusesPagQuery({
     page,
     limit,
@@ -49,7 +49,7 @@ const Page = () => {
         item: item?.name,
         article: article?.name,
         discount: `${articleBonus.percentage_1}%`,
-      } || []
+      } 
     );
   });
 
@@ -98,7 +98,15 @@ const Page = () => {
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">BONUSES</h3>
         <Header headerBody={headerBody} />

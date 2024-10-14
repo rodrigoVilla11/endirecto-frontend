@@ -28,9 +28,7 @@ const Page = () => {
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [customer_id, setCustomer_id] = useState("")
-
-
+  const [customer_id, setCustomer_id] = useState("");
 
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
@@ -38,16 +36,16 @@ const Page = () => {
     query: searchQuery,
     startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
-    customer_id
+    customer_id,
   });
-  
+
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch
+      refetch;
     } else {
       setCustomer_id("");
-      refetch
+      refetch;
     }
   }, [selectedClientId]);
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
@@ -101,10 +99,13 @@ const Page = () => {
     const amount = parseFloat(document.amount);
     return acc + amount;
   }, 0);
-  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString(
+    "es-ES",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  );
   const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -157,7 +158,9 @@ const Page = () => {
     ],
     secondSection: {
       title: "Total Owed",
-      amount: selectedClientId ? `$ ${formatedSumAmountFilter}` :`$ ${formatedSumAmount}`,
+      amount: selectedClientId
+        ? `$ ${formatedSumAmountFilter}`
+        : `$ ${formatedSumAmount}`,
     },
     results: searchQuery
       ? `${data?.length || 0} Results`
@@ -177,7 +180,15 @@ const Page = () => {
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />

@@ -39,7 +39,6 @@ const Page = () => {
 
   const [customer_id, setCustomer_id] = useState("");
 
-
   const [searchParams, setSearchParams] = useState({
     status: "",
     startDate: null as Date | null,
@@ -64,16 +63,16 @@ const Page = () => {
       ? searchParams.endDate.toISOString()
       : undefined,
     status: searchParams.status,
-    customer_id: customer_id
+    customer_id: customer_id,
   });
 
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch
+      refetch;
     } else {
       setCustomer_id("");
-      refetch
+      refetch;
     }
   }, [selectedClientId]);
 
@@ -219,7 +218,15 @@ const Page = () => {
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">PAYMENTS</h3>
         <Header headerBody={headerBody} />

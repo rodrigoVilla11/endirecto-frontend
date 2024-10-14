@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ArticleImageProps {
-  img: string;
+  img: any;
 }
 
 const ArticleImage: React.FC<ArticleImageProps> = ({ img }) => {

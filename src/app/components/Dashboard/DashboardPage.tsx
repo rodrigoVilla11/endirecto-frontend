@@ -4,7 +4,14 @@ import Header from "./components/Header";
 import Card from "./components/Card";
 import { MdOutlineShoppingBag, MdTextSnippet } from "react-icons/md";
 import { TbClockExclamation } from "react-icons/tb";
-import { FaInfo, FaShoppingBag, FaPowerOff } from "react-icons/fa";
+import {
+  FaInfo,
+  FaShoppingBag,
+  FaPowerOff,
+  FaShoppingCart,
+  FaPhone,
+  FaFileDownload,
+} from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import { BsCash } from "react-icons/bs";
 import { IoIosPaper } from "react-icons/io";
@@ -23,7 +30,7 @@ import { useAuth } from "@/app/context/AuthContext";
 
 const DashboardPage = () => {
   const { isOpen } = useSideMenu();
- 
+
   const { role } = useAuth();
   const { data: countCustomersData } = useCountCustomersQuery(null);
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
@@ -46,7 +53,13 @@ const DashboardPage = () => {
       title: "Catalogue",
       text: "Access our catalog of articles",
       href: "/catalogue",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <CgProfile />,
@@ -61,7 +74,13 @@ const DashboardPage = () => {
       subtitle: `$ ${formatedSumAmount}`,
       text: `Expired: $ ${formatedExpiredSumAmount}`,
       href: "/accounts/status",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <TbClockExclamation />,
@@ -111,7 +130,13 @@ const DashboardPage = () => {
       subtitle: "0",
       text: "Total Reclaims: 0",
       href: "/pendings",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <CgProfile />,
@@ -149,7 +174,13 @@ const DashboardPage = () => {
       subtitle: "0",
       text: "Without reading: 0",
       href: "/notifications",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <GoGraph />,
@@ -164,13 +195,25 @@ const DashboardPage = () => {
       logo: <IoIosPaper />,
       title: "Documents",
       href: "/accounts/vouchers",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <BsCash />,
       title: "Collections",
       href: "/accounts/payments",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <BsCash />,
@@ -188,13 +231,43 @@ const DashboardPage = () => {
       logo: <IoCalculatorSharp />,
       title: "Orders",
       href: "/orders/orders",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <IoCalculatorSharp />,
       title: "Budget",
       href: "/orders/budget",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
+    },
+    {
+      logo: <FaShoppingCart />,
+      title: "Shopping Cart",
+      href: "/shopping-cart",
+      allowedRoles: ["CUSTOMER"],
+    },
+    {
+      logo: <FaFileDownload />,
+      title: "Download Price List",
+      href: "/downloads/prices-lists",
+      allowedRoles: ["CUSTOMER"],
+    },
+    {
+      logo: <FaPhone />,
+      title: "Contact",
+      href: "/contact",
+      allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <ImStatsDots />,
@@ -206,13 +279,37 @@ const DashboardPage = () => {
       logo: <CgProfile />,
       title: "My Profile",
       href: "/profile/my-profile",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
+    },
+    {
+      logo: <BsCash />,
+      title: "Brand Margins",
+      href: "/profile/brands-margin",
+      allowedRoles: ["CUSTOMER"],
+    },
+    {
+      logo: <BsCash />,
+      title: "Item Margins",
+      href: "/profile/items-margin",
+      allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaPowerOff />,
       title: "Logout",
       href: "",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
   ];
 
@@ -246,7 +343,7 @@ const DashboardPage = () => {
         })}
       </div>
       <h4 className="text-bold p-4">SHORTCUTS</h4>
-      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"}`}>
+      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-4"}`}>
         {filteredItemsShortcuts.map((item, index: any) => {
           return (
             <Link key={index} href={item.href}>

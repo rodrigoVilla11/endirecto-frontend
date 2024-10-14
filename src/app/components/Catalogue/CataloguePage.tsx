@@ -13,14 +13,14 @@ import { useRouter } from "next/navigation";
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page: 1,
-    limit: 10,
+    limit: 16,
   });
   const { selectedClientId } = useClient();
   const router = useRouter();
 
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
-  const [isModalVisible, setModalVisible] = useState(false); // Estado para el modal
+  const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     if (!selectedClientId) {
@@ -51,9 +51,9 @@ const CataloguePage = () => {
   };
 
   return (
-    <div className="gap-4">
+    <div className="gap-4 p-2">
       <h3 className="text-bold p-4">CATALOGUE</h3>
-      <div className="flex gap-2">
+      <div className="flex gap-2 ">
         <FilterBox
           isVisible={isFilterBoxVisible}
           onClose={() => setFilterBoxVisible(false)}

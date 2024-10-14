@@ -6,7 +6,13 @@ const Dashboard = () => {
   return (
     <div className="w-full">
       <PrivateRoute
-        requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+        requiredRoles={[
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ]}
       >
         <DashboardPage />
       </PrivateRoute>

@@ -4,7 +4,13 @@ import PrivateRoute from "../context/PrivateRoutes";
 const Page = () => {
   return (
     <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
     >
       <div>Page</div>
     </PrivateRoute>
