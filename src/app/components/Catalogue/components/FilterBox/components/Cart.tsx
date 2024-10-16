@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FaAngleDown } from "react-icons/fa6";
 
-const Cart = () => {
+const Cart = ({onChange} : any) => {
   const [selectedCart, setSelectedCart] = useState(1);
   const carts = [
     { id: 1, name: 'Order' },

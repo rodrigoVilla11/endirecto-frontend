@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
-const VehiclesBrands = () => {
+const VehiclesBrands = ({onChange} : any) => {
   const [selectedVehiclesBrand, setSelectedVehiclesBrand] = useState("");
   const vehiclesBrands = [
     { id: 1, name: "AUDI" },

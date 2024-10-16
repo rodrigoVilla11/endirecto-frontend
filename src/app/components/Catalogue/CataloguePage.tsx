@@ -9,12 +9,23 @@ import Modal from "../components/Modal";
 import PopUpModal from "./components/PopUpModal";
 import { useClient } from "@/app/context/ClientContext";
 import { useRouter } from "next/navigation";
+import { useFilters } from "@/app/context/FiltersContext";
 
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page: 1,
     limit: 16,
   });
+  const {
+    order,
+    cart,
+    showPurchasePrice,
+    tags,
+    stock,
+    brand,
+    item,
+    vehicleBrand,
+  } = useFilters();
   const { selectedClientId } = useClient();
   const router = useRouter();
 
@@ -107,9 +118,21 @@ const CataloguePage = () => {
             </div>
             <p className="text-xs pr-4">{data?.length || 0}</p>
           </div>
-          <Articles data={data} />
+          <Articles
+            brand={brand}
+            item={item}
+            vehicleBrand={vehicleBrand}
+            stock={stock}
+            tags={tags}
+            order={order}
+            cart={cart}
+            showPurchasePrice={showPurchasePrice}
+          />
           <Modal isOpen={isModalVisible} onClose={closeModal}>
-            <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect}/>
+            <PopUpModal
+              closeModal={closeModal}
+              handleRedirect={handleRedirect}
+            />
           </Modal>
         </div>
       </div>

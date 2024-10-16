@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import NavBarAndSideMenu from "./components/Navigation/NavBarAndSideMenu";
 import "react-datepicker/dist/react-datepicker.css";
 import { ClientProvider } from "./context/ClientContext";
+import { FiltersProvider } from "./context/FiltersContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,10 +29,12 @@ export default function RootLayout({
           <AuthProvider>
             <ClientProvider>
               <SideMenuProvider>
-                <div className="flex h-screen">
-                  <NavBarAndSideMenu />
-                  <MainContent>{children}</MainContent>
-                </div>
+                <FiltersProvider>
+                  <div className="flex h-screen">
+                    <NavBarAndSideMenu />
+                    <MainContent>{children}</MainContent>
+                  </div>
+                </FiltersProvider>
               </SideMenuProvider>
             </ClientProvider>
           </AuthProvider>

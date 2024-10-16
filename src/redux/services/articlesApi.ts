@@ -46,8 +46,8 @@ type Article = {
 
 type UpdateArticlesPayload = {
   id: string;
-  images?: string[]; 
-  description?: string
+  images?: string[];
+  description?: string;
   pdfs?: string[];
 };
 
@@ -67,9 +67,12 @@ export const articlesApi = createApi({
         return response;
       },
     }),
-    getArticles: builder.query<Article[], { page?: number; limit?: number, query?: string }>({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/articles?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getArticles: builder.query<
+      Article[],
+      { page?: number; limit?: number; query?: string; brand?: string }
+    >({
+      query: ({ page = 1, limit = 10, query = "", brand = "" } = {}) => {
+        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {

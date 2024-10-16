@@ -1,8 +1,14 @@
 'use client'
 import React, { useState } from 'react'
 
-const Stock = () => {
-    const [selectedButton, setSelectedButton] = useState('inStock');
+const Stock = ({onChange} : any) => {
+  
+    const [selectedButton, setSelectedButton] = useState('');
+
+    const handleButtonClick = (value: string) => {
+      setSelectedButton(value);
+      onChange(value); 
+    };
 
     return (
       <div className="px-4 text-sm">
@@ -15,25 +21,25 @@ const Stock = () => {
           </label>
           <div className="flex justify-between items-center gap-1">
             <button
-              onClick={() => setSelectedButton('inStock')}
+              onClick={() => handleButtonClick('IN-STOCK')}
               className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
-                selectedButton === 'inStock' ? 'bg-primary text-white' : ''
+                selectedButton === 'IN-STOCK' ? 'bg-primary text-white' : ''
               }`}
             >
               In Stock
             </button>
             <button
-              onClick={() => setSelectedButton('limitedStock')}
+              onClick={() => handleButtonClick('LIMITED-STOCK')}
               className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
-                selectedButton === 'limitedStock' ? 'bg-primary text-white' : ''
+                selectedButton === 'LIMITED-STOCK' ? 'bg-primary text-white' : ''
               }`}
             >
               Limited Stock
             </button>
             <button
-              onClick={() => setSelectedButton('outOfStock')}
+              onClick={() => handleButtonClick('NO-STOCK')}
               className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
-                selectedButton === 'outOfStock' ? 'bg-primary text-white' : ''
+                selectedButton === 'NO-STOCK' ? 'bg-primary text-white' : ''
               }`}
             >
               Out of Stock

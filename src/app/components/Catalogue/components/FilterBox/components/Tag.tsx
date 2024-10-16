@@ -1,6 +1,6 @@
 import React from "react";
 
-const Tag = () => {
+const Tag = ({onSelectTags} : any) => {
   return (
     <div className="px-4 text-sm text-white">
       <div className="mb-4">

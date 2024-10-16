@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FaAngleDown } from "react-icons/fa6";
 
-const Order = () => {
+const Order = ({onChange} : any) => {
   const [selectedOrder, setSelectedOrder] = useState(1);
   const order = [
     { id: 1, name: 'Best Sellers' },

@@ -8,8 +8,11 @@ import Stock from './components/Stock';
 import Brands from './components/Brands';
 import Items from './components/Items';
 import VehiclesBrands from './components/VehiclesBrands';
+import { useFilters } from '@/app/context/FiltersContext';
 
 const FilterBox = ({ isVisible, onClose }: any) => {
+  const { setOrder, setCart, setShowPurchasePrice, setTags, setStock, setBrand, setItem, setVehicleBrand } = useFilters();
+
   return (
     <>
       {isVisible && (
@@ -17,14 +20,14 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           <div className='p-2 flex justify-end items-center text-2xl'>
             <button onClick={onClose}><FaXmark /></button>
           </div>
-          <Order />
-          <Cart />
-          <PurchasePrice />
-          <Tag />
-          <Stock />
-          <Brands />
-          <Items />
-          <VehiclesBrands />
+          <Order onChange={setOrder} />
+          <Cart onChange={setCart} />
+          <PurchasePrice onToggle={setShowPurchasePrice} />
+          <Tag onSelectTags={setTags} />
+          <Stock onChange={setStock} />
+          <Brands onChange={setBrand} />
+          <Items onChange={setItem} />
+          <VehiclesBrands onChange={setVehicleBrand} />
         </div>
       )}
     </>

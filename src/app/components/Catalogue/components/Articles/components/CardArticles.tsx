@@ -22,7 +22,7 @@ interface FormState {
   shopping_cart: string[];
 }
 
-const CardArticles = ({ article }: any) => {
+const CardArticles = ({ article, showPurchasePrice }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
@@ -104,7 +104,7 @@ const CardArticles = ({ article }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className=" w-60  h-112 bg-gray-200  ">
+    <div className=" w-52  h-112 bg-gray-200  ">
       <div className="relative bg-white flex flex-col justify-between shadow-lg">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
@@ -115,7 +115,7 @@ const CardArticles = ({ article }: any) => {
           <StripeStock articleId={article.id} />
           <div className="bg-gray-200">
             <ArticleName name={article.name} id={article.id} />
-            <CostPrice articleId={article.id} />
+            {showPurchasePrice && <CostPrice articleId={article.id} />}
             <hr className="bg-white border-white m-4" />
             <SuggestedPrice articleId={article.id} />
           </div>

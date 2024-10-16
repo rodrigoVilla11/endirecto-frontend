@@ -1,20 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import { useGetBrandsQuery } from "@/redux/services/brandsApi";
+import React, { useState, useEffect } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
-const Brands = () => {
+const Brands = ({ onChange }: { onChange: (value: string) => void }) => {
   const [selectedBrand, setSelectedBrand] = useState("");
-  const brands = [
-    { id: 1, name: "CHAO YANG" },
-    { id: 2, name: "CORVEN" },
-    { id: 3, name: "CORVEN TIRES" },
-    { id: 4, name: "CTR" },
-  ];
+  const { data: brands } = useGetBrandsQuery(null);
 
-  const handleBrandChange = (event : any) => {
-    setSelectedBrand(event.target.value);
+
+  const handleBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = event.target.value;
+    setSelectedBrand(selectedValue);
+    onChange(selectedValue); 
   };
-
+ 
   return (
     <div className="px-4 text-sm">
       <div className="mb-4">
@@ -31,10 +30,10 @@ const Brands = () => {
             onChange={handleBrandChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            <option value="" disabled>
+            <option value="">
               Select a Brand
             </option>
-            {brands.map((brand) => (
+            {brands?.map((brand) => (
               <option key={brand.id} value={brand.id}>
                 {brand.name}
               </option>

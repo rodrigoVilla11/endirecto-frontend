@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
-const Items = () => {
+const Items = ({onChange} : any) => {
   const [selectedItem, setSelectedItem] = useState("");
   const items = [
     { id: 1, name: "ACTUADORES HIDRAULICOS" },

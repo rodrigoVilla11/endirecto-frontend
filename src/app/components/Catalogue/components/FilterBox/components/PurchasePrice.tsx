@@ -1,9 +1,14 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 
-const PurchasePrice = () => {
-  const [showPrice, setShowPrice] = useState(false);
+const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
+  const [showPrice, setShowPrice] = useState(true);
+
+  const handleShowPrice = (value: boolean) => {
+    setShowPrice(value);
+    onToggle(value);
+  };
 
   return (
     <div className="px-4 text-sm">
@@ -16,7 +21,7 @@ const PurchasePrice = () => {
         </label>
         <div className="flex justify-between items-center gap-2">
           <button
-            onClick={() => setShowPrice(true)}
+            onClick={() => handleShowPrice(true)}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
               showPrice ? "bg-primary text-white" : ""
             }`}
@@ -24,7 +29,7 @@ const PurchasePrice = () => {
             <FaRegEye /> Show
           </button>
           <button
-            onClick={() => setShowPrice(false)}
+            onClick={() => handleShowPrice(false)}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
               !showPrice ? "bg-primary text-white" : ""
             }`}

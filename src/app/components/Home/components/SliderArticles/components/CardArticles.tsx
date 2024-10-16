@@ -4,7 +4,6 @@ import { FaCar } from "react-icons/fa6";
 import ImageArticlesSlider from "./ImageArticlesSlider";
 
 const CardArticles = ({ article, handleRedirect }: any) => {
-  console.log();
   return (
     <div
       className="h-90 w-56 shadow-2xl rounded-md m-2"
