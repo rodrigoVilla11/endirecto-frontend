@@ -35,7 +35,7 @@ const CataloguePage = () => {
 
   useEffect(() => {
     if (!selectedClientId) {
-      router.push("/selectCustomer"); //
+      router.push("/selectCustomer"); 
     } else {
       setModalVisible(true);
     }

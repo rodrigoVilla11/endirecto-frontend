@@ -9,17 +9,19 @@ import { useGetArticleVehicleByIdQuery } from "@/redux/services/articlesVehicles
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 
 const Articles = ({ brand, item, vehicleBrand, stock, tags, cart, order, showPurchasePrice }: any) => {
+
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
-    page: 1,
-    limit: 16,
-    brand: brand
+    page: 1,  
+    limit: 20,
+    brand: brand,
+    item: item,
+    tags: tags,
+    stock: stock,
+    vehicle_brand: vehicleBrand
   });
 
- 
-
-
   const { isOpen } = useSideMenu();
-
+console.log(data)
 
   return (
     <div className="h-screen m-4 flex flex-col text-sm">

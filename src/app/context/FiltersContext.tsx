@@ -28,7 +28,7 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState('');
   const [showPurchasePrice, setShowPurchasePrice] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
-  const [stock, setStock] = useState('In Stock');
+  const [stock, setStock] = useState('');
   const [brand, setBrand] = useState('');
   const [item, setItem] = useState('');
   const [vehicleBrand, setVehicleBrand] = useState('');

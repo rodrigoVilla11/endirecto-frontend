@@ -69,10 +69,28 @@ export const articlesApi = createApi({
     }),
     getArticles: builder.query<
       Article[],
-      { page?: number; limit?: number; query?: string; brand?: string }
+      {
+        page?: number;
+        limit?: number;
+        query?: string;
+        brand?: string;
+        item?: string;
+        tags?: string;
+        stock?: string;
+        vehicle_brand?: string;
+      }
     >({
-      query: ({ page = 1, limit = 10, query = "", brand = "" } = {}) => {
-        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({
+        page = 1,
+        limit = 10,
+        query = "",
+        brand = "",
+        item = "",
+        tags = "",
+        stock = "",
+        vehicle_brand = "",
+      } = {}) => {
+        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&item=${item}&stock=${stock}&tags=${tags}&vehicle_brand=${vehicle_brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {

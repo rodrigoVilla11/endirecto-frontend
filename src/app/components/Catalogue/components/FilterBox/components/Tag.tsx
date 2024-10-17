@@ -1,6 +1,14 @@
-import React from "react";
+'use client'
+import React, { useState } from "react";
 
-const Tag = ({onSelectTags} : any) => {
+const Tag = ({ onSelectTags }: any) => {
+  const [selectedItem, setSelectedItem] = useState("");
+
+  const handleButtonClick = (value: string) => {
+    setSelectedItem(value);
+    onSelectTags(value);
+  };
+
   return (
     <div className="px-4 text-sm text-white">
       <div className="mb-4">
@@ -11,26 +19,17 @@ const Tag = ({onSelectTags} : any) => {
           Tag
         </label>
         <div className="flex justify-between items-center gap-2">
-          <button
-            className={`flex gap-1 items-center justify-center rounded-md  w-1/2 py-1 bg-red-500`}
-          >
-            Offers
-          </button>
-          <button
-            className={`flex gap-1 items-center justify-center rounded-md  w-1/2 py-1 bg-green-500`}
-          >
-            Promo
-          </button>
-          <button
-            className={`flex gap-1 items-center justify-center rounded-md  w-1/2 py-1 bg-yellow-500`}
-          >
-            New
-          </button>
-          <button
-            className={`flex gap-1 items-center justify-center rounded-md  w-1/2 py-1 bg-orange-500`}
-          >
-            Kits
-          </button>
+          {['Offers', 'Promo', 'New', 'Kits'].map((tag) => (
+            <button
+              key={tag}
+              className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-1 ${
+                selectedItem === tag ? 'bg-blue-500' : 'bg-gray-500'
+              }`}
+              onClick={() => handleButtonClick(tag)}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       </div>
     </div>
