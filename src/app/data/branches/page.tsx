@@ -9,6 +9,10 @@ import {
   useGetBranchPagQuery,
 } from "@/redux/services/branchesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { FaAddressBook, FaClock, FaMailchimp, FaPhone, FaWhatsapp } from "react-icons/fa";
+import { FaLocationPin } from "react-icons/fa6";
+import { BsMailbox } from "react-icons/bs";
+import { CiMail } from "react-icons/ci";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -28,20 +32,150 @@ const Page = () => {
     key: branch.id,
     id: branch.id,
     name: branch.name,
-    address: branch.address,
+    address: (
+      <div className="relative group">
+        <span>
+          <FaAddressBook className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.address}
+        </div>
+      </div>
+    ),
     postal_code: branch.postal_code,
-    phone: branch.phone,
-    whatsapp: branch.whatsapp,
-    gps: branch.gps,
-    schedule: branch.schedule,
-    mail_budgets: branch.mail_budgets,
-    mail_collections: branch.mail_collections,
-    mail_collections_summaries: branch.mail_collections_summaries,
-    mail_contacts: branch.mail_contacts,
-    mail_orders: branch.mail_orders,
-    mail_pendings: branch.mail_pendings,
-    mail_profile: branch.mail_profile,
-    mail_system: branch.mail_system,
+    phone: (
+      <div className="relative group">
+        <span>
+          <FaPhone className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.phone}
+        </div>
+      </div>
+    ),
+    whatsapp: (
+      <div className="relative group">
+        <span>
+          <FaWhatsapp className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.whatsapp}
+        </div>
+      </div>
+    ),
+    gps: (
+      <div className="relative group">
+        <span>
+          <FaLocationPin className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.gps}
+        </div>
+      </div>
+    ),
+    schedule: (
+      <div className="relative group">
+        <span>
+          <FaClock className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.schedule}
+        </div>
+      </div>
+    ),
+    mail_budgets: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_budgets}
+        </div>
+      </div>
+    ),
+    mail_collections:(
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_collections}
+        </div>
+      </div>
+    ),
+    mail_collections_summaries: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_collections_summaries}
+        </div>
+      </div>
+    ),
+    mail_contacts: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_contacts}
+        </div>
+      </div>
+    ),
+    mail_orders: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_orders}
+        </div>
+      </div>
+    ),
+    mail_pendings:(
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_pendings}
+        </div>
+      </div>
+    ),
+    mail_profile: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_profile}
+        </div>
+      </div>
+    ),
+    mail_system: (
+      <div className="relative group">
+        <span>
+          <CiMail className="text-center text-xl" />
+        </span>
+        <div className="absolute w-56 left-full top-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
+          {branch.mail_system}
+        </div>
+      </div>
+    ),
   }));
   const tableHeader = [
     { name: "Id", key: "id" },

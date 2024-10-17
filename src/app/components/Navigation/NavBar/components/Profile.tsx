@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { IoIosArrowDown } from "react-icons/io";
 import { IoPersonOutline } from "react-icons/io5";
 import { FaPowerOff } from "react-icons/fa";
@@ -18,6 +18,7 @@ const Profile = () => {
   const { setIsAuthenticated, setRole, userData } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -31,10 +32,10 @@ const Profile = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setIsMenuOpen(!isMenuOpen);
+    setIsMenuOpen(false);
     router.push("/login");
     setIsAuthenticated(false);
-    setSelectedClientId("")
+    setSelectedClientId("");
     setRole(null);
   };
 
@@ -44,17 +45,29 @@ const Profile = () => {
     } else if (userData?.username) {
       return userData.username.charAt(0);
     }
-    return ""; 
+    return "";
   };
 
   const handleDeselectCustomer = () => {
-    setSelectedClientId("")
-    setIsMenuOpen(!isMenuOpen);
+    setSelectedClientId("");
+    setIsMenuOpen(false);
+  };
 
-  }
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuRef]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
         className="flex justify-center items-center gap-1"
         onClick={toggleMenu}

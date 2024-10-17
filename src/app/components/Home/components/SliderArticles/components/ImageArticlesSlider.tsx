@@ -2,9 +2,9 @@ import React from 'react'
 
 const ImageArticlesSlider = ({img} : any) => {
   return (
-    <div className='w-56 h-56 border border-black flex justify-center items-center'>
-      <img src={img} />
-    </div>
+    <div className='flex justify-center mb-4 p-4 bg-white'>
+    <img className='w-32 h-40 object-contain' src={img} alt="Artículo" />
+  </div>
   )
 }
 

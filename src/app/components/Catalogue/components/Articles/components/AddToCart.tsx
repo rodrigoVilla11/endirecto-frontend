@@ -5,8 +5,8 @@ import { FaShoppingCart } from 'react-icons/fa';
 interface AddToCartProps {
   articleId: string;
   onAddToCart: (quantity: number) => void; 
-  quantity?: number; // Añadir quantity como prop opcional
-  setQuantity: (quantity: number) => void; // Función para establecer la cantidad
+  quantity?: number;
+  setQuantity: (quantity: number) => void; 
 }
 
 const AddToCart: React.FC<AddToCartProps> = ({ articleId, onAddToCart, quantity = 1, setQuantity }) => {

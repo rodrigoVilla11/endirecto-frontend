@@ -2,6 +2,7 @@ import React from "react";
 import { BsTag } from "react-icons/bs";
 import { FaCar } from "react-icons/fa6";
 import ImageArticlesSlider from "./ImageArticlesSlider";
+import StripeStock from "@/app/components/Catalogue/components/Articles/components/StripeStock";
 
 const CardArticles = ({ article, handleRedirect }: any) => {
   return (
@@ -14,9 +15,10 @@ const CardArticles = ({ article, handleRedirect }: any) => {
         <FaCar />
       </div>
       <ImageArticlesSlider img={article.images ? article.images[0] : ""} />
-      <div className="p-2 bg-gray-200">
-        <h3 className="text-sm">{article.name}</h3>
-        <p className="text-xs text-secondary pt-6">{article.description}</p>
+      {/* <StripeStock articleId={article.id} /> */}
+      <div className="p-4 h-24">
+        <p className="text-xs text-gray-500 mb-2 font-semibold">{article.id}</p>
+        <p className="text-xs text-gray-500 mb-2">{article.description}</p>
       </div>
     </div>
   );

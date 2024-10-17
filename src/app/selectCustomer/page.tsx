@@ -111,7 +111,7 @@ const SelectCustomer = () => {
           <span>
             <FaAddressBook className="text-center text-xl" />
           </span>
-          <div className="absolute left-full bottom-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
+          <div className="absolute w-56 left-full bottom-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded-lg py-1 px-2">
             {customer.address}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45"></div>
           </div>
