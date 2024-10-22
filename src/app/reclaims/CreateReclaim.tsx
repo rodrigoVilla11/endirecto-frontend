@@ -42,7 +42,8 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     useGetCustomersQuery(null);
   const { data: articlesData, isLoading: isLoadingArticles } =
     useGetAllArticlesQuery(null);
-   console.log("reclaimsTypesData",reclaimsTypesData)
+
+    
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement

@@ -9,7 +9,6 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import {
   useCountDocumentsQuery,
   useGetDocumentsPagQuery,
-  useGetDocumentsQuery,
   useSumAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";

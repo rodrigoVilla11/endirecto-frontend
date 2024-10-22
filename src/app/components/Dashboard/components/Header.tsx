@@ -9,7 +9,10 @@ const Header = () => {
     id: selectedClientId || "",
   });
   const { userData } = useAuth();
+  console.log(userData)
+
   const firstLetter = selectedClientId ? data?.name.charAt(0) : userData?.username.charAt(0)
+
   return (
     <div className="h-44 mx-5 bg-white  p-10 flex justify-between">
       <div className="flex items-center gap-4">

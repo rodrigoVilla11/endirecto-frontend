@@ -115,6 +115,10 @@ const SideMenu = ({ isOpen }: any) => {
           name: "FAQS",
           path: "/marketing/faqs",
         },
+        {
+          name: "Tags",
+          path: "/marketing/tags",
+        },
         // { name: "Articles", path: "/data/articles" },
         // { name: "Brands", path: "/data/brands"  },
         // { name: "Families", path: "/marketing/families"  },

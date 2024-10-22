@@ -155,12 +155,16 @@ const Page = () => {
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
   const headerBody = {
-    buttons: [
-      {
-        logo: <FaPlus />,
-        title: "New",
-        onClick: openCreateModal,
-      },
+    buttons:  [
+      ...(selectedClientId
+        ? [
+            {
+              logo: <FaPlus />,
+              title: "New",
+              onClick: openCreateModal,
+            },
+          ]
+        : []),
       {
         logo: <AiOutlineDownload />,
         title: "Download",

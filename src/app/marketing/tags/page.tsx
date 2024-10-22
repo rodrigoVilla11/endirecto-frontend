@@ -10,10 +10,10 @@ import {
   useCountMarketingQuery,
   useGetMarketingByFilterQuery,
 } from "@/redux/services/marketingApi";
-import DeleteBannerComponent from "./DeleteBanner";
-import UpdateBannerComponent from "./UpdateBanner";
-import CreateBannerComponent from "./CreateBanner";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import CreateTagComponent from "./CreateTag";
+import UpdateTagComponent from "./UpdateTag";
+import DeleteTagComponent from "./DeleteTag";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -25,7 +25,7 @@ const Page = () => {
     null
   );
 
-  const filterBy = "headers";
+  const filterBy = "tags";
   const {
     data: marketing,
     error,
@@ -68,22 +68,17 @@ const Page = () => {
     marketing?.map((popup) => {
       return {
         key: popup._id,
-        name: popup.headers.name,
-        sequence: popup.headers.sequence,
-        enable: popup.headers.enable ? "true" : "false",
-        homeWeb:
-          (
-            <div className="flex justify-center items-center">
-              <img src={popup.headers.homeWeb && popup.headers.homeWeb} className="h-10"/>
-            </div>
-          ) ,
-        headerWeb:
-          (
-            <div className="flex justify-center items-center">
-              <img className="h-10" src={popup.headers.headerWeb && popup.headers.headerWeb} />
-            </div>
-          ) ,
-        url: popup.headers.url,
+        name: popup.tags.name,
+        enable: popup.tags.enable ? "true" : "false",
+        image: (
+          <div className="flex justify-center items-center">
+            <img
+              className="h-10"
+              src={popup.tags.image && popup.tags.image}
+            />
+          </div>
+        ),
+        url: popup.tags.url,
         edit: (
           <div className="flex justify-center items-center">
             <FaPencil
@@ -105,10 +100,8 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Name", key: "name" },
-    { name: "Sequence", key: "sequence" },
     { name: "Enable", key: "enable" },
-    { name: "Home Web", key: "homeWeb" },
-    { name: "Header Web", key: "headerWeb" },
+    { name: "Image", key: "image" },
     { name: "URL", key: "url" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
@@ -140,17 +133,17 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">BANNERS</h3>
+        <h3 className="font-bold p-4">Tags</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreateBannerComponent closeModal={closeCreateModal} />
+          <CreateTagComponent closeModal={closeCreateModal}/>
         </Modal>
 
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentMarketingId && (
-            <UpdateBannerComponent
+            <UpdateTagComponent
               marketingId={currentMarketingId}
               closeModal={closeUpdateModal}
             />
@@ -158,7 +151,7 @@ const Page = () => {
         </Modal>
 
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteBannerComponent
+          <DeleteTagComponent
             marketingId={currentMarketingId || ""}
             closeModal={closeDeleteModal}
           />

@@ -3,7 +3,8 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 type Marketing = {
     _id: string,
     popups: PopUps,
-    headers: Headers
+    headers: Headers,
+    tags: Tags
 };
 
 export type PopUps = {
@@ -25,15 +26,24 @@ export type Headers = {
   url: string;
 };
 
+export type Tags = {
+  name: string;
+  enable: boolean;
+  image: string;
+  url: string;
+};
+
 type CreateMarketingPayload = {
     popups?: PopUps,
-    headers?: Headers
+    headers?: Headers,
+    tags?: Tags
 };
 
 type UpdateMarketingPayload = {
   _id: string;
   popups?: PopUps,
-  headers?: Headers
+  headers?: Headers,
+  tags?: Tags
 };
 
 export const marketingApi = createApi({
