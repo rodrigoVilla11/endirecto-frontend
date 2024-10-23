@@ -14,13 +14,6 @@ const SliderArticles = () => {
   const totalSlides = articles.length; 
   const visibleSlides = 2; 
 
-  const router = useRouter();
-
-  const handleRedirect = (path: string) => {
-    if (path) {
-      router.push(path);
-    }
-  };
 
   const nextSlide = () => {
     setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
@@ -48,7 +41,7 @@ const SliderArticles = () => {
       >
         {articles.map((article, index) => (
           <div key={article.id || index} className="flex-none w-56"> 
-            <CardArticles handleRedirect={handleRedirect} article={article} />
+            <CardArticles article={article} />
           </div>
         ))}
       </div>

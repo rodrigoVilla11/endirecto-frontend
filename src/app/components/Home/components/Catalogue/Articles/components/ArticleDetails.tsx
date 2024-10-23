@@ -2,14 +2,10 @@ import React from "react";
 import { IoMdClose } from "react-icons/io";
 import ArticleMenu from "./ArticleMenu";
 import ArticleImage from "./ArticleImage";
-import StripeStock from "./StripeStock";
 import ArticleName from "./ArticleName";
-import CostPrice from "./CostPrice";
-import SuggestedPrice from "./SuggestedPrice";
-import AddToCart from "./AddToCart";
 import Description from "./Description/Description";
 
-const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, toggleShoppingCart, quantity, setQuantity} : any) => {
+const ArticleDetails = ({closeModal, article,} : any) => {
   return (
     <div>
       <div className="flex justify-between">
