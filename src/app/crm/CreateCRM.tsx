@@ -18,7 +18,6 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
   const currentDate = format(new Date(), "yyyy-MM-dd");
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
-  console.log("selectedId", selectedClientId)
   const [form, setForm] = useState({
     date: currentDate,
     type: ActionType.CALL,
@@ -30,7 +29,6 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
     seller_id: "",
     user_id: userData ? userData?._id : "",
   });
-  console.log(form)
   const { data: customersData, isLoading: isLoadingCustomers } =
     useGetCustomersQuery(null);
   const { data: sellerData, isLoading: isLoadingSellers } =

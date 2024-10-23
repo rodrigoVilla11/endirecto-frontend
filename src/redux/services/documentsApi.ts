@@ -110,7 +110,6 @@ export const documentsApi = createApi({
         return `/documents/sum-expired-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: { totalExpiredAmount?: string }) => {
-        console.log("response", response);
         const totalExpiredAmount = response?.totalExpiredAmount;
 
         if (totalExpiredAmount && !isNaN(parseFloat(totalExpiredAmount))) {

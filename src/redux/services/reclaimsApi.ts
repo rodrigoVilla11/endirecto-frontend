@@ -136,7 +136,6 @@ export const reclaimsApi = createApi({
         if (customer_id) params.append("customer_id", customer_id);
 
         const fullUrl = `${url}?${params.toString()}`;
-        console.log(fullUrl);
         return fullUrl;
       },
       transformResponse: (response: Reclaims[]) => {

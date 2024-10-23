@@ -109,7 +109,6 @@ const UpdateArticleComponent = ({
         images: [...form.images, ...uploadResponses],
         id: articleId
       };
-      console.log(updatedForm)
       await updateArticle(updatedForm).unwrap();
       closeModal();
     } catch (err) {

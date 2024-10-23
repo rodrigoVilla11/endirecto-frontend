@@ -21,7 +21,6 @@ const Articles = ({ brand, item, vehicleBrand, stock, tags, cart, order, showPur
   });
 
   const { isOpen } = useSideMenu();
-console.log(data)
 
   return (
     <div className="h-screen m-4 flex flex-col text-sm">

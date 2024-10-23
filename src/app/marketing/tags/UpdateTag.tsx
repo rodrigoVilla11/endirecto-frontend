@@ -139,7 +139,6 @@ const UpdateTagComponent = ({
           image: homeUploadResponse || form.tags.image, // Usar la URL subida o mantener la anterior
         },
       };
-      console.log(updatedForm)
 
       await updateMarketing(updatedForm).unwrap();
       closeModal();

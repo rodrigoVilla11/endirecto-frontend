@@ -90,7 +90,6 @@ export const customerApi = createApi({
         if (instance) params.append("instance", instance);
 
         const fullUrl = `${url}?${params.toString()}`;
-        console.log(fullUrl);
         return fullUrl;
       },
       transformResponse: (response: Customer[]) => {

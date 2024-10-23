@@ -9,7 +9,6 @@ const Header = () => {
     id: selectedClientId || "",
   });
   const { userData } = useAuth();
-  console.log(userData)
 
   const firstLetter = selectedClientId ? data?.name.charAt(0) : userData?.username.charAt(0)
 

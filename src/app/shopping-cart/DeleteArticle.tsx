@@ -1,16 +1,20 @@
-import { useUpdateCustomerMutation } from '@/redux/services/customersApi';
-import React, { useState, useEffect } from 'react';
+import { useUpdateCustomerMutation } from "@/redux/services/customersApi";
+import React, { useState, useEffect } from "react";
 
 type DeleteArticleProps = {
   articleId: string;
   closeModal: () => void;
-  data: any
+  data: any;
 };
 
-const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, closeModal, data }) => {
+const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
+  articleId,
+  closeModal,
+  data,
+}) => {
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
-  const [decodedArticleId, setDecodedArticleId] = useState('');
+  const [decodedArticleId, setDecodedArticleId] = useState("");
 
   useEffect(() => {
     setDecodedArticleId(decodeURIComponent(articleId));
@@ -18,27 +22,22 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
 
   const handleDelete = async () => {
     try {
-      console.log('Current shopping cart:', data.shopping_cart);
-      console.log('Article ID to delete:', decodedArticleId);
+      const updatedShoppingCart = data.shopping_cart.filter(
+        (id: string) => id !== decodedArticleId
+      );
 
-      const updatedShoppingCart = data.shopping_cart.filter((id: string) => id !== decodedArticleId);
-      
-      console.log('Updated shopping cart:', updatedShoppingCart);
-
-      const result = await updateCustomer({ 
-        id: data.id, 
-        shopping_cart: updatedShoppingCart 
+      const result = await updateCustomer({
+        id: data.id,
+        shopping_cart: updatedShoppingCart,
       }).unwrap();
-
-      console.log('Update result:', result);
 
       if (result) {
         closeModal();
       } else {
-        throw new Error('Failed to update shopping cart');
+        throw new Error("Failed to update shopping cart");
       }
     } catch (err) {
-      console.error('Error deleting Article from cart:', err);
+      console.error("Error deleting Article from cart:", err);
     }
   };
 
@@ -46,7 +45,9 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
     <div className="p-4">
       <h2 className="text-lg mb-4">Confirm Delete</h2>
       <p>Are you sure you want to delete this Article from Shopping Cart?</p>
-      <p className="mt-2 text-sm text-gray-600">Article ID: {decodedArticleId}</p>
+      <p className="mt-2 text-sm text-gray-600">
+        Article ID: {decodedArticleId}
+      </p>
       <div className="flex justify-end gap-4 mt-4">
         <button
           type="button"
@@ -58,14 +59,22 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
         <button
           type="button"
           onClick={handleDelete}
-          className={`rounded-md p-2 text-white ${isUpdating ? 'bg-gray-500' : 'bg-red-600'}`}
+          className={`rounded-md p-2 text-white ${
+            isUpdating ? "bg-gray-500" : "bg-red-600"
+          }`}
           disabled={isUpdating}
         >
-          {isUpdating ? 'Deleting...' : 'Delete'}
+          {isUpdating ? "Deleting..." : "Delete"}
         </button>
       </div>
-      {isSuccess && <p className="text-green-500 mt-2">Article deleted from cart successfully!</p>}
-      {isError && <p className="text-red-500 mt-2">Error deleting Article from cart</p>}
+      {isSuccess && (
+        <p className="text-green-500 mt-2">
+          Article deleted from cart successfully!
+        </p>
+      )}
+      {isError && (
+        <p className="text-red-500 mt-2">Error deleting Article from cart</p>
+      )}
     </div>
   );
 };

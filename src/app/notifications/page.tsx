@@ -30,7 +30,6 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData = data?.map((notification) => {
-    console.log(notification.schedule_to);
     const brand = brandsData?.find((data) => data.id == notification.brand_id);
     return {
       key: notification._id,

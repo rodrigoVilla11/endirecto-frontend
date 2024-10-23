@@ -80,7 +80,6 @@ export const notificationsApi = createApi({
         if (type) {
           url += `&type=${type}`;
         }
-        console.log(url)
         return url;
       },
       transformResponse: (response: Notifications[]) => {

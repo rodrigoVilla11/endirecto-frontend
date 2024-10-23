@@ -38,7 +38,6 @@ const LoginPage = () => {
       }
 
       const data = await response.json();
-      console.log("Login successful:", data);
 
       const userData = {
         _id: data._id,

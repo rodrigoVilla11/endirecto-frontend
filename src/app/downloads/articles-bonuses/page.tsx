@@ -21,7 +21,6 @@ const Page = () => {
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
 
-  console.log(searchQuery);
   const { data, error, isLoading, refetch } = useGetArticlesBonusesPagQuery({
     page,
     limit,

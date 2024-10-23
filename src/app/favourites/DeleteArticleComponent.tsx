@@ -18,19 +18,13 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
 
   const handleDelete = async () => {
     try {
-      console.log('Current favourites:', data.favourites);
-      console.log('Article ID to delete:', decodedArticleId);
-
       const updatedFavourites = data.favourites.filter((id: string) => id !== decodedArticleId);
-      
-      console.log('Updated favourites:', updatedFavourites);
 
       const result = await updateCustomer({ 
         id: data.id, 
         favourites: updatedFavourites 
       }).unwrap();
 
-      console.log('Update result:', result);
 
       if (result) {
         closeModal();
