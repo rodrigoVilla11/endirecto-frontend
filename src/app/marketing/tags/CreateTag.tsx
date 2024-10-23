@@ -57,10 +57,12 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
+    const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
       tags: {
         ...prevForm.tags,
+        [name]: value, // Actualiza dinámicamente según el input
       },
     }));
   };
@@ -68,7 +70,6 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        
       await createMarketing(form).unwrap();
       closeModal();
     } catch (err) {
@@ -94,6 +95,7 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
+            aria-label="Close"
           >
             <IoMdClose className="text-lg" />
           </button>
@@ -120,6 +122,7 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
                   className={`border border-gray-300 rounded-md p-2 ${
                     form.tags.enable ? "bg-green-500" : "bg-red-500"
                   } text-white`}
+                  aria-pressed={form.tags.enable}
                 >
                   {form.tags.enable ? "On" : "Off"}
                 </button>
@@ -163,15 +166,32 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
               onClick={handleUpload}
               disabled={isLoadingUpload}
               className="bg-blue-500 text-white rounded-md p-2"
+              aria-busy={isLoadingUpload}
             >
               {isLoadingUpload ? "Subiendo..." : "Subir Imágenes"}
             </button>
             <button
               type="submit"
               className={`rounded-md p-2 text-white ${
-                isLoadingCreate ? "bg-gray-500" : "bg-blue-600"
+                isLoadingCreate ||
+                !form.tags.name ||
+                !form.tags.url ||
+                !form.tags.image
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-blue-600"
               }`}
-              disabled={isLoadingCreate}
+              disabled={
+                isLoadingCreate ||
+                !form.tags.name ||
+                !form.tags.url ||
+                !form.tags.image
+              }
+              aria-disabled={
+                isLoadingCreate ||
+                !form.tags.name ||
+                !form.tags.url ||
+                !form.tags.image
+              }
             >
               {isLoadingCreate ? "Saving..." : "Save"}
             </button>
@@ -182,12 +202,12 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
           )}
           {isError && <p className="text-red-500 mt-2">Error creating Tag</p>}
           {isSuccessUpload && (
-            <div className="text-green-500 mt-1">
-              ¡Imágenes subidas con éxito!
-            </div>
+            <div className="text-green-500 mt-1">¡Imágenes subidas con éxito!</div>
           )}
           {isErrorUpload && (
-            <div className="text-red-500 mt-1">Error al subir imágenes</div>
+            <div className="text-red-500 mt-1">
+              Error al subir imágenes: {"Desconocido"}
+            </div>
           )}
         </form>
       </div>

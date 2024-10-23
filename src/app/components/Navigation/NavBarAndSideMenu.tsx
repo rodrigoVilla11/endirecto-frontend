@@ -12,7 +12,7 @@ const NavBarAndSideMenu = () => {
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
 
-  const showNavBarHome = pathname === "/" || pathname === "/login";
+  const showNavBarHome = pathname === "/" || pathname === "/login" || pathname === "/catalogues";
 
   return (
     <div className={`flex ${isOpen ? "side-menu-open" : "side-menu-closed"}`}>

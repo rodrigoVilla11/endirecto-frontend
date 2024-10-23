@@ -1,49 +1,51 @@
-'use client'
+"use client";
 import React, { useState, useEffect, useRef } from "react";
-import BrandsCards from './components/BrandsCards';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import BrandsCards from "./components/BrandsCards";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
+import { useAuth } from "@/app/context/AuthContext";
 
 const SliderBrands = () => {
+  const { isAuthenticated } = useAuth();
+
   const { data: brands } = useGetBrandsQuery(null);
 
   const logos = brands?.length
-    ? brands.flatMap(brand => brand.images.map(image => ({ brand: brand.name, logo: image })))
+    ? brands.flatMap((brand) =>
+        brand.images.map((image) => ({
+          id: brand.id,
+          brand: brand.name,
+          logo: image,
+        }))
+      )
     : [];
 
   const duplicatedLogos = [...logos, ...logos];
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const totalSlides = duplicatedLogos.length; 
-  const visibleSlides = 6; 
-
-  const router = useRouter();
-
-  const handleRedirect = (path: string) => {
-    if (path) {
-      router.push(path);
-    }
-  };
+  const totalSlides = duplicatedLogos.length;
+  const visibleSlides = 6;
 
   const nextSlide = () => {
     setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prevSlide) => (prevSlide === 0 ? totalSlides - 1 : prevSlide - 1));
+    setCurrentSlide((prevSlide) =>
+      prevSlide === 0 ? totalSlides - 1 : prevSlide - 1
+    );
   };
 
   useEffect(() => {
-    const interval = setInterval(nextSlide, 5000); 
+    const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
   }, [totalSlides]);
 
   useEffect(() => {
     if (sliderRef.current) {
       if (currentSlide === totalSlides / 2) {
-        sliderRef.current.style.transition = 'none';
+        sliderRef.current.style.transition = "none";
         setCurrentSlide(0);
       }
     }
@@ -54,11 +56,15 @@ const SliderBrands = () => {
       <div
         ref={sliderRef}
         className="flex transition-transform duration-1000 gap-4"
-        style={{ transform: `translateX(-${(currentSlide % (totalSlides / 2)) * (100 / visibleSlides)}%)` }}
+        style={{
+          transform: `translateX(-${
+            (currentSlide % (totalSlides / 2)) * (100 / visibleSlides)
+          }%)`,
+        }}
       >
         {duplicatedLogos.map((logo, index) => (
           <div key={index} className="flex-none w-40">
-            <BrandsCards logo={logo.logo} brand={logo.brand} handleRedirect={handleRedirect} />
+            <BrandsCards logo={logo.logo} name={logo.brand} id={logo.id} isAuthenticated={isAuthenticated}/>
           </div>
         ))}
       </div>

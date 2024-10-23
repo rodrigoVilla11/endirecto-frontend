@@ -42,7 +42,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (token) {
         try {
           const decodedToken: any = jwtDecode(token);
-          console.log(decodedToken)
           const { _id, username, email, role, branch } = decodedToken;
           const user: UserData = { _id, username, email, role, branch };
           setUserData(user);
