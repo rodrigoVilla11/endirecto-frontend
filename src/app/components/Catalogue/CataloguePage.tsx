@@ -10,6 +10,7 @@ import PopUpModal from "./components/PopUpModal";
 import { useClient } from "@/app/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
+import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -26,6 +27,14 @@ const CataloguePage = () => {
     item,
     vehicleBrand,
   } = useFilters();
+
+  const filterBy = "popups";
+  const {
+    data: marketing,
+    error: marketingError,
+    isLoading: marketingIsLoading,
+  } = useGetMarketingByFilterQuery({ filterBy });
+
   const { selectedClientId } = useClient();
   const router = useRouter();
 
@@ -37,9 +46,15 @@ const CataloguePage = () => {
     if (!selectedClientId) {
       router.push("/selectCustomer"); 
     } else {
-      setModalVisible(true);
+      const visualizationLimit = marketing?.[0]?.popups?.visualization || 0;
+      const currentVisualizationCount = parseInt(sessionStorage.getItem('popupVisualizationCount') || '0', 10);
+
+      if (currentVisualizationCount < visualizationLimit) {
+        setModalVisible(true);
+        sessionStorage.setItem('popupVisualizationCount', (currentVisualizationCount + 1).toString());
+      }
     }
-  }, [selectedClientId, router]);
+  }, [selectedClientId, router, marketing]);
 
   const handleRedirect = (path: string) => {
     if (path) {

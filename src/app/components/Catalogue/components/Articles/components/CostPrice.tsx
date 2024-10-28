@@ -20,7 +20,7 @@ const CostPrice = ({ articleId }: any) => {
     <div className="flex justify-between text-sm px-4 h-4">
       <p>Cost Price s/IVA</p>
       <p>
-        $<span className="font-semibold text-gray-800">{integerPart}</span>
+        $<span className="font-semibold text-gray-800 ">{integerPart}</span>
         {decimalPart && <span className="font-semibold text-gray-800">.{decimalPart}</span>}
       </p>
     </div>

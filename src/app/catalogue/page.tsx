@@ -14,7 +14,7 @@ const Page = () => {
           "CUSTOMER",
         ]}
       >
-        <div className="overflow-auto no-scrollbar">
+        <div className="h-full overflow-auto no-scrollbar">
           <CataloguePage />
         </div>
       </PrivateRoute>

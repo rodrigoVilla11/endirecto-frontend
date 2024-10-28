@@ -30,7 +30,9 @@ const PopUpModal = ({
         </button>
       </div>
         {marketingData?.popups?.web && (
-      <div onClick={handleRedirect(marketingData.popups.url)}>
+      <div 
+      // onClick={handleRedirect(marketingData.popups.url)}
+      >
           <img
             src={marketingData.popups.web}
             alt={marketingData.popups.name || "Popup"}

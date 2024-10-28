@@ -23,7 +23,7 @@ const Order = ({onChange} : any) => {
         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="order">
           Order
         </label>
-        <div className='flex gap-1 justify-center items-center'>
+        <div className='relative flex gap-1 justify-center items-center'>
         <select
           id="order"
           value={selectedOrder}
@@ -36,7 +36,7 @@ const Order = ({onChange} : any) => {
             </option>
           ))}
         </select>
-        <FaAngleDown/>
+        <FaAngleDown className="absolute right-3 pointer-events-none"/>
         </div>
       </div>
     </div>

@@ -155,10 +155,11 @@ const UpdateArticleComponent = ({
           Supplier Code:
           <input
             name="supplier_code"
+            readOnly
             value={form.supplier_code}
             placeholder="Supplier Code"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
 
@@ -166,10 +167,11 @@ const UpdateArticleComponent = ({
           Description:
           <textarea
             name="description"
+            readOnly
             value={form.description}
             placeholder="Description"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
 

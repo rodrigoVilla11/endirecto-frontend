@@ -7,14 +7,9 @@ import CostPrice from "./CostPrice";
 import SuggestedPrice from "./SuggestedPrice";
 import AddToCart from "./AddToCart";
 import Modal from "@/app/components/components/Modal";
-import Description from "./Description/Description";
-import { IoMdClose } from "react-icons/io";
-import { useClient } from "@/app/context/ClientContext";
-import {
-  useGetCustomerByIdQuery,
-  useUpdateCustomerMutation,
-} from "@/redux/services/customersApi";
 import ArticleDetails from "./ArticleDetails";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi";
 
 interface FormState {
   id: string;
@@ -22,25 +17,20 @@ interface FormState {
   shopping_cart: string[];
 }
 
-const CardArticles = ({ article, showPurchasePrice }: any) => {
+const ListArticle = ({ article, showPurchasePrice }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const { selectedClientId } = useClient();
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(1); // Definimos quantity y setQuantity aquí
 
-  const {
-    data: customer,
-    error,
-    isLoading,
-    refetch,
-  } = useGetCustomerByIdQuery({
+  const { data: customer, error, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
+  
   if (error) {
     console.error("Error fetching customer:", error);
   }
 
-  const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
-    useUpdateCustomerMutation();
+  const [updateCustomer] = useUpdateCustomerMutation();
 
   const [form, setForm] = useState<FormState>({
     id: "",
@@ -81,7 +71,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const toggleShoppingCart = () => {
     setForm((prev) => {
       const newShoppingCart = [...prev.shopping_cart];
-      for (let i = 0; i < quantity; i++) {
+      for (let i = 0; i < quantity; i++) {  // Usamos la cantidad seleccionada
         newShoppingCart.push(article.id);
       }
 
@@ -104,29 +94,42 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className=" w-60 h-112 bg-gray-200  ">
-      <div className="relative bg-white flex flex-col justify-between shadow-lg">
-        <ArticleMenu
-          onAddToFavourites={toggleFavourite}
-          isFavourite={isFavourite}
+    <div className="w-full flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg">
+      {/* Imagen del artículo */}
+      <div className="flex items-center">
+        <ArticleImage img={article.images} 
+        // className="w-20 h-20 object-cover rounded-md" 
         />
-        <div onClick={openModal}>
-          <ArticleImage img={article.images} />
-          <StripeStock articleId={article.id} />
-          <div className="bg-gray-200">
-            <ArticleName name={article.name} id={article.id} />
-            {showPurchasePrice && <CostPrice articleId={article.id} />}
-            {showPurchasePrice && <hr className="bg-white border-white m-4" />}
-            <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} />
-          </div>
+        <div className="ml-4">
+          {/* Nombre y ID del artículo */}
+          <ArticleName name={article.name} id={article.id} className="text-lg font-semibold" />
+          <p className="text-sm text-gray-500">ID: {article.id}</p>
         </div>
-        <AddToCart
-          articleId={article.id}
-          onAddToCart={toggleShoppingCart}
-          quantity={quantity}
-          setQuantity={setQuantity}
-        />
       </div>
+
+      {/* Precios y estado de stock */}
+      <div className="flex flex-col items-center">
+        <StripeStock articleId={article.id} className="text-green-500" />
+        <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} className="text-xl font-bold text-gray-900" />
+        {showPurchasePrice && <CostPrice articleId={article.id} className="text-gray-500 text-sm" />}
+      </div>
+
+      {/* Menú del artículo y opciones de carrito */}
+      <div className="flex items-center space-x-4">
+        {/* Menú del artículo (favoritos, etc.) */}
+        <ArticleMenu onAddToFavourites={toggleFavourite} isFavourite={isFavourite} />
+        
+        {/* Campo para agregar cantidad y botón para agregar al carrito */}
+        <div className="flex items-center space-x-2">
+          <AddToCart
+            articleId={article.id}
+            onAddToCart={toggleShoppingCart}
+            quantity={quantity}            // Pasamos la cantidad seleccionada
+            setQuantity={setQuantity}       // Pasamos el setter para actualizar la cantidad
+          />
+        </div>
+      </div>
+
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ArticleDetails
           closeModal={closeModal}
@@ -134,12 +137,12 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           isFavourite={isFavourite}
           article={article}
           toggleShoppingCart={toggleShoppingCart}
-          quantity={quantity}
-          setQuantity={setQuantity}
+          quantity={quantity}      // También pasamos quantity aquí si es necesario en el modal
+          setQuantity={setQuantity} // Pasamos setQuantity si el modal lo necesita
         />
       </Modal>
     </div>
   );
 };
 
-export default CardArticles;
+export default ListArticle;

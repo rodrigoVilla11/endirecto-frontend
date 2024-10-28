@@ -1,19 +1,18 @@
 "use client";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
 const Brands = ({ onChange }: { onChange: (value: string) => void }) => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const { data: brands } = useGetBrandsQuery(null);
 
-
   const handleBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = event.target.value;
     setSelectedBrand(selectedValue);
-    onChange(selectedValue); 
+    onChange(selectedValue);
   };
- 
+
   return (
     <div className="px-4 text-sm">
       <div className="mb-4">
@@ -23,23 +22,21 @@ const Brands = ({ onChange }: { onChange: (value: string) => void }) => {
         >
           Brands
         </label>
-        <div className="flex gap-1 justify-center items-center">
+        <div className="relative flex gap-1 justify-center items-center">
           <select
             id="brands"
             value={selectedBrand}
             onChange={handleBrandChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            <option value="">
-              Select a Brand
-            </option>
+            <option value="">Select a Brand</option>
             {brands?.map((brand) => (
               <option key={brand.id} value={brand.id}>
                 {brand.name}
               </option>
             ))}
           </select>
-          <FaAngleDown />
+          <FaAngleDown className="absolute right-3 pointer-events-none" />
         </div>
       </div>
     </div>

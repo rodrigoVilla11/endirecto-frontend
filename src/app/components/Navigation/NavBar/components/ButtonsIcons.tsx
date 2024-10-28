@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GiUsaFlag } from "react-icons/gi";
 import {
   MdFullscreen,
@@ -7,6 +7,7 @@ import {
   MdNotificationsOff,
   MdShoppingCart,
 } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
@@ -23,20 +24,35 @@ const ButtonsIcons = () => {
 
   const router = useRouter();
 
+  const [animateCart, setAnimateCart] = useState(false);
+  const [showTick, setShowTick] = useState(false);
+  const cartItemCount = customer?.shopping_cart?.length || 0;
+
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
     }
   };
 
-  // Refetch customer data when selectedClientId changes
   useEffect(() => {
     if (selectedClientId) {
       refetchCustomer();
     }
   }, [selectedClientId, refetchCustomer]);
 
-  const cartItemCount = customer?.shopping_cart?.length || 0;
+  // Efecto para animar el carrito y mostrar el tick de confirmación
+  useEffect(() => {
+    if (cartItemCount > 0) {
+      setAnimateCart(true);
+      setShowTick(true);
+      const cartTimer = setTimeout(() => setAnimateCart(false), 500); // Duración de la animación de carrito
+      const tickTimer = setTimeout(() => setShowTick(false), 1000); // Duración del tick
+      return () => {
+        clearTimeout(cartTimer);
+        clearTimeout(tickTimer);
+      };
+    }
+  }, [cartItemCount]);
 
   return (
     <div className="w-60 flex items-center justify-between text-2xl text-white relative">
@@ -46,7 +62,7 @@ const ButtonsIcons = () => {
       {selectedClientId && (
         <div className="relative">
           <MdShoppingCart
-            className="cursor-pointer"
+            className={`cursor-pointer ${animateCart ? "animate-bounce" : ""}`}
             onClick={() => handleRedirect("/shopping-cart")}
           />
           {cartItemCount > 0 && (
@@ -58,6 +74,13 @@ const ButtonsIcons = () => {
       )}
       <MdNotifications className="cursor-pointer" />
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
+
+      {/* Tick de confirmación */}
+      {showTick && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse">
+          <FaCheckCircle />
+        </div>
+      )}
     </div>
   );
 };

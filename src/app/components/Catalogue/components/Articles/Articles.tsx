@@ -23,7 +23,7 @@ const Articles = ({ brand, item, vehicleBrand, stock, tags, cart, order, showPur
   const { isOpen } = useSideMenu();
 
   return (
-    <div className="h-screen m-4 flex flex-col text-sm">
+    <div className="h-full m-4 flex flex-col text-sm">
       <div
         className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] overflow-y-auto grid ${
           isOpen ? "grid-cols-3" : "grid-cols-4"

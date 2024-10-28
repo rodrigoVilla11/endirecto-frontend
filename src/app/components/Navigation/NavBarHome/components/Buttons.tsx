@@ -14,15 +14,11 @@ const Buttons = () => {
   ) => {
     e.preventDefault();
     const element = document.getElementById(id);
-    if (element) {
-      const offset = 100; 
-      const elementPosition =
-        element.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - offset;
 
-      window.scrollTo({
-        top: offsetPosition,
+    if (element) {
+      element.scrollIntoView({
         behavior: "smooth",
+        block: "start", // Alinea la parte superior del elemento con la parte superior de la vista
       });
     }
   };
@@ -53,7 +49,11 @@ const Buttons = () => {
       <button className="text-xl">
         <GiUsaFlag />
       </button>
-      {isAuthenticated ? <button onClick={() => handleRedirect("/dashboard")}>Dashboard</button> :<button onClick={() => handleRedirect("/login")}>Sign In</button>}
+      {isAuthenticated ? (
+        <button onClick={() => handleRedirect("/dashboard")}>Dashboard</button>
+      ) : (
+        <button onClick={() => handleRedirect("/login")}>Sign In</button>
+      )}
       <button className="text-xl">
         <BiSearchAlt />
       </button>

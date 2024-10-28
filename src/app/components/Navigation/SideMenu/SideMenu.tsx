@@ -261,10 +261,6 @@ const SideMenu = ({ isOpen }: any) => {
             path: "/profile/my-profile",
           },
           {
-            name: "Customers Users",
-            path: "/profile/customers-users",
-          },
-          {
             name: "Brand Margins",
             path: "/profile/brands-margin",
           },

@@ -99,19 +99,27 @@ const Page = () => {
         return {
           key: article?.id,
           brand: brand?.name || "NO BRAND",
-          image: article?.images?.[0] || "No Image",
+          image: (
+            <div className="flex justify-center items-center">
+              {article?.images?.[0] ? (
+          <img src={article.images[0]} alt={article.name} className="h-10 w-10 object-cover" />
+              ) : (
+          "No Image"
+              )}
+            </div>
+          ),
           name: article?.name || "Unknown Article",
           price: `$ ${formattedPrice} + taxes`,
           stock: (
             <div
               className={`h-4 w-full ${
-                stock?.status === "IN-STOCK"
-                  ? "bg-success"
-                  : stock?.status === "NO-STOCK"
-                  ? "bg-red-600"
-                  : stock?.status === "LIMITED-STOCK"
-                  ? "bg-orange-600"
-                  : "bg-gray-500"
+          stock?.status === "IN-STOCK"
+            ? "bg-success"
+            : stock?.status === "NO-STOCK"
+            ? "bg-red-600"
+            : stock?.status === "LIMITED-STOCK"
+            ? "bg-orange-600"
+            : "bg-gray-500"
               } font-bold text-white flex justify-center items-center`}
             >
               {stock?.status || "NOT FOUND"}
@@ -119,17 +127,19 @@ const Page = () => {
           ),
           shoppingCart: (
             <div className="flex justify-center items-center">
-            <FaShoppingCart
-              className="text-center text-xl hover:cursor-pointer"
-              onClick={() => openAddModal(article?.id || "")}
-            /></div>
+              <FaShoppingCart
+          className="text-center text-xl hover:cursor-pointer"
+          onClick={() => openAddModal(article?.id || "")}
+              />
+            </div>
           ),
           erase: (
             <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openDeleteModal(article?.id || "")}
-            /></div>
+              <FaTrashCan
+          className="text-center text-lg hover:cursor-pointer"
+          onClick={() => openDeleteModal(article?.id || "")}
+              />
+            </div>
           ),
         };
       })

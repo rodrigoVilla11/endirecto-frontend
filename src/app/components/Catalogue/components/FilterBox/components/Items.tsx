@@ -23,7 +23,7 @@ const Items = ({onChange} : any) => {
         >
           Items
         </label>
-        <div className="flex gap-1 justify-center items-center">
+        <div className="relative flex gap-1 justify-center items-center">
           <select
             id="items"
             value={selectedItem}
@@ -39,7 +39,7 @@ const Items = ({onChange} : any) => {
               </option>
             ))}
           </select>
-          <FaAngleDown />
+          <FaAngleDown className="absolute right-3 pointer-events-none"/>
         </div>
       </div>
     </div>

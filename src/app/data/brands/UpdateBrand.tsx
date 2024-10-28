@@ -170,7 +170,13 @@ const UpdateBrandComponent = ({
               multiple
               onChange={handleFileChange}
             />
-            <button onClick={handleUpload} disabled={isLoadingUpload}>
+            <button
+              onClick={handleUpload}
+              disabled={isLoadingUpload}
+              className={`rounded-md p-2 text-white ${
+                isLoadingUpload ? "bg-gray-500" : "bg-success"
+              }`}
+            >
               {isLoadingUpload ? "Uploading..." : "Upload Images"}
             </button>
             {isSuccessUpload && <div>Images uploaded successfully!</div>}
