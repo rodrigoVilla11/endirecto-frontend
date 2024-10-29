@@ -71,7 +71,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
   const toggleShoppingCart = () => {
     setForm((prev) => {
       const newShoppingCart = [...prev.shopping_cart];
-      for (let i = 0; i < quantity; i++) {  // Usamos la cantidad seleccionada
+      for (let i = 0; i < quantity; i++) {  
         newShoppingCart.push(article.id);
       }
 
@@ -94,54 +94,50 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="w-full flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg">
-      {/* Imagen del artículo */}
-      <div className="flex items-center">
-        <ArticleImage img={article.images} 
-        // className="w-20 h-20 object-cover rounded-md" 
-        />
-        <div className="ml-4">
-          {/* Nombre y ID del artículo */}
-          <ArticleName name={article.name} id={article.id} className="text-lg font-semibold" />
-          <p className="text-sm text-gray-500">ID: {article.id}</p>
-        </div>
-      </div>
-
-      {/* Precios y estado de stock */}
-      <div className="flex flex-col items-center">
-        <StripeStock articleId={article.id} className="text-green-500" />
-        <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} className="text-xl font-bold text-gray-900" />
-        {showPurchasePrice && <CostPrice articleId={article.id} className="text-gray-500 text-sm" />}
-      </div>
-
-      {/* Menú del artículo y opciones de carrito */}
-      <div className="flex items-center space-x-4">
-        {/* Menú del artículo (favoritos, etc.) */}
-        <ArticleMenu onAddToFavourites={toggleFavourite} isFavourite={isFavourite} />
-        
-        {/* Campo para agregar cantidad y botón para agregar al carrito */}
-        <div className="flex items-center space-x-2">
-          <AddToCart
-            articleId={article.id}
-            onAddToCart={toggleShoppingCart}
-            quantity={quantity}            // Pasamos la cantidad seleccionada
-            setQuantity={setQuantity}       // Pasamos el setter para actualizar la cantidad
-          />
-        </div>
-      </div>
-
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails
-          closeModal={closeModal}
-          toggleFavourite={toggleFavourite}
-          isFavourite={isFavourite}
-          article={article}
-          toggleShoppingCart={toggleShoppingCart}
-          quantity={quantity}      // También pasamos quantity aquí si es necesario en el modal
-          setQuantity={setQuantity} // Pasamos setQuantity si el modal lo necesita
-        />
-      </Modal>
+    <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4">
+    <div className="flex items-center w-1/6">
+      <ArticleImage img={article.images} 
+      />
     </div>
+
+    <div className="flex-1 ml-4">
+      <ArticleName name={article.name} id={article.id} className="text-lg font-semibold" />
+    </div>
+
+    {/* Estado de stock */}
+    <div className="flex items-center justify-center w-1/6">
+      <StripeStock articleId={article.id} className="text-green-500 text-center" />
+    </div>
+
+    {/* Precios */}
+    <div className="flex flex-col items-end w-1/4">
+      <SuggestedPrice
+        articleId={article.id}
+        showPurchasePrice={showPurchasePrice}
+        className="text-xl font-bold text-gray-900"
+      />
+      {showPurchasePrice && (
+        <CostPrice
+          articleId={article.id}
+          className="text-gray-500 text-sm"
+        />
+      )}
+    </div>
+    <ArticleMenu
+          onAddToFavourites={toggleFavourite}
+          isFavourite={isFavourite}
+        />
+        
+    {/* Campo para agregar cantidad y botón de carrito */}
+    <div className="flex items-center w-1/6">
+      <AddToCart
+        articleId={article.id}
+        onAddToCart={toggleShoppingCart}
+        quantity={quantity}
+        setQuantity={setQuantity}
+      />
+    </div>
+  </div>
   );
 };
 

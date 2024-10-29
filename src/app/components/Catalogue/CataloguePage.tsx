@@ -142,6 +142,7 @@ const CataloguePage = () => {
             order={order}
             cart={cart}
             showPurchasePrice={showPurchasePrice}
+            showArticles={showArticles}
           />
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal

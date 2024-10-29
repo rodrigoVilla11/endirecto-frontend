@@ -28,13 +28,13 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <MdDashboard />,
       name: "Dashboard",
       path: "/dashboard",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       icon: <MdOutlineShoppingBag />,
       name: "Catalogue",
       path: "/catalogue",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       icon: <IoIosLaptop />,
@@ -154,7 +154,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <BsCash />,
       name: "Collections Summaries",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       getSubCategories: (role: any) => {
         const baseSubCategory = [
           {
@@ -179,7 +179,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <CgShoppingCart />,
       name: "Orders",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       subCategories: [
         {
           name: "Pedidos",
@@ -201,19 +201,19 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <FaHeart />,
       name: "Favourites",
       path: "/favourites",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     // { icon: <FaRegClock />, name: "Pendings", path: "/pendings", allowedRoles: ["ADMINISTRADOR"]  },
     {
       icon: <MdNotificationsNone />,
       name: "Notifications",
       path: "/notifications",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       icon: <PiDownloadSimpleBold />,
       name: "Downloads",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       subCategories: [
         {
           name: "Lists Prices Downloads",
@@ -229,7 +229,7 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <MdOutlineInfo />,
       name: "Reclaims",
       path: "/reclaims",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       icon: <ImStatsDots />,
@@ -241,19 +241,19 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <MdOutlineQuestionMark />,
       name: "FAQ",
       path: "/faqs",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       icon: <MdOutlineQuestionMark />,
       name: "Contact",
       path: "/contact",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     }, //FALTA HACER CONTACT
     {
       icon: <IoPersonOutline />,
       name: "My Profile",
       path: "/profile/my-profile",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       getSubCategories: (role: any, selectedClientId: any) => {
         const allSubCategories = [
           {
@@ -284,7 +284,7 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <FaPowerOff />,
       name: "LogOut",
       path: "/logout",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
   ];
   const [openSubCategory, setOpenSubCategory] = useState<string | null>(null);
