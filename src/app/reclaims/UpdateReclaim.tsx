@@ -12,11 +12,9 @@ import {
 } from "@/redux/services/customersApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
-import { useGetSellerByIdQuery } from "@/redux/services/sellersApi";
-import { format } from "date-fns";
-import { useAuth } from "../context/AuthContext";
-import Select from "react-select"; // Correct import for react-select
+import Select from "react-select";
 import { IoMdClose } from "react-icons/io";
+import { useAuth } from "../context/AuthContext";
 
 type UpdateReclaimComponentProps = {
   reclaimId: string;
@@ -52,25 +50,13 @@ const UpdateReclaimComponent = ({
     solution: "",
     internal_solution: "",
     date_solved: "",
-    user_solved_id: userData ? userData?._id : "",
+    user_solved_id: userData?._id || "",
   });
 
-  const { data: reclaimTypesData, isLoading: isLoadingReclaimTypes } =
-    useGetReclaimsTypesQuery(null);
-  const { data: branchesData, isLoading: isLoadingBranches } =
-    useGetBranchesQuery(null);
-  const { data: customerData, isLoading: isLoadingCustomer } =
-    useGetCustomerByIdQuery({ id: form.customer_id });
-  const { data: articlesData, isLoading: isLoadingArticles } =
-    useGetAllArticlesQuery(null);
-  const { data: sellerData, isLoading: isLoadingSeller } =
-    useGetSellerByIdQuery(
-      { id: customerData?.seller_id || "" },
-      { skip: !customerData }
-    );
-
-  const { data: customersData, isLoading: isLoadingCustomers } =
-    useGetCustomersQuery(null);
+  const { data: reclaimTypesData } = useGetReclaimsTypesQuery(null);
+  const { data: branchesData } = useGetBranchesQuery(null);
+  const { data: customersData } = useGetCustomersQuery(null);
+  const { data: articlesData } = useGetAllArticlesQuery(null);
 
   useEffect(() => {
     if (reclaim) {
@@ -87,13 +73,13 @@ const UpdateReclaimComponent = ({
         cause: reclaim.cause || "",
         solution: reclaim.public_solution || "",
         internal_solution: reclaim.internal_solution || "",
-        date_solved: format(new Date(Date.now()), "dd/MM/yyyy HH:mm"),
+        date_solved: "",
         user_solved_id: userData?._id || "",
       });
     }
   }, [reclaim, userData]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prevForm) => ({
       ...prevForm,
       [e.target.name]: e.target.value,
@@ -113,7 +99,7 @@ const UpdateReclaimComponent = ({
       await updateReclaim(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error updating RECLAIM:", err);
+      console.error("Error updating reclaim:", err);
     }
   };
 
@@ -124,19 +110,10 @@ const UpdateReclaimComponent = ({
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
   const reclaimTypeOptions =
     reclaimTypesData?.map((type: { id: string; name: string }) => ({
       value: type.id,
       label: type.name,
-    })) || [];
-
-  const articleOptions =
-    articlesData?.map((article: { id: string; name: string }) => ({
-      value: article.id,
-      label: article.name,
     })) || [];
 
   const branchOptions =
@@ -151,21 +128,30 @@ const UpdateReclaimComponent = ({
       label: customer.name,
     })) || [];
 
+  const articleOptions =
+    articlesData?.map((article: { id: string; name: string }) => ({
+      value: article.id,
+      label: article.name,
+    })) || [];
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error loading reclaim data.</p>;
+
   return (
     <div className="bg-white shadow-lg rounded-lg p-6">
-    <div className=" flex justify-between">
-      <h2 className="text-lg font-bold mb-4">Update RECLAIM</h2>
-      <button
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Update Reclaim</h2>
+        <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
         >
           <IoMdClose />
         </button>
       </div>
-      <form className="grid grid-cols-2 gap-6 " onSubmit={handleUpdate}>
-        <div>
-          {/* Reclaim Type */}
-          <label className="block mb-2">
+
+      <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
+        <div className="flex flex-col gap-2">
+          <label>
             Reclaim Type:
             <Select
               value={reclaimTypeOptions.find(
@@ -179,19 +165,17 @@ const UpdateReclaimComponent = ({
             />
           </label>
 
-          {/* Description */}
-          <label className="block mb-2">
+          <label>
             Description:
             <textarea
               name="description"
               value={form.description}
               onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
+              className="border border-gray-300 rounded-md p-2 text-sm mt-1"
             />
           </label>
 
-          {/* Article */}
-          <label className="block mb-2">
+          <label>
             Article:
             <Select
               value={articleOptions.find(
@@ -205,8 +189,7 @@ const UpdateReclaimComponent = ({
             />
           </label>
 
-          {/* Branch */}
-          <label className="block mb-2">
+          <label>
             Branch:
             <Select
               value={branchOptions.find(
@@ -220,8 +203,7 @@ const UpdateReclaimComponent = ({
             />
           </label>
 
-          {/* Customer */}
-          <label className="block mb-2">
+          <label>
             Customer:
             <Select
               value={customerOptions.find(
@@ -236,84 +218,76 @@ const UpdateReclaimComponent = ({
           </label>
         </div>
 
-        <div>
-          {/* Date */}
-          <label className="block mb-2">
+        <div className="flex flex-col gap-2">
+          <label>
             Date:
             <input
               type="text"
               name="date"
               value={form.date}
               readOnly
-              disabled
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </label>
 
-          {/* Cause */}
-          <label className="block mb-2">
+          <label>
             Cause:
             <input
               type="text"
               name="cause"
               value={form.cause}
               onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </label>
 
-          {/* Solution */}
-          <label className="block mb-2">
+          <label>
             Solution:
             <input
               type="text"
               name="solution"
               value={form.solution}
               onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </label>
 
-          {/* Internal Solution */}
-          <label className="block mb-2">
+          <label>
             Internal Solution:
             <input
               type="text"
               name="internal_solution"
               value={form.internal_solution}
               onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
+              className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </label>
 
-          {/* Valid */}
-          <label className="block mb-2">
+          <label>
             Valid:
             <button
               type="button"
               onClick={toggleValid}
-              className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+              className={`p-2 rounded-md text-sm ${
+                form.valid === Valid.S ? "bg-green-500 text-white" : "bg-red-500 text-white"
+              }`}
             >
               {form.valid === Valid.S ? "Valid" : "Invalid"}
             </button>
           </label>
+        </div>
 
-          {/* Status */}
-          <label className="block mb-2">
-            Status:
-            <input
-              type="text"
-              name="status"
-              value={form.status}
-              readOnly
-              disabled
-              className="border border-gray-300 rounded-md p-2 mt-1 w-full"
-            />
-          </label>
-
+        <div className="col-span-2 flex justify-end gap-4">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="bg-gray-400 text-white rounded-md p-2 text-sm"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
-            className="mt-4 w-full bg-green-500 text-white p-2 rounded-md"
+            className="bg-green-500 text-white rounded-md p-2 text-sm"
             disabled={isUpdating}
           >
             {isUpdating ? "Updating..." : "Update"}

@@ -104,7 +104,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className=" w-60 h-112 bg-gray-200  ">
+    <div className=" w-52 h-auto bg-gray-200  ">
       <div className="relative bg-white flex flex-col justify-between shadow-lg">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}

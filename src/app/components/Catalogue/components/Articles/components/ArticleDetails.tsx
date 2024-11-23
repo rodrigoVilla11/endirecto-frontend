@@ -22,7 +22,7 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
         </button>
       </div>
       <div className="flex gap-4">
-        <div className="h-116 w-72 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
+        <div className="h-auto w-72 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
           <ArticleMenu
             onAddToFavourites={toggleFavourite}
             isFavourite={isFavourite}
@@ -30,9 +30,11 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <ArticleName name={article.name} id={article.id} />
+          <div className="pb-4">
           <CostPrice articleId={article.id} />
-          <hr />
+          <hr className="my-4"/>
           <SuggestedPrice articleId={article.id} />
+          </div>
           <AddToCart
             articleId={article.id}
             onAddToCart={toggleShoppingCart}

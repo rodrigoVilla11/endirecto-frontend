@@ -1,15 +1,18 @@
-"use client";
-import React, { useState, useEffect, useRef } from "react";
+'use client';
+import React from "react";
 import BrandsCards from "./components/BrandsCards";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useAuth } from "@/app/context/AuthContext";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import { Navigation, Autoplay } from "swiper/modules";
 
 const SliderBrands = () => {
   const { isAuthenticated } = useAuth();
-
   const { data: brands } = useGetBrandsQuery(null);
 
+  // Procesar los datos de marcas
   const logos = brands?.length
     ? brands.flatMap((brand) =>
         brand.images.map((image) => ({
@@ -20,66 +23,32 @@ const SliderBrands = () => {
       )
     : [];
 
-  const duplicatedLogos = [...logos, ...logos];
-
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const totalSlides = duplicatedLogos.length;
-  const visibleSlides = 6;
-
-  const nextSlide = () => {
-    setCurrentSlide((prevSlide) => (prevSlide + 1) % totalSlides);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prevSlide) =>
-      prevSlide === 0 ? totalSlides - 1 : prevSlide - 1
-    );
-  };
-
-  useEffect(() => {
-    const interval = setInterval(nextSlide, 5000);
-    return () => clearInterval(interval);
-  }, [totalSlides]);
-
-  useEffect(() => {
-    if (sliderRef.current) {
-      if (currentSlide === totalSlides / 2) {
-        sliderRef.current.style.transition = "none";
-        setCurrentSlide(0);
-      }
-    }
-  }, [currentSlide, totalSlides]);
+  if (!logos.length) {
+    return <div className="text-center py-4">No hay marcas disponibles</div>;
+  }
 
   return (
-    <div className="relative overflow-hidden w-full p-4" id="brands">
-      <div
-        ref={sliderRef}
-        className="flex transition-transform duration-1000 gap-4"
-        style={{
-          transform: `translateX(-${
-            (currentSlide % (totalSlides / 2)) * (100 / visibleSlides)
-          }%)`,
-        }}
+    <div className="w-full p-4" id="brands">
+      <Swiper
+        modules={[Navigation, Autoplay]} // Módulos necesarios
+        spaceBetween={16} // Espacio entre slides
+        slidesPerView={6} // Cantidad de slides visibles
+        navigation // Habilita navegación (flechas)
+        autoplay={{ delay: 5000 }} // Habilita autoplay con 5 segundos de intervalo
+        loop // Loop infinito
+        centeredSlides={false} // No centra los slides
       >
-        {duplicatedLogos.map((logo, index) => (
-          <div key={index} className="flex-none w-40">
-            <BrandsCards logo={logo.logo} name={logo.brand} id={logo.id} isAuthenticated={isAuthenticated}/>
-          </div>
+        {logos.map((logo) => (
+          <SwiperSlide key={logo.id}>
+            <BrandsCards
+              logo={logo.logo}
+              name={logo.brand}
+              id={logo.id}
+              isAuthenticated={isAuthenticated}
+            />
+          </SwiperSlide>
         ))}
-      </div>
-      <button
-        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
-        onClick={prevSlide}
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <button
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
-        onClick={nextSlide}
-      >
-        <ChevronRight size={24} />
-      </button>
+      </Swiper>
     </div>
   );
 };

@@ -1,8 +1,11 @@
 "use client";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
-import React, { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React from "react";
 import { useRouter } from "next/navigation";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import { Autoplay, Navigation, Pagination } from "swiper/modules";
 
 const SliderImages = () => {
   const filterBy = "headers";
@@ -11,7 +14,6 @@ const SliderImages = () => {
     error,
     isLoading,
   } = useGetMarketingByFilterQuery({ filterBy });
-  const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
 
   const handleRedirect = (path: string) => {
@@ -37,67 +39,41 @@ const SliderImages = () => {
       </div>
     );
 
-  const nextSlide = () =>
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % marketing.length);
-  const prevSlide = () =>
-    setCurrentIndex(
-      (prevIndex) => (prevIndex - 1 + marketing.length) % marketing.length
-    );
-
   return (
     <div
-      className="relative w-full h-96 overflow-hidden shadow-lg bg-gray-200"
+      className="relative w-full overflow-hidden shadow-lg bg-gray-200"
       id="home"
     >
-      <div className="absolute inset-0 flex items-center justify-between z-10">
-        <button
-          onClick={prevSlide}
-          className=" text-white p-2 rounded-full hover:bg-opacity-75 transition ml-4"
-        >
-          <ChevronLeft size={28} />
-        </button>
-        <button
-          onClick={nextSlide}
-          className=" text-white p-2 rounded-full hover:bg-opacity-75 transition mr-4"
-        >
-          <ChevronRight size={28} />
-        </button>
-      </div>
-      <div className="relative w-full h-full">
+      <Swiper
+        modules={[Navigation, Autoplay, Pagination]} // Autoplay, navegación y paginación
+        spaceBetween={0} // Sin espacio entre slides
+        slidesPerView={1} // Una diapositiva visible a la vez
+        navigation // Flechas de navegación
+        pagination={{
+          clickable: true,
+          type: "progressbar",
+        }}
+        autoplay={{ delay: 5000 }} // Autoplay cada 5 segundos
+        loop // Loop infinito
+      >
         {marketing.map(
-          (item, index) =>
+          (item) =>
             item.headers?.homeWeb && (
-              <div
+              <SwiperSlide
                 key={item._id}
-                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
-                  index === currentIndex ? "opacity-100" : "opacity-0"
-                }`}
-                style={{ zIndex: index === currentIndex ? 1 : 0 }}
-                onClick={() => item.headers.url && handleRedirect(item.headers.url)}
+                onClick={() =>
+                  item.headers.url && handleRedirect(item.headers.url)
+                }
               >
                 <img
                   src={item.headers.homeWeb}
                   alt={`Banner for ${item._id}`}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover cursor-pointer"
                 />
-              </div>
+              </SwiperSlide>
             )
         )}
-      </div>
-      <div className="absolute bottom-1 left-0 right-0 flex justify-center z-10">
-        {marketing.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`mx-1 w-8 h-0.5 transition-colors ${
-              index === currentIndex
-                ? "bg-white"
-                : "bg-white bg-opacity-50 hover:bg-opacity-75"
-            }`}
-            aria-label={`Ir a la diapositiva ${index + 1}`}
-          />
-        ))}
-      </div>
+      </Swiper>
     </div>
   );
 };

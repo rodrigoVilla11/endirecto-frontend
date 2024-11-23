@@ -17,7 +17,7 @@ const CostPrice = ({ articleId }: any) => {
     typeof price === "number" ? formattedPrice.split(".") : ["N/A", ""];
 
   return (
-    <div className="flex justify-between text-sm px-4 h-4">
+    <div className="flex justify-between text-sm h-4">
       <p>Cost Price s/IVA</p>
       <p>
         $<span className="font-semibold text-gray-800">{integerPart}</span>

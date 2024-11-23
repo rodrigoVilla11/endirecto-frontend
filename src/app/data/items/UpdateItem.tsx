@@ -1,30 +1,18 @@
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
-import {
-  useGetItemByIdQuery,
-  useUpdateItemMutation,
-} from "@/redux/services/itemsApi";
+import { useGetItemByIdQuery, useUpdateItemMutation } from "@/redux/services/itemsApi";
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+
 type UpdateItemComponentProps = {
   itemId: string;
   closeModal: () => void;
 };
 
-const UpdateItemComponent = ({
-  itemId,
-  closeModal,
-}: UpdateItemComponentProps) => {
-  const {
-    data: item,
-    error,
-    isLoading,
-    refetch
-  } = useGetItemByIdQuery({
-    id: itemId,
-  });
-  const [updateItem, { isLoading: isUpdating, isSuccess, isError }] =
-    useUpdateItemMutation();
+const UpdateItemComponent = ({ itemId, closeModal }: UpdateItemComponentProps) => {
+  const { data: item, error, isLoading, refetch } = useGetItemByIdQuery({ id: itemId });
+
+  const [updateItem, { isLoading: isUpdating, isSuccess, isError }] = useUpdateItemMutation();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResponse, setUploadResponse] = useState<string>("");
@@ -65,8 +53,8 @@ const UpdateItemComponent = ({
   });
 
   useEffect(() => {
-    refetch()
     if (item) {
+      refetch();
       setForm({
         id: item.id ?? "",
         name: item.name ?? "",
@@ -75,9 +63,7 @@ const UpdateItemComponent = ({
     }
   }, [item]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
     setForm((prevForm) => ({
@@ -91,7 +77,8 @@ const UpdateItemComponent = ({
     try {
       const updatedForm = {
         ...form,
-        image: uploadResponse || form.image, 
+        image: uploadResponse || form.image, // Usa la nueva imagen cargada o mantiene la existente
+        id: itemId,
       };
       await updateItem(updatedForm).unwrap();
       closeModal();
@@ -142,36 +129,64 @@ const UpdateItemComponent = ({
             value={form.name}
             placeholder="Name"
             onChange={handleChange}
-            readOnly
-            className="border border-black rounded-md p-2 bg-gray-200"
+            className="border border-black rounded-md p-2"
           />
         </label>
 
         <label className="flex flex-col">
           Image:
           <div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-            <button onClick={handleUpload} disabled={isLoadingUpload}>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <button
+              type="button"
+              onClick={handleUpload}
+              disabled={isLoadingUpload}
+              className="bg-primary text-white rounded-md px-4 py-2 mt-2"
+            >
               {isLoadingUpload ? "Uploading..." : "Upload Image"}
             </button>
-
-            {isSuccessUpload && <div>Image uploaded successfully!</div>}
-            {isErrorUpload && <div>Error uploading image</div>}
           </div>
           {form.image && (
-            <div className="flex mt-2">
-              <img src={form.image} alt="item_image" className="h-20 w-20" />
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="text-red-500 mt-2"
-              >
-                <FaTrashCan /> 
-              </button>
+            <div className="border rounded-md p-2 mt-2">
+              <table className="min-w-full table-auto">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Link</th>
+                    <th>
+                      <FaTrashCan />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <img src={form.image} alt="Uploaded" className="h-10" />
+                    </td>
+                    <td>
+                      <a
+                        href={form.image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500"
+                      >
+                        {form.image}
+                      </a>
+                    </td>
+                    <td>
+                      <div className="flex justify-center items-center">
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="text-red-500"
+                        >
+                          <FaTrashCan />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           )}
         </label>

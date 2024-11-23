@@ -1,8 +1,16 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 
 const Tag = ({ onSelectTags }: any) => {
   const [selectedItem, setSelectedItem] = useState("");
+
+  const tags = ["Offers", "Promo", "New", "Kits"];
+  const tagColors: Record<string, string> = {
+    Offers: "#F2420A", // Red-orange
+    Promo: "#00BF63", // Green
+    New: "#FFBD59", // Yellow-orange
+    Kits: "#F97316", // Orange
+  };
 
   const handleButtonClick = (value: string) => {
     setSelectedItem(value);
@@ -10,7 +18,7 @@ const Tag = ({ onSelectTags }: any) => {
   };
 
   return (
-    <div className="px-4 text-sm text-white">
+    <div className="px-4 text-sm">
       <div className="mb-4">
         <label
           className="block text-gray-700 text-sm font-bold mb-2"
@@ -19,13 +27,14 @@ const Tag = ({ onSelectTags }: any) => {
           Tag
         </label>
         <div className="flex justify-between items-center gap-2">
-          {['Offers', 'Promo', 'New', 'Kits'].map((tag) => (
+          {tags.map((tag) => (
             <button
               key={tag}
-              className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-1 ${
-                selectedItem === tag ? 'bg-blue-500' : 'bg-gray-500'
-              }`}
+              className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-2 font-semibold text-white`}
               onClick={() => handleButtonClick(tag)}
+              style={{
+                backgroundColor: tagColors[tag], // Add opacity for unselected buttons
+              }}
             >
               {tag}
             </button>

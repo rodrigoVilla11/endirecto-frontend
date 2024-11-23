@@ -17,19 +17,13 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
     useCreateMarketingMutation();
 
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null); // Store the uploaded image URL
   const [
     uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-      error: errorUpload,
-    },
+    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
   ] = useUploadImageMutation();
 
-  const handleImageFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setSelectedImageFile(event.target.files[0]);
     }
@@ -39,30 +33,27 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
     if (selectedImageFile) {
       try {
         const response = await uploadImage(selectedImageFile).unwrap();
+        setUploadedImageUrl(response.url);
         setForm((prevForm) => ({
           ...prevForm,
           tags: {
             ...prevForm.tags,
-            image: response.url,
+            image: response.url, // Update the image URL in the form
           },
         }));
       } catch (err) {
-        console.error("Error uploading Home Web image:", err);
+        console.error("Error uploading image:", err);
       }
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
       tags: {
         ...prevForm.tags,
-        [name]: value, // Actualiza dinámicamente según el input
+        [name]: value,
       },
     }));
   };
@@ -73,7 +64,7 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createMarketing(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el Tag:", err);
+      console.error("Error creating the tag:", err);
     }
   };
 
@@ -100,44 +91,56 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
             <IoMdClose className="text-lg" />
           </button>
         </div>
+
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex gap-4">
-            <div className="flex flex-col flex-1">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="flex flex-col mb-2">
                 Name:
                 <input
                   name="name"
                   value={form.tags.name}
-                  placeholder="Tags Name"
+                  placeholder="Tag Name"
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
                 />
               </label>
 
-              <label className="flex flex-col mb-2">
-                Enable:
+              <div className="flex flex-col mb-2">
+                <label>Enable:</label>
                 <button
                   type="button"
                   onClick={handleToggleEnable}
-                  className={`border border-gray-300 rounded-md p-2 ${
+                  className={`border border-gray-300 rounded-md p-2 text-white ${
                     form.tags.enable ? "bg-green-500" : "bg-red-500"
-                  } text-white`}
+                  }`}
                   aria-pressed={form.tags.enable}
                 >
                   {form.tags.enable ? "On" : "Off"}
                 </button>
-              </label>
+              </div>
             </div>
 
             <div>
               <label className="flex flex-col mb-2">
                 Image:
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageFileChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUpload}
+                    disabled={isLoadingUpload}
+                    className="bg-blue-500 text-white rounded-md px-4 py-2"
+                    aria-busy={isLoadingUpload}
+                  >
+                    {isLoadingUpload ? "Uploading..." : "Upload"}
+                  </button>
+                </div>
               </label>
 
               <label className="flex flex-col mb-2">
@@ -153,6 +156,44 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
             </div>
           </div>
 
+          {/* Display uploaded image and URL */}
+          <div className="mt-4">
+            <h3 className="text-md font-semibold mb-2">Uploaded Image</h3>
+            {uploadedImageUrl ? (
+              <table className="min-w-full border border-gray-300 rounded-md">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 p-2 text-center">Image</th>
+                    <th className="border border-gray-300 p-2 text-center">URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-gray-300 p-2 text-center">
+                      <img
+                        src={uploadedImageUrl}
+                        alt="Uploaded"
+                        className="h-16 w-16 object-cover mx-auto"
+                      />
+                    </td>
+                    <td className="border border-gray-300 p-2 text-center">
+                      <a
+                        href={uploadedImageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 underline"
+                      >
+                        {uploadedImageUrl}
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-500 text-center">No image uploaded yet</p>
+            )}
+          </div>
+
           <div className="flex justify-end gap-4 mt-4">
             <button
               type="button"
@@ -160,15 +201,6 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
               className="bg-gray-400 rounded-md p-2 text-white"
             >
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={isLoadingUpload}
-              className="bg-blue-500 text-white rounded-md p-2"
-              aria-busy={isLoadingUpload}
-            >
-              {isLoadingUpload ? "Subiendo..." : "Subir Imágenes"}
             </button>
             <button
               type="submit"
@@ -186,29 +218,13 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
                 !form.tags.url ||
                 !form.tags.image
               }
-              aria-disabled={
-                isLoadingCreate ||
-                !form.tags.name ||
-                !form.tags.url ||
-                !form.tags.image
-              }
             >
               {isLoadingCreate ? "Saving..." : "Save"}
             </button>
           </div>
 
-          {isSuccess && (
-            <p className="text-green-500 mt-2">Tag created successfully!</p>
-          )}
-          {isError && <p className="text-red-500 mt-2">Error creating Tag</p>}
-          {isSuccessUpload && (
-            <div className="text-green-500 mt-1">¡Imágenes subidas con éxito!</div>
-          )}
-          {isErrorUpload && (
-            <div className="text-red-500 mt-1">
-              Error al subir imágenes: {"Desconocido"}
-            </div>
-          )}
+          {isSuccess && <p className="text-green-500 mt-2">Tag created successfully!</p>}
+          {isError && <p className="text-red-500 mt-2">Error creating tag</p>}
         </form>
       </div>
     </div>

@@ -50,6 +50,7 @@ interface Customer {
 const Page: React.FC = () => {
   const { selectedClientId } = useClient();
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false); // Nuevo modal para confirmar vaciar carrito
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -79,6 +80,24 @@ const Page: React.FC = () => {
     setDeleteModalOpen(false);
     setCurrentArticleId(null);
     refetchCustomer();
+  };
+
+  const openConfirmModal = () => setConfirmModalOpen(true);
+  const closeConfirmModal = () => setConfirmModalOpen(false);
+
+  const handleEmptyCart = async () => {
+    if (!customer) return;
+
+    try {
+      await updateCustomer({
+        id: customer.id,
+        shopping_cart: [],
+      });
+      refetchCustomer();
+      closeConfirmModal(); // Cierra el modal después de vaciar el carrito
+    } catch (err) {
+      console.error("Error emptying the cart:", err);
+    }
   };
 
   const articleCount = useMemo(() => {
@@ -151,7 +170,15 @@ const Page: React.FC = () => {
         key: article?.id,
         included: <ButtonOnOff title="" />,
         brand: brand?.name || "NO BRAND",
-        image: article?.images?.[0] || "No Image",
+        image: article?.images?.[0] ? (
+          <img
+            src={article.images[0]}
+            alt={article.name || "Article Image"}
+            className="h-16 w-16 object-cover rounded-md"
+          />
+        ) : (
+          "No Image"
+        ),
         name: article?.name || "Unknown Article",
         stock: stock?.quantity || 0,
         price: `$ ${formattedPrice} + taxes`,
@@ -172,10 +199,11 @@ const Page: React.FC = () => {
         total: `$ ${formattedTotal} + taxes`,
         erase: (
           <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(article?.id || "")}
-          /></div>
+            <FaTrashCan
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openDeleteModal(article?.id || "")}
+            />
+          </div>
         ),
       };
     });
@@ -200,27 +228,13 @@ const Page: React.FC = () => {
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
-  const handleEmptyCart = async () => {
-    if (!customer) return;
-
-    try {
-      await updateCustomer({
-        id: customer.id,
-        shopping_cart: [],
-      });
-      refetchCustomer();
-    } catch (err) {
-      console.error("Error emptying the cart:", err);
-    }
-  };
-
   const headerBody = {
     buttons: [
       {
         logo: <FaTrashCan />,
         title: "Empty Cart",
         red: true,
-        onClick: handleEmptyCart,
+        onClick: openConfirmModal, // Abre el modal de confirmación
       },
       { logo: <MdShoppingCart />, title: "Close Order" },
     ],
@@ -269,7 +283,9 @@ const Page: React.FC = () => {
   }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">Shopping Cart</h3>
         <Header headerBody={headerBody} />
@@ -281,6 +297,31 @@ const Page: React.FC = () => {
             closeModal={closeDeleteModal}
             data={customer}
           />
+        </Modal>
+
+        {/* Modal para confirmar vaciar carrito */}
+        <Modal isOpen={isConfirmModalOpen} onClose={closeConfirmModal}>
+          <div className="p-6">
+            <h2 className="text-lg font-semibold">Confirm Empty Cart</h2>
+            <p className="mt-4">
+              Are you sure you want to empty the cart? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                onClick={closeConfirmModal}
+                className="bg-gray-400 text-white px-4 py-2 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmptyCart}
+                className="bg-red-500 text-white px-4 py-2 rounded-md"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
         </Modal>
       </div>
     </PrivateRoute>

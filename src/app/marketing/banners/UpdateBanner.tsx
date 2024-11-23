@@ -5,6 +5,7 @@ import {
 } from "@/redux/services/marketingApi";
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { FaTrashCan } from "react-icons/fa6";
 
 type UpdateBannerComponentProps = {
   marketingId: string;
@@ -17,8 +18,8 @@ type FormState = {
     name: string;
     sequence: number;
     enable: boolean;
-    homeWeb: string; // Para la URL de la imagen de la Home App
-    headerWeb: string; // Para la URL de la imagen de encabezado web
+    homeWeb: string;
+    headerWeb: string;
     url: string;
   };
 };
@@ -27,28 +28,48 @@ const UpdateBannerComponent = ({
   marketingId,
   closeModal,
 }: UpdateBannerComponentProps) => {
-  const {
-    data: header,
-    error,
-    isLoading,
-  } = useGetMarketingByIdQuery({ id: marketingId });
+  const { data: header, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
+
+  const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
+    useUpdateMarketingMutation();
+
+  const [form, setForm] = useState<FormState>({
+    _id: "",
+    headers: {
+      name: "",
+      sequence: 0,
+      enable: false,
+      homeWeb: "",
+      headerWeb: "",
+      url: "",
+    },
+  });
 
   const [selectedHomeFile, setSelectedHomeFile] = useState<File | null>(null);
-  const [selectedHeaderFile, setSelectedHeaderFile] = useState<File | null>(
-    null
-  );
+  const [selectedHeaderFile, setSelectedHeaderFile] = useState<File | null>(null);
   const [homeUploadResponse, setHomeUploadResponse] = useState<string>("");
   const [headerUploadResponse, setHeaderUploadResponse] = useState<string>("");
 
   const [
     uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-      error: errorUpload,
-    },
+    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
   ] = useUploadImageMutation();
+
+  useEffect(() => {
+    if (header) {
+      setForm({
+        _id: header._id,
+        headers: {
+          name: header.headers.name,
+          sequence: header.headers.sequence,
+          enable: header.headers.enable,
+          homeWeb: header.headers.homeWeb,
+          headerWeb: header.headers.headerWeb,
+          url: header.headers.url,
+        },
+      });
+    }
+  }, [header]);
 
   const handleHomeFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -56,9 +77,7 @@ const UpdateBannerComponent = ({
     }
   };
 
-  const handleHeaderFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleHeaderFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedHeaderFile(event.target.files[0]);
     }
@@ -72,8 +91,6 @@ const UpdateBannerComponent = ({
       } catch (err) {
         console.error("Error uploading home image:", err);
       }
-    } else {
-      console.error("No home file selected");
     }
   };
 
@@ -85,41 +102,8 @@ const UpdateBannerComponent = ({
       } catch (err) {
         console.error("Error uploading header image:", err);
       }
-    } else {
-      console.error("No header file selected");
     }
   };
-
-  const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
-    useUpdateMarketingMutation();
-
-  const [form, setForm] = useState<FormState>({
-    _id: "",
-    headers: {
-      name: "",
-      sequence: 0,
-      enable: false,
-      homeWeb: "", // URL de la imagen de la Home App
-      headerWeb: "", // URL de la imagen de encabezado web
-      url: "",
-    },
-  });
-
-  useEffect(() => {
-    if (header) {
-      setForm({
-        _id: header._id,
-        headers: {
-          name: header.headers.name,
-          sequence: header.headers.sequence,
-          enable: header.headers.enable,
-          homeWeb: header.headers.homeWeb, // Carga la URL si existe
-          headerWeb: header.headers.headerWeb, // Carga la URL si existe
-          url: header.headers.url,
-        },
-      });
-    }
-  }, [header]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -142,162 +126,180 @@ const UpdateBannerComponent = ({
         ...form,
         headers: {
           ...form.headers,
-          homeWeb: homeUploadResponse || form.headers.homeWeb, // Usar la URL subida o mantener la anterior
-          headerWeb: headerUploadResponse || form.headers.headerWeb, // Usar la URL subida o mantener la anterior
+          homeWeb: homeUploadResponse || form.headers.homeWeb,
+          headerWeb: headerUploadResponse || form.headers.headerWeb,
         },
       };
       await updateMarketing(updatedForm).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al actualizar el Banner:", err);
+      console.error("Error updating the banner:", err);
     }
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
-  const handleToggleEnable = () => {
+  const handleRemoveImage = (imageType: "homeWeb" | "headerWeb") => {
     setForm((prevForm) => ({
       ...prevForm,
       headers: {
         ...prevForm.headers,
-        enable: !prevForm.headers.enable,
+        [imageType]: "",
       },
     }));
   };
 
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error fetching the banner data.</p>;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-auto">
-        <div className="flex justify-between mb-4">
-          <h2 className="text-lg font-semibold mb-4">Editar Banner</h2>
-          <button
-            onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
-          >
-            <IoMdClose className="text-lg" />
-          </button>
+    <div>
+      <div className="flex justify-between">
+        <h2 className="text-lg mb-4">Update Banner</h2>
+        <button
+          onClick={closeModal}
+          className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
+        >
+          <IoMdClose />
+        </button>
+      </div>
+
+      <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col text-sm">
+            Name:
+            <input
+              name="name"
+              value={form.headers.name}
+              placeholder="Banner Name"
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-1 text-sm"
+            />
+          </label>
+
+          <label className="flex flex-col text-sm">
+            Sequence:
+            <input
+              type="number"
+              name="sequence"
+              value={form.headers.sequence}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-1 text-sm"
+            />
+          </label>
+
+          <label className="flex flex-col text-sm">
+            Enable:
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prevForm) => ({
+                  ...prevForm,
+                  headers: { ...prevForm.headers, enable: !prevForm.headers.enable },
+                }))
+              }
+              className={`p-1 rounded-md text-sm ${
+                form.headers.enable ? "bg-green-500 text-white" : "bg-red-500 text-white"
+              }`}
+            >
+              {form.headers.enable ? "Enabled" : "Disabled"}
+            </button>
+          </label>
         </div>
-        <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
-          <div className="flex gap-4">
-            <div className="flex flex-col flex-1">
-              <label className="flex flex-col mb-2">
-                Nombre:
-                <input
-                  name="name"
-                  value={form.headers.name}
-                  placeholder="Nombre del Banner"
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
-                />
-              </label>
 
-              <label className="flex flex-col mb-2">
-                Secuencia:
-                <input
-                  type="number"
-                  name="sequence"
-                  value={form.headers.sequence}
-                  placeholder="Secuencia del Banner"
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col text-sm">
+            Home Image:
+            <input type="file" accept="image/*" onChange={handleHomeFileChange} />
+            <button
+              type="button"
+              onClick={handleUploadHome}
+              disabled={isLoadingUpload}
+              className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
+            >
+              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+            </button>
+            {form.headers.homeWeb && (
+              <div className="flex items-center gap-2 mt-1">
+                <img
+                  src={form.headers.homeWeb}
+                  alt="Home Banner"
+                  className="h-20 w-full rounded-md"
                 />
-              </label>
-
-              <div className="flex flex-col mb-2">
-                <label>Habilitado:</label>
                 <button
                   type="button"
-                  onClick={handleToggleEnable}
-                  className={`border border-gray-300 rounded-md p-2 text-white ${
-                    form.headers.enable ? "bg-green-500" : "bg-red-500"
-                  }`}
+                  onClick={() => handleRemoveImage("homeWeb")}
+                  className="text-red-500 text-sm"
                 >
-                  {form.headers.enable ? "On" : "Off"}
+                  <FaTrashCan />
                 </button>
               </div>
-            </div>
+            )}
+          </label>
 
-            <div className="flex flex-col flex-1">
-              <label className="flex flex-col mb-2">
-                Imagen Home App:
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleHomeFileChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none"
+          <label className="flex flex-col text-sm">
+            Header Image:
+            <input type="file" accept="image/*" onChange={handleHeaderFileChange} />
+            <button
+              type="button"
+              onClick={handleUploadHeader}
+              disabled={isLoadingUpload}
+              className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
+            >
+              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+            </button>
+            {form.headers.headerWeb && (
+              <div className="flex items-center gap-2 mt-1">
+                <img
+                  src={form.headers.headerWeb}
+                  alt="Header Banner"
+                  className="h-20 w-full rounded-md"
                 />
                 <button
                   type="button"
-                  onClick={handleUploadHome}
-                  disabled={isLoadingUpload}
-                  className="mt-2 bg-blue-500 text-white rounded-md p-2"
+                  onClick={() => handleRemoveImage("headerWeb")}
+                  className="text-red-500 text-sm"
                 >
-                  {isLoadingUpload ? "Subiendo..." : "Subir Imagen"}
+                  <FaTrashCan />
                 </button>
-                {isSuccessUpload && (
-                  <div className="text-green-500 mt-1">
-                    ¡Imagen de Home App subida con éxito!
-                  </div>
-                )}
-                {isErrorUpload && (
-                  <div className="text-red-500 mt-1">
-                    Error al subir imagen de Home App
-                  </div>
-                )}
-              </label>
+              </div>
+            )}
+          </label>
+        </div>
 
-              <label className="flex flex-col mb-2">
-                Imagen Encabezado Web:
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleHeaderFileChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleUploadHeader}
-                  disabled={isLoadingUpload}
-                  className="mt-2 bg-blue-500 text-white rounded-md p-2"
-                >
-                  {isLoadingUpload ? "Subiendo..." : "Subir Imagen"}
-                </button>
-                {isSuccessUpload && (
-                  <div className="text-green-500 mt-1">
-                    ¡Imagen de Encabezado Web subida con éxito!
-                  </div>
-                )}
-                {isErrorUpload && (
-                  <div className="text-red-500 mt-1">
-                    Error al subir imagen de Encabezado Web
-                  </div>
-                )}
-              </label>
-            </div>
-          </div>
-          <div className="flex flex-col mb-2">
-            <label className="mb-2">URL:</label>
-            <textarea
-              name="url"
-              value={form.headers.url}
-              placeholder="URL del Banner"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
-          </div>
+        <label className="flex flex-col text-sm col-span-2">
+          URL:
+          <textarea
+            name="url"
+            value={form.headers.url}
+            placeholder="Banner URL"
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-1 text-sm"
+          />
+        </label>
 
+        <div className="col-span-2 flex justify-end gap-2 mt-2">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="bg-gray-400 rounded-md p-2 text-white text-sm"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
-            className={`mt-4 bg-blue-500 text-white rounded-md p-2 ${
-              isUpdating ? "opacity-50 cursor-not-allowed" : ""
+            className={`rounded-md p-2 text-white text-sm ${
+              isUpdating ? "bg-gray-500" : "bg-success"
             }`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Actualizando..." : "Actualizar Banner"}
+            {isUpdating ? "Updating..." : "Update"}
           </button>
-        </form>
-      </div>
+        </div>
+
+        {isSuccess && (
+          <p className="col-span-2 text-green-500 text-sm">Banner updated successfully!</p>
+        )}
+        {isError && <p className="col-span-2 text-red-500 text-sm">Error updating banner</p>}
+      </form>
     </div>
   );
 };

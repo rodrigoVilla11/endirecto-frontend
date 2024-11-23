@@ -13,7 +13,7 @@ interface FormState {
   shopping_cart: string[];
 }
 
-const CardArticles = ({ article, showPurchasePrice }: any) => {
+const CardArticle = ({ article, showPurchasePrice }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const { articleId } = useArticleId(); 
 
@@ -49,4 +49,4 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   );
 };
 
-export default CardArticles;
+export default CardArticle;

@@ -9,7 +9,6 @@ interface ButtonsImageProps {
 
 const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
   const { setTags } = useFilters();
-
   const router = useRouter();
 
   const handleRedirect = (path: string, id: string) => {
@@ -18,15 +17,14 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
       setTags([id]);
     }
   };
+
   return (
-    <div className="w-full h-full overflow-hidden rounded-md shadow-2xl">
-      <img
-        src={logo}
-        alt="Tag logo"
-        className="w-full h-full object-cover" 
-        onClick={() => handleRedirect(`/catalogue`, name)}
-      />
-    </div>
+    <img
+      src={logo}
+      alt={name}
+      className="w-full h-full object-fill cursor-pointer bg-transparent"
+      onClick={() => handleRedirect(`/catalogue`, name)}
+    />
   );
 };
 

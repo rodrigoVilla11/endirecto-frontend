@@ -4,8 +4,7 @@ import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 
 const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
-  const { data: branchData, isLoading: isLoadingBranch } =
-    useGetBranchesQuery(null);
+  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
   const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateUserMutation();
 
@@ -45,10 +44,11 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
       console.error("Error creating the user:", err);
     }
   };
+
   return (
-    <div>
-      <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Create User</h2>
+    <div className="bg-white shadow-lg rounded-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Create User</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -57,7 +57,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
         </button>
       </div>
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
         <label className="flex flex-col">
           Username:
           <input
@@ -65,7 +65,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             value={form.username}
             placeholder="Username"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           />
         </label>
 
@@ -76,7 +76,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             value={form.email}
             placeholder="Email"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           />
         </label>
 
@@ -88,7 +88,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             value={form.password}
             placeholder="Password"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           />
         </label>
 
@@ -100,11 +100,13 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             value={form.confirmPassword}
             placeholder="Confirm Password"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           />
         </label>
 
-        {passwordError && <p className="text-red-500">{passwordError}</p>}
+        {passwordError && (
+          <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
+        )}
 
         <label className="flex flex-col">
           Role:
@@ -112,7 +114,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           >
             <option value="">Select role</option>
             {Object.values(Roles).map((role) => (
@@ -129,7 +131,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             name="branch"
             value={form.branch}
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2 text-sm"
           >
             <option value="">Select branch</option>
             {!isLoadingBranch &&
@@ -141,18 +143,18 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
           </select>
         </label>
 
-        <div className="flex justify-end gap-4 mt-4">
+        <div className="col-span-2 flex justify-end gap-4 mt-4">
           <button
             type="button"
             onClick={closeModal}
-            className="bg-gray-400 rounded-md p-2 text-white"
+            className="bg-gray-400 text-white rounded-md p-2 text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white ${
-              isLoadingCreate ? "bg-gray-500" : "bg-success"
+            className={`bg-green-500 text-white rounded-md p-2 text-sm ${
+              isLoadingCreate ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isLoadingCreate}
           >
@@ -161,9 +163,15 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">User created successfully!</p>
+          <p className="text-green-500 col-span-2 text-sm">
+            User created successfully!
+          </p>
         )}
-        {isError && <p className="text-red-500">Error creating user</p>}
+        {isError && (
+          <p className="text-red-500 col-span-2 text-sm">
+            Error creating user
+          </p>
+        )}
       </form>
     </div>
   );

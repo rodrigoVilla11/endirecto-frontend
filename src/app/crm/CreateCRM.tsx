@@ -1,4 +1,3 @@
-"use client";
 import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 import {
   ActionType,
@@ -18,6 +17,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
   const currentDate = format(new Date(), "yyyy-MM-dd");
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
+
   const [form, setForm] = useState({
     date: currentDate,
     type: ActionType.CALL,
@@ -29,22 +29,16 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
     seller_id: "",
     user_id: userData ? userData?._id : "",
   });
-  const { data: customersData, isLoading: isLoadingCustomers } =
-    useGetCustomersQuery(null);
-  const { data: sellerData, isLoading: isLoadingSellers } =
-    useGetSellersQuery(null);
-  //   const { data: ordersData, isLoading: isLoadingOrders } =
-  //   useGetOrdersQuery(null);
-  const { data: collectionData, isLoading: isLoadingCollection } =
-    useGetCollectionsQuery(null);
+
+  const { data: customersData, isLoading: isLoadingCustomers } = useGetCustomersQuery(null);
+  const { data: sellerData, isLoading: isLoadingSellers } = useGetSellersQuery(null);
+  const { data: collectionData, isLoading: isLoadingCollection } = useGetCollectionsQuery(null);
   const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
 
-  const [createCrm, { isLoading: isLoadingCreate, isSuccess, isError }] =
-    useCreateCrmMutation();
+  const [createCrm, { isLoading: isLoadingCreate, isSuccess, isError }] = useCreateCrmMutation();
+
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm((prevForm) => ({
       ...prevForm,
@@ -58,193 +52,183 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createCrm(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear la colección:", err);
+      console.error("Error al crear el CRM:", err);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-md shadow-lg">
-  <div className="flex justify-between items-center">
-    <h2 className="text-xl font-semibold">Nuevo CRM</h2>
-    <button
-      onClick={closeModal}
-      className="text-gray-500 hover:text-gray-700"
-    >
-      <IoMdClose className="w-6 h-6" />
-    </button>
-  </div>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">New CRM</h2>
+          <button
+            onClick={closeModal}
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
+          >
+            <IoMdClose className="text-sm" />
+          </button>
+        </div>
 
-  <form onSubmit={handleSubmit} className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Fecha:
-        </label>
-        <input
-          type="date"
-          name="date"
-          value={form.date}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Notas:
-        </label>
-        <textarea
-          name="notes"
-          value={form.notes}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* General Details */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Notes</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              />
+            </div>
+          </div>
+
+          {/* Status and Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              >
+                {Object.values(StatusType).map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <select
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              >
+                {Object.values(ActionType).map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Customer and Seller */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Customer</label>
+              <select
+                name="customer_id"
+                value={form.customer_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                disabled={!!selectedClientId}
+              >
+                <option value="">Select customer</option>
+                {!isLoadingCustomers &&
+                  customersData?.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Seller</label>
+              <select
+                name="seller_id"
+                value={form.seller_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              >
+                <option value="">Select seller</option>
+                {!isLoadingSellers &&
+                  sellerData?.map((seller) => (
+                    <option key={seller.id} value={seller.id}>
+                      {seller.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Collection and User */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Collection</label>
+              <select
+                name="collection_id"
+                value={form.collection_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+              >
+                <option value="">Select collection</option>
+                {!isLoadingCollection &&
+                  collectionData?.map((collection) => (
+                    <option key={collection._id} value={collection._id}>
+                      {collection._id}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">User</label>
+              <select
+                name="user_id"
+                value={form.user_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                disabled
+              >
+                <option value="">Select user</option>
+                {!isLoadingUsers &&
+                  usersData?.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.username}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={`rounded-md px-3 py-1 text-sm text-white ${
+                isLoadingCreate ? "bg-gray-500" : "bg-blue-600"
+              }`}
+              disabled={isLoadingCreate}
+            >
+              {isLoadingCreate ? "Saving..." : "Save"}
+            </button>
+          </div>
+
+          {isSuccess && <p className="text-green-500 text-sm mt-2">CRM created successfully!</p>}
+          {isError && <p className="text-red-500 text-sm mt-2">Error creating CRM</p>}
+        </form>
       </div>
     </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Estado:
-        </label>
-        <select
-          name="status"
-          value={form.status}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        >
-          {Object.values(StatusType).map((st) => (
-            <option key={st} value={st}>
-              {st}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Tipo:
-        </label>
-        <select
-          name="type"
-          value={form.type}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        >
-          {Object.values(ActionType).map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Cliente:
-        </label>
-        <select
-          name="customer_id"
-          value={form.customer_id}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-          disabled={!!selectedClientId}
-        >
-          <option value="">Selecciona un cliente</option>
-          {!isLoadingCustomers &&
-            customersData?.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Vendedor:
-        </label>
-        <select
-          name="seller_id"
-          value={form.seller_id}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        >
-          <option value="">Selecciona un vendedor</option>
-          {!isLoadingSellers &&
-            sellerData?.map((seller) => (
-              <option key={seller.id} value={seller.id}>
-                {seller.name}
-              </option>
-            ))}
-        </select>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Colección:
-        </label>
-        <select
-          name="collection_id"
-          value={form.collection_id}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-        >
-          <option value="">Selecciona una colección</option>
-          {!isLoadingCollection &&
-            collectionData?.map((collection) => (
-              <option key={collection._id} value={collection._id}>
-                {collection._id}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Usuario:
-        </label>
-        <select
-          name="user_id"
-          value={form.user_id}
-          onChange={handleChange}
-          className="border border-gray-300 rounded-md p-2 w-full"
-          disabled
-        >
-          <option value="">Selecciona un usuario</option>
-          {!isLoadingUsers &&
-            usersData?.map((user) => (
-              <option key={user._id} value={user._id}>
-                {user.username}
-              </option>
-            ))}
-        </select>
-      </div>
-    </div>
-
-    <div className="flex justify-end gap-4 mt-6">
-      <button
-        type="button"
-        onClick={closeModal}
-        className="bg-gray-300 text-gray-700 rounded-md px-4 py-2"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        className={`rounded-md px-4 py-2 text-white ${
-          isLoadingCreate ? "bg-gray-500" : "bg-green-500"
-        }`}
-        disabled={isLoadingCreate}
-      >
-        {isLoadingCreate ? "Guardando..." : "Guardar"}
-      </button>
-    </div>
-  </form>
-</div>
   );
 };
 

@@ -9,7 +9,11 @@ import AddToCart from "./AddToCart";
 import Modal from "@/app/components/components/Modal";
 import ArticleDetails from "./ArticleDetails";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi";
+import {
+  useGetCustomerByIdQuery,
+  useUpdateCustomerMutation,
+} from "@/redux/services/customersApi";
+import { MdShoppingCart } from "react-icons/md";
 
 interface FormState {
   id: string;
@@ -22,10 +26,14 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1); // Definimos quantity y setQuantity aquí
 
-  const { data: customer, error, refetch } = useGetCustomerByIdQuery({
+  const {
+    data: customer,
+    error,
+    refetch,
+  } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  
+
   if (error) {
     console.error("Error fetching customer:", error);
   }
@@ -71,7 +79,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
   const toggleShoppingCart = () => {
     setForm((prev) => {
       const newShoppingCart = [...prev.shopping_cart];
-      for (let i = 0; i < quantity; i++) {  
+      for (let i = 0; i < quantity; i++) {
         newShoppingCart.push(article.id);
       }
 
@@ -94,50 +102,63 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4">
-    <div className="flex items-center w-1/6">
-      <ArticleImage img={article.images} 
-      />
-    </div>
-
-    <div className="flex-1 ml-4">
-      <ArticleName name={article.name} id={article.id} className="text-lg font-semibold" />
-    </div>
-
-    {/* Estado de stock */}
-    <div className="flex items-center justify-center w-1/6">
-      <StripeStock articleId={article.id} className="text-green-500 text-center" />
-    </div>
-
-    {/* Precios */}
-    <div className="flex flex-col items-end w-1/4">
-      <SuggestedPrice
-        articleId={article.id}
-        showPurchasePrice={showPurchasePrice}
-        className="text-xl font-bold text-gray-900"
-      />
-      {showPurchasePrice && (
-        <CostPrice
-          articleId={article.id}
-          className="text-gray-500 text-sm"
+    <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4 gap-4">
+      {/* Imagen del artículo */}
+      <div className="flex items-center justify-center w-24 h-24 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <img
+          src={article.images?.[0] || "/placeholder.png"}
+          alt={article.name}
+          className="w-full h-full object-contain rounded-md"
         />
-      )}
-    </div>
-    <ArticleMenu
+      </div>
+
+      {/* Detalles del artículo */}
+      <div className="flex-1 flex flex-col gap-1">
+        <h3 className="text-xs font-bold text-gray-800">{article.name}</h3>
+        <p className="text-xs text-gray-600">{article.description}</p>
+        <StripeStock
+          articleId={article.id}
+          className="text-xs font-medium text-red-500"
+        />
+      </div>
+
+      {/* Precios */}
+      <div className="flex flex-col items-end min-w-[150px] gap-2">
+        <SuggestedPrice
+          articleId={article.id}
+          showPurchasePrice={showPurchasePrice}
+          className="text-xl font-bold text-gray-900"
+        />
+        {showPurchasePrice && (
+          <CostPrice articleId={article.id} className="text-gray-500 text-sm" />
+        )}
+      </div>
+
+      {/* Menú del artículo */}
+      <div className="flex justify-center items-center">
+        <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
         />
-        
-    {/* Campo para agregar cantidad y botón de carrito */}
-    <div className="flex items-center w-1/6">
-      <AddToCart
-        articleId={article.id}
-        onAddToCart={toggleShoppingCart}
-        quantity={quantity}
-        setQuantity={setQuantity}
-      />
+      </div>
+
+      {/* Cantidad y botón de agregar al carrito */}
+      <div className="flex items-center gap-2 w-1/6">
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          className="w-16 p-2 text-center border border-gray-300 rounded-lg"
+          min={1}
+        />
+        <button
+          onClick={toggleShoppingCart}
+          className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg shadow-sm"
+        >
+          <MdShoppingCart className="text-xl" />
+        </button>
+      </div>
     </div>
-  </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { BsTag } from "react-icons/bs";
 import { FaCar } from "react-icons/fa6";
 import ImageArticlesSlider from "./ImageArticlesSlider";
@@ -6,14 +6,15 @@ import StripeStock from "@/app/components/Catalogue/components/Articles/componen
 import { useAuth } from "@/app/context/AuthContext";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 import { useRouter } from "next/navigation";
+import SuggestedPrice from "../../Catalogue/Articles/components/SuggestedPrice";
+import CostPrice from "../../Catalogue/Articles/components/CostPrice";
 
 const CardArticles = ({ article }: any) => {
   const { isAuthenticated } = useAuth();
   const encodedId = encodeURIComponent(article.id);
-  
-  const {setArticleId} = useArticleId();
 
-  
+  const { setArticleId } = useArticleId();
+
   const router = useRouter();
 
   const handleRedirect = (path: string) => {
@@ -22,20 +23,50 @@ const CardArticles = ({ article }: any) => {
       setArticleId(article.id);
     }
   };
+
   return (
     <div
-      className="h-90 w-56 shadow-2xl rounded-md m-2"
+      className="flex flex-col justify-between h-[400px] w-56 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
       onClick={() => handleRedirect(`/catalogues`)}
     >
-      <div className="h-6 flex justify-end items-center gap-2 px-2 text-secondary">
-        <BsTag />
-        <FaCar />
+      {/* Top Icons */}
+      <div className="h-6 flex justify-end items-center gap-2 px-2 text-gray-500">
+        <BsTag size={16} />
+        <FaCar size={16} />
       </div>
-      <ImageArticlesSlider img={article.images ? article.images[0] : ""} />
-      {isAuthenticated && <StripeStock articleId={article.id} />}
-      <div className="p-4 h-24">
-        <p className="text-xs text-gray-500 mb-2 font-semibold">{article.id}</p>
-        <p className="text-xs text-gray-500 mb-2">{article.description}</p>
+
+      {/* Image Slider */}
+      <div className="flex-grow flex items-center justify-center">
+        <ImageArticlesSlider img={article.images ? article.images[0] : ""} />
+      </div>
+
+      {/* Stock Stripe */}
+      {isAuthenticated && (
+        <StripeStock
+          articleId={article.id}
+          customClass="text-center text-yellow-700 bg-yellow-300 font-semibold text-sm py-1"
+        />
+      )}
+
+      {/* Content Section */}
+      <div className="p-4">
+        {/* Article ID */}
+        <p className="text-sm text-gray-700 font-bold mb-1">{article.id}</p>
+
+        {/* Description */}
+        <p className="text-xs text-gray-500 mb-2 line-clamp-2">{article.description}</p>
+
+        {/* Cost Price (if authenticated) */}
+        {isAuthenticated && <CostPrice articleId={article.id} />}
+
+        {/* Divider */}
+        {isAuthenticated && <hr className="border-gray-300 my-4" />}
+
+        {/* Suggested Price */}
+        <SuggestedPrice
+          articleId={article.id}
+          showPurchasePrice={isAuthenticated}
+        />
       </div>
     </div>
   );

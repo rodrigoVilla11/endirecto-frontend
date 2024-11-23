@@ -1,9 +1,8 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
-import { useClient } from "@/app/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import Articles from "./Articles/Articles";
@@ -12,10 +11,11 @@ import PopUpModal from "./Articles/PopUpModal";
 import FilterBox from "./FilterBox/FilterBox";
 
 const CataloguePage = () => {
-  const { data, error, isLoading, refetch } = useGetArticlesQuery({
+  const { data, error, isLoading } = useGetArticlesQuery({
     page: 1,
     limit: 16,
   });
+
   const {
     order,
     cart,
@@ -28,6 +28,7 @@ const CataloguePage = () => {
   } = useFilters();
   const router = useRouter();
 
+  // Estado para mostrar filtros, artículos como catálogo o lista, y el modal
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
@@ -38,13 +39,14 @@ const CataloguePage = () => {
     }
   };
 
-  if (error) return <p>Loading...</p>;
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error loading data...</p>;
 
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
 
-  const toggleShowArticles = (type: any) => {
+  const toggleShowArticles = (type: string) => {
     setShowArticles(type);
   };
 
@@ -55,12 +57,14 @@ const CataloguePage = () => {
   return (
     <div className="gap-4 p-2">
       <h3 className="text-bold p-4">CATALOGUE</h3>
-      <div className="flex gap-2 ">
+      <div className="flex gap-2">
+        {/* Filtro lateral */}
         <FilterBox
           isVisible={isFilterBoxVisible}
           onClose={() => setFilterBoxVisible(false)}
         />
         <div className="w-full flex flex-col">
+          {/* Botones de control */}
           <div className="flex justify-between items-end w-full">
             <div className="flex justify-center gap-2 px-2">
               <button
@@ -84,7 +88,7 @@ const CataloguePage = () => {
                   showArticles === "catalogue"
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"
-                } text-white rounded`}
+                } rounded`}
               >
                 <RxDashboard
                   className={`${
@@ -98,7 +102,7 @@ const CataloguePage = () => {
                   showArticles === "list"
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"
-                } text-white rounded`}
+                } rounded`}
               >
                 <FaList
                   className={`${
@@ -107,8 +111,10 @@ const CataloguePage = () => {
                 />
               </button>
             </div>
+            {/* Contador de artículos */}
             <p className="text-xs pr-4">{data?.length || 0}</p>
           </div>
+          {/* Contenido dinámico */}
           <Articles
             brand={brand}
             item={item}
@@ -118,7 +124,9 @@ const CataloguePage = () => {
             order={order}
             cart={cart}
             showPurchasePrice={showPurchasePrice}
+            showArticles={showArticles} // Pasamos el estado aquí
           />
+          {/* Modal */}
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal
               closeModal={closeModal}

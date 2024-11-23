@@ -15,7 +15,7 @@ const SuggestedPrice = ({ articleId }: any) => {
     typeof price === "number" ? formattedPrice.split(".") : ["N/A", ""];
 
   return (
-    <div className="flex justify-between text-xs px-4 h-4">
+    <div className="flex justify-between text-xs h-4">
       <p>Suggested Price</p>
       <p>
         $<span className="font-semibold text-gray-600">{integerPart}</span>

@@ -16,19 +16,12 @@ const UpdateUserComponent = ({
   userId,
   closeModal,
 }: UpdateUserComponentProps) => {
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useGetUserByIdQuery({
-    id: userId,
-  });
+  const { data: user, error, isLoading } = useGetUserByIdQuery({ id: userId });
 
   const [updateUser, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateUserMutation();
 
-  const { data: branchData, isLoading: isLoadingBranch } =
-    useGetBranchesQuery(null);
+  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
 
   const [form, setForm] = useState({
     _id: "",
@@ -73,7 +66,7 @@ const UpdateUserComponent = ({
       setPasswordError("Passwords do not match");
       return;
     }
-    setPasswordError(null); // Si no hay error, limpia el mensaje
+    setPasswordError(null);
 
     try {
       await updateUser(form).unwrap();
@@ -87,9 +80,9 @@ const UpdateUserComponent = ({
   if (error) return <p>Error fetching the user.</p>;
 
   return (
-    <div>
-      <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update User</h2>
+    <div className="bg-white shadow-lg rounded-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Update User</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -98,15 +91,14 @@ const UpdateUserComponent = ({
         </button>
       </div>
 
-      <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
+      <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <label className="flex flex-col">
           ID:
           <input
             name="_id"
             value={form._id}
-            placeholder="ID"
             readOnly
-            className="border border-black rounded-md p-2 bg-gray-200"
+            className="border border-gray-300 rounded-md p-2 bg-gray-200"
           />
         </label>
 
@@ -117,7 +109,7 @@ const UpdateUserComponent = ({
             value={form.username}
             placeholder="Username"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           />
         </label>
 
@@ -128,7 +120,7 @@ const UpdateUserComponent = ({
             value={form.email}
             placeholder="Email"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           />
         </label>
 
@@ -140,7 +132,7 @@ const UpdateUserComponent = ({
             value={form.password}
             placeholder="Password"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           />
         </label>
 
@@ -152,11 +144,13 @@ const UpdateUserComponent = ({
             value={form.confirmPassword}
             placeholder="Confirm Password"
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           />
         </label>
 
-        {passwordError && <p className="text-red-500">{passwordError}</p>}
+        {passwordError && (
+          <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
+        )}
 
         <label className="flex flex-col">
           Role:
@@ -164,7 +158,7 @@ const UpdateUserComponent = ({
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           >
             <option value="">Select role</option>
             <option value={Roles.ADMINISTRADOR}>Administrador</option>
@@ -180,7 +174,7 @@ const UpdateUserComponent = ({
             name="branch"
             value={form.branch}
             onChange={handleChange}
-            className="border border-black rounded-md p-2"
+            className="border border-gray-300 rounded-md p-2"
           >
             <option value="">Select branch</option>
             {!isLoadingBranch &&
@@ -192,18 +186,18 @@ const UpdateUserComponent = ({
           </select>
         </label>
 
-        <div className="flex justify-end gap-4 mt-4">
+        <div className="col-span-2 flex justify-end gap-4">
           <button
             type="button"
             onClick={closeModal}
-            className="bg-gray-400 rounded-md p-2 text-white"
+            className="bg-gray-400 text-white rounded-md p-2"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white ${
-              isUpdating ? "bg-gray-500" : "bg-success"
+            className={`bg-green-500 text-white rounded-md p-2 ${
+              isUpdating ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isUpdating}
           >
@@ -212,9 +206,15 @@ const UpdateUserComponent = ({
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">User updated successfully!</p>
+          <p className="text-green-500 col-span-2 text-sm">
+            User updated successfully!
+          </p>
         )}
-        {isError && <p className="text-red-500">Error updating user</p>}
+        {isError && (
+          <p className="text-red-500 col-span-2 text-sm">
+            Error updating user
+          </p>
+        )}
       </form>
     </div>
   );
