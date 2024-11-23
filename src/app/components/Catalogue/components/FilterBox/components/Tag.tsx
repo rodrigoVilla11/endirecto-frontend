@@ -33,7 +33,7 @@ const Tag = ({ onSelectTags }: any) => {
               className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-2 font-semibold text-white`}
               onClick={() => handleButtonClick(tag)}
               style={{
-                backgroundColor: tagColors[tag], // Add opacity for unselected buttons
+                backgroundColor: tagColors[tag],
               }}
             >
               {tag}
