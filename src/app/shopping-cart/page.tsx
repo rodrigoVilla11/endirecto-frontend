@@ -50,9 +50,13 @@ interface Customer {
 const Page: React.FC = () => {
   const { selectedClientId } = useClient();
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false); // Nuevo modal para confirmar vaciar carrito
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [order, setOrder] = useState<
+    { id: string; quantity: number; price: number; total: number }[]
+  >([]);
 
   const [updateCustomer] = useUpdateCustomerMutation();
   const {
@@ -94,7 +98,8 @@ const Page: React.FC = () => {
         shopping_cart: [],
       });
       refetchCustomer();
-      closeConfirmModal(); // Cierra el modal después de vaciar el carrito
+      closeConfirmModal();
+      setOrder([]); // Vaciar el array 'order' también
     } catch (err) {
       console.error("Error emptying the cart:", err);
     }
@@ -139,6 +144,17 @@ const Page: React.FC = () => {
       });
 
       refetchCustomer();
+
+      // Actualizar cantidad y total en 'order' si el artículo está incluido
+      setOrder((prevOrder) =>
+        prevOrder.map((item) => {
+          if (item.id === articleId) {
+            const newTotal = item.price * newQuantity;
+            return { ...item, quantity: newQuantity, total: newTotal };
+          }
+          return item;
+        })
+      );
     } catch (err) {
       console.error("Error updating article quantity:", err);
     }
@@ -150,6 +166,39 @@ const Page: React.FC = () => {
       return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
   }, [articles, uniqueArticleIds, searchTerm]);
+
+  const handleIncludeToggle = (articleId: string, included: boolean) => {
+    const article = articles?.find((data) => data.id === articleId);
+    if (!article) return;
+
+    const quantity = articleCount[articleId] || 1;
+    const price =
+      articlePricesData?.find((data) => data.article_id === articleId)?.price ||
+      0;
+    const total = price * quantity;
+
+    setOrder((prevOrder) => {
+      if (included) {
+        // Verificar si el artículo ya está en 'order'
+        const existingItem = prevOrder.find((item) => item.id === articleId);
+        if (existingItem) {
+          // Actualizar cantidad y total
+          return prevOrder.map((item) =>
+            item.id === articleId ? { ...item, quantity, total } : item
+          );
+        } else {
+          // Agregar nuevo artículo
+          return [...prevOrder, { id: articleId, quantity, price, total }];
+        }
+      } else {
+        // Eliminar artículo de 'order'
+        return prevOrder.filter((item) => item.id !== articleId);
+      }
+    });
+  };
+
+  const totalPedido = order.reduce((acc, item) => acc + item.total, 0);
+  const cantidadObjetos = order.reduce((acc, item) => acc + item.quantity, 0); // Sumar cantidades
 
   const tableData = useMemo(() => {
     return filteredArticles.map((articleId) => {
@@ -166,22 +215,32 @@ const Page: React.FC = () => {
       const totalPrice = price * quantity;
       const formattedTotal = formatNumber(totalPrice);
 
+      const isIncluded = order.some((item) => item.id === articleId);
+
       return {
         key: article?.id,
-        included: <ButtonOnOff title="" />,
+        included: (
+          <ButtonOnOff
+            title=""
+            active={isIncluded}
+            onChange={(newValue: boolean) =>
+              handleIncludeToggle(articleId, newValue)
+            }
+          />
+        ),
         brand: brand?.name || "NO BRAND",
         image: article?.images?.[0] ? (
           <img
             src={article.images[0]}
             alt={article.name || "Article Image"}
-            className="h-16 w-16 object-cover rounded-md"
+            className="h-16 w-16 object-contain rounded-md"
           />
         ) : (
           "No Image"
         ),
         name: article?.name || "Unknown Article",
         stock: stock?.quantity || 0,
-        price: `$ ${formattedPrice} + taxes`,
+        price: `$ ${formattedPrice} + impuestos`,
         quantity: (
           <input
             type="number"
@@ -196,7 +255,7 @@ const Page: React.FC = () => {
             }}
           />
         ),
-        total: `$ ${formattedTotal} + taxes`,
+        total: `$ ${formattedTotal} + impuestos`,
         erase: (
           <div className="flex justify-center items-center">
             <FaTrashCan
@@ -214,16 +273,17 @@ const Page: React.FC = () => {
     articlePricesData,
     brandData,
     articleCount,
+    order,
   ]);
 
   const tableHeader = [
-    { name: "Included", key: "included" },
-    { name: "Brand", key: "brand" },
+    { name: "Incluir", key: "included" },
+    { name: "Marca", key: "brand" },
     { component: <FaImage className="text-center text-xl" />, key: "image" },
-    { name: "Article", key: "name" },
+    { name: "Artículo", key: "name" },
     { name: "Stock", key: "stock" },
-    { name: "Price", key: "price" },
-    { name: "Quantity", key: "quantity" },
+    { name: "Precio", key: "price" },
+    { name: "Cantidad", key: "quantity" },
     { name: "Total", key: "total" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
@@ -234,12 +294,39 @@ const Page: React.FC = () => {
         logo: <FaTrashCan />,
         title: "Empty Cart",
         red: true,
-        onClick: openConfirmModal, // Abre el modal de confirmación
+        onClick: openConfirmModal,
       },
       { logo: <MdShoppingCart />, title: "Close Order" },
     ],
     filters: [
-      { content: <ButtonOnOff title="Select All" /> },
+      {
+        content: (
+          <ButtonOnOff
+            title="Select All"
+            active={order.length === filteredArticles.length}
+            onChange={(checked: boolean) => {
+              if (checked) {
+                const newOrder = filteredArticles.map((articleId) => {
+                  const article = articles?.find(
+                    (data) => data.id === articleId
+                  );
+                  const price =
+                    articlePricesData?.find(
+                      (data) => data.article_id === articleId
+                    )?.price || 0;
+                  const quantity = articleCount[articleId] || 1;
+                  const total = price * quantity;
+
+                  return { id: articleId, quantity, price, total };
+                });
+                setOrder(newOrder);
+              } else {
+                setOrder([]);
+              }
+            }}
+          />
+        ),
+      },
       {
         content: (
           <Input
@@ -252,20 +339,10 @@ const Page: React.FC = () => {
     ],
     secondSection: {
       title: "Total Without Taxes",
-      amount: `$ ${formatNumber(
-        tableData.reduce(
-          (acc, item) => acc + parseFloat(item.total.split("$")[1]),
-          0
-        )
-      )}`,
-      total: `PEDIDO (${uniqueArticleIds.length}): $ ${formatNumber(
-        tableData.reduce(
-          (acc, item) => acc + parseFloat(item.total.split("$")[1]),
-          0
-        )
-      )}`,
+      amount: `$ ${formatNumber(totalPedido)}`,
+      total: `PEDIDO (${cantidadObjetos}): $ ${formatNumber(totalPedido)}`,
     },
-    results: `${uniqueArticleIds.length} Results`,
+    results: `${filteredArticles.length} Results`,
   };
 
   if (isCustomerLoading || isArticlesLoading) {

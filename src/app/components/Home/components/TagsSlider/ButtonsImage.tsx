@@ -22,7 +22,7 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
     <img
       src={logo}
       alt={name}
-      className="w-full h-full object-fill cursor-pointer bg-transparent"
+      className="w-full h-full object-fill cursor-pointer bg-transparent rounded-md"
       onClick={() => handleRedirect(`/catalogue`, name)}
     />
   );

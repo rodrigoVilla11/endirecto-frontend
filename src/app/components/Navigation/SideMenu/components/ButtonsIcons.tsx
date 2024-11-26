@@ -10,6 +10,7 @@ interface Icon {
   name: string;
   path?: string;
   subCategories?: { name: string; path: string }[];
+  onClick?: () => void;
 }
 
 interface ButtonsIconsProps {
@@ -44,19 +45,26 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
     }
   };
 
+  const handleClick = (event: React.MouseEvent) => {
+    if (icon.onClick) {
+      event.stopPropagation();
+      icon.onClick();
+    } else if (icon.subCategories) {
+      toggleSubCategories();
+    } else {
+      handleRedirect(icon.path || "", event);
+    }
+  };
+
   const showSubCategories = openSubCategory === icon.name;
 
   return (
     <div
       className="relative flex items-center text-xl text-white group"
-      onClick={
-        icon.subCategories
-          ? toggleSubCategories
-          : (event) => handleRedirect(icon.path || "", event)
-      }
+      onClick={handleClick}
     >
       {!isOpen ? (
-        <div className="flex items-center text-center flex-col cursor-pointer">
+        <div className="flex items-center text-center flex-col cursor-pointer" >
           <div className="relative z-10">{icon.icon}</div>
           <div className="relative z-10 text-xs">{icon.name}</div>
           {icon.subCategories && (

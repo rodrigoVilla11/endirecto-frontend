@@ -19,10 +19,25 @@ import { ImStatsDots } from "react-icons/im";
 import ButtonsIcons from "./components/ButtonsIcons";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const SideMenu = ({ isOpen }: any) => {
-  const { selectedClientId } = useClient();
-  const { role } = useAuth();
+  const { selectedClientId, setSelectedClientId } = useClient();
+  const { setIsAuthenticated, setRole, role } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsMenuOpen(false);
+    router.push("/login");
+    setIsAuthenticated(false);
+    setSelectedClientId("");
+    setRole(null);
+  };
+  
+
   const icons = [
     {
       icon: <MdDashboard />,
@@ -283,7 +298,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <FaPowerOff />,
       name: "LogOut",
-      path: "/logout",
+      onClick: handleLogout,
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
   ];
