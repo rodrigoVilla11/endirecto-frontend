@@ -214,23 +214,23 @@ const Page = () => {
           </select>
         ),
       },
-      {
-        content: (
-          <select
-            value={searchParams.valid}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, valid: e.target.value })
-            }
-          >
-            <option value="">Valid...</option>
-            {Object.values(Valid).map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        ),
-      },
+      // {
+      //   content: (
+      //     <select
+      //       value={searchParams.valid}
+      //       onChange={(e) =>
+      //         setSearchParams({ ...searchParams, valid: e.target.value })
+      //       }
+      //     >
+      //       <option value="">Valid...</option>
+      //       {Object.values(Valid).map((type) => (
+      //         <option key={type} value={type}>
+      //           {type}
+      //         </option>
+      //       ))}
+      //     </select>
+      //   ),
+      // },
       {
         content: (
           <Input
