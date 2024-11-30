@@ -1,0 +1,180 @@
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { Roles, useCreateUserMutation } from "@/redux/services/usersApi";
+import React, { useState } from "react";
+import { IoMdClose } from "react-icons/io";
+
+const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
+  const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
+    useCreateUserMutation();
+
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+    email: "",
+    role: Roles.ADMINISTRADOR,
+    branch: "",
+  });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+    setPasswordError(null);
+
+    try {
+      await createUser(form).unwrap();
+      closeModal();
+    } catch (err) {
+      console.error("Error creating the user:", err);
+    }
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Create User</h2>
+        <button
+          onClick={closeModal}
+          className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
+        >
+          <IoMdClose />
+        </button>
+      </div>
+
+      <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
+        <label className="flex flex-col">
+          Username:
+          <input
+            name="username"
+            value={form.username}
+            placeholder="Username"
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          />
+        </label>
+
+        <label className="flex flex-col">
+          Email:
+          <input
+            name="email"
+            value={form.email}
+            placeholder="Email"
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          />
+        </label>
+
+        <label className="flex flex-col">
+          Password:
+          <input
+            name="password"
+            type="password"
+            value={form.password}
+            placeholder="Password"
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          />
+        </label>
+
+        <label className="flex flex-col">
+          Confirm Password:
+          <input
+            name="confirmPassword"
+            type="password"
+            value={form.confirmPassword}
+            placeholder="Confirm Password"
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          />
+        </label>
+
+        {passwordError && (
+          <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
+        )}
+
+        <label className="flex flex-col">
+          Role:
+          <select
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          >
+            <option value="">Select role</option>
+            {Object.values(Roles).map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col">
+          Branch:
+          <select
+            name="branch"
+            value={form.branch}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          >
+            <option value="">Select branch</option>
+            {!isLoadingBranch &&
+              branchData?.map((branch: { id: string; name: string }) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <div className="col-span-2 flex justify-end gap-4 mt-4">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="bg-gray-400 text-white rounded-md p-2 text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className={`bg-green-500 text-white rounded-md p-2 text-sm ${
+              isLoadingCreate ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isLoadingCreate}
+          >
+            {isLoadingCreate ? "Creating..." : "Create"}
+          </button>
+        </div>
+
+        {isSuccess && (
+          <p className="text-green-500 col-span-2 text-sm">
+            User created successfully!
+          </p>
+        )}
+        {isError && (
+          <p className="text-red-500 col-span-2 text-sm">
+            Error creating user
+          </p>
+        )}
+      </form>
+    </div>
+  );
+};
+
+export default CreateUserComponent;

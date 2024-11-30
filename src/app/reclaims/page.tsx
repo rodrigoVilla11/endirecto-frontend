@@ -1,0 +1,340 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import Input from "@/app/components/components/Input";
+import Header from "@/app/components/components/Header";
+import Table from "@/app/components/components/Table";
+import { IoInformationCircleOutline } from "react-icons/io5";
+import { AiOutlineDownload } from "react-icons/ai";
+import { FaPlus } from "react-icons/fa";
+import { FaPencil, FaTrashCan } from "react-icons/fa6";
+import {
+  Status,
+  useCountReclaimsQuery,
+  useGetReclaimsPagQuery,
+  Valid,
+} from "@/redux/services/reclaimsApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
+import Modal from "../components/components/Modal";
+import CreateReclaimComponent from "./CreateReclaim";
+import DeleteReclaim from "./DeleteReclaim";
+import UpdateReclaimComponent from "./UpdateReclaim";
+import PrivateRoute from "../context/PrivateRoutes";
+import DatePicker from "react-datepicker";
+import { useClient } from "../context/ClientContext";
+
+const Page = () => {
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(15);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { selectedClientId } = useClient();
+  const [customer_id, setCustomer_id] = useState("");
+
+  const [searchParams, setSearchParams] = useState({
+    status: "",
+    valid: "",
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    document_type_number: "",
+  });
+
+  const { data: branchData } = useGetBranchesQuery(null);
+  const { data: customerData } = useGetCustomersQuery(null);
+  const { data: userDatas } = useGetUsersQuery(null);
+  const { data, error, isLoading, refetch } = useGetReclaimsPagQuery({
+    page,
+    limit,
+    query: searchQuery,
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
+    valid: searchParams.valid,
+    status: searchParams.status,
+    document_type_number: searchParams.document_type_number,
+    customer_id: customer_id,
+  });
+  const { data: countReclaimsData } = useCountReclaimsQuery(null);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch;
+    } else {
+      setCustomer_id("");
+      refetch;
+    }
+  }, [selectedClientId]);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
+
+  const openCreateModal = () => setCreateModalOpen(true);
+  const closeCreateModal = () => {
+    setCreateModalOpen(false);
+    refetch();
+  };
+
+  const openUpdateModal = (id: string) => {
+    setCurrentReclaimId(id);
+    setUpdateModalOpen(true);
+  };
+  const closeUpdateModal = () => {
+    setUpdateModalOpen(false);
+    setCurrentReclaimId(null);
+    refetch();
+  };
+
+  const openDeleteModal = (id: string) => {
+    setCurrentReclaimId(id);
+    setDeleteModalOpen(true);
+  };
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setCurrentReclaimId(null);
+    refetch();
+  };
+
+  const tableData = data?.map((reclaim) => {
+    const branch = branchData?.find((data) => data.id == reclaim.branch_id);
+    const customer = customerData?.find(
+      (data) => data.id == reclaim.customer_id
+    );
+    const user = userDatas?.find((data) => data._id == reclaim.user_id);
+
+    return {
+      key: reclaim._id,
+      info: <IoInformationCircleOutline className="text-center text-xl" />,
+      id: reclaim._id,
+      status: reclaim.status,
+      type: reclaim.reclaims_type_id,
+      description: reclaim.description,
+      customer: customer?.name,
+      user: user?.username,
+      branch: branch?.name,
+      data: reclaim.date,
+      edit: (
+        <div className="flex justify-center items-center">
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(reclaim._id)}
+          />
+        </div>
+      ),
+      erase: (
+        <div className="flex justify-center items-center">
+          <FaTrashCan
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openDeleteModal(reclaim._id)}
+          />
+        </div>
+      ),
+    };
+  });
+  const tableHeader = [
+    {
+      component: <IoInformationCircleOutline className="text-center text-xl" />,
+      key: "info",
+    },
+    { name: "Number", key: "number" },
+    { name: "Status", key: "status" },
+    { name: "Type", key: "type" },
+    { name: "Description", key: "description" },
+    { name: "Customer", key: "customer" },
+    { name: "User", key: "user" },
+    { name: "Branch", key: "branch" },
+    { name: "Date", key: "date" },
+    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
+    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+  ];
+  const headerBody = {
+    buttons:  [
+      ...(selectedClientId
+        ? [
+            {
+              logo: <FaPlus />,
+              title: "New",
+              onClick: openCreateModal,
+            },
+          ]
+        : []),
+      {
+        logo: <AiOutlineDownload />,
+        title: "Download",
+      },
+    ],
+    filters: [
+      {
+        content: (
+          <DatePicker
+            selected={searchParams.startDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, startDate: date })
+            }
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <DatePicker
+            selected={searchParams.endDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, endDate: date })
+            }
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <select
+            value={searchParams.status}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, status: e.target.value })
+            }
+          >
+            <option value="">Status...</option>
+            {Object.values(Status).map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      // {
+      //   content: (
+      //     <select
+      //       value={searchParams.valid}
+      //       onChange={(e) =>
+      //         setSearchParams({ ...searchParams, valid: e.target.value })
+      //       }
+      //     >
+      //       <option value="">Valid...</option>
+      //       {Object.values(Valid).map((type) => (
+      //         <option key={type} value={type}>
+      //           {type}
+      //         </option>
+      //       ))}
+      //     </select>
+      //   ),
+      // },
+      {
+        content: (
+          <Input
+            placeholder={"Search..."}
+            value={searchQuery}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
+      },
+      {
+        content: (
+          <Input
+            placeholder={"Number..."}
+            value={searchParams.document_type_number}
+            onChange={(e: any) =>
+              setSearchParams((prev) => ({
+                ...prev,
+                document_type_number: e.target.value,
+              }))
+            }
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter") {
+                refetch();
+              }
+            }}
+          />
+        ),
+      },
+    ],
+    results: `${countReclaimsData || 0} Results`,
+  };
+  const handlePreviousPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (page < Math.ceil((countReclaimsData || 0) / limit)) {
+      setPage(page + 1);
+    }
+  };
+  return (
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
+      <div className="gap-4">
+        <h3 className="font-bold p-4">RECLAIMS</h3>
+        <Header headerBody={headerBody} />
+        <Table headers={tableHeader} data={tableData} />
+
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreateReclaimComponent closeModal={closeCreateModal} />
+        </Modal>
+
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentReclaimId && (
+            <UpdateReclaimComponent
+              reclaimId={currentReclaimId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+          <DeleteReclaim
+            reclaimId={currentReclaimId || ""}
+            closeModal={closeDeleteModal}
+          />
+        </Modal>
+
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={page === 1}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <p>
+            Page {page} of {Math.ceil((countReclaimsData || 0) / limit)}
+          </p>
+          <button
+            onClick={handleNextPage}
+            disabled={page === Math.ceil((countReclaimsData || 0) / limit)}
+            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </PrivateRoute>
+  );
+};
+
+export default Page;
