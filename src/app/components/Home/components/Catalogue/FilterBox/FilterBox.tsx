@@ -40,44 +40,44 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                 Filters Applied
               </h3>
               <div className="flex gap-2">
-                {tags && (
+                {tags.length > 0 && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
                     {tags}
                     <button
-                      className="absolute top-0 rigth-0 text-red-500"
+                      className="absolute top-0 right-0 text-red-500"
                       onClick={() => setTags([])}
                     >
                       <FaTrashCan />
                     </button>
                   </div>
                 )}
-                {brand && (
+                {brand && brand !== "" && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
                     {brand}
                     <button
-                      className="absolute top-0 rigth-0 text-red-500"
+                      className="absolute top-0 right-0 text-red-500"
                       onClick={() => setBrand("")}
                     >
                       <FaTrashCan />
                     </button>
                   </div>
                 )}
-                {item && (
+                {item && item !== "" && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
                     {item}
                     <button
-                      className="absolute  top-0 rigth-0 text-red-500"
+                      className="absolute top-0 right-0 text-red-500"
                       onClick={() => setItem("")}
                     >
                       <FaTrashCan />
                     </button>
                   </div>
                 )}
-                {vehicleBrand && (
+                {vehicleBrand && vehicleBrand !== "" && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
                     {vehicleBrand}
                     <button
-                      className="absolute  top-0 rigth-0 text-red-500"
+                      className="absolute top-0 right-0 text-red-500"
                       onClick={() => setVehicleBrand("")}
                     >
                       <FaTrashCan />
@@ -88,9 +88,9 @@ const FilterBox = ({ isVisible, onClose }: any) => {
             </div>
           )}
 
-          <Brands onChange={setBrand} />
-          <Items onChange={setItem} />
-          <VehiclesBrands onChange={setVehicleBrand} />
+          <Brands onChange={setBrand} brand={brand} />
+          <Items onChange={setItem} item={item}/>
+          <VehiclesBrands onChange={setVehicleBrand} vehicleBrand={vehicleBrand}/>
         </div>
       )}
     </>

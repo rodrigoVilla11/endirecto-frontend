@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage, FaShoppingCart } from "react-icons/fa";
+import { FaImage } from "react-icons/fa";
 import { MdShoppingCart } from "react-icons/md";
 import PrivateRoute from "../context/PrivateRoutes";
 import ButtonOnOff from "../components/components/ButtonOnOff";
@@ -20,32 +20,6 @@ import DeleteArticleComponent from "./DeleteArticle";
 import Modal from "../components/components/Modal";
 import { FaTrashCan } from "react-icons/fa6";
 
-interface Article {
-  id: string;
-  name: string;
-  brand_id: string;
-  images: string[];
-}
-
-interface Stock {
-  article_id: string;
-  quantity: number;
-}
-
-interface ArticlePrice {
-  article_id: string;
-  price: number;
-}
-
-interface Brand {
-  id: string;
-  name: string;
-}
-
-interface Customer {
-  id: string;
-  shopping_cart: string[];
-}
 
 const Page: React.FC = () => {
   const { selectedClientId } = useClient();
@@ -56,7 +30,7 @@ const Page: React.FC = () => {
 
   const [order, setOrder] = useState<
     { id: string; quantity: number; price: number; total: number }[]
-  >([]);
+  >([]);``
 
   const [updateCustomer] = useUpdateCustomerMutation();
   const {

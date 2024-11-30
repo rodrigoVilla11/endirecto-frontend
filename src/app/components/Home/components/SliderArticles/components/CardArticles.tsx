@@ -19,15 +19,15 @@ const CardArticles = ({ article }: any) => {
 
   const handleRedirect = (path: string) => {
     if (path) {
-      router.push(path);
       setArticleId(article.id);
+      router.push(path);
     }
   };
 
   return (
     <div
-      className="flex flex-col justify-between h-[400px] w-56 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
-      onClick={() => handleRedirect(`/catalogues`)}
+      className="flex flex-col justify-between h-[400px] w-60 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
+      onClick={ isAuthenticated ? () => handleRedirect(`/catalogue`) :() => handleRedirect(`/catalogues`)}
     >
       {/* Top Icons */}
       <div className="h-6 flex justify-end items-center gap-2 px-2 text-gray-500">
@@ -63,10 +63,10 @@ const CardArticles = ({ article }: any) => {
         {isAuthenticated && <hr className="border-gray-300 my-4" />}
 
         {/* Suggested Price */}
-        <SuggestedPrice
+        {isAuthenticated && <SuggestedPrice
           articleId={article.id}
           showPurchasePrice={isAuthenticated}
-        />
+        />}
       </div>
     </div>
   );

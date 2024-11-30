@@ -6,7 +6,7 @@ const Table = ({ headers, data }: any) => {
       {/* Div para hacer crecer la tabla verticalmente */}
       <div className="w-full h-full">
         <table className="min-w-full table-fixed divide-y divide-gray-200">
-          <thead className="bg-table sticky top-0 z-10">
+          <thead className="bg-table top-0 z-10">
             <tr>
               {headers.map((header: any, index: any) => (
                 <th

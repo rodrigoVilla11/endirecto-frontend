@@ -15,6 +15,7 @@ import {
   useUpdateCustomerMutation,
 } from "@/redux/services/customersApi";
 import ArticleDetails from "./ArticleDetails";
+import { useArticleId } from "@/app/context/AritlceIdContext";
 
 interface FormState {
   id: string;
@@ -26,6 +27,15 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
+  const { articleId, setArticleId} = useArticleId(); 
+
+  useEffect(() => {
+    if (articleId && articleId === article.id) {
+      setModalOpen(true);
+      setArticleId(null); 
+    }
+  }, [articleId, article.id]); 
+
 
   const {
     data: customer,
@@ -104,8 +114,8 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className=" w-52 h-auto bg-gray-200  ">
-      <div className="relative bg-white flex flex-col justify-between shadow-lg">
+    <div className=" w-60 h-auto bg-gray-200  ">
+      <div className="relative bg-white flex flex-col justify-between shadow-lg bg-gray-200">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}

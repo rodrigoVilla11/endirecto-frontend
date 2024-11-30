@@ -11,6 +11,7 @@ import { useClient } from "@/app/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
+import { useArticleId } from "@/app/context/AritlceIdContext";
 
 const CataloguePage = () => {
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -41,6 +42,8 @@ const CataloguePage = () => {
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
   const [showArticles, setShowArticles] = useState("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
+
+  
 
   useEffect(() => {
     if (!selectedClientId) {

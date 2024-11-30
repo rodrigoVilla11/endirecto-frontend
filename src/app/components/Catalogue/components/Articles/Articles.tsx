@@ -30,9 +30,11 @@ const Articles = ({
     <div className="h-full m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (
         <div
-          className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] overflow-y-auto grid ${
-            isOpen ? "grid-cols-3" : "grid-cols-4"
-          } gap-y-10 gap-x-4`}
+          className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] grid gap-4 ${
+            isOpen
+              ? "grid-cols-[repeat(auto-fit,_minmax(250px,_1fr))]"
+              : "grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))]"
+          }`}
         >
           {data?.map((article: any, index: number) => (
             <CardArticles

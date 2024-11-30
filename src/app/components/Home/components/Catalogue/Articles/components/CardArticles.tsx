@@ -15,11 +15,12 @@ interface FormState {
 
 const CardArticle = ({ article, showPurchasePrice }: any) => {
   const [isModalOpen, setModalOpen] = useState(false);
-  const { articleId } = useArticleId(); 
+  const { articleId, setArticleId } = useArticleId(); 
 
   useEffect(() => {
     if (articleId && articleId === article.id) {
       setModalOpen(true);
+      setArticleId(null); 
     }
   }, [articleId, article.id]); 
 

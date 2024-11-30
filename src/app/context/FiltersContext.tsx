@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from "react";
 
 interface FiltersContextProps {
   order: string;
@@ -23,18 +23,19 @@ interface FiltersContextProps {
 
 const FiltersContext = createContext<FiltersContextProps | undefined>(undefined);
 
-export const FiltersProvider = ({ children }: { children: ReactNode }) => {
-  const [order, setOrder] = useState('Best Sellers');
-  const [cart, setCart] = useState('');
+export const FiltersProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [order, setOrder] = useState("Best Sellers");
+  const [cart, setCart] = useState("");
   const [showPurchasePrice, setShowPurchasePrice] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
-  const [stock, setStock] = useState('');
-  const [brand, setBrand] = useState('');
-  const [item, setItem] = useState('');
-  const [vehicleBrand, setVehicleBrand] = useState('');
+  const [stock, setStock] = useState("");
+  const [brand, setBrand] = useState("");
+  const [item, setItem] = useState("");
+  const [vehicleBrand, setVehicleBrand] = useState("");
 
-  return (
-    <FiltersContext.Provider value={{
+  // Memorizamos el valor para evitar renders innecesarios
+  const value = useMemo(
+    () => ({
       order,
       setOrder,
       cart,
@@ -51,16 +52,17 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
       setItem,
       vehicleBrand,
       setVehicleBrand,
-    }}>
-      {children}
-    </FiltersContext.Provider>
+    }),
+    [order, cart, showPurchasePrice, tags, stock, brand, item, vehicleBrand]
   );
+
+  return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;
 };
 
-export const useFilters = () => {
+export const useFilters = (): FiltersContextProps => {
   const context = useContext(FiltersContext);
   if (context === undefined) {
-    throw new Error('useFilters debe ser utilizado dentro de un FiltersProvider');
+    throw new Error("useFilters debe ser utilizado dentro de un FiltersProvider");
   }
   return context;
 };

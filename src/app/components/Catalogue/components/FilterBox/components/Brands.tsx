@@ -1,16 +1,25 @@
 "use client";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
-const Brands = ({ onChange }: { onChange: (value: string) => void }) => {
+const Brands = ({ onChange, brand }: any) => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const { data: brands } = useGetBrandsQuery(null);
+
+  // Actualiza el estado cuando la prop 'brand' cambie
+  useEffect(() => {
+    if (brand) {
+      setSelectedBrand(brand); // Si 'brand' tiene un valor, asignalo al estado
+    } else {
+      setSelectedBrand(""); // Si 'brand' es falsy, resetea el estado a ""
+    }
+  }, [brand]);
 
   const handleBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = event.target.value;
     setSelectedBrand(selectedValue);
-    onChange(selectedValue);
+    onChange(selectedValue); // Actualiza el estado global
   };
 
   return (
@@ -29,7 +38,7 @@ const Brands = ({ onChange }: { onChange: (value: string) => void }) => {
             onChange={handleBrandChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            <option value="">Select a Brand</option>
+            {selectedBrand === "" && <option value="">Select a Brand</option>}
             {brands?.map((brand) => (
               <option key={brand.id} value={brand.id}>
                 {brand.name}
