@@ -4,7 +4,10 @@ import FilterBox from "./components/FilterBox/FilterBox";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import Articles from "./components/Articles/Articles";
-import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import {
+  useCountArticlesQuery,
+  useGetArticlesQuery,
+} from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
 import PopUpModal from "./components/PopUpModal";
 import { useClient } from "@/app/context/ClientContext";
@@ -14,10 +17,8 @@ import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 
 const CataloguePage = () => {
-  const { data, error, isLoading, refetch } = useGetArticlesQuery({
-    page: 1,
-    limit: 16,
-  });
+  const { data: countArticlesData } = useCountArticlesQuery(null);
+
   const {
     order,
     cart,
@@ -28,6 +29,16 @@ const CataloguePage = () => {
     item,
     vehicleBrand,
   } = useFilters();
+
+  const { data, error, isLoading, refetch } = useGetArticlesQuery({
+    page: 1,
+    limit: 16,
+    brand: brand,
+    item: item,
+    tags: tags[0],
+    stock: stock,
+    vehicle_brand: vehicleBrand,
+  });
 
   const filterBy = "popups";
   const {
@@ -43,18 +54,22 @@ const CataloguePage = () => {
   const [showArticles, setShowArticles] = useState("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
 
-  
-
   useEffect(() => {
     if (!selectedClientId) {
-      router.push("/selectCustomer"); 
+      router.push("/selectCustomer");
     } else {
       const visualizationLimit = marketing?.[0]?.popups?.visualization || 0;
-      const currentVisualizationCount = parseInt(sessionStorage.getItem('popupVisualizationCount') || '0', 10);
+      const currentVisualizationCount = parseInt(
+        sessionStorage.getItem("popupVisualizationCount") || "0",
+        10
+      );
 
       if (currentVisualizationCount < visualizationLimit) {
         setModalVisible(true);
-        sessionStorage.setItem('popupVisualizationCount', (currentVisualizationCount + 1).toString());
+        sessionStorage.setItem(
+          "popupVisualizationCount",
+          (currentVisualizationCount + 1).toString()
+        );
       }
     }
   }, [selectedClientId, router, marketing]);
@@ -78,6 +93,8 @@ const CataloguePage = () => {
   const closeModal = () => {
     setModalVisible(false);
   };
+
+  const isFiltered = brand || tags?.length || stock || item || vehicleBrand;
 
   return (
     <div className="gap-4 p-2">
@@ -134,7 +151,9 @@ const CataloguePage = () => {
                 />
               </button>
             </div>
-            <p className="text-xs pr-4">{data?.length || 0}</p>
+            <p className="text-xs pr-4">
+              {isFiltered ? data?.length : countArticlesData || 0}
+            </p>
           </div>
           <Articles
             brand={brand}
