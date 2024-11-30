@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 interface PrivateRouteProps {
   children: ReactNode;
-  requiredRoles?: string[]; 
+  requiredRoles?: string[];
 }
 
 const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {
@@ -19,9 +19,12 @@ const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {
       if (pathname === "/catalogues") {
         return;
       }
+
       if (!isAuthenticated) {
         router.push("/login");
-      } else if (requiredRoles && !requiredRoles.includes(role!)) {
+      } else if (requiredRoles && !requiredRoles.some(r => r.toUpperCase() === role?.toUpperCase())) {
+        console.log(requiredRoles, "requiredRoles");
+        console.log(role, "role");
         router.push("/unauthorized");
       }
     }
@@ -33,7 +36,7 @@ const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {
 
   return (
     <>
-      {isAuthenticated && (!requiredRoles || requiredRoles.includes(role!)) || pathname === "/catalogues"
+      {isAuthenticated && (!requiredRoles || requiredRoles.some(r => r.toUpperCase() === role?.toUpperCase())) || pathname === "/catalogues"
         ? children
         : null}
     </>

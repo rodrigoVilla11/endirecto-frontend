@@ -9,9 +9,9 @@ const Page = () => {
         requiredRoles={[
           "ADMINISTRADOR",
           "OPERADOR",
+          "CUSTOMER",
           "MARKETING",
           "VENDEDOR",
-          "CUSTOMER",
         ]}
       >
         <div className="h-full overflow-auto no-scrollbar">

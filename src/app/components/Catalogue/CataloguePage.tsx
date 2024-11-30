@@ -97,6 +97,7 @@ const CataloguePage = () => {
   const isFiltered = brand || tags?.length || stock || item || vehicleBrand;
 
   return (
+    
     <div className="gap-4 p-2">
       <h3 className="text-bold p-4">CATALOGUE</h3>
       <div className="flex gap-2 ">
