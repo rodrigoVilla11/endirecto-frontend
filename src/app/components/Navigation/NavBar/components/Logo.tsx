@@ -1,13 +1,25 @@
-import { useSideMenu } from '@/app/context/SideMenuContext';
-import React from 'react'
+import { useClient } from "@/app/context/ClientContext";
+import { useSideMenu } from "@/app/context/SideMenuContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import React from "react";
 
 const Logo = () => {
   const { isOpen } = useSideMenu();
+  const { selectedClientId } = useClient();
+  const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
   return (
     <div>
-      <img src="https://res.cloudinary.com/db7kbwl5n/image/upload/v1727811015/Mask_group_1_grmoph.png" alt="logo-navbar" className={`${isOpen ? "h-20 pl-4 pt-2" : "h-10"} transition-all duration-300`} />
+      <img
+        src={selectedClientId ? data?.logo :"https://res.cloudinary.com/db7kbwl5n/image/upload/v1727811015/Mask_group_1_grmoph.png"}
+        alt="logo-navbar"
+        className={`${
+          isOpen ? "h-20 pl-4 pt-2" : "h-10"
+        } transition-all duration-300`}
+      />
     </div>
-  )
-}
+  );
+};
 
-export default Logo
+export default Logo;

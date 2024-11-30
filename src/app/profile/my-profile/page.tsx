@@ -1,12 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "@/app/components/components/Header";
-import { FaKey } from "react-icons/fa6";
+import { FaKey, FaTrashCan } from "react-icons/fa6";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import {
+  useGetCustomerByIdQuery,
+  useUpdateCustomerMutation,
+} from "@/redux/services/customersApi";
+import { FaCheckCircle } from "react-icons/fa";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 
 const Page = () => {
   const { selectedClientId } = useClient();
@@ -17,7 +22,69 @@ const Page = () => {
   const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
+
   const branch = branchsData?.find((data) => data.id === userData?.branch);
+  const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
+    useUpdateCustomerMutation();
+  const [showTick, setShowTick] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [logo, setLogo] = useState("");
+
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadResponses, setUploadResponses] = useState<string[]>([]);
+  const [
+    uploadImage,
+    {
+      isLoading: isLoadingUpload,
+      isSuccess: isSuccessUpload,
+      isError: isErrorUpload,
+    },
+  ] = useUploadImageMutation();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length > 0) {
+      try {
+        const responses = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const response = await uploadImage(file).unwrap();
+            return response.url;
+          })
+        );
+        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+      } catch (err) {
+        console.error("Error uploading images:", err);
+      }
+    } else {
+      console.error("No files selected");
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClientId && data) {
+      setEmail(data?.email);
+      setPhone(data?.phone);
+      // Prioriza el link de Cloudinary si existe
+      setLogo(uploadResponses[0] || data?.logo);
+      refetch();
+    }
+  }, [selectedClientId, data, uploadResponses]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      setShowTick(true);
+      setTimeout(() => {
+        setShowTick(false);
+      }, 2000);
+    }
+  }, [isSuccess]);
 
   const headerBody = {
     buttons: [
@@ -28,6 +95,25 @@ const Page = () => {
     ],
     filters: [],
     results: "",
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setUploadResponses((prevResponses) =>
+      prevResponses.filter((_, i) => i !== index)
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = {
+      id: data?.id || "",
+      email: email,
+      phone: phone,
+      logo: uploadResponses[0] || data?.logo || "", // Prioriza el último logo subido
+    };
+
+    await updateCustomer(payload);
   };
 
   return (
@@ -46,7 +132,7 @@ const Page = () => {
         {selectedClientId ? (
           <div className="w-full mx-auto p-6">
             <div className="bg-white shadow-md rounded-md p-6">
-              <form className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -76,16 +162,10 @@ const Page = () => {
                     <label className="block text-sm font-medium text-gray-700">
                       Correos Electrónicos:
                     </label>
-                    <button
-                      type="button"
-                      className="mt-1 px-4 py-2 bg-green-500 text-white rounded-md"
-                    >
-                      +
-                    </button>
                     <input
-                      type="text"
-                      value={data?.email}
-                      disabled
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
@@ -94,39 +174,91 @@ const Page = () => {
                     <label className="block text-sm font-medium text-gray-700">
                       Teléfonos:
                     </label>
-                    <button
-                      type="button"
-                      className="mt-1 px-4 py-2 bg-green-500 text-white rounded-md"
-                    >
-                      +
-                    </button>
                     <input
                       type="text"
-                      value={data?.phone}
-                      disabled
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Logotipo (150 KB):
-                    </label>
-                    <input
-                      type="file"
-                      className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Imágenes (3072 KB):
+                    <label className="flex flex-col">
+                      Images:
+                      <div className="mb-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleUpload}
+                          disabled={isLoadingUpload}
+                          className={`rounded-md p-2 text-white ${
+                            isLoadingUpload ? "bg-gray-500" : "bg-success"
+                          }`}
+                        >
+                          {isLoadingUpload ? "Uploading..." : "Upload Images"}
+                        </button>
+                        {isSuccessUpload && (
+                          <div>Images uploaded successfully!</div>
+                        )}
+                        {isErrorUpload && <div>Error uploading images</div>}
+                      </div>
+                      <div className="border rounded-md p-2">
+                        <table className="min-w-full table-auto">
+                          <thead>
+                            <tr>
+                              <th>Image</th>
+                              <th>Link</th>
+                              <th>
+                                <FaTrashCan />
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {uploadResponses.map((image, index) => (
+                              <tr key={index}>
+                                <td>
+                                  <img
+                                    src={image}
+                                    alt="brand_image"
+                                    className="h-10"
+                                  />
+                                </td>
+                                <td>
+                                  <a
+                                    href={image}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500"
+                                  >
+                                    {image}
+                                  </a>
+                                </td>
+
+                                <td>
+                                  <div className="flex justify-center items-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveImage(index)}
+                                      className="text-red-500 "
+                                    >
+                                      <FaTrashCan />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </label>
-                    <input
-                      type="file"
-                      className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
                   </div>
 
+                  {/* Notifications checkbox */}
                   <div className="col-span-2 flex items-center">
                     <label className="block text-sm font-medium text-gray-700 mr-4">
                       Recibir Notificaciones:
@@ -141,7 +273,8 @@ const Page = () => {
                     />
                   </div>
 
-                  <div className="col-span-2">
+                  {/* Additional fields from the last file */}
+                  <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Condición de Pago:
                     </label>
@@ -203,18 +336,6 @@ const Page = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Código Postal:
-                    </label>
-                    <input
-                      type="text"
-                      value=""
-                      disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
                       Lista de Precios:
                     </label>
                     <input
@@ -224,75 +345,26 @@ const Page = () => {
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Vendedor:
-                    </label>
-                    <input
-                      type="text"
-                      value={data?.seller_id}
-                      disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Sucursal:
-                    </label>
-                    <input
-                      type="text"
-                      value={data?.branch_id}
-                      disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
                 </div>
-
-                <div className="flex justify-end mt-6">
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  >
-                    Aceptar
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="inline-block py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md disabled:bg-gray-400"
+                >
+                  {isUpdating ? "Actualizando..." : "Actualizar Información"}
+                </button>
               </form>
             </div>
           </div>
         ) : (
-          <div>
-            <div className="h-auto m-5 bg-white p-4 flex flex-col justify-between text-sm gap-8">
-              <p>
-                Id: <span className="font-bold">{userData?._id}</span>
-              </p>
-              <p>
-                Name: <span className="font-bold">{userData?.username}</span>
-              </p>
-              <p>
-                Role:{" "}
-                <span className="font-bold">
-                  {userData?.role?.toUpperCase()}
-                </span>
-              </p>
-              <p>
-                Email: <span className="font-bold">{userData?.email}</span>
-              </p>
-              <p>
-                Branch:{" "}
-                <span className="font-bold">
-                  {branch
-                    ? branch.name
-                    : isLoadingBranchs
-                    ? "Loading branch..."
-                    : "Branch not found"}
-                </span>
-              </p>
-            </div>
-          </div>
+          <div>Loading...</div>
         )}
       </div>
+      {showTick && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse">
+          <FaCheckCircle />
+        </div>
+      )}
     </PrivateRoute>
   );
 };

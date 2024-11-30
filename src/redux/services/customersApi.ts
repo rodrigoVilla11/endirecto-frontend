@@ -30,10 +30,14 @@ type Customer = {
   shopping_cart: string[];
   favourites: string[];
   instance: Instance;
+  logo: string;
 };
 
 type UpdateCustomersPayload = {
   id: string;
+  email?: string;
+  phone?: string;
+  logo?: string;
   shopping_cart?: string[];
   favourites?: string[];
   instance?: Instance;
