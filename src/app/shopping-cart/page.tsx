@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -49,6 +49,38 @@ const Page: React.FC = () => {
   const { data: articlePricesData, error: pricesError } =
     useGetArticlesPricesQuery(null);
 
+    const articleCount = useMemo(() => {
+      return (
+        customer?.shopping_cart.reduce<Record<string, number>>(
+          (acc, articleId) => {
+            acc[articleId] = (acc[articleId] || 0) + 1;
+            return acc;
+          },
+          {}
+        ) || {}
+      );
+    }, [customer?.shopping_cart]);
+
+    useEffect(() => {
+      if (customer) {
+        const initialOrder = customer.shopping_cart.map((articleId) => {
+          const article = articles?.find((data) => data.id === articleId);
+          const quantity = articleCount[articleId] || 1;
+          const price =
+            articlePricesData?.find((data) => data.article_id === articleId)
+              ?.price || 0;
+          const total = price * quantity;
+  
+          return { id: articleId, quantity, price, total };
+        });
+  
+        setOrder(initialOrder); // Establecer el pedido con todos los artículos incluidos
+      }
+    }, [customer, articles, articlePricesData, articleCount]);
+  
+  
+
+    
   const openDeleteModal = (id: string) => {
     setCurrentArticleId(encodeURIComponent(id));
     setDeleteModalOpen(true);
@@ -79,17 +111,6 @@ const Page: React.FC = () => {
     }
   };
 
-  const articleCount = useMemo(() => {
-    return (
-      customer?.shopping_cart.reduce<Record<string, number>>(
-        (acc, articleId) => {
-          acc[articleId] = (acc[articleId] || 0) + 1;
-          return acc;
-        },
-        {}
-      ) || {}
-    );
-  }, [customer?.shopping_cart]);
 
   const uniqueArticleIds = useMemo(
     () => Array.from(new Set(customer?.shopping_cart)),
@@ -141,35 +162,36 @@ const Page: React.FC = () => {
     });
   }, [articles, uniqueArticleIds, searchTerm]);
 
-  const handleIncludeToggle = (articleId: string, included: boolean) => {
-    const article = articles?.find((data) => data.id === articleId);
-    if (!article) return;
+const handleIncludeToggle = (articleId: string, included: boolean) => {
+  const article = articles?.find((data) => data.id === articleId);
+  if (!article) return;
 
-    const quantity = articleCount[articleId] || 1;
-    const price =
-      articlePricesData?.find((data) => data.article_id === articleId)?.price ||
-      0;
-    const total = price * quantity;
+  const quantity = articleCount[articleId] || 1;
+  const price =
+    articlePricesData?.find((data) => data.article_id === articleId)?.price ||
+    0;
+  const total = price * quantity;
 
-    setOrder((prevOrder) => {
-      if (included) {
-        // Verificar si el artículo ya está en 'order'
-        const existingItem = prevOrder.find((item) => item.id === articleId);
-        if (existingItem) {
-          // Actualizar cantidad y total
-          return prevOrder.map((item) =>
-            item.id === articleId ? { ...item, quantity, total } : item
-          );
-        } else {
-          // Agregar nuevo artículo
-          return [...prevOrder, { id: articleId, quantity, price, total }];
-        }
+  setOrder((prevOrder) => {
+    if (included) {
+      // Verificar si el artículo ya está en 'order'
+      const existingItem = prevOrder.find((item) => item.id === articleId);
+      if (existingItem) {
+        // Actualizar cantidad y total
+        return prevOrder.map((item) =>
+          item.id === articleId ? { ...item, quantity, total } : item
+        );
       } else {
-        // Eliminar artículo de 'order'
-        return prevOrder.filter((item) => item.id !== articleId);
+        // Agregar nuevo artículo
+        return [...prevOrder, { id: articleId, quantity, price, total }];
       }
-    });
-  };
+    } else {
+      // Eliminar artículo de 'order'
+      return prevOrder.filter((item) => item.id !== articleId);
+    }
+  });
+};
+
 
   const totalPedido = order.reduce((acc, item) => acc + item.total, 0);
   const cantidadObjetos = order.reduce((acc, item) => acc + item.quantity, 0); // Sumar cantidades

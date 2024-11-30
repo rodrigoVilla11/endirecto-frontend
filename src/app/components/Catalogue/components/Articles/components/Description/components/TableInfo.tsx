@@ -32,7 +32,7 @@ const TableInfo = ({article} : any) => {
 
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Description</p>
-        <p className="font-light max-w-40">{article.description}</p>
+        <p className="font-light max-w-40 break-words overflow-hidden max-h-36">{article.description}</p>
       </div>
       <hr />
     </div>

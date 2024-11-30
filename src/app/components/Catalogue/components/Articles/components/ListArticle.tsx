@@ -96,15 +96,25 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
     });
   };
 
+  
   const isFavourite = form.favourites.includes(article.id);
 
   const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
+  const closeModal = () => {
+    console.log('Cerrando modal');
+    setModalOpen(false);
+    console.log('Cerrado modal', isModalOpen);
+
+  };
+  
 
   return (
-    <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4 gap-4">
+    <div
+      className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4 gap-4"
+      
+    >
       {/* Imagen del artículo */}
-      <div className="flex items-center justify-center w-24 h-24 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div className="flex items-center justify-center w-24 h-24 bg-white border border-gray-200 rounded-lg shadow-sm" onClick={openModal}>
         <img
           src={article.images?.[0] || "/placeholder.png"}
           alt={article.name}
@@ -113,9 +123,11 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
       </div>
 
       {/* Detalles del artículo */}
-      <div className="flex-1 flex flex-col gap-1">
+      <div className="flex-1 flex flex-col gap-1" onClick={openModal}>
         <h3 className="text-xs font-bold text-gray-800">{article.name}</h3>
-        <p className="text-xs text-gray-600">{article.description}</p>
+        <p className="text-xs text-gray-600 max-w-48 break-words overflow-hidden max-h-12 ">
+          {article.description}
+        </p>
         <StripeStock
           articleId={article.id}
           className="text-xs font-medium text-red-500"
@@ -123,7 +135,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
       </div>
 
       {/* Precios */}
-      <div className="flex flex-col items-end min-w-[150px] gap-2">
+      <div className="flex flex-col items-end min-w-[150px] gap-2" onClick={openModal}>
         <SuggestedPrice
           articleId={article.id}
           showPurchasePrice={showPurchasePrice}
@@ -158,6 +170,17 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
           <MdShoppingCart className="text-xl" />
         </button>
       </div>
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <ArticleDetails
+          closeModal={closeModal}
+          toggleFavourite={toggleFavourite}
+          isFavourite={isFavourite}
+          article={article}
+          toggleShoppingCart={toggleShoppingCart}
+          quantity={quantity}
+          setQuantity={setQuantity}
+        />
+      </Modal>
     </div>
   );
 };

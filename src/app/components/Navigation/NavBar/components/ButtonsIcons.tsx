@@ -26,8 +26,9 @@ const ButtonsIcons = () => {
 
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
-  const cartItemCount = customer?.shopping_cart?.length || 0;
-
+  const cartItemCount = customer?.shopping_cart
+  ? [...new Set(customer?.shopping_cart.map((item) => item))].length
+  : 0;
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);

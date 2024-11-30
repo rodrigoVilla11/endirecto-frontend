@@ -30,7 +30,7 @@ const Articles = ({
     <div className="h-full m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (
         <div
-          className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] grid gap-4 ${
+          className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] grid gap-6 ${
             isOpen
               ? "grid-cols-[repeat(auto-fit,_minmax(250px,_1fr))]"
               : "grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))]"

@@ -28,7 +28,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
     <div
       className={`flex justify-between items-center ${
         showPurchasePrice ? "text-xs" : "text-xs"
-      } px-4 pb-2 h-4`}
+      } px-4 pb-2 h-4 `}
     >
       <p>Suggested Price</p>
       <p>

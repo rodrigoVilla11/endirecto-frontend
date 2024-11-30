@@ -44,7 +44,7 @@ const Page = () => {
         <h3 className="font-bold p-4">MY PROFILE</h3>
         <Header headerBody={headerBody} />
         {selectedClientId ? (
-          <div className="max-w-5xl mx-auto p-8">
+          <div className="w-full mx-auto p-6">
             <div className="bg-white shadow-md rounded-md p-6">
               <form className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">

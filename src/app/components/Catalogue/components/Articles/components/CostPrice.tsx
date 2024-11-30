@@ -27,7 +27,7 @@ const CostPrice = ({ articleId }: any) => {
   const [integerPart, decimalPart] = formatPrice(price);
 
   return (
-    <div className="flex justify-between text-xs px-4 h-4 items-center">
+    <div className="flex justify-between text-xs px-4 h-4 items-center  ">
       <p>Cost Price s/IVA</p>
       <p>
         $<span className="font-semibold text-gray-800 text-lg">{integerPart}</span>

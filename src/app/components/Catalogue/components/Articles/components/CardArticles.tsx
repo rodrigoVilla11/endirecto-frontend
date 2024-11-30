@@ -115,7 +115,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
   return (
     <div>
-      <div className="relative flex flex-col justify-between shadow-lg bg-gray-200 w-60">
+      <div className="relative flex flex-col justify-between shadow-lg bg-gray-200 w-60 cursor-pointer">
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
