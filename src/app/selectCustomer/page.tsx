@@ -20,6 +20,8 @@ import { useGetDocumentsQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useClient } from "../context/ClientContext";
 import { useRouter } from "next/navigation";
+import Modal from "../components/components/Modal";
+import ResetPassword from "./ResetPassword";
 require("dotenv").config();
 
 const SelectCustomer = () => {
@@ -29,6 +31,21 @@ const SelectCustomer = () => {
   const [limit] = useState(15);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { setSelectedClientId } = useClient();
+  const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
+    null
+  );
+
+  const openUpdateModal = (id: string) => {
+    setCurrentCustomerId(id);
+    setUpdateModalOpen(true);
+  };
+  const closeUpdateModal = () => {
+    setUpdateModalOpen(false);
+    setCurrentCustomerId(null);
+    refetch();
+  };
 
   const [searchParams, setSearchParams] = useState({
     query: "",
@@ -134,7 +151,10 @@ const SelectCustomer = () => {
               <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
                 Actualizar GPS
               </button>
-              <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+              <button
+                onClick={() => openUpdateModal(customer.id)}
+                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
                 Resetear contraseña
               </button>
             </div>
@@ -260,7 +280,9 @@ const SelectCustomer = () => {
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className="gap-4">
         <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
         <Header headerBody={headerBody} />
@@ -285,6 +307,15 @@ const SelectCustomer = () => {
             Next
           </button>
         </div>
+
+        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {currentCustomerId && (
+            <ResetPassword
+              customerId={currentCustomerId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
       </div>
     </PrivateRoute>
   );

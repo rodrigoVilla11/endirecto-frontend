@@ -31,6 +31,7 @@ type Customer = {
   favourites: string[];
   instance: Instance;
   logo: string;
+  password: string
 };
 
 type UpdateCustomersPayload = {
@@ -41,6 +42,7 @@ type UpdateCustomersPayload = {
   shopping_cart?: string[];
   favourites?: string[];
   instance?: Instance;
+  password?: string
 };
 
 export const customerApi = createApi({
