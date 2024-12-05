@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IoMdLock, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useAuth } from "@/app/context/AuthContext";
+import { useClient } from "@/app/context/ClientContext";
 
 const LoginPage = () => {
   const { setIsAuthenticated, setRole, setUserData } = useAuth();
@@ -11,6 +12,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { setSelectedClientId, selectedClientId } = useClient();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -44,13 +46,19 @@ const LoginPage = () => {
         username: data.username,
         email: data.email,
         role: data.role,
-        branch: data.branch
+        branch: data.branch,
       };
 
+      console.log(userData._id.length);
+
+      if (userData._id.length < 10) {
+        setSelectedClientId(userData._id);
+      }
+
       localStorage.setItem("token", data.access_token);
-      setUserData(userData)
+      setUserData(userData);
       setIsAuthenticated(true);
-      setRole(data.role); 
+      setRole(data.role);
       router.push("/dashboard");
     } catch (err) {
       setError("Invalid username or password");

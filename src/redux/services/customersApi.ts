@@ -118,7 +118,7 @@ export const customerApi = createApi({
       },
     }),
     getCustomerById: builder.query<Customer, { id: string }>({
-      query: ({ id }) => `/customers/${id}`,
+      query: ({ id }) => `/customers/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
