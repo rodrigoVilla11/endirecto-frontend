@@ -79,7 +79,9 @@ const UpdateReclaimComponent = ({
     }
   }, [reclaim, userData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setForm((prevForm) => ({
       ...prevForm,
       [e.target.name]: e.target.value,
@@ -138,163 +140,191 @@ const UpdateReclaimComponent = ({
   if (error) return <p>Error loading reclaim data.</p>;
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Update Reclaim</h2>
-        <button
-          onClick={closeModal}
-          className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
-        >
-          <IoMdClose />
-        </button>
-      </div>
-
-      <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
-        <div className="flex flex-col gap-2">
-          <label>
+    <div className="bg-white shadow-xl rounded-lg p-8 max-w-4xl mx-auto">
+    {/* Header */}
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-xl font-bold text-gray-700">Update Reclaim</h2>
+      <button
+        onClick={closeModal}
+        className="text-gray-500 hover:text-gray-700 rounded-full h-8 w-8 flex justify-center items-center bg-gray-100 hover:bg-gray-200"
+      >
+        <IoMdClose size={20} />
+      </button>
+    </div>
+  
+    {/* Form */}
+    <form
+      className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      onSubmit={handleUpdate}
+    >
+      {/* Left Column */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Reclaim Type:
-            <Select
-              value={reclaimTypeOptions.find(
-                (option) => option.value === form.reclaims_type_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "reclaims_type_id")
-              }
-              options={reclaimTypeOptions}
-              className="mt-1"
-            />
           </label>
-
-          <label>
+          <Select
+            value={reclaimTypeOptions.find(
+              (option) => option.value === form.reclaims_type_id
+            )}
+            onChange={(selectedOption) =>
+              handleSelectChange(selectedOption, "reclaims_type_id")
+            }
+            options={reclaimTypeOptions}
+            className="mt-1 border-gray-300 rounded-lg shadow-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Description:
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 text-sm mt-1"
-            />
           </label>
-
-          <label>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring focus:ring-green-200"
+            rows={4}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Article:
-            <Select
-              value={articleOptions.find(
-                (option) => option.value === form.article_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "article_id")
-              }
-              options={articleOptions}
-              className="mt-1"
-            />
           </label>
-
-          <label>
+          <Select
+            value={articleOptions.find(
+              (option) => option.value === form.article_id
+            )}
+            onChange={(selectedOption) =>
+              handleSelectChange(selectedOption, "article_id")
+            }
+            options={articleOptions}
+            className="mt-1 border-gray-300 rounded-lg shadow-sm"
+          />
+        </div>
+      </div>
+  
+      {/* Middle Column */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Branch:
-            <Select
-              value={branchOptions.find(
-                (option) => option.value === form.branch_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "branch_id")
-              }
-              options={branchOptions}
-              className="mt-1"
-            />
           </label>
-
-          <label>
+          <Select
+            value={branchOptions.find(
+              (option) => option.value === form.branch_id
+            )}
+            onChange={(selectedOption) =>
+              handleSelectChange(selectedOption, "branch_id")
+            }
+            options={branchOptions}
+            className="mt-1 border-gray-300 rounded-lg shadow-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Customer:
-            <Select
-              value={customerOptions.find(
-                (option) => option.value === form.customer_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "customer_id")
-              }
-              options={customerOptions}
-              className="mt-1"
-            />
           </label>
+          <Select
+            value={customerOptions.find(
+              (option) => option.value === form.customer_id
+            )}
+            onChange={(selectedOption) =>
+              handleSelectChange(selectedOption, "customer_id")
+            }
+            options={customerOptions}
+            className="mt-1 border-gray-300 rounded-lg shadow-sm"
+          />
         </div>
-
-        <div className="flex flex-col gap-2">
-          <label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
             Date:
-            <input
-              type="text"
-              name="date"
-              value={form.date}
-              readOnly
-              className="border border-gray-300 rounded-md p-2 text-sm"
-            />
           </label>
-
-          <label>
-            Cause:
-            <input
-              type="text"
-              name="cause"
-              value={form.cause}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 text-sm"
-            />
-          </label>
-
-          <label>
-            Solution:
-            <input
-              type="text"
-              name="solution"
-              value={form.solution}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 text-sm"
-            />
-          </label>
-
-          <label>
-            Internal Solution:
-            <input
-              type="text"
-              name="internal_solution"
-              value={form.internal_solution}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 text-sm"
-            />
-          </label>
-
-          <label>
-            Valid:
-            <button
-              type="button"
-              onClick={toggleValid}
-              className={`p-2 rounded-md text-sm ${
-                form.valid === Valid.S ? "bg-green-500 text-white" : "bg-red-500 text-white"
-              }`}
-            >
-              {form.valid === Valid.S ? "Valid" : "Invalid"}
-            </button>
-          </label>
+          <input
+            type="text"
+            name="date"
+            value={form.date}
+            readOnly
+            className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm bg-gray-50"
+          />
         </div>
-
-        <div className="col-span-2 flex justify-end gap-4">
+      </div>
+  
+      {/* Right Column */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Cause:
+          </label>
+          <input
+            type="text"
+            name="cause"
+            value={form.cause}
+            onChange={handleChange}
+            className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Solution:
+          </label>
+          <input
+            type="text"
+            name="solution"
+            value={form.solution}
+            onChange={handleChange}
+            className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Internal Solution:
+          </label>
+          <input
+            type="text"
+            name="internal_solution"
+            value={form.internal_solution}
+            onChange={handleChange}
+            className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Valid:
+          </label>
           <button
             type="button"
-            onClick={closeModal}
-            className="bg-gray-400 text-white rounded-md p-2 text-sm"
+            onClick={toggleValid}
+            className={`p-3 rounded-lg text-sm shadow-sm ${
+              form.valid === Valid.S
+                ? "bg-green-500 text-white hover:bg-green-600"
+                : "bg-red-500 text-white hover:bg-red-600"
+            }`}
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="bg-green-500 text-white rounded-md p-2 text-sm"
-            disabled={isUpdating}
-          >
-            {isUpdating ? "Updating..." : "Update"}
+            {form.valid === Valid.S ? "Valid" : "Invalid"}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+  
+      {/* Buttons */}
+      <div className="col-span-1 md:col-span-3 flex justify-end items-end gap-4 mt-6">
+        <button
+          type="button"
+          onClick={closeModal}
+          className="bg-gray-400 text-white rounded-lg p-3 text-sm hover:bg-gray-500"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="bg-green-500 text-white rounded-lg p-3 text-sm hover:bg-green-600"
+          disabled={isUpdating}
+        >
+          {isUpdating ? "Updating..." : "Update"}
+        </button>
+      </div>
+    </form>
+  </div>
+  
   );
 };
 

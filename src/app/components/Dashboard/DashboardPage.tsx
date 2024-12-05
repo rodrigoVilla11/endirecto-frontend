@@ -325,32 +325,51 @@ const DashboardPage = () => {
       )
     : itemsCard;
   return (
-    <div className="gap-4">
-      <h3 className="text-bold p-4">DASHBOARD</h3>
+    <div className="gap-4 ">
       <Header />
-      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-3"} `}>
-        {filteredItemsCard.map((item, index: any) => {
-          return (
-            <Link key={index} href={item.href}>
+      <div className="overflow-x-auto h-auto">
+        <div
+          className={`inline-flex p-4 ${
+            isOpen ? "min-w-[250px]" : "min-w-[200px]"
+          }`}
+        >
+          {filteredItemsCard.map((item, index) => (
+            <Link
+              key={index}
+              href={item.href}
+              className="transform transition-transform duration-300 hover:scale-105"
+            >
               <Card
                 title={item.title}
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
               />
             </Link>
-          );
-        })}
+          ))}
+        </div>
       </div>
-      <h4 className="text-bold p-4">SHORTCUTS</h4>
-      <div className={`grid ${!isOpen ? "grid-cols-4" : "grid-cols-4"}`}>
-        {filteredItemsShortcuts.map((item, index: any) => {
-          return (
-            <Link key={index} href={item.href}>
-              <CardShortcuts title={item.title} logo={item.logo} />
+      <div className="overflow-x-auto h-auto">
+        <div
+          className={`inline-flex p-4 ${
+            isOpen ? "min-w-[250px]" : "min-w-[220px]"
+          }`}
+        >
+          {filteredItemsShortcuts.map((item, index) => (
+            <Link
+              key={index}
+              href={item.href}
+              className="transform transition-transform duration-300 hover:scale-105"
+            >
+              <CardShortcuts
+                title={item.title}
+                logo={item.logo}
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
+              />
             </Link>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ const Header = () => {
   const userRole = userData?.role?.toUpperCase() || "No role available"; // Asegura que haya un valor para el rol
 
   return (
-    <div className="h-44 mx-5 bg-white p-10 flex justify-between">
+    <div className="h-44 mx-5 bg-white p-10 flex justify-between mt-8">
       <div className="flex items-center gap-4">
         <div className="rounded-full h-14 w-14 bg-secondary text-white flex justify-center items-center text-xl">
           <p>{firstLetter}</p>

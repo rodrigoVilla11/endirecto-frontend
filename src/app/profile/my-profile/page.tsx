@@ -182,73 +182,85 @@ const Page = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="flex flex-col">
-                      Images:
-                      <div className="mb-2">
+                  <div className="p-4 bg-white rounded-md shadow-md">
+                    <label className="flex flex-col gap-4">
+                      <span className="text-lg font-semibold">Images</span>
+                      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                         <input
                           type="file"
                           accept="image/*"
                           multiple
                           onChange={handleFileChange}
+                          className="border border-gray-300 rounded-md p-2 w-full md:w-auto"
                         />
                         <button
                           type="button"
                           onClick={handleUpload}
                           disabled={isLoadingUpload}
-                          className={`rounded-md p-2 text-white ${
-                            isLoadingUpload ? "bg-gray-500" : "bg-success"
+                          className={`rounded-md px-4 py-2 text-white transition ${
+                            isLoadingUpload
+                              ? "bg-gray-500 cursor-not-allowed"
+                              : "bg-success hover:bg-success-dark"
                           }`}
                         >
                           {isLoadingUpload ? "Uploading..." : "Upload Images"}
                         </button>
-                        {isSuccessUpload && (
-                          <div>Images uploaded successfully!</div>
-                        )}
-                        {isErrorUpload && <div>Error uploading images</div>}
                       </div>
-                      <div className="border rounded-md p-2">
-                        <table className="min-w-full table-auto">
-                          <thead>
+                      {isSuccessUpload && (
+                        <div className="mt-2 text-sm text-green-600 font-medium">
+                          Images uploaded successfully!
+                        </div>
+                      )}
+                      {isErrorUpload && (
+                        <div className="mt-2 text-sm text-red-600 font-medium">
+                          Error uploading images.
+                        </div>
+                      )}
+                      <div className="border rounded-md p-4 mt-4">
+                        <table className="min-w-full table-auto border-collapse border border-gray-300">
+                          <thead className="bg-gray-100">
                             <tr>
-                              <th>Image</th>
-                              <th>Link</th>
-                              <th>
-                                <FaTrashCan />
+                              <th className="border border-gray-300 p-2 text-left">
+                                Image
+                              </th>
+                              <th className="border border-gray-300 p-2 text-left">
+                                Link
+                              </th>
+                              <th className="border border-gray-300 p-2 text-center">
+                                Action
                               </th>
                             </tr>
                           </thead>
                           <tbody>
                             {uploadResponses.map((image, index) => (
-                              <tr key={index}>
-                                <td>
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="border border-gray-300 p-2">
                                   <img
                                     src={image}
                                     alt="brand_image"
-                                    className="h-10"
+                                    className="h-10 w-auto rounded-md"
                                   />
                                 </td>
-                                <td>
+                                <td className="border border-gray-300 p-2">
                                   <a
                                     href={image}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-500"
+                                    className="text-blue-500 hover:underline"
                                   >
-                                    {image}
+                                    {image.length > 30
+                                      ? `${image.substring(0, 30)}...`
+                                      : image}
                                   </a>
                                 </td>
-
-                                <td>
-                                  <div className="flex justify-center items-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveImage(index)}
-                                      className="text-red-500 "
-                                    >
-                                      <FaTrashCan />
-                                    </button>
-                                  </div>
+                                <td className="border border-gray-300 p-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage(index)}
+                                    className="text-red-500 hover:text-red-700 transition"
+                                  >
+                                    <FaTrashCan className="inline-block" />
+                                  </button>
                                 </td>
                               </tr>
                             ))}
