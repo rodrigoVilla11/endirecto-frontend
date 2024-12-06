@@ -22,6 +22,7 @@ import { useClient } from "../context/ClientContext";
 import { useRouter } from "next/navigation";
 import Modal from "../components/components/Modal";
 import ResetPassword from "./ResetPassword";
+import UpdateGPS from "./UpdateGPS";
 require("dotenv").config();
 
 const SelectCustomer = () => {
@@ -32,6 +33,7 @@ const SelectCustomer = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { setSelectedClientId } = useClient();
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+  const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
 
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
     null
@@ -43,6 +45,16 @@ const SelectCustomer = () => {
   };
   const closeUpdateModal = () => {
     setUpdateModalOpen(false);
+    setCurrentCustomerId(null);
+    refetch();
+  };
+
+  const openUpdateGPSModal = (id: string) => {
+    setCurrentCustomerId(id);
+    setUpdateGPSModalOpen(true);
+  };
+  const closeUpdateGPSModal = () => {
+    setUpdateGPSModalOpen(false);
     setCurrentCustomerId(null);
     refetch();
   };
@@ -148,7 +160,10 @@ const SelectCustomer = () => {
           />
           {activeMenu === customer.id && (
             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
-              <button className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+              <button
+                onClick={() => openUpdateGPSModal(customer.id)}
+                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
                 Actualizar GPS
               </button>
               <button
@@ -313,6 +328,15 @@ const SelectCustomer = () => {
             <ResetPassword
               customerId={currentCustomerId}
               closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isUpdateGPSModalOpen} onClose={closeUpdateGPSModal}>
+          {currentCustomerId && (
+            <UpdateGPS
+              customerId={currentCustomerId}
+              closeModal={closeUpdateGPSModal}
             />
           )}
         </Modal>

@@ -24,21 +24,11 @@ const TablePrices = ({ article }: any) => {
     typeof netPrice === "number" ? netPrice.toFixed(2) : netPrice;
 
   return (
-    <div className="">
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">List Price</p>
-        <p className="font-light">$ {formattedPriceNoIva}</p>
-      </div>
+    <div className="">  
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">IVA</p>
         <p className="font-light">21,00%</p>
-      </div>
-      <hr />
-
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">List Price w/IVA</p>
-        <p className="font-light">$ {priceWithIva}</p>
       </div>
       <hr />
 
@@ -48,14 +38,9 @@ const TablePrices = ({ article }: any) => {
       </div>
       <hr />
 
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
+      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">
         <p className="font-bold">Net Price</p>
         <p className="font-light max-w-40">$ {formattedNetPrice}</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">
-        <p className="font-bold">Billing Price</p>
-        <p className="font-light max-w-40">$ 5.646,79</p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
@@ -67,11 +52,7 @@ const TablePrices = ({ article }: any) => {
         <p className="font-bold">Margin $</p>
         <p className="font-light max-w-40">$ 2.032,86</p>
       </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">Suggested Price</p>
-        <p className="font-light max-w-40">$ 7.115,02</p>
-      </div>
+
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Suggested Price w/IVA</p>

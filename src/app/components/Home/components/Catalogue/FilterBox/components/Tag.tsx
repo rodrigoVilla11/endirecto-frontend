@@ -19,7 +19,7 @@ const Tag = ({ onSelectTags }: any) => {
           Tag
         </label>
         <div className="flex justify-between items-center gap-2">
-          {['Offers', 'Promo', 'New', 'Kits'].map((tag) => (
+          {['OFFERS', 'PROMO', 'NEW', 'KITS'].map((tag) => (
             <button
               key={tag}
               className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-1 ${

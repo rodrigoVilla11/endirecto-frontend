@@ -156,11 +156,14 @@ const Page: React.FC = () => {
   };
 
   const filteredArticles = useMemo(() => {
-    return uniqueArticleIds.filter((articleId) => {
-      const article = articles?.find((data) => data.id === articleId);
-      return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const result = uniqueArticleIds.filter((articleId) => {
+        const article = articles?.find((data) => data.id === articleId);
+        return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }, [articles, uniqueArticleIds, searchTerm]);
+    console.log("Filtered Articles:", result); // Ver cuántos artículos hay
+    return result;
+}, [articles, uniqueArticleIds, searchTerm]);
+
 
 const handleIncludeToggle = (articleId: string, included: boolean) => {
   const article = articles?.find((data) => data.id === articleId);
@@ -357,7 +360,7 @@ const handleIncludeToggle = (articleId: string, included: boolean) => {
 
   return (
     <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
     >
       <div className="gap-4">
         <h3 className="font-bold p-4">Shopping Cart</h3>

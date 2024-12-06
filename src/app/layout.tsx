@@ -10,6 +10,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { ClientProvider } from "./context/ClientContext";
 import { FiltersProvider } from "./context/FiltersContext";
 import { ArticleIdProvider } from "./context/AritlceIdContext";
+import FixedBottomScreen, { ArticleComparationProvider } from "./context/ComparationArticles";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,10 +33,13 @@ export default function RootLayout({
               <SideMenuProvider>
                 <FiltersProvider>
                   <ArticleIdProvider>
+                    <ArticleComparationProvider>
                     <div className="flex h-screen">
                       <NavBarAndSideMenu />
                       <MainContent>{children}</MainContent>
+                      <FixedBottomScreen />
                     </div>
+                    </ArticleComparationProvider>
                   </ArticleIdProvider>
                 </FiltersProvider>
               </SideMenuProvider>

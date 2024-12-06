@@ -119,6 +119,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
+          article={article}
         />
         <div onClick={openModal}>
           <ArticleImage img={article.images} />
