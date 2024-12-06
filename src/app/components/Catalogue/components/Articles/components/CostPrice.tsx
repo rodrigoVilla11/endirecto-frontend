@@ -3,7 +3,7 @@ import {
 } from "@/redux/services/articlesPricesApi";
 import React from "react";
 
-const CostPrice = ({ articleId }: any) => {
+const CostPrice = ({ articleId, onlyPrice }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
@@ -27,13 +27,16 @@ const CostPrice = ({ articleId }: any) => {
   const [integerPart, decimalPart] = formatPrice(price);
 
   return (
-    <div className="flex justify-between text-xs px-4 h-4 items-center  ">
-      <p>Cost Price s/IVA</p>
-      <p>
-        $<span className="font-semibold text-gray-800 text-lg">{integerPart}</span>
-        {decimalPart && <span className="font-semibold text-gray-800">,{decimalPart}</span>}
-      </p>
-    </div>
+    <div
+    className={`flex ${onlyPrice ? "justify-center" : "justify-between"} text-xs px-4 h-4 items-center`}
+  >
+    {!onlyPrice && <p>Cost Price s/IVA</p>}
+    <p>
+      $<span className="font-semibold text-gray-800 text-lg">{integerPart || "0"}</span>
+      {decimalPart && <span className="font-semibold text-gray-800">,{decimalPart}</span>}
+    </p>
+  </div>
+  
   );
 };
 

@@ -26,6 +26,7 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
           <ArticleMenu
             onAddToFavourites={toggleFavourite}
             isFavourite={isFavourite}
+            article={article}
           />
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />

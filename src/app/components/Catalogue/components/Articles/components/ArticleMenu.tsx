@@ -29,11 +29,7 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
     setCurrentArticleId(null);
   };
 
-  const articleForComparation ={
-    id: article.id,
-    name: article.name,
-    image: article.images && article.images.length > 0 ? article.images[0] : ''
-  }
+  
 
   return (
     <div className="flex justify-end items-center px-4 py-2">
@@ -42,7 +38,7 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
           <FaHeart className={`transition-colors duration-300 ${isFavourite ? 'text-red-500' : 'text-gray-600'} cursor-pointer text-xl`} />
         </button>
         <button className="flex items-center justify-center">
-          <TbSquares className='text-gray-500 cursor-pointer text-xl' onClick={() => addArticleId(articleForComparation)} />
+          <TbSquares className='text-gray-500 cursor-pointer text-xl' onClick={() => addArticleId(article)} />
         </button>
         <button className="flex items-center justify-center">
           <GoTag className='text-gray-500 cursor-pointer text-xl' />

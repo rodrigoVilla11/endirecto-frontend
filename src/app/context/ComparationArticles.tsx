@@ -4,16 +4,12 @@ import { FaTrashAlt } from "react-icons/fa";
 import Modal from "../components/components/Modal";
 import ArticlesComparation from "../components/Catalogue/components/Articles/components/ArticeMenuDetails/ArticlesComparation";
 
-interface Article {
-  id: string;
-  name: string;
-  image: string;
-}
+
 
 interface ArticleComparationContextType {
-  articleIds: Article[];
-  setArticleIds: React.Dispatch<React.SetStateAction<Article[]>>;
-  addArticleId: (article: Article) => void;
+  articleIds: any;
+  setArticleIds: React.Dispatch<React.SetStateAction<any>>;
+  addArticleId: (article: any) => void;
   removeArticleId: (id: string) => void;
 }
 
@@ -21,14 +17,14 @@ const ArticleComparationContext =
   createContext<ArticleComparationContextType | null>(null);
 
 export const ArticleComparationProvider = ({ children }: any) => {
-  const [articleIds, setArticleIds] = useState<Article[]>([]);
+  const [articleIds, setArticleIds] = useState<any>([]);
 
-  const addArticleId = (article: Article) => {
-    setArticleIds((prevIds) => [...prevIds, article]);
+  const addArticleId = (article: any) => {
+    setArticleIds((prevIds: any) => [...prevIds, article]);
   };
 
   const removeArticleId = (id: string) => {
-    setArticleIds((prevIds) => prevIds.filter((article) => article.id !== id));
+    setArticleIds((prevIds :any) => prevIds.filter((article :any) => article.id !== id));
   };
 
   return (
@@ -88,7 +84,7 @@ const FixedBottomScreen = () => {
       {/* Contenedor de artículos, uno al lado del otro */}
       <div className="flex space-x-4 overflow-x-auto mt-16">
         <ul className="flex space-x-4">
-          {articleIds.map((article) => {
+          {articleIds.map((article : any) => {
             return (
               <div key={article.id} className="relative h-24 w-20">
                 {/* Botón de remove en la parte superior izquierda */}
@@ -103,7 +99,7 @@ const FixedBottomScreen = () => {
                 <div className="flex flex-col items-center space-y-2">
                   {/* Imagen del artículo */}
                   <img
-                    src={article.image}
+                    src={article.images ? article.images[0] : ""}
                     alt={article.name}
                     className="w-16 h-20 object-contain"
                   />

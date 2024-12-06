@@ -1,7 +1,7 @@
 import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 
-const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
+const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
@@ -26,11 +26,11 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
 
   return (
     <div
-      className={`flex justify-between items-center ${
+      className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center ${
         showPurchasePrice ? "text-xs" : "text-xs"
       } px-4 pb-2 h-4 `}
     >
-      <p>Suggested Price</p>
+      {!onlyPrice && <p>Suggested Price</p>}
       <p>
         $<span className="font-semibold text-gray-600 text-lg">{integerPart}</span>
         {decimalPart && <span className="font-semibold text-gray-600">,{decimalPart}</span>}
