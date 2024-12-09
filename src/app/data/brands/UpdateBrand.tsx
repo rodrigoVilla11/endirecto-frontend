@@ -62,7 +62,7 @@ const UpdateBrandComponent = ({
 
   const [form, setForm] = useState({
     id: "",
-    images: [] as string[],
+    images: "" as string, // Cambiar de un arreglo a un string
     sequence: "",
     name: "",
   });
@@ -73,7 +73,7 @@ const UpdateBrandComponent = ({
       setForm({
         id: brand.id ?? "",
         name: brand.name ?? "",
-        images: brand.images ?? [],
+        images: brand.images ?? "", // Asumir que brand.images es un string (URL)
         sequence: brand.sequence ?? "",
       });
     }
@@ -94,7 +94,7 @@ const UpdateBrandComponent = ({
     try {
       const updatedForm = {
         ...form,
-        images: [...form.images, ...uploadResponses],
+        images: uploadResponses.length > 0 ? uploadResponses[0] : form.images, // Solo la primera imagen
       };
       await updateBrand(updatedForm).unwrap();
       closeModal();
@@ -102,12 +102,13 @@ const UpdateBrandComponent = ({
       console.error("Error updating the brand:", err);
     }
   };
+  
 
   // Manejar la eliminación de imágenes
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = () => {
     setForm((prevForm) => ({
       ...prevForm,
-      images: prevForm.images.filter((_, i) => i !== index),
+      images: "", // Borrar la imagen
     }));
   };
 
@@ -195,26 +196,26 @@ const UpdateBrandComponent = ({
                 </tr>
               </thead>
               <tbody>
-                {form.images.map((image, index) => (
-                  <tr key={index}>
+                {form.images && (
+                  <tr>
                     <td>
-                      <img src={image} alt="brand_image" className="h-10" />
+                      <img src={form.images} alt="brand_image" className="h-10" />
                     </td>
                     <td>
                       <a
-                        href={image}
+                        href={form.images}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500"
                       >
-                        {image}
+                        {form.images}
                       </a>
                     </td>
                     <td>
                       <div className="flex justify-center items-center">
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(index)}
+                          onClick={handleRemoveImage}
                           className="text-red-500 "
                         >
                           <FaTrashCan />
@@ -222,7 +223,7 @@ const UpdateBrandComponent = ({
                       </div>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
