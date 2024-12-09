@@ -14,13 +14,11 @@ const SliderBrands = () => {
 
   // Procesar los datos de marcas
   const logos = brands?.length
-    ? brands.flatMap((brand) =>
-        brand.images.map((image) => ({
-          id: brand.id,
-          brand: brand.name,
-          logo: image,
-        }))
-      )
+    ? brands.map((brand) => ({
+        id: brand.id,
+        brand: brand.name,
+        logo: brand.images, // Aquí se asume que brand.images es un string (URL)
+      }))
     : [];
 
   if (!logos.length) {
