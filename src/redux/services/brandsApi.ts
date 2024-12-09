@@ -3,13 +3,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 type Brands = {
   id: string;
   name: string;
-  images: string[];
+  images: string;
   sequence: string;
 };
 
 type UpdateBrandsPayload = {
   id: string;
-  images: string[];
+  images: string;
   sequence: string;
 };
 
@@ -20,7 +20,7 @@ export const brandsApi = createApi({
   }),
   endpoints: (builder) => ({
     getBrands: builder.query<Brands[], null>({
-      query: () => `/brands?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/brands/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Brands[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron usuarios en la respuesta");

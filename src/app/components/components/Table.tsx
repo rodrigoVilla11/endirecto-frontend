@@ -1,6 +1,9 @@
 import React from "react";
 
-const Table = ({ headers, data }: any) => {
+const Table: React.FC<any> = ({ headers, data }) => {
+
+  const validData = Array.isArray(data) ? data : [];
+
   return (
     <div className="flex-grow m-5 bg-white flex flex-col text-xs">
       {/* Div para hacer crecer la tabla verticalmente */}
@@ -22,7 +25,7 @@ const Table = ({ headers, data }: any) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 text-center">
-            {data.length === 0 ? (
+            {validData.length === 0 ? (
               <tr>
                 <td
                   colSpan={headers.length}
@@ -32,7 +35,7 @@ const Table = ({ headers, data }: any) => {
                 </td>
               </tr>
             ) : (
-              data.map((row: any, index: any) => (
+              validData.map((row: any, index: any) => (
                 <tr key={row.key || index}>
                   {Object.keys(row).map((key, i) =>
                     key !== "key" ? (
