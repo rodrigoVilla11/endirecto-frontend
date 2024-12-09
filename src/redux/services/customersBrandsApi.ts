@@ -80,18 +80,31 @@ export const customersBrandsApi = createApi({
         body: newCustomersBrands,
       }),
     }),
-    updateCustomersBrands: builder.mutation<CustomersBrands, UpdateCustomersBrandsPayload>({
-        query: ({ _id, ...updatedCustomersBrands }) => ({
-          url: `/customers-brands/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-          method: 'PUT',
-          body: updatedCustomersBrands, // Enviamos las propiedades actualizadas, sin el _id
-        }),
+    updateCustomersBrands: builder.mutation<
+      CustomersBrands,
+      UpdateCustomersBrandsPayload
+    >({
+      query: ({ _id, ...updatedCustomersBrands }) => ({
+        url: `/customers-brands/${_id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: updatedCustomersBrands, // Directamente los datos de actualización
       }),
-      
+    }),
+
     deleteCustomersBrands: builder.mutation<void, string>({
       query: (id) => ({
         url: `/customers-brands/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "DELETE",
+      }),
+    }),
+    updateMassiveCustomersBrands: builder.mutation<
+      { matchedCount: number; modifiedCount: number }, // Respuesta del servidor
+      { customer_id: string; margin: number } // Parámetros de entrada
+    >({
+      query: ({ customer_id, margin }) => ({
+        url: `/customers-brands/update-massive?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PATCH",
+        body: { customer_id, margin },
       }),
     }),
   }),
@@ -105,5 +118,6 @@ export const {
   useUpdateCustomersBrandsMutation,
   useDeleteCustomersBrandsMutation,
   useGetCustomersBrandsByCustomerQuery,
-  useCreateCustomersBrandsMutation
+  useCreateCustomersBrandsMutation,
+  useUpdateMassiveCustomersBrandsMutation,
 } = customersBrandsApi;

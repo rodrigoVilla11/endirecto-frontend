@@ -14,28 +14,42 @@ import { useClient } from "@/app/context/ClientContext";
 import { skipToken } from "@reduxjs/toolkit/query/react";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import Table from "@/app/components/components/Table";
+import Modal from "@/app/components/components/Modal";
+import UpdateMassive from "./UpdateMassive";
 
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const { selectedClientId } = useClient();
   const { data: brands } = useGetBrandsQuery(null);
+  const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);  
   const [
     createCustomersBrands,
     { isLoading: isLoadingCreate, isSuccess, isError },
   ] = useCreateCustomersBrandsMutation();
   const [updateCustomersBrands, { isLoading: isUpdating }] =
     useUpdateCustomersBrandsMutation();
-  
+
+    const openUpdateModal = () => {
+      setUpdateModalOpen(true);
+    };
+    const closeUpdateModal = () => {
+      setUpdateModalOpen(false);
+      refetch();
+    };
+
   const {
     data: customersBrands = [], // Inicializa como un array vacío si no hay datos
     error,
     isLoading,
+    refetch,
   } = useGetCustomersBrandsByCustomerQuery(
     selectedClientId ? { customer_id: selectedClientId } : skipToken
   );
 
-  const [editedMargins, setEditedMargins] = useState<{ [key: string]: number }>({});
+  const [editedMargins, setEditedMargins] = useState<{ [key: string]: number }>(
+    {}
+  );
 
   const tableHeader = [
     {
@@ -51,6 +65,7 @@ const Page = () => {
       {
         logo: <IoMdMenu />,
         title: "Massive Change",
+        onClick: openUpdateModal
       },
     ],
     filters: [
@@ -108,7 +123,7 @@ const Page = () => {
       margin: updatedMargin,
     })
       .then(() => {
-        // Una vez que se guarda, puedes refetch o actualizar la UI de alguna forma
+        refetch();
       })
       .catch((error) => {
         console.error("Error al actualizar el margin", error);
@@ -117,16 +132,18 @@ const Page = () => {
 
   const tableData =
     customersBrands?.map((customersBrand) => {
-      const brand = brands?.find(
-        (data) => data.id === customersBrand.brand_id
-      );
+      const brand = brands?.find((data) => data.id === customersBrand.brand_id);
 
       return {
         key: customersBrand._id,
         image: (
           <div className="flex justify-center items-center">
             {brand?.images ? (
-              <img src={brand.images} alt={brand.name} className="h-10 w-10 object-cover" />
+              <img
+                src={brand.images}
+                alt={brand.name}
+                className="h-10 w-10 object-cover"
+              />
             ) : (
               "No Image"
             )}
@@ -139,7 +156,10 @@ const Page = () => {
               type="number"
               value={editedMargins[customersBrand._id] || customersBrand.margin}
               onChange={(e) =>
-                handleMarginChange(customersBrand._id, parseFloat(e.target.value))
+                handleMarginChange(
+                  customersBrand._id,
+                  parseFloat(e.target.value)
+                )
               }
               className="w-16 text-center border border-gray-300 rounded-md"
             />
@@ -171,11 +191,18 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">MARGINS BY BRAND</h3>
         <Header headerBody={headerBody} />
-        {/* Solo renderiza la tabla si los datos ya están cargados */}
         {!isLoading && customersBrands.length > 0 && (
           <Table headers={tableHeader} data={tableData} />
         )}
       </div>
+      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+          {selectedClientId && (
+            <UpdateMassive
+              customer_id={selectedClientId}
+              closeModal={closeUpdateModal}
+            />
+          )}
+        </Modal>
     </PrivateRoute>
   );
 };

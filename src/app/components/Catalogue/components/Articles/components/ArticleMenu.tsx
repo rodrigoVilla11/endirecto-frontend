@@ -7,11 +7,13 @@ import { FaHeart } from 'react-icons/fa';
 import Modal from '@/app/components/components/Modal';
 import InformError from './ArticeMenuDetails/InformError';
 import { useArticleComparation } from '@/app/context/ComparationArticles';
+import ArticleEquivalence from './ArticeMenuDetails/ArticleEquivalences';
 
 const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavourites: () => void, isFavourite: boolean, article: any }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isInformErrorModalOpen, setInformErrorModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
+  const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
 
   const toggleMenu = (articleId: string) => {
     setActiveMenu(activeMenu === articleId ? null : articleId);
@@ -29,6 +31,16 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
     setCurrentArticleId(null);
   };
 
+  const openEquivalencesModal = (id: string) => {
+    setCurrentArticleId(id);
+    setEquivalencesModalOpen(true);
+    setActiveMenu(null); // Cierra el menú al abrir el modal
+  };
+
+  const closeEquivalencesModal = () => {
+    setEquivalencesModalOpen(false);
+    setCurrentArticleId(null);
+  };
   
 
   return (
@@ -41,7 +53,7 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
           <TbSquares className='text-gray-500 cursor-pointer text-xl' onClick={() => addArticleId(article)} />
         </button>
         <button className="flex items-center justify-center">
-          <GoTag className='text-gray-500 cursor-pointer text-xl' />
+          <GoTag className='text-gray-500 cursor-pointer text-xl' onClick={() => openEquivalencesModal(article.id)}/>
         </button>
         <button className="flex items-center justify-center">
           <div className="relative">
@@ -68,6 +80,15 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
           <InformError
             articleId={currentArticleId}
             closeModal={closeInformErrorModal}
+          />
+        )}
+      </Modal>
+
+      <Modal isOpen={isEquivalencesModalOpen} onClose={closeEquivalencesModal}>
+        {currentArticleId && (
+          <ArticleEquivalence
+            articleId={currentArticleId}
+            closeModal={closeEquivalencesModal}
           />
         )}
       </Modal>
