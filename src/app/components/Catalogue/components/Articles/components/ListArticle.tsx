@@ -151,6 +151,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
         <ArticleMenu
           onAddToFavourites={toggleFavourite}
           isFavourite={isFavourite}
+          article={article}
         />
       </div>
 
