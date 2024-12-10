@@ -325,11 +325,11 @@ const DashboardPage = () => {
       )
     : itemsCard;
   return (
-    <div className="gap-4 ">
+    <div className="gap-4">
       <Header />
       <div className="overflow-x-auto h-auto">
         <div
-          className={`inline-flex p-4 ${
+          className={`flex flex-wrap gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[200px]"
           }`}
         >
@@ -344,7 +344,7 @@ const DashboardPage = () => {
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
               />
             </Link>
           ))}
@@ -352,7 +352,7 @@ const DashboardPage = () => {
       </div>
       <div className="overflow-x-auto h-auto">
         <div
-          className={`inline-flex p-4 ${
+          className={`flex flex-wrap gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[220px]"
           }`}
         >
@@ -365,7 +365,7 @@ const DashboardPage = () => {
               <CardShortcuts
                 title={item.title}
                 logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
               />
             </Link>
           ))}

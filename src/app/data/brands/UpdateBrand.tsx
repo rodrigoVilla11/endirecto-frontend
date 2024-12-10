@@ -62,9 +62,10 @@ const UpdateBrandComponent = ({
 
   const [form, setForm] = useState({
     id: "",
-    images: "" as string, // Cambiar de un arreglo a un string
+    images: "" as string,
     sequence: "",
     name: "",
+    hidden: false,
   });
 
   useEffect(() => {
@@ -73,8 +74,9 @@ const UpdateBrandComponent = ({
       setForm({
         id: brand.id ?? "",
         name: brand.name ?? "",
-        images: brand.images ?? "", // Asumir que brand.images es un string (URL)
+        images: brand.images ?? "",
         sequence: brand.sequence ?? "",
+        hidden: brand.hidden ?? false,
       });
     }
   }, [brand]);
@@ -89,12 +91,20 @@ const UpdateBrandComponent = ({
     }));
   };
 
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: checked,
+    }));
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const updatedForm = {
         ...form,
-        images: uploadResponses.length > 0 ? uploadResponses[0] : form.images, // Solo la primera imagen
+        images: uploadResponses.length > 0 ? uploadResponses[0] : form.images,
       };
       await updateBrand(updatedForm).unwrap();
       closeModal();
@@ -102,13 +112,11 @@ const UpdateBrandComponent = ({
       console.error("Error updating the brand:", err);
     }
   };
-  
 
-  // Manejar la eliminación de imágenes
   const handleRemoveImage = () => {
     setForm((prevForm) => ({
       ...prevForm,
-      images: "", // Borrar la imagen
+      images: "",
     }));
   };
 
@@ -156,10 +164,21 @@ const UpdateBrandComponent = ({
           <textarea
             name="sequence"
             value={form.sequence}
-            placeholder="sequence"
+            placeholder="Sequence"
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           />
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="hidden"
+            checked={form.hidden}
+            onChange={handleCheckboxChange}
+            className="cursor-pointer"
+          />
+          Hidden
         </label>
 
         <label className="flex flex-col">
@@ -183,7 +202,6 @@ const UpdateBrandComponent = ({
             {isSuccessUpload && <div>Images uploaded successfully!</div>}
             {isErrorUpload && <div>Error uploading images</div>}
           </div>
-          {/* Lista de imágenes */}
           <div className="border rounded-md p-2">
             <table className="min-w-full table-auto">
               <thead>
@@ -199,7 +217,11 @@ const UpdateBrandComponent = ({
                 {form.images && (
                   <tr>
                     <td>
-                      <img src={form.images} alt="brand_image" className="h-10" />
+                      <img
+                        src={form.images}
+                        alt="brand_image"
+                        className="h-10"
+                      />
                     </td>
                     <td>
                       <a
@@ -216,7 +238,7 @@ const UpdateBrandComponent = ({
                         <button
                           type="button"
                           onClick={handleRemoveImage}
-                          className="text-red-500 "
+                          className="text-red-500"
                         >
                           <FaTrashCan />
                         </button>

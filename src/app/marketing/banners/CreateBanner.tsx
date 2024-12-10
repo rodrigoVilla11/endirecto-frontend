@@ -65,6 +65,7 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log(form)
       await createMarketing(form).unwrap();
       closeModal();
     } catch (err) {

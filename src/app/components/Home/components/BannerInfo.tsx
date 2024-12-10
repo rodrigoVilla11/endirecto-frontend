@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useCountArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
@@ -9,6 +9,7 @@ const BannerInfo = () => {
   const { data: countArticlesData } = useCountArticlesQuery(null);
   const { data: brands } = useGetBrandsQuery(null);
 
+  const visibleBrandsCount = brands?.filter((item) => !item.hidden).length || 0;
 
   return (
     <div className="h-60 w-full bg-secondary flex justify-center items-center gap-10">
@@ -17,7 +18,7 @@ const BannerInfo = () => {
         <p className="text-secondary">Customers</p>
       </div>
       <div className="h-44 w-90 bg-white rounded-lg flex flex-col justify-center items-center">
-        <p className="text-7xl">{brands?.length}</p>
+        <p className="text-7xl">{visibleBrandsCount}</p>
         <p className="text-secondary">Brands</p>
       </div>
       <div className="h-44 w-90 bg-white rounded-lg flex flex-col justify-center items-center">

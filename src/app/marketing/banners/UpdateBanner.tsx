@@ -30,6 +30,7 @@ const UpdateBannerComponent = ({
 }: UpdateBannerComponentProps) => {
   const { data: header, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
 
+  console.log(error)
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
 

@@ -10,16 +10,26 @@ import { Navigation, Autoplay } from "swiper/modules";
 
 const SliderBrands = () => {
   const { isAuthenticated } = useAuth();
-  const { data: brands } = useGetBrandsQuery(null);
+  const { data: brands, isLoading, error } = useGetBrandsQuery(null);
 
-  // Procesar los datos de marcas
-  const logos = brands?.length
-    ? brands.map((brand) => ({
-        id: brand.id,
-        brand: brand.name,
-        logo: brand.images, // Aquí se asume que brand.images es un string (URL)
-      }))
-    : [];
+  // Filtrar las marcas visibles (hidden: false)
+  const visibleBrands = brands?.filter((brand) => !brand.hidden) || [];
+
+  // Procesar los datos de marcas visibles
+  const logos = visibleBrands.map((brand) => ({
+    id: brand.id,
+    brand: brand.name,
+    logo: brand.images, // Se asume que brand.images es un string (URL)
+  }));
+
+  // Manejo de estados de carga y error
+  if (isLoading) {
+    return <div className="text-center py-4">Cargando marcas...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-4">Error al cargar marcas</div>;
+  }
 
   if (!logos.length) {
     return <div className="text-center py-4">No hay marcas disponibles</div>;

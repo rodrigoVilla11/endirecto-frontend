@@ -1,5 +1,5 @@
 "use client";
-import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
+import { useGetAllMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -13,9 +13,9 @@ const SliderImages = () => {
     data: marketing,
     error,
     isLoading,
-  } = useGetMarketingByFilterQuery({ filterBy });
+  } = useGetAllMarketingByFilterQuery({ filterBy });
   const router = useRouter();
-
+  
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
@@ -38,7 +38,6 @@ const SliderImages = () => {
         No hay datos disponibles.
       </div>
     );
-
   return (
     <div
       className="relative w-full overflow-hidden shadow-lg bg-gray-200"

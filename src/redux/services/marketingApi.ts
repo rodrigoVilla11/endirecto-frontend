@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type Marketing = {
-    _id: string,
-    popups: PopUps,
-    headers: Headers,
-    tags: Tags
+  _id: string;
+  popups: PopUps;
+  headers: Headers;
+  tags: Tags;
 };
 
 export type PopUps = {
@@ -34,16 +34,16 @@ export type Tags = {
 };
 
 type CreateMarketingPayload = {
-    popups?: PopUps,
-    headers?: Headers,
-    tags?: Tags
+  popups?: PopUps;
+  headers?: Headers;
+  tags?: Tags;
 };
 
 type UpdateMarketingPayload = {
   _id: string;
-  popups?: PopUps,
-  headers?: Headers,
-  tags?: Tags
+  popups?: PopUps;
+  headers?: Headers;
+  tags?: Tags;
 };
 
 export const marketingApi = createApi({
@@ -67,9 +67,24 @@ export const marketingApi = createApi({
         return response;
       },
     }),
-
+    getAllMarketingByFilter: builder.query<
+      Marketing[],
+      { filterBy?: string; page?: number; limit?: number }
+    >({
+      query: ({ filterBy } = {}) => {
+        return `/marketing/filter-all?filterBy=${filterBy}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      },
+      transformResponse: (response: Marketing[]) => {
+        if (!response || response.length === 0) {
+          console.error("No se recibieron datos de marketing en la respuesta");
+          return [];
+        }
+        return response;
+      },
+    }),
     getMarketingById: builder.query<Marketing, { id: string }>({
-      query: ({ id }) => `/marketing/findOne/${id}`,
+      query: ({ id }) =>
+        `/marketing/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     countMarketing: builder.query<number, null>({
       query: () => {
@@ -106,4 +121,5 @@ export const {
   useCreateMarketingMutation,
   useDeleteMarketingMutation,
   useUpdateMarketingMutation,
+  useGetAllMarketingByFilterQuery
 } = marketingApi;
