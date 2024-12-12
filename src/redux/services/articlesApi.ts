@@ -101,7 +101,7 @@ export const articlesApi = createApi({
       },
     }),
     getArticleById: builder.query<Article, { id: string }>({
-      query: ({ id }) => `/articles/${id}`,
+      query: ({ id }) => `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     countArticles: builder.query<number, null>({
       query: () => {

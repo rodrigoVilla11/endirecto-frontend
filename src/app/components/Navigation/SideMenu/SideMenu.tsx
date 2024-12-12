@@ -13,7 +13,6 @@ import { BsCash } from "react-icons/bs";
 import { IoIosLaptop } from "react-icons/io";
 import { IoMegaphoneOutline, IoPersonOutline } from "react-icons/io5";
 import { CgProfile, CgShoppingCart } from "react-icons/cg";
-import { FaRegClock } from "react-icons/fa6";
 import { PiDownloadSimpleBold } from "react-icons/pi";
 import { ImStatsDots } from "react-icons/im";
 import ButtonsIcons from "./components/ButtonsIcons";

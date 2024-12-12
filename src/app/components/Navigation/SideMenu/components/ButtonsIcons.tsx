@@ -20,11 +20,11 @@ interface ButtonsIconsProps {
   setOpenSubCategory: (name: string | null) => void;
 }
 
-const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ 
-  icon, 
-  isOpen, 
-  openSubCategory, 
-  setOpenSubCategory 
+const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
+  icon,
+  isOpen,
+  openSubCategory,
+  setOpenSubCategory,
 }) => {
   const { setIsOpen } = useSideMenu();
   const router = useRouter();
@@ -41,6 +41,8 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
+      // setIsOpen(false);
+      setOpenSubCategory(null);
       router.push(path);
     }
   };
@@ -64,7 +66,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       onClick={handleClick}
     >
       {!isOpen ? (
-        <div className="flex items-center text-center flex-col cursor-pointer" >
+        <div className="flex items-center text-center flex-col cursor-pointer">
           <div className="relative z-10">{icon.icon}</div>
           <div className="relative z-10 text-xs">{icon.name}</div>
           {icon.subCategories && (

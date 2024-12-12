@@ -329,7 +329,7 @@ const DashboardPage = () => {
       <Header />
       <div className="overflow-x-auto h-auto">
         <div
-          className={`flex flex-wrap gap-4 p-4 ${
+          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[200px]"
           }`}
         >
@@ -352,7 +352,7 @@ const DashboardPage = () => {
       </div>
       <div className="overflow-x-auto h-auto">
         <div
-          className={`flex flex-wrap gap-4 p-4 ${
+          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[220px]"
           }`}
         >
