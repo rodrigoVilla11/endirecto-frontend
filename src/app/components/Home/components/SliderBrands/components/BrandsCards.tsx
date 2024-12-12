@@ -24,7 +24,7 @@ const BrandsCards: React.FC<BrandsCardsProps> = ({ name, logo, id, isAuthenticat
   return (
     <div
       onClick={() => handleRedirect(isAuthenticated ? `/catalogue` : `/catalogues`, id)}
-      className="w-24 h-24 bg-transparent shadow-2xl flex items-center justify-center m-6"
+      className=" bg-transparent flex items-center justify-center m-6"
     >
       <img
         src={logo}
