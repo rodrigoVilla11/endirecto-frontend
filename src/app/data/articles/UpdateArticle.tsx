@@ -43,24 +43,30 @@ const UpdateArticleComponent = ({
     }
   };
 
-  const handleUpload = async () => {
-    if (selectedFiles.length > 0) {
-      try {
-        const responses = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const response = await uploadImage(file).unwrap();
-            return response.url;
-          })
-        );
-
-        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
-      } catch (err) {
-        console.error("Error uploading images:", err);
-      }
-    } else {
-      console.error("No files selected");
+  const handleUpload = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) event.preventDefault(); // Prevenir comportamiento por defecto
+  
+    if (selectedFiles.length === 0) {
+      console.error("No hay archivos seleccionados para subir");
+      return;
+    }
+  
+    try {
+      const responses = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const response = await uploadImage(file).unwrap();
+          return response.url;
+        })
+      );
+  
+      setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+      setSelectedFiles([]); // Limpiar los archivos seleccionados después de subir
+    } catch (err) {
+      console.error("Error al subir imágenes:", err);
     }
   };
+  
+  
 
   const [form, setForm] = useState({
     id: "",
@@ -177,14 +183,16 @@ const UpdateArticleComponent = ({
 
         <label className="flex flex-col">
           Images:
-          <div>
+          <div className="flex justify-between p-1">
             <input
               type="file"
               accept="image/*"
               multiple
               onChange={handleFileChange}
             />
-            <button onClick={handleUpload} disabled={isLoadingUpload}>
+            <button onClick={handleUpload} disabled={ selectedFiles.length === 0 && isLoadingUpload}  className={`rounded-md p-2 text-white ${
+              isLoadingUpload ? "bg-gray-500" : "bg-success"
+            }`}>
               {isLoadingUpload ? "Uploading..." : "Upload Images"}
             </button>
 

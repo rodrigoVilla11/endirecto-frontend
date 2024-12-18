@@ -20,7 +20,7 @@ export const itemsApi = createApi({
   }),
   endpoints: (builder) => ({
     getItems: builder.query<Items[], null>({
-      query: () => `/items?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/items/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Items[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron items en la respuesta");

@@ -37,7 +37,7 @@ const CataloguePage = () => {
     item: item,
     tags: tags[0],
     stock: stock,
-    vehicle_brand: vehicleBrand,
+    vehicle_brand: vehicleBrand
   });
 
   const filterBy = "popups";

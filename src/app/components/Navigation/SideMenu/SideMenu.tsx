@@ -149,7 +149,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <BsCash />,
       name: "Current Accounts",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       subCategories: [
         {
           name: "Document Status",
@@ -168,7 +168,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <BsCash />,
       name: "Collections Summaries",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
       getSubCategories: (role: any) => {
         const baseSubCategory = [
           {
@@ -199,10 +199,10 @@ const SideMenu = ({ isOpen }: any) => {
           name: "Pedidos",
           path: "/orders/orders",
         },
-        {
-          name: "Presupuestos",
-          path: "/orders/budgets",
-        },
+        // {
+        //   name: "Presupuestos",
+        //   path: "/orders/budgets",
+        // },
       ],
     },
     {

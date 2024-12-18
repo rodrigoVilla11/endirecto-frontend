@@ -5,7 +5,6 @@ type Brands = {
   name: string;
   images: string;
   sequence: string;
-  hidden: boolean;
 };
 
 type UpdateBrandsPayload = {

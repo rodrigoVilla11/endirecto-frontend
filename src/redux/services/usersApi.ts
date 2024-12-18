@@ -5,8 +5,6 @@ export enum Roles {
   OPERADOR = "OPERADOR",
   MARKETING = "MARKETING",
   VENDEDOR = "VENDEDOR",
-  CUSTOMER = "CUSTOMER",
-  EMPLEADO = "EMPLEADO ",
 }
 
 type User = {

@@ -16,10 +16,18 @@ const Buttons = () => {
     const element = document.getElementById(id);
 
     if (element) {
+      const navbarHeight = document.querySelector('nav')?.clientHeight || 0;
+      const rect = element.getBoundingClientRect();
+      console.log(`Height of ${id}:`, rect.height);
+      
+      console.log(navbarHeight)
       element.scrollIntoView({
         behavior: "smooth",
-        block: "start", // Alinea la parte superior del elemento con la parte superior de la vista
+        block: "start",
       });
+      setTimeout(() => {
+        window.scrollBy(0, -navbarHeight); // Ajustamos el desplazamiento en Y
+      }, 100);
     }
   };
 

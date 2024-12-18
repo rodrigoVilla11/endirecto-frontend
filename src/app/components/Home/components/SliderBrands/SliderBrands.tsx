@@ -12,11 +12,9 @@ const SliderBrands = () => {
   const { isAuthenticated } = useAuth();
   const { data: brands, isLoading, error } = useGetBrandsQuery(null);
 
-  // Filtrar las marcas visibles (hidden: false)
-  const visibleBrands = brands?.filter((brand) => !brand.hidden) || [];
 
   // Procesar los datos de marcas visibles
-  const logos = visibleBrands.map((brand) => ({
+  const logos = brands?.map((brand) => ({
     id: brand.id,
     brand: brand.name,
     logo: brand.images, // Se asume que brand.images es un string (URL)
@@ -31,7 +29,7 @@ const SliderBrands = () => {
     return <div className="text-center py-4">Error al cargar marcas</div>;
   }
 
-  if (!logos.length) {
+  if (!logos?.length) {
     return <div className="text-center py-4">No hay marcas disponibles</div>;
   }
 

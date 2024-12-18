@@ -7,10 +7,10 @@ const Stock = ({ onChange }: any) => {
   const handleButtonClick = (value: string) => {
     if (selectedButton !== value) {
       setSelectedButton(value);
-      onChange(value);
+      onChange(value === "STOCK" ? ["IN-STOCK", "LIMITED-STOCK"] : ["NO-STOCK"]);
     } else {
-      setSelectedButton(""); 
-      onChange(""); 
+      setSelectedButton("");
+      onChange("");
     }
   };
 
@@ -25,26 +25,17 @@ const Stock = ({ onChange }: any) => {
         </label>
         <div className="flex justify-between items-center gap-1">
           <button
-            onClick={() => handleButtonClick("IN-STOCK")}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
-              selectedButton === "IN-STOCK" ? "bg-primary text-white" : ""
+            onClick={() => handleButtonClick("STOCK")}
+            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
+              selectedButton === "STOCK" ? "bg-primary text-white" : ""
             }`}
-            value={"IN-STOCK"}
+            value={"STOCK"}
           >
-            In Stock
-          </button>
-          <button
-            onClick={() => handleButtonClick("LIMITED-STOCK")}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
-              selectedButton === "LIMITED-STOCK" ? "bg-primary text-white" : ""
-            }`}
-            value={"LIMITED-STOCK"}
-          >
-            Limited Stock
+            Stock
           </button>
           <button
             onClick={() => handleButtonClick("NO-STOCK")}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/3 py-1 ${
+            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
               selectedButton === "NO-STOCK" ? "bg-primary text-white" : ""
             }`}
             value={"NO-STOCK"}

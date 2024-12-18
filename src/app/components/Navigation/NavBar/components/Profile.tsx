@@ -15,7 +15,7 @@ const Profile = () => {
     id: selectedClientId || "",
   });
 
-  const { setIsAuthenticated, setRole, userData } = useAuth();
+  const { setIsAuthenticated, setRole, userData, role } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -89,7 +89,7 @@ const Profile = () => {
             >
               <IoPersonOutline /> My Profile
             </li>
-            {selectedClientId && (
+            {selectedClientId && role !== "CUSTOMER" && (
               <>
                 <hr />
                 <li
@@ -100,6 +100,7 @@ const Profile = () => {
                 </li>
               </>
             )}
+
             <hr />
             <li
               onClick={handleLogout}

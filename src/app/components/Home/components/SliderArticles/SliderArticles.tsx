@@ -31,7 +31,7 @@ const SliderArticles = () => {
     );
 
   return (
-    <div className="w-full m-10 px-4">
+    <div className="w-full m-10 px-4" id="articles">
       <Swiper
         modules={[Navigation, Autoplay]}
         spaceBetween={4} // Espaciado entre slides

@@ -9,6 +9,8 @@ import Brands from "./components/Brands";
 import Items from "./components/Items";
 import VehiclesBrands from "./components/VehiclesBrands";
 import { useFilters } from "@/app/context/FiltersContext";
+import { useGetBrandByIdQuery } from "@/redux/services/brandsApi";
+import { useGetItemByIdQuery } from "@/redux/services/itemsApi";
 
 const FilterBox = ({ isVisible, onClose }: any) => {
   const {
@@ -29,6 +31,10 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     setVehicleBrand,
     vehicleBrand,
   } = useFilters();
+
+
+  const { data: dataBrand } = useGetBrandByIdQuery({ id: brand })
+  const { data: dataItem } = useGetItemByIdQuery({ id: item })
 
   return (
     <>
@@ -58,7 +64,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                 )}
                 {brand && brand !== "" && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
-                    {brand}
+                    {dataBrand?.name}
                     <button
                       className="absolute top-0 right-0 text-red-500"
                       onClick={() => setBrand("")}
@@ -69,7 +75,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                 )}
                 {item && item !== "" && (
                   <div className="bg-gray-200 rounded-md p-1 relative m-1">
-                    {item}
+                    {dataItem?.name}
                     <button
                       className="absolute top-0 right-0 text-red-500"
                       onClick={() => setItem("")}
