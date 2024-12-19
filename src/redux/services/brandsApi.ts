@@ -11,7 +11,6 @@ type UpdateBrandsPayload = {
   id: string;
   images: string;
   sequence: string;
-  hidden: boolean;
 };
 
 export const brandsApi = createApi({

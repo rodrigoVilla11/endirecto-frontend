@@ -65,7 +65,6 @@ const UpdateBrandComponent = ({
     images: "" as string,
     sequence: "",
     name: "",
-    hidden: false,
   });
 
   useEffect(() => {
@@ -75,8 +74,7 @@ const UpdateBrandComponent = ({
         id: brand.id ?? "",
         name: brand.name ?? "",
         images: brand.images ?? "",
-        sequence: brand.sequence ?? "",
-        hidden: brand.hidden ?? false,
+        sequence: brand.sequence ?? ""
       });
     }
   }, [brand]);
@@ -168,17 +166,6 @@ const UpdateBrandComponent = ({
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           />
-        </label>
-
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="hidden"
-            checked={form.hidden}
-            onChange={handleCheckboxChange}
-            className="cursor-pointer"
-          />
-          Hidden
         </label>
 
         <label className="flex flex-col">
