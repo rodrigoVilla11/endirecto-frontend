@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { IoIosArrowDown } from "react-icons/io";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { GoDotFill } from "react-icons/go";
+import { AiFillCaretDown } from "react-icons/ai";
 
 interface Icon {
   icon: React.ReactNode;
@@ -70,7 +71,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
           <div className="relative z-10">{icon.icon}</div>
           <div className="relative z-10 text-xs">{icon.name}</div>
           {icon.subCategories && (
-            <IoIosArrowDown
+            <AiFillCaretDown 
               className="text-sm cursor-pointer"
               onClick={() => setIsOpen(true)}
             />
@@ -82,7 +83,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
             <div className="text-left hover:cursor-pointer">{icon.icon}</div>
             <div className="text-sm hover:cursor-pointer">{icon.name}</div>
             {icon.subCategories && (
-              <IoIosArrowDown className="text-sm cursor-pointer" />
+              <AiFillCaretDown className="text-sm cursor-pointer" />
             )}
           </div>
           {isOpen && icon.subCategories && (
@@ -97,13 +98,12 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
                 {icon.subCategories.map((subcategory, index) => (
                   <li
                     key={index}
-                    className="text-sm p-1 hover:cursor-pointer"
+                    className="text-sm p-1 hover:cursor-pointer text-center"
                     onClick={(event) => handleRedirect(subcategory.path, event)}
                   >
                     <div className="flex gap-1 text-center text-xs">
-                      <GoDotFill /> {subcategory.name}
+                     {subcategory.name}
                     </div>
-                    <hr />
                   </li>
                 ))}
               </ul>
