@@ -134,7 +134,9 @@ const UpdateArticleComponent = ({
   if (error) return <p>Error fetching the article.</p>;
 
   return (
-    <div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      {/* Título y botón de cierre */}
       <div className="flex justify-between">
         <h2 className="text-lg mb-4">Update Article</h2>
         <button
@@ -144,7 +146,8 @@ const UpdateArticleComponent = ({
           <IoMdClose />
         </button>
       </div>
-
+  
+      {/* Formulario */}
       <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
         <label className="flex flex-col">
           ID:
@@ -156,7 +159,7 @@ const UpdateArticleComponent = ({
             className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
-
+  
         <label className="flex flex-col">
           Supplier Code:
           <input
@@ -168,7 +171,7 @@ const UpdateArticleComponent = ({
             className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
-
+  
         <label className="flex flex-col">
           Description:
           <textarea
@@ -180,7 +183,7 @@ const UpdateArticleComponent = ({
             className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
-
+  
         <label className="flex flex-col">
           Images:
           <div className="flex justify-between p-1">
@@ -190,16 +193,20 @@ const UpdateArticleComponent = ({
               multiple
               onChange={handleFileChange}
             />
-            <button onClick={handleUpload} disabled={ selectedFiles.length === 0 && isLoadingUpload}  className={`rounded-md p-2 text-white ${
-              isLoadingUpload ? "bg-gray-500" : "bg-success"
-            }`}>
+            <button
+              onClick={handleUpload}
+              disabled={selectedFiles.length === 0 && isLoadingUpload}
+              className={`rounded-md p-2 text-white ${
+                isLoadingUpload ? "bg-gray-500" : "bg-success"
+              }`}
+            >
               {isLoadingUpload ? "Uploading..." : "Upload Images"}
             </button>
-
+  
             {isSuccessUpload && <div>Images uploaded successfully!</div>}
             {isErrorUpload && <div>Error uploading images</div>}
           </div>
-          <div className="border rounded-md p-2">
+          <div className="border rounded-md p-2 overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
                 <tr>
@@ -243,7 +250,7 @@ const UpdateArticleComponent = ({
             </table>
           </div>
         </label>
-
+  
         <label className="flex flex-col">
           PDFs:
           <input
@@ -254,7 +261,7 @@ const UpdateArticleComponent = ({
             className="border border-black rounded-md p-2"
           />
         </label>
-
+  
         <div className="flex justify-end gap-4 mt-4">
           <button
             type="button"
@@ -273,13 +280,15 @@ const UpdateArticleComponent = ({
             {isUpdating ? "Updating..." : "Update"}
           </button>
         </div>
-
+  
         {isSuccess && (
           <p className="text-green-500">Article updated successfully!</p>
         )}
         {isError && <p className="text-red-500">Error updating article</p>}
       </form>
     </div>
+  </div>
+  
   );
 };
 

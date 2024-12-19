@@ -19,6 +19,7 @@ import ButtonsIcons from "./components/ButtonsIcons";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { LucideMessageSquareShare } from "lucide-react";
 
 const SideMenu = ({ isOpen }: any) => {
   const { selectedClientId, setSelectedClientId } = useClient();
@@ -258,7 +259,7 @@ const SideMenu = ({ isOpen }: any) => {
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
-      icon: <MdOutlineQuestionMark />,
+      icon: <LucideMessageSquareShare  />,
       name: "Contact",
       path: "/contact",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],

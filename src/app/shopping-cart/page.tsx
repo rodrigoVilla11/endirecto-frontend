@@ -20,7 +20,6 @@ import DeleteArticleComponent from "./DeleteArticle";
 import Modal from "../components/components/Modal";
 import { FaTrashCan } from "react-icons/fa6";
 
-
 const Page: React.FC = () => {
   const { selectedClientId } = useClient();
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -30,7 +29,8 @@ const Page: React.FC = () => {
 
   const [order, setOrder] = useState<
     { id: string; quantity: number; price: number; total: number }[]
-  >([]);``
+  >([]);
+  ``;
 
   const [updateCustomer] = useUpdateCustomerMutation();
   const {
@@ -49,38 +49,46 @@ const Page: React.FC = () => {
   const { data: articlePricesData, error: pricesError } =
     useGetArticlesPricesQuery(null);
 
-    const articleCount = useMemo(() => {
-      return (
-        customer?.shopping_cart.reduce<Record<string, number>>(
+  const articleCount = useMemo(() => {
+    return (
+      customer?.shopping_cart.reduce<Record<string, number>>(
+        (acc, articleId) => {
+          acc[articleId] = (acc[articleId] || 0) + 1;
+          return acc;
+        },
+        {}
+      ) || {}
+    );
+  }, [customer?.shopping_cart]);
+
+  useEffect(() => {
+    if (customer) {
+      // Definir el tipo explícito para articleQuantity
+      const articleQuantity: Record<string, number> =
+        customer.shopping_cart.reduce(
           (acc, articleId) => {
             acc[articleId] = (acc[articleId] || 0) + 1;
             return acc;
           },
-          {}
-        ) || {}
-      );
-    }, [customer?.shopping_cart]);
+          {} as Record<string, number> // Inicializar el objeto como un Record<string, number>
+        );
 
-    useEffect(() => {
-      if (customer) {
-        const initialOrder = customer.shopping_cart.map((articleId) => {
-          const article = articles?.find((data) => data.id === articleId);
-          const quantity = articleCount[articleId] || 1;
-          const price =
-            articlePricesData?.find((data) => data.article_id === articleId)
-              ?.price || 0;
-          const total = price * quantity;
-  
-          return { id: articleId, quantity, price, total };
-        });
-  
-        setOrder(initialOrder); // Establecer el pedido con todos los artículos incluidos
-      }
-    }, [customer, articles, articlePricesData, articleCount]);
-  
-  
+      // Ahora mapeamos el carrito inicial considerando las cantidades ya agrupadas
+      const initialOrder = Object.keys(articleQuantity).map((articleId) => {
+        const article = articles?.find((data) => data.id === articleId);
+        const quantity = articleQuantity[articleId]; // Usar la cantidad agrupada
+        const price =
+          articlePricesData?.find((data) => data.article_id === articleId)
+            ?.price || 0;
+        const total = price * quantity;
 
-    
+        return { id: articleId, quantity, price, total };
+      });
+
+      setOrder(initialOrder); // Establecer el pedido con todos los artículos incluidos
+    }
+  }, [customer, articles, articlePricesData]);
+
   const openDeleteModal = (id: string) => {
     setCurrentArticleId(encodeURIComponent(id));
     setDeleteModalOpen(true);
@@ -105,12 +113,11 @@ const Page: React.FC = () => {
       });
       refetchCustomer();
       closeConfirmModal();
-      setOrder([]); // Vaciar el array 'order' también
+      setOrder([]);
     } catch (err) {
       console.error("Error emptying the cart:", err);
     }
   };
-
 
   const uniqueArticleIds = useMemo(
     () => Array.from(new Set(customer?.shopping_cart)),
@@ -157,114 +164,117 @@ const Page: React.FC = () => {
 
   const filteredArticles = useMemo(() => {
     const result = uniqueArticleIds.filter((articleId) => {
-        const article = articles?.find((data) => data.id === articleId);
-        return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const article = articles?.find((data) => data.id === articleId);
+      return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
     console.log("Filtered Articles:", result); // Ver cuántos artículos hay
     return result;
-}, [articles, uniqueArticleIds, searchTerm]);
+  }, [articles, uniqueArticleIds, searchTerm]);
 
+  const handleIncludeToggle = (articleId: string, included: boolean) => {
+    const article = articles?.find((data) => data.id === articleId);
+    if (!article) return;
 
-const handleIncludeToggle = (articleId: string, included: boolean) => {
-  const article = articles?.find((data) => data.id === articleId);
-  if (!article) return;
+    const quantity = articleCount[articleId] || 1;
+    const price =
+      articlePricesData?.find((data) => data.article_id === articleId)?.price ||
+      0;
+    const total = price * quantity;
 
-  const quantity = articleCount[articleId] || 1;
-  const price =
-    articlePricesData?.find((data) => data.article_id === articleId)?.price ||
-    0;
-  const total = price * quantity;
-
-  setOrder((prevOrder) => {
-    if (included) {
-      // Verificar si el artículo ya está en 'order'
-      const existingItem = prevOrder.find((item) => item.id === articleId);
-      if (existingItem) {
-        // Actualizar cantidad y total
-        return prevOrder.map((item) =>
-          item.id === articleId ? { ...item, quantity, total } : item
-        );
+    setOrder((prevOrder) => {
+      if (included) {
+        // Verificar si el artículo ya está en 'order'
+        const existingItem = prevOrder.find((item) => item.id === articleId);
+        if (existingItem) {
+          // Actualizar cantidad y total
+          return prevOrder.map((item) =>
+            item.id === articleId ? { ...item, quantity, total } : item
+          );
+        } else {
+          // Agregar nuevo artículo
+          return [...prevOrder, { id: articleId, quantity, price, total }];
+        }
       } else {
-        // Agregar nuevo artículo
-        return [...prevOrder, { id: articleId, quantity, price, total }];
+        // Eliminar artículo de 'order'
+        return prevOrder.filter((item) => item.id !== articleId);
       }
-    } else {
-      // Eliminar artículo de 'order'
-      return prevOrder.filter((item) => item.id !== articleId);
-    }
-  });
-};
-
+    });
+  };
 
   const totalPedido = order.reduce((acc, item) => acc + item.total, 0);
   const cantidadObjetos = order.reduce((acc, item) => acc + item.quantity, 0); // Sumar cantidades
 
   const tableData = useMemo(() => {
-    return filteredArticles.map((articleId) => {
-      const article = articles?.find((data) => data.id === articleId);
-      const stock = stockData?.find((data) => data.article_id === article?.id);
-      const articlePrice = articlePricesData?.find(
-        (data) => data.article_id === article?.id
-      );
-      const brand = brandData?.find((data) => data.id === article?.brand_id);
-      const quantity = articleCount[articleId] || 1;
-      const price = articlePrice?.price || 0;
-
-      const formattedPrice = formatNumber(price);
-      const totalPrice = price * quantity;
-      const formattedTotal = formatNumber(totalPrice);
-
-      const isIncluded = order.some((item) => item.id === articleId);
-
-      return {
-        key: article?.id,
-        included: (
-          <ButtonOnOff
-            title=""
-            active={isIncluded}
-            onChange={(newValue: boolean) =>
-              handleIncludeToggle(articleId, newValue)
-            }
-          />
-        ),
-        brand: brand?.name || "NO BRAND",
-        image: article?.images?.[0] ? (
-          <img
-            src={article.images[0]}
-            alt={article.name || "Article Image"}
-            className="h-16 w-16 object-contain rounded-md"
-          />
-        ) : (
-          "No Image"
-        ),
-        name: article?.name || "Unknown Article",
-        stock: stock?.quantity || 0,
-        price: `$ ${formattedPrice} + impuestos`,
-        quantity: (
-          <input
-            type="number"
-            value={quantity}
-            className="w-20 text-center border rounded-md"
-            min={1}
-            onChange={(e) => {
-              const newQuantity = Number(e.target.value);
-              if (!isNaN(newQuantity) && newQuantity >= 1) {
-                handleUpdate(articleId, newQuantity);
+    return filteredArticles
+      .map((articleId) => {
+        const article = articles?.find((data) => data.id === articleId);
+        const stock = stockData?.find((data) => data.article_id === article?.id);
+        const articlePrice = articlePricesData?.find(
+          (data) => data.article_id === article?.id
+        );
+        const brand = brandData?.find((data) => data.id === article?.brand_id);
+        const quantity = articleCount[articleId] || 1;
+        const price = articlePrice?.price || 0;
+  
+        const formattedPrice = formatNumber(price);
+        const totalPrice = price * quantity;
+        const formattedTotal = formatNumber(totalPrice);
+  
+        const isIncluded = order.some((item) => item.id === articleId);
+  
+        return {
+          key: article?.id,
+          included: (
+            <ButtonOnOff
+              title=""
+              active={isIncluded}
+              onChange={(newValue: boolean) =>
+                handleIncludeToggle(articleId, newValue)
               }
-            }}
-          />
-        ),
-        total: `$ ${formattedTotal} + impuestos`,
-        erase: (
-          <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openDeleteModal(article?.id || "")}
             />
-          </div>
-        ),
-      };
-    });
+          ),
+          brand: brand?.name || "NO BRAND",
+          image: article?.images?.[0] ? (
+            <img
+              src={article.images[0]}
+              alt={article.name || "Article Image"}
+              className="h-16 w-16 object-contain rounded-md"
+            />
+          ) : (
+            "No Image"
+          ),
+          name: article?.name || "Unknown Article",
+          stock: stock?.quantity || 0,
+          price: `$ ${formattedPrice} + impuestos`,
+          quantity: (
+            <input
+              type="number"
+              value={quantity}
+              className="w-20 text-center border rounded-md"
+              min={1}
+              onChange={(e) => {
+                const newQuantity = Number(e.target.value);
+                if (!isNaN(newQuantity) && newQuantity >= 1) {
+                  handleUpdate(articleId, newQuantity);
+                }
+              }}
+            />
+          ),
+          total: `$ ${formattedTotal} + impuestos`,
+          erase: (
+            <div className="flex justify-center items-center">
+              <FaTrashCan
+                className="text-center text-lg hover:cursor-pointer"
+                onClick={() => openDeleteModal(article?.id || "")}
+              />
+            </div>
+          ),
+        };
+      })
+      .sort((a, b) => {
+        // Ordena los artículos, por ejemplo, por su ID o nombre
+        return a.name.localeCompare(b.name); // o a.id - b.id si prefieres ordenar por ID
+      });
   }, [
     filteredArticles,
     articles,
@@ -274,6 +284,7 @@ const handleIncludeToggle = (articleId: string, included: boolean) => {
     articleCount,
     order,
   ]);
+  
 
   const tableHeader = [
     { name: "Incluir", key: "included" },
@@ -360,7 +371,13 @@ const handleIncludeToggle = (articleId: string, included: boolean) => {
 
   return (
     <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
     >
       <div className="gap-4">
         <h3 className="font-bold p-4">Shopping Cart</h3>

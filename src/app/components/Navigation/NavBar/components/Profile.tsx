@@ -49,9 +49,13 @@ const Profile = () => {
   };
 
   const handleDeselectCustomer = () => {
-    setSelectedClientId("");
-    setIsMenuOpen(false);
+    router.push("/selectCustomer"); // Realiza la navegación
+    setTimeout(() => {
+      setSelectedClientId(""); // Limpia el cliente seleccionado después de un breve retraso
+      setIsMenuOpen(false);
+    }, 50); // Ajusta el tiempo según sea necesario (50 ms es un valor común para este caso)
   };
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,7 +77,9 @@ const Profile = () => {
         onClick={toggleMenu}
       >
         <div className="rounded-full h-10 w-10 bg-white flex justify-center items-center">
-          <p>{getInitial()}</p>
+         
+          {data?.profileImg ? <img src={data.profileImg} className="rounded-full h-10 w-10" /> :  <p>{getInitial()}</p>}
+
         </div>
         <div className="flex justify-center items-center text-white">
           <p>{selectedClientId ? data?.name : userData?.username}</p>

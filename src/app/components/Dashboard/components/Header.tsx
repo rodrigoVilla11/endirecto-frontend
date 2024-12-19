@@ -12,8 +12,8 @@ const Header = () => {
 
   // Verificación de datos disponibles solo cuando se cumple la condición
   const firstLetter = selectedClientId
-    ? data?.name?.charAt(0) || ""  // Se asigna una letra vacía si 'data' no tiene valor
-    : userData?.username?.charAt(0) || "";  // Se asigna una letra vacía si 'userData' no tiene valor
+    ? data?.name?.charAt(0) || "" // Se asigna una letra vacía si 'data' no tiene valor
+    : userData?.username?.charAt(0) || ""; // Se asigna una letra vacía si 'userData' no tiene valor
 
   const displayName = selectedClientId ? data?.name : userData?.username;
   const userRole = userData?.role?.toUpperCase() || "No role available"; // Asegura que haya un valor para el rol
@@ -22,13 +22,14 @@ const Header = () => {
     <div className="h-44 mx-5 bg-white p-10 flex justify-between mt-8">
       <div className="flex items-center gap-4">
         <div className="rounded-full h-14 w-14 bg-secondary text-white flex justify-center items-center text-xl">
-          <p>{firstLetter}</p>
+          {data?.profileImg ? <img src={data.profileImg} className="rounded-full h-14 w-14" /> : <p>{firstLetter}</p>}
         </div>
         <div>
           <p className="text-sm">
             Welcome to Distribuidora Mayorista de Autopiezas
           </p>
-          <p className="text-lg mt-4">{displayName || "No Name Available"}</p> {/* Valor por defecto si no hay nombre */}
+          <p className="text-lg mt-4">{displayName || "No Name Available"}</p>{" "}
+          {/* Valor por defecto si no hay nombre */}
           <p className="text-sm">{userRole}</p>
         </div>
       </div>

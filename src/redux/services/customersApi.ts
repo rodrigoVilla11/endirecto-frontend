@@ -32,6 +32,7 @@ type Customer = {
   instance: Instance;
   logo: string;
   password: string
+  profileImg: string;
 };
 
 type UpdateCustomersPayload = {
@@ -43,6 +44,7 @@ type UpdateCustomersPayload = {
   favourites?: string[];
   instance?: Instance;
   password?: string
+  profileImg?: string;
 };
 
 export const customerApi = createApi({
