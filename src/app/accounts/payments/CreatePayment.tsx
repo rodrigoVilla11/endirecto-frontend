@@ -10,7 +10,7 @@ import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 
 enum status {
-  "PENDING" = "PENDING",
+  PENDING = "PENDING",
   SENDED = "SENDED",
   SUMMARIZED = "SUMMARIZED",
   CHARGED = "CHARGED",

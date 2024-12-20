@@ -16,6 +16,10 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useClient } from "@/app/context/ClientContext";
+import { FaPlus } from "react-icons/fa";
+import Modal from "@/app/components/components/Modal";
+import CreateInstanceComponent from "./CreateInstance";
+import Instance from "./Instance";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -24,6 +28,7 @@ const Page = () => {
   const { data: sellersData } = useGetSellersQuery(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { selectedClientId } = useClient();
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -37,6 +42,12 @@ const Page = () => {
     endDate: endDate ? endDate.toISOString() : undefined,
     customer_id,
   });
+
+  const openCreateModal = () => setCreateModalOpen(true);
+  const closeCreateModal = () => {
+    setCreateModalOpen(false);
+    refetch();
+  };
 
   useEffect(() => {
     if (selectedClientId) {
@@ -53,6 +64,7 @@ const Page = () => {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
+  
   const tableData = data?.map((document) => {
     const customer = customersData?.find(
       (data) => data.id == document.customer_id
@@ -116,6 +128,7 @@ const Page = () => {
         logo: <AiOutlineDownload />,
         title: "Download",
       },
+      { logo: <FaPlus />, title: "New Instance", onClick: openCreateModal },
     ],
     filters: [
       {
@@ -191,6 +204,7 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />
+        <Instance selectedClientId={selectedClientId}/>
         <Table headers={tableHeader} data={tableData} />
 
         <div className="flex justify-between items-center p-4">
@@ -213,6 +227,9 @@ const Page = () => {
           </button>
         </div>
       </div>
+      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+        <CreateInstanceComponent closeModal={closeCreateModal} />
+      </Modal>
     </PrivateRoute>
   );
 };

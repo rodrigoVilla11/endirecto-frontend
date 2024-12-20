@@ -7,9 +7,18 @@ export enum InstanceType {
   PAYMENT_CLAIM = "PAYMENT CLAIM"
 }
 
+
 export interface Instance {
   type: InstanceType;
+  priority: PriorityInstance;
   notes: string;
+}
+
+
+export enum PriorityInstance {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW'
 }
 
 type Customer = {
