@@ -72,7 +72,7 @@ const Page = () => {
     if (
       !isLoading &&
       customersItems.length === 0 &&
-      items &&
+      items.length > 0 &&
       selectedClientId
     ) {
       const missingItems = items.filter(
@@ -81,17 +81,21 @@ const Page = () => {
       );
   
       if (missingItems.length > 0) {
-        missingItems.forEach((item) => {
-          // Crear un ítem individualmente
-          createCustomersItems({
-            margin: 50, // Puedes ajustar el valor del margen
-            item_id: item.id,
-            customer_id: selectedClientId,
-          });
+        Promise.all(
+          missingItems.map((item) =>
+            createCustomersItems({
+              margin: 50,
+              item_id: item.id,
+              customer_id: selectedClientId,
+            })
+          )
+        ).then(() => {
+          refetch(); // Refetch después de crear los ítems
         });
       }
     }
   }, [customersItems, items, selectedClientId, createCustomersItems, isLoading]);
+  
   
   const handleMarginChange = (id: string, value: number) => {
     setEditedMargins((prev) => ({
@@ -102,30 +106,30 @@ const Page = () => {
 
   const handleSave = async (id: string) => {
     const updatedMargin = editedMargins[id];
-
+  
     if (isNaN(updatedMargin) || updatedMargin < 0) {
       alert("Please enter a valid positive number.");
       return;
     }
-
+  
     try {
       await updateCustomersItems({
         _id: id,
         margin: updatedMargin,
       }).unwrap();
-
+  
       setEditedMargins((prev) => {
         const updated = { ...prev };
         delete updated[id];
         return updated;
       });
-
+  
       refetch();
     } catch (error) {
       console.error("Error al actualizar el margin", error);
     }
   };
-
+  
   const tableData =
     customersItems?.map((customerItem) => {
       const item = items?.find((data) => data.id === customerItem.item_id);

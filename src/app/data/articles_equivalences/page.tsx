@@ -7,7 +7,6 @@ import { FaImage } from "react-icons/fa6";
 import {
   useCountArticleVehicleQuery,
   useGetArticlesVehiclesPagQuery,
-  useGetArticlesVehiclesQuery,
 } from "@/redux/services/articlesVehicles";
 import {
   useGetAllArticlesQuery,
