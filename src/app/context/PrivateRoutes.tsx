@@ -23,8 +23,6 @@ const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {
       if (!isAuthenticated) {
         router.push("/login");
       } else if (requiredRoles && !requiredRoles.some(r => r.toUpperCase() === role?.toUpperCase())) {
-        console.log(requiredRoles, "requiredRoles");
-        console.log(role, "role");
         router.push("/unauthorized");
       }
     }

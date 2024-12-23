@@ -7,26 +7,24 @@ import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { FaTrashCan } from "react-icons/fa6";
 
-type UpdateBannerComponentProps = {
+type UpdateHeaderComponentProps = {
   marketingId: string;
   closeModal: () => void;
 };
 
 type FormState = {
   _id: string;
-  headers: {
-    name: string;
-    sequence: number;
+  header: {
     enable: boolean;
-    homeWeb: string;
+    img: string;
     url: string;
   };
 };
 
-const UpdateBannerComponent = ({
+const UpdateHeaderComponent = ({
   marketingId,
   closeModal,
-}: UpdateBannerComponentProps) => {
+}: UpdateHeaderComponentProps) => {
   const {
     data: header,
     error,
@@ -38,11 +36,9 @@ const UpdateBannerComponent = ({
 
   const [form, setForm] = useState<FormState>({
     _id: "",
-    headers: {
-      name: "",
-      sequence: 0,
+    header: {
       enable: false,
-      homeWeb: "",
+      img: "",
       url: "",
     },
   });
@@ -63,12 +59,10 @@ const UpdateBannerComponent = ({
     if (header) {
       setForm({
         _id: header._id,
-        headers: {
-          name: header.headers.name,
-          sequence: header.headers.sequence,
-          enable: header.headers.enable,
-          homeWeb: header.headers.homeWeb,
-          url: header.headers.url,
+        header: {
+          enable: header.header.enable,
+          img: header.header.img,
+          url: header.header.url,
         },
       });
     }
@@ -99,7 +93,7 @@ const UpdateBannerComponent = ({
     setForm((prevForm) => ({
       ...prevForm,
       headers: {
-        ...prevForm.headers,
+        ...prevForm.header,
         [name]: name === "sequence" ? Number(value) : value,
       },
     }));
@@ -110,9 +104,9 @@ const UpdateBannerComponent = ({
     try {
       const updatedForm = {
         ...form,
-        headers: {
-          ...form.headers,
-          homeWeb: homeUploadResponse || form.headers.homeWeb,
+        header: {
+          ...form.header,
+          img: homeUploadResponse || form.header.img,
         },
       };
       await updateMarketing(updatedForm).unwrap();
@@ -122,23 +116,23 @@ const UpdateBannerComponent = ({
     }
   };
 
-  const handleRemoveImage = (imageType: "homeWeb" | "headerWeb") => {
+  const handleRemoveImage = () => {
     setForm((prevForm) => ({
       ...prevForm,
       headers: {
-        ...prevForm.headers,
-        [imageType]: "",
+        ...prevForm.header,
+        img: "",
       },
     }));
   };
 
   if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the banner data.</p>;
+  if (error) return <p>Error fetching the header data.</p>;
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Banner</h2>
+        <h2 className="text-lg mb-4">Update Header</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -149,27 +143,7 @@ const UpdateBannerComponent = ({
 
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
-          <label className="flex flex-col text-sm">
-            Name:
-            <input
-              name="name"
-              value={form.headers.name}
-              placeholder="Banner Name"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-1 text-sm"
-            />
-          </label>
 
-          <label className="flex flex-col text-sm">
-            Sequence:
-            <input
-              type="number"
-              name="sequence"
-              value={form.headers.sequence}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-1 text-sm"
-            />
-          </label>
 
           <label className="flex flex-col text-sm">
             Enable:
@@ -179,25 +153,25 @@ const UpdateBannerComponent = ({
                 setForm((prevForm) => ({
                   ...prevForm,
                   headers: {
-                    ...prevForm.headers,
-                    enable: !prevForm.headers.enable,
+                    ...prevForm.header,
+                    enable: !prevForm.header.enable,
                   },
                 }))
               }
               className={`p-1 rounded-md text-sm ${
-                form.headers.enable
+                form.header.enable
                   ? "bg-green-500 text-white"
                   : "bg-red-500 text-white"
               }`}
             >
-              {form.headers.enable ? "Enabled" : "Disabled"}
+              {form.header.enable ? "Enabled" : "Disabled"}
             </button>
           </label>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Home Image:
+            Image:
             <input
               type="file"
               accept="image/*"
@@ -211,16 +185,16 @@ const UpdateBannerComponent = ({
             >
               {isLoadingUpload ? "Uploading..." : "Upload Image"}
             </button>
-            {form.headers.homeWeb && (
+            {form.header.img && (
               <div className="flex items-center gap-2 mt-1">
                 <img
-                  src={form.headers.homeWeb}
-                  alt="Home Banner"
+                  src={form.header.img}
+                  alt="Header Img"
                   className="h-20 w-full rounded-md"
                 />
                 <button
                   type="button"
-                  onClick={() => handleRemoveImage("homeWeb")}
+                  onClick={() => handleRemoveImage()}
                   className="text-red-500 text-sm"
                 >
                   <FaTrashCan />
@@ -234,8 +208,8 @@ const UpdateBannerComponent = ({
           URL:
           <textarea
             name="url"
-            value={form.headers.url}
-            placeholder="Banner URL"
+            value={form.header.url}
+            placeholder="Header URL"
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-1 text-sm"
           />
@@ -262,12 +236,12 @@ const UpdateBannerComponent = ({
 
         {isSuccess && (
           <p className="col-span-2 text-green-500 text-sm">
-            Banner updated successfully!
+            Header updated successfully!
           </p>
         )}
         {isError && (
           <p className="col-span-2 text-red-500 text-sm">
-            Error updating banner
+            Error updating header
           </p>
         )}
       </form>
@@ -275,4 +249,4 @@ const UpdateBannerComponent = ({
   );
 };
 
-export default UpdateBannerComponent;
+export default UpdateHeaderComponent;

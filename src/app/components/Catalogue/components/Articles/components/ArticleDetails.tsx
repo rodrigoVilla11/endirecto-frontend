@@ -8,8 +8,10 @@ import CostPrice from "./CostPrice";
 import SuggestedPrice from "./SuggestedPrice";
 import AddToCart from "./AddToCart";
 import Description from "./Description/Description";
+import { useClient } from "@/app/context/ClientContext";
 
 const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, toggleShoppingCart, quantity, setQuantity} : any) => {
+    const { selectedClientId } = useClient();  
   return (
     <div>
       <div className="flex justify-between">
@@ -32,7 +34,7 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
           <StripeStock articleId={article.id} />
           <ArticleName name={article.name} id={article.id} />
           <div className="pb-4">
-          <CostPrice articleId={article.id} />
+          <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
           <hr className="my-4"/>
           <SuggestedPrice articleId={article.id} />
           </div>

@@ -49,7 +49,6 @@ const LoginPage = () => {
         branch: data.branch,
       };
 
-      console.log(userData._id.length);
 
       if (userData._id.length < 10) {
         setSelectedClientId(userData._id);

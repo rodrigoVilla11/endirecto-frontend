@@ -1,16 +1,32 @@
 import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useClient } from "@/app/context/ClientContext";
 
 const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
+  const { selectedClientId } = useClient();
 
-  const priceEntry = data?.find((item) => item.price_list_id === "3");
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
+  const priceEntry = data?.find((item) => item.price_list_id === customer?.price_list_id);
   const price = priceEntry ? priceEntry.price : "N/A";
 
+  // Función para calcular el precio con IVA
+  const calculatePriceWithVAT = (price: any, vatRate: number) => {
+    if (typeof price === "number") {
+      return price + price * (vatRate / 100);
+    }
+    return "N/A";
+  };
+
+  const priceWithVAT = calculatePriceWithVAT(price, 21); // 21% de IVA
+
   // Función para formatear el precio con separadores de miles
-  const formatPrice = (price :any) => {
+  const formatPrice = (price: any) => {
     if (typeof price === "number") {
       const formatted = new Intl.NumberFormat("es-AR", {
         style: "decimal",
@@ -22,7 +38,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
     return ["N/A", ""];
   };
 
-  const [integerPart, decimalPart] = formatPrice(price);
+  const [integerPart, decimalPart] = formatPrice(priceWithVAT);
 
   return (
     <div
@@ -30,10 +46,15 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
         showPurchasePrice ? "text-xs" : "text-xs"
       } pb-2 h-4`}
     >
-      <p>Suggested Price</p>
+      <p>Suggested Price (with VAT)</p>
       <p>
-        $<span className="font-semibold text-gray-600 text-lg">{integerPart}</span>
-        {decimalPart && <span className="font-semibold text-gray-600">,{decimalPart}</span>}
+        $
+        <span className="font-semibold text-gray-600 text-lg">
+          {integerPart}
+        </span>
+        {decimalPart && (
+          <span className="font-semibold text-gray-600">,{decimalPart}</span>
+        )}
       </p>
     </div>
   );

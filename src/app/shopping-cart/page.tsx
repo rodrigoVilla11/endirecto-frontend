@@ -30,8 +30,7 @@ const Page: React.FC = () => {
   const [order, setOrder] = useState<
     { id: string; quantity: number; price: number; total: number }[]
   >([]);
-  ``;
-
+  
   const [updateCustomer] = useUpdateCustomerMutation();
   const {
     data: customer,
@@ -84,7 +83,6 @@ const Page: React.FC = () => {
 
         return { id: articleId, quantity, price, total };
       });
-
       setOrder(initialOrder); // Establecer el pedido con todos los artículos incluidos
     }
   }, [customer, articles, articlePricesData]);
@@ -123,6 +121,7 @@ const Page: React.FC = () => {
     () => Array.from(new Set(customer?.shopping_cart)),
     [customer?.shopping_cart]
   );
+
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("es-ES", {
@@ -163,11 +162,12 @@ const Page: React.FC = () => {
   };
 
   const filteredArticles = useMemo(() => {
+    console.log("uniqueArticleIds",uniqueArticleIds)
     const result = uniqueArticleIds.filter((articleId) => {
       const article = articles?.find((data) => data.id === articleId);
+      console.log("article",article)
       return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
-    console.log("Filtered Articles:", result); // Ver cuántos artículos hay
     return result;
   }, [articles, uniqueArticleIds, searchTerm]);
 
@@ -208,20 +208,22 @@ const Page: React.FC = () => {
     return filteredArticles
       .map((articleId) => {
         const article = articles?.find((data) => data.id === articleId);
-        const stock = stockData?.find((data) => data.article_id === article?.id);
+        const stock = stockData?.find(
+          (data) => data.article_id === article?.id
+        );
         const articlePrice = articlePricesData?.find(
           (data) => data.article_id === article?.id
         );
         const brand = brandData?.find((data) => data.id === article?.brand_id);
         const quantity = articleCount[articleId] || 1;
         const price = articlePrice?.price || 0;
-  
+
         const formattedPrice = formatNumber(price);
         const totalPrice = price * quantity;
         const formattedTotal = formatNumber(totalPrice);
-  
+
         const isIncluded = order.some((item) => item.id === articleId);
-  
+
         return {
           key: article?.id,
           included: (
@@ -284,7 +286,6 @@ const Page: React.FC = () => {
     articleCount,
     order,
   ]);
-  
 
   const tableHeader = [
     { name: "Incluir", key: "included" },

@@ -8,10 +8,12 @@ import { useArticleId } from "@/app/context/AritlceIdContext";
 import { useRouter } from "next/navigation";
 import SuggestedPrice from "../../Catalogue/Articles/components/SuggestedPrice";
 import CostPrice from "../../Catalogue/Articles/components/CostPrice";
+import { useClient } from "@/app/context/ClientContext";
 
 const CardArticles = ({ article }: any) => {
   const { isAuthenticated } = useAuth();
   const encodedId = encodeURIComponent(article.id);
+  const { selectedClientId } = useClient();
 
   const { setArticleId } = useArticleId();
 
@@ -57,13 +59,13 @@ const CardArticles = ({ article }: any) => {
         <p className="text-xs text-gray-500 mb-2 line-clamp-2">{article.description}</p>
 
         {/* Cost Price (if authenticated) */}
-        {isAuthenticated && <CostPrice articleId={article.id} />}
+        {selectedClientId && <CostPrice articleId={article.id} selectedClientId={selectedClientId} />}
 
         {/* Divider */}
-        {isAuthenticated && <hr className="border-gray-300 my-4" />}
+        {selectedClientId && <hr className="border-gray-300 my-4" />}
 
         {/* Suggested Price */}
-        {isAuthenticated && <SuggestedPrice
+        {selectedClientId && <SuggestedPrice
           articleId={article.id}
           showPurchasePrice={isAuthenticated}
         />}

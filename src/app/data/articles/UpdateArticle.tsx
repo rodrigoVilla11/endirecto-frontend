@@ -135,7 +135,8 @@ const UpdateArticleComponent = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
+    
       {/* Título y botón de cierre */}
       <div className="flex justify-between">
         <h2 className="text-lg mb-4">Update Article</h2>

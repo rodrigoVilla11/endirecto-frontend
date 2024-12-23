@@ -27,7 +27,6 @@ const SideMenu = ({ isOpen }: any) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsMenuOpen(false);
@@ -36,20 +35,31 @@ const SideMenu = ({ isOpen }: any) => {
     setSelectedClientId("");
     setRole(null);
   };
-  
 
   const icons = [
     {
       icon: <MdDashboard />,
       name: "Dashboard",
       path: "/dashboard",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       icon: <MdOutlineShoppingBag />,
       name: "Catalogue",
       path: "/catalogue",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       icon: <IoIosLaptop />,
@@ -134,6 +144,10 @@ const SideMenu = ({ isOpen }: any) => {
           name: "Tags",
           path: "/marketing/tags",
         },
+        {
+          name: "Headers",
+          path: "/marketing/headers",
+        },
         // { name: "Articles", path: "/data/articles" },
         // { name: "Brands", path: "/data/brands"  },
         // { name: "Families", path: "/marketing/families"  },
@@ -150,7 +164,13 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <BsCash />,
       name: "Current Accounts",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       subCategories: [
         {
           name: "Document Status",
@@ -170,35 +190,37 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <BsCash />,
       name: "Collections Summaries",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-      getSubCategories: (role: any) => {
-        const baseSubCategory = [
-          {
-            name: "Collections Summaries",
-            path: "/collections/summaries",
-          },
-        ];
+      subCategories: [
+        {
+          name: "Collections Summaries",
+          path: "/collections/summaries",
+        },
 
-        if (role === "ADMINISTRADOR") {
-          return [
-            ...baseSubCategory,
-            {
-              name: "Collections Unsummaries",
-              path: "/collections/unsummaries",
-            },
-          ];
-        }
-
-        return baseSubCategory;
-      },
+        {
+          name: "Collections Unsummaries",
+          path: "/collections/unsummaries",
+        },
+      ],
     },
     {
       icon: <CgShoppingCart />,
       name: "Orders",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       subCategories: [
         {
           name: "Pedidos",
           path: "/orders/orders",
+        },
+        selectedClientId &&
+        {
+          name: "Shopping Cart",
+          path: "/shopping-cart",
         },
         // {
         //   name: "Presupuestos",
@@ -216,19 +238,37 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <FaHeart />,
       name: "Favourites",
       path: "/favourites",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     // { icon: <FaRegClock />, name: "Pendings", path: "/pendings", allowedRoles: ["ADMINISTRADOR"]  },
     {
       icon: <MdNotificationsNone />,
       name: "Notifications",
       path: "/notifications",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       icon: <PiDownloadSimpleBold />,
       name: "Downloads",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       subCategories: [
         {
           name: "Lists Prices Downloads",
@@ -244,7 +284,13 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <MdOutlineInfo />,
       name: "Reclaims",
       path: "/reclaims",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       icon: <ImStatsDots />,
@@ -256,19 +302,37 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <MdOutlineQuestionMark />,
       name: "FAQ",
       path: "/faqs",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
-      icon: <LucideMessageSquareShare  />,
+      icon: <LucideMessageSquareShare />,
       name: "Contact",
       path: "/contact",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     }, //FALTA HACER CONTACT
     {
       icon: <IoPersonOutline />,
       name: "My Profile",
       path: "/profile/my-profile",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       getSubCategories: (role: any, selectedClientId: any) => {
         const allSubCategories = [
           {
@@ -299,7 +363,13 @@ const SideMenu = ({ isOpen }: any) => {
       icon: <FaPowerOff />,
       name: "LogOut",
       onClick: handleLogout,
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
   ];
   const [openSubCategory, setOpenSubCategory] = useState<string | null>(null);

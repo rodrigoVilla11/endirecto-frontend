@@ -1,14 +1,24 @@
+import { useClient } from "@/app/context/ClientContext";
 import {
   useGetArticlePriceByArticleIdQuery,
 } from "@/redux/services/articlesPricesApi";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import React from "react";
 
-const CostPrice = ({ articleId, onlyPrice }: any) => {
+const CostPrice = ({ articleId, onlyPrice}: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
+  const { selectedClientId } = useClient();
 
-  const priceEntry = data?.find((item) => item.price_list_id === "1");
+  
+     const {
+        data: customer
+      } = useGetCustomerByIdQuery({
+        id: selectedClientId || "",
+      });
+
+  const priceEntry = data?.find((item) => item.price_list_id === customer?.price_list_id);
   const price = priceEntry ? priceEntry.price : "N/A";
 
   // Función para formatear el precio con separadores de miles

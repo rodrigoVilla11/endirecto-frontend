@@ -18,9 +18,7 @@ const Buttons = () => {
     if (element) {
       const navbarHeight = document.querySelector('nav')?.clientHeight || 0;
       const rect = element.getBoundingClientRect();
-      console.log(`Height of ${id}:`, rect.height);
       
-      console.log(navbarHeight)
       element.scrollIntoView({
         behavior: "smooth",
         block: "start",

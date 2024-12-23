@@ -10,10 +10,10 @@ import {
   useCountMarketingQuery,
   useGetMarketingByFilterQuery,
 } from "@/redux/services/marketingApi";
-import DeleteBannerComponent from "./DeleteBanner";
-import UpdateBannerComponent from "./UpdateBanner";
-import CreateBannerComponent from "./CreateBanner";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import CreateHeaderComponent from "./CreateHeader";
+import UpdateHeaderComponent from "./UpdateHeader";
+import DeleteHeaderComponent from "./DeleteHeader";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -25,7 +25,8 @@ const Page = () => {
     null
   );
 
-  const filterBy = "headers";
+  const filterBy = "header";
+
   const {
     data: marketing,
     error,
@@ -65,24 +66,22 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData =
-    marketing?.map((popup) => {
+    marketing?.map((item) => {
       return {
-        key: popup._id,
-        name: popup.headers.name,
-        sequence: popup.headers.sequence,
-        enable: popup.headers.enable ? "true" : "false",
-        homeWeb:
+        key: item._id,
+        enable: item.header.enable ? "true" : "false",
+        img:
           (
             <div className="flex justify-center items-center">
-              <img src={popup.headers.homeWeb && popup.headers.homeWeb} className="h-10"/>
+              <img src={item.header.img && item.header.img} className="h-10"/>
             </div>
           ) ,
-        url: popup.headers.url,
+        url: item.header.url , 
         edit: (
           <div className="flex justify-center items-center">
             <FaPencil
               className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openUpdateModal(popup._id)}
+              onClick={() => openUpdateModal(item._id)}
             />
           </div>
         ),
@@ -90,7 +89,7 @@ const Page = () => {
           <div className="flex justify-center items-center">
             <FaTrashCan
               className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openDeleteModal(popup._id)}
+              onClick={() => openDeleteModal(item._id)}
             />
           </div>
         ),
@@ -98,10 +97,8 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name" },
-    { name: "Sequence", key: "sequence" },
     { name: "Enable", key: "enable" },
-    { name: "Home Web", key: "homeWeb" },
+    { name: "Image", key: "img" },
     { name: "URL", key: "url" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
@@ -133,17 +130,17 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">BANNERS</h3>
+        <h3 className="font-bold p-4">HEADERS</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreateBannerComponent closeModal={closeCreateModal} />
+          <CreateHeaderComponent closeModal={closeCreateModal} />
         </Modal>
 
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentMarketingId && (
-            <UpdateBannerComponent
+            <UpdateHeaderComponent
               marketingId={currentMarketingId}
               closeModal={closeUpdateModal}
             />
@@ -151,7 +148,7 @@ const Page = () => {
         </Modal>
 
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteBannerComponent
+          <DeleteHeaderComponent
             marketingId={currentMarketingId || ""}
             closeModal={closeDeleteModal}
           />

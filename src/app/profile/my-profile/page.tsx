@@ -39,13 +39,8 @@ const Page = () => {
   const [uploadResponseProfile, setUploadResponseProfile] =
     useState<string>("");
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadResponses, setUploadResponses] = useState<string[]>([]);
-
-  console.log("selectedFiles", selectedFiles);
-  console.log("uploadResponses", uploadResponses);
-  console.log("selectedFileProfile", selectedFileProfile);
-  console.log("uploadResponseProfile", uploadResponseProfile);
+  const [selectedFiles, setSelectedFiles] = useState<File | null>(null);
+  const [uploadResponses, setUploadResponses] = useState<string>("");
 
   const [
     uploadImage,
@@ -57,8 +52,8 @@ const Page = () => {
   ] = useUploadImageMutation();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setSelectedFiles(Array.from(event.target.files));
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFiles(event.target.files[0]);
     }
   };
 
@@ -84,15 +79,10 @@ const Page = () => {
   };
 
   const handleUpload = async () => {
-    if (selectedFiles.length > 0) {
+    if (selectedFiles) {
       try {
-        const responses = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const response = await uploadImage(file).unwrap();
-            return response.url;
-          })
-        );
-        setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
+        const responses = await uploadImage(selectedFiles).unwrap();
+        setUploadResponses(responses.url);
       } catch (err) {
         console.error("Error uploading images:", err);
       }
@@ -106,7 +96,8 @@ const Page = () => {
       setEmail(data?.email);
       setPhone(data?.phone);
       // Prioriza el link de Cloudinary si existe
-      setLogo(uploadResponses[0] || data?.logo);
+      setLogo(data?.logo);
+      setProfileImg(data?.profileImg);
       refetch();
     }
   }, [selectedClientId, data, uploadResponses]);
@@ -131,14 +122,26 @@ const Page = () => {
     results: "",
   };
 
-  const handleRemoveImage = (index: number) => {
-    setUploadResponses((prevResponses) =>
-      prevResponses.filter((_, i) => i !== index)
-    );
+  const handleRemoveImage = async () => {
+    setUploadResponses("");
+     const payload = {
+      id: data?.id || "",
+      logo:"",
+    };
+
+    await updateCustomer(payload);
+    refetch()
   };
 
-  const handleRemoveImageProfile = () => {
+  const handleRemoveImageProfile = async () => {
     setUploadResponseProfile("");
+    const payload = {
+      id: data?.id || "",
+      profileImg:"",
+    };
+
+    await updateCustomer(payload);
+    refetch()
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,8 +151,9 @@ const Page = () => {
       id: data?.id || "",
       email: email,
       phone: phone,
-      logo: uploadResponses[0] || data?.logo || "",
+      logo: uploadResponses || data?.logo || "",
       profileImg: uploadResponseProfile || data?.profileImg || "",
+      receive_notifications: receiveNotifications,
     };
 
     await updateCustomer(payload);
@@ -271,38 +275,70 @@ const Page = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {uploadResponses.map((image, index) => (
-                              <tr key={index} className="hover:bg-gray-50">
+                            {data?.logo ? (
+                              <tr className="hover:bg-gray-50">
                                 <td className="border border-gray-300 p-2">
                                   <img
-                                    src={image}
-                                    alt="brand_image"
+                                    src={data?.logo}
+                                    alt=""
                                     className="h-10 w-auto rounded-md"
                                   />
                                 </td>
                                 <td className="border border-gray-300 p-2">
                                   <a
-                                    href={image}
+                                    href={data?.logo}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-500 hover:underline"
                                   >
-                                    {image.length > 30
-                                      ? `${image.substring(0, 30)}...`
-                                      : image}
+                                    {data?.logo.length > 30
+                                      ? `${data?.logo.substring(0, 30)}...`
+                                      : data?.logo}
                                   </a>
                                 </td>
                                 <td className="border border-gray-300 p-2 text-center">
                                   <button
                                     type="button"
-                                    onClick={() => handleRemoveImage(index)}
+                                    onClick={() => handleRemoveImage()}
                                     className="text-red-500 hover:text-red-700 transition"
                                   >
                                     <FaTrashCan className="inline-block" />
                                   </button>
                                 </td>
                               </tr>
-                            ))}
+                            ) : (
+                                <tr className="hover:bg-gray-50">
+                                  <td className="border border-gray-300 p-2">
+                                    <img
+                                      src={uploadResponses}
+                                      alt=""
+                                      className="h-10 w-auto rounded-md"
+                                    />
+                                  </td>
+                                  <td className="border border-gray-300 p-2">
+                                    <a
+                                      href={uploadResponses}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 hover:underline"
+                                    >
+                                      {uploadResponses.length > 30
+                                        ? `${uploadResponses.substring(0, 30)}...`
+                                        : uploadResponses}
+                                    </a>
+                                  </td>
+                                  <td className="border border-gray-300 p-2 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveImage()}
+                                      className="text-red-500 hover:text-red-700 transition"
+                                    >
+                                      <FaTrashCan className="inline-block" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            }
                           </tbody>
                         </table>
                       </div>
@@ -364,19 +400,30 @@ const Page = () => {
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 p-2">
                                 <img
-                                  src={uploadResponseProfile}
-                                  alt="brand_image"
+                                  src={
+                                    uploadResponseProfile || data?.profileImg
+                                  }
+                                  alt=""
                                   className="h-10 w-auto rounded-md"
                                 />
                               </td>
                               <td className="border border-gray-300 p-2">
                                 <a
-                                  href={uploadResponseProfile}
+                                  href={
+                                    uploadResponseProfile || data?.profileImg
+                                  }
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-500 hover:underline"
                                 >
-                                  {uploadResponseProfile.length > 30
+                                  {data?.profileImg
+                                    ? data?.profileImg.length > 30
+                                      ? `${data?.profileImg.substring(
+                                          0,
+                                          30
+                                        )}...`
+                                      : data?.profileImg
+                                    : uploadResponseProfile.length > 30
                                     ? `${uploadResponseProfile.substring(
                                         0,
                                         30

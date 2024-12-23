@@ -33,6 +33,7 @@ const config: Config = {
     },
   },
   plugins: [
+    require('tailwind-scrollbar-hide'),
     function ({ addUtilities }: any) {
       addUtilities({
         ".no-scrollbar": {

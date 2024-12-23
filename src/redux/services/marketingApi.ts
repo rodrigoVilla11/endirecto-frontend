@@ -5,6 +5,7 @@ type Marketing = {
   popups: PopUps;
   headers: Headers;
   tags: Tags;
+  header: Header;
 };
 
 export type PopUps = {
@@ -22,7 +23,12 @@ export type Headers = {
   sequence: number;
   enable: boolean;
   homeWeb: string;
-  headerWeb: string;
+  url: string;
+};
+
+export type Header = {
+  enable: boolean;
+  img: string;
   url: string;
 };
 
@@ -36,7 +42,9 @@ export type Tags = {
 type CreateMarketingPayload = {
   popups?: PopUps;
   headers?: Headers;
+  header?: Header;
   tags?: Tags;
+  
 };
 
 type UpdateMarketingPayload = {

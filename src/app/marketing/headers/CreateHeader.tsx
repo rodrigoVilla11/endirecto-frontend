@@ -4,86 +4,99 @@ import React, { useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
 
-const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
-  const [form, setForm] = useState({
-    headers: {
-      name: "",
-      sequence: 0,
-      enable: false,
-      homeWeb: "",
-      url: "",
-    },
-  });
-
-  const [createMarketing, { isLoading: isLoadingCreate, isSuccess, isError }] =
-    useCreateMarketingMutation();
-
-  const [
-    uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-    },
-  ] = useUploadImageMutation();
-
-  const [selectedHomeFile, setSelectedHomeFile] = useState<File | null>(null);
-  const [homeUploadResponse, setHomeUploadResponse] = useState<string>("");
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedHomeFile(event.target.files[0]);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-
-    setForm((prevForm) => ({
-      ...prevForm,
-      headers: {
-        ...prevForm.headers,
-        [name]: name === "sequence" ? Number(value) : value,
-      },
-    }));
-  };
-
-  const handleUploadHome = async () => {
-    if (selectedHomeFile) {
-      try {
-        const response = await uploadImage(selectedHomeFile).unwrap();
-        setHomeUploadResponse(response.url);
-      } catch (err) {
-        console.error("Error uploading home image:", err);
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await createMarketing(form).unwrap();
-      closeModal();
-    } catch (err) {
-      console.error("Error creating the Banner:", err);
-    }
-  };
-
-  const handleRemoveImage = (imageType: "homeWeb" | "headerWeb") => {
-    setHomeUploadResponse("");
-  };
-
-  const handleToggleEnable = () => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      headers: {
-        ...prevForm.headers,
-        enable: !prevForm.headers.enable,
-      },
-    }));
-  };
+const CreateHeaderComponent = ({ closeModal }: { closeModal: () => void }) => {
+    const [form, setForm] = useState({
+        header: {
+          enable: false,
+          img: "",
+          url: "",
+        },
+      });
+    
+      const [createMarketing, { isLoading: isLoadingCreate, isSuccess, isError }] =
+        useCreateMarketingMutation();
+    
+      const [
+        uploadImage,
+        {
+          isLoading: isLoadingUpload,
+          isSuccess: isSuccessUpload,
+          isError: isErrorUpload,
+        },
+      ] = useUploadImageMutation();
+    
+      const [selectedHomeFile, setSelectedHomeFile] = useState<File | null>(null);
+      const [homeUploadResponse, setHomeUploadResponse] = useState<string>("");
+    
+      const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+          setSelectedHomeFile(event.target.files[0]);
+        }
+      };
+    
+      const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      ) => {
+        const { name, value } = e.target;
+    
+        setForm((prevForm) => ({
+          ...prevForm,
+          header: {
+            ...prevForm.header,
+            [name]: name === "sequence" ? Number(value) : value,
+          },
+        }));
+      };
+    
+      const handleUploadHome = async () => {
+        if (selectedHomeFile) {
+          try {
+            const response = await uploadImage(selectedHomeFile).unwrap();
+            setHomeUploadResponse(response.url);
+            setForm((prevForm) => ({
+              ...prevForm,
+              header: {
+                ...prevForm.header,
+                img: response.url,
+              },
+            }));
+          } catch (err) {
+            console.error("Error uploading home image:", err);
+          }
+        }
+      };
+    
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+          await createMarketing(form).unwrap();
+          closeModal();
+        } catch (err) {
+          console.error("Error creating the Banner:", err);
+        }
+      };
+    
+      const handleRemoveImage = () => {
+        setHomeUploadResponse("");
+        setForm((prevForm) => ({
+          ...prevForm,
+          header: {
+            ...prevForm.header,
+            img: "",
+          },
+        }));
+      };
+    
+      const handleToggleEnable = () => {
+        setForm((prevForm) => ({
+          ...prevForm,
+          header: {
+            ...prevForm.header,
+            enable: !prevForm.header.enable,
+          },
+        }));
+      };
+    
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -99,39 +112,12 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
         </div>
 
         <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
-          {/* Name */}
-          <label className="flex flex-col">
-            Name:
-            <input
-              name="name"
-              value={form.headers.name}
-              placeholder="Banner Name"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
-          </label>
 
-          {/* Sequence */}
-          <label className="flex flex-col">
-            Sequence:
-            <input
-              type="number"
-              name="sequence"
-              value={form.headers.sequence}
-              placeholder="Banner Sequence"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
-          </label>
-
-          {/* Enable */}
-
-          {/* URL */}
           <label className="flex flex-col col-span-2">
             URL:
             <input
               name="url"
-              value={form.headers.url}
+              value={form.header.url}
               placeholder="Banner URL"
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
@@ -144,17 +130,17 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
               type="button"
               onClick={handleToggleEnable}
               className={`border border-gray-300 rounded-md p-2 ${
-                form.headers.enable ? "bg-green-500" : "bg-red-500"
+                form.header.enable ? "bg-green-500" : "bg-red-500"
               } text-white w-24`}
             >
-              {form.headers.enable ? "On" : "Off"}
+              {form.header.enable ? "On" : "Off"}
             </button>
           </label>
 
           {/* Images Table */}
           <div className="w-full flex justify-evenly gap-2">
             <label className="flex flex-col text-sm">
-              Home Image:
+             Image:
               <input type="file" accept="image/*" onChange={handleFileChange} />
               <button
                 type="button"
@@ -173,7 +159,7 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveImage("homeWeb")}
+                    onClick={() => handleRemoveImage()}
                     className="text-red-500 text-sm"
                   >
                     <FaTrashCan />
@@ -206,12 +192,12 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
 
         {/* Messages */}
         {isSuccess && (
-          <p className="text-green-500 mt-4">Banner created successfully!</p>
+          <p className="text-green-500 mt-4">Header created successfully!</p>
         )}
-        {isError && <p className="text-red-500 mt-4">Error creating Banner</p>}
+        {isError && <p className="text-red-500 mt-4">Error creating Header</p>}
       </div>
     </div>
   );
 };
 
-export default CreateBannerComponent;
+export default CreateHeaderComponent;

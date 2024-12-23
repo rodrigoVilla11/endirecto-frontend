@@ -101,9 +101,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
 
   const openModal = () => setModalOpen(true);
   const closeModal = () => {
-    console.log('Cerrando modal');
     setModalOpen(false);
-    console.log('Cerrado modal', isModalOpen);
 
   };
   
@@ -124,9 +122,9 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
 
       {/* Detalles del artículo */}
       <div className="flex-1 flex flex-col gap-1" onClick={openModal}>
-        <h3 className="text-xs font-bold text-gray-800">{article.name}</h3>
+        <h3 className="text-xs font-bold text-gray-800">{article.id}</h3>
         <p className="text-xs text-gray-600 max-w-48 break-words overflow-hidden max-h-12 ">
-          {article.description}
+          {article.name}
         </p>
         <StripeStock
           articleId={article.id}
@@ -142,7 +140,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
           className="text-xl font-bold text-gray-900"
         />
         {showPurchasePrice && (
-          <CostPrice articleId={article.id} className="text-gray-500 text-sm" />
+          <CostPrice articleId={article.id} selectedClientId={selectedClientId}  className="text-gray-500 text-sm" />
         )}
       </div>
 
