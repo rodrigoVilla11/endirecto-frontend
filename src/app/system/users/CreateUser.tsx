@@ -46,8 +46,8 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
         <h2 className="text-lg font-semibold">Create User</h2>
         <button
           onClick={closeModal}

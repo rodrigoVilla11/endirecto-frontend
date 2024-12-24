@@ -64,8 +64,8 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">New Payment</h2>
           <button
