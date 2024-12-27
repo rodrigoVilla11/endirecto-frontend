@@ -58,7 +58,9 @@ const ArticleSearchResults = ({
       <div className="flex flex-wrap justify-center gap-6 overflow-auto">
         {articles &&
           articles.map((article: any) => (
+            <div key={article.id}>
             <CardSearch article={article} setSearchQuery={setSearchQuery} />
+            </div>
           ))}
       </div>
 

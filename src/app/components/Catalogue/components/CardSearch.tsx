@@ -26,7 +26,7 @@ const CardSearch = ({ article, setSearchQuery }: any) => {
       onClick={() => handleRedirect(`/catalogue`)}
     >
       {/* Contenido del artículo */}
-      <div key={article.id} className="relative flex flex-col justify-center items-center shadow-lg bg-white cursor-pointer rounded-lg hover:shadow-xl transition-all duration-300">
+      <div className="relative flex flex-col justify-center items-center shadow-lg bg-white cursor-pointer rounded-lg hover:shadow-xl transition-all duration-300">
         <img
           src={article.images ? article.images[0] : ""}
           alt={article.name}
