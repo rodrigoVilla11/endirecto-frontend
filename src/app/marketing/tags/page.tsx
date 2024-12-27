@@ -105,7 +105,7 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData =
-    marketing?.map((popup) => {
+    items?.map((popup) => {
       return {
         key: popup._id,
         name: popup.tags.name,
