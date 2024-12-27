@@ -26,7 +26,7 @@ const ArticleSearchResults = ({ query }: { query: string }) => {
       {/* Título y botón de comparar */}
       <div className="flex justify-between items-center w-full mb-4">
         <h3 className="text-lg font-bold text-white">
-          Resultados para "{query}":
+          Resultados para {query}:
         </h3>
       </div>
 
@@ -52,7 +52,7 @@ const ArticleSearchResults = ({ query }: { query: string }) => {
                 />
                 <div className="bg-gray-100 px-4 py-2 w-full text-center rounded-lg">
                   <ArticleName
-                    name={article.name.replace(/"/g, "&quot;")} // Escapar las comillas dobles
+                    name={article.name}
                     id={article.id}
                     noName={true}
                   />
