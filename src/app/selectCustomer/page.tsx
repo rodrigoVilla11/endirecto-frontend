@@ -95,7 +95,12 @@ const SelectCustomer = () => {
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, searchParams]);
+
+   useEffect(() => {
+        setPage(1); // Reinicia la paginación
+        setItems([]); // Limpia los datos anteriores
+      }, [searchParams]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {

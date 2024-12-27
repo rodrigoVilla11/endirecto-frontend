@@ -54,9 +54,13 @@ const Page = () => {
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, searchQuery]);
   
   
+  useEffect(() => {
+        setPage(1); // Reinicia la paginación
+        setArticles([]); // Limpia los datos anteriores
+      }, [searchQuery]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {

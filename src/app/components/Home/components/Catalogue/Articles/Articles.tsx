@@ -91,6 +91,7 @@ const Articles = ({
         tags,
       });
     }, [brand, item, vehicleBrand, stock, tags]);
+    
   return (
     <div className="h-screen m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (
