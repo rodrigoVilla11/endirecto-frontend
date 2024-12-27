@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CardArticles from "./components/CardArticles";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
@@ -14,9 +14,11 @@ const Articles = ({
   showPurchasePrice,
   showArticles,
 }: any) => {
+  const [page, setPage] = useState(1);
+
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
-    page: 1,
-    limit: 20,
+    page,
+    limit: 5,
     brand: brand,
     item: item,
     tags: tags,
@@ -25,6 +27,48 @@ const Articles = ({
   });
 
   const { isOpen } = useSideMenu();
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || [];
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
 
   return (
     <div className="h-full m-4 flex flex-col text-sm">
@@ -36,7 +80,7 @@ const Articles = ({
               : "grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))]"
           }`}
         >
-          {data?.map((article: any, index: number) => (
+          {items?.map((article: any, index: number) => (
             <CardArticles
               key={index}
               article={article}
@@ -46,7 +90,7 @@ const Articles = ({
         </div>
       ) : (
         <div className="overflow-auto no-scrollbar h-[calc(100vh-10px)]">
-          {data?.map((article: any, index: number) => (
+          {items?.map((article: any, index: number) => (
             <ListArticle
               key={index}
               article={article}
@@ -55,6 +99,7 @@ const Articles = ({
           ))}
         </div>
       )}
+      <div ref={observerRef} className="h-100" />
     </div>
   );
 };

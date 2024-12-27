@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
-import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import { useCountArticlesQuery, useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import Articles from "./Articles/Articles";
@@ -11,10 +11,8 @@ import PopUpModal from "./Articles/PopUpModal";
 import FilterBox from "./FilterBox/FilterBox";
 
 const CataloguePage = () => {
-  const { data, error, isLoading } = useGetArticlesQuery({
-    page: 1,
-    limit: 16,
-  });
+   const { data: countArticlesData } = useCountArticlesQuery(null);
+ 
 
   const {
     order,
@@ -38,9 +36,6 @@ const CataloguePage = () => {
       router.push(path);
     }
   };
-
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error loading data...</p>;
 
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
@@ -112,7 +107,7 @@ const CataloguePage = () => {
               </button>
             </div>
             {/* Contador de artículos */}
-            <p className="text-xs pr-4">{data?.length || 0}</p>
+            <p className="text-xs pr-4">{countArticlesData || 0}</p>
           </div>
           {/* Contenido dinámico */}
           <Articles

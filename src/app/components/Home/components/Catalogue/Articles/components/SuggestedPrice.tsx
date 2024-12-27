@@ -46,7 +46,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
         showPurchasePrice ? "text-xs" : "text-xs"
       } pb-2 h-4`}
     >
-      <p>Suggested Price (with VAT)</p>
+      <p>Suggested Price</p>
       <p>
         $
         <span className="font-semibold text-gray-600 text-lg">
