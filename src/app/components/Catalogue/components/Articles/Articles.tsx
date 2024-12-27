@@ -15,15 +15,18 @@ const Articles = ({
   showArticles,
 }: any) => {
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({
+    brand,
+    item,
+    vehicleBrand,
+    stock,
+    tags,
+  });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
-    limit: 5,
-    brand: brand,
-    item: item,
-    tags: tags,
-    stock: stock,
-    vehicle_brand: vehicleBrand,
+    limit: 10,
+    ...filters,
   });
 
   const { isOpen } = useSideMenu();
@@ -47,7 +50,7 @@ const Articles = ({
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, filters]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -70,6 +73,18 @@ const Articles = ({
     };
   }, [isFetching]);
 
+  useEffect(() => {
+    setPage(1); // Reinicia la paginación
+    setItems([]); // Limpia los datos anteriores
+    setFilters({
+      brand,
+      item,
+      vehicleBrand,
+      stock,
+      tags,
+    });
+  }, [brand, item, vehicleBrand, stock, tags]);
+  
   return (
     <div className="h-full m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (

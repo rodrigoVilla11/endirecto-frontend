@@ -19,15 +19,18 @@ const Articles = ({
   showArticles,
 }: any) => {
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({
+    brand,
+    item,
+    vehicleBrand,
+    stock,
+    tags,
+  });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
     limit: 10,
-    brand: brand,
-    item: item,
-    tags: tags,
-    stock: stock,
-    vehicle_brand: vehicleBrand,
+    ...filters,
   });
   const { isAuthenticated } = useAuth();
 
@@ -39,22 +42,21 @@ const Articles = ({
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-  if (!isFetching) {
-    setIsFetching(true);
-    refetch()
-      .then((result) => {
-        const newBrands = result.data || [];
-        setItems((prev) => [...prev, ...newBrands]);
-      })
-      .catch((error) => {
-        console.error("Error fetching articles:", error);
-      })
-      .finally(() => {
-        setIsFetching(false);
-      });
-  }
-}, [page]);
-
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || [];
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page, filters]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
@@ -66,19 +68,29 @@ const Articles = ({
       },
       { threshold: 1.0 }
     );
-  
+
     if (observerRef.current) {
       observer.observe(observerRef.current);
     }
-  
+
     return () => {
       if (observerRef.current) {
         observer.unobserve(observerRef.current);
       }
     };
   }, [isFetching]);
-  
 
+   useEffect(() => {
+      setPage(1); // Reinicia la paginación
+      setItems([]); // Limpia los datos anteriores
+      setFilters({
+        brand,
+        item,
+        vehicleBrand,
+        stock,
+        tags,
+      });
+    }, [brand, item, vehicleBrand, stock, tags]);
   return (
     <div className="h-screen m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (
