@@ -77,7 +77,7 @@ const Page = () => {
       setCustomer_id("");
       refetch;
     }
-  }, [selectedClientId]);
+  }, [selectedClientId, refetch]);
 
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
@@ -96,7 +96,7 @@ const Page = () => {
             setIsFetching(false);
           });
       }
-    }, [page]);
+    }, [page, isFetching, refetch]);
   
     // Configurar Intersection Observer para scroll infinito
     useEffect(() => {
