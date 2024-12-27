@@ -7,7 +7,7 @@ const Stock = ({ onChange }: any) => {
   const handleButtonClick = (value: string) => {
     if (selectedButton !== value) {
       setSelectedButton(value);
-      onChange(value === "STOCK" ? ["IN-STOCK", "LIMITED-STOCK"] : ["NO-STOCK"]);
+      onChange(value === "STOCK" ? ["STOCK", "LOW-STOCK"] : ["NO-STOCK"]);
     } else {
       setSelectedButton("");
       onChange("");

@@ -12,9 +12,9 @@ const StripeStock = ({ articleId }: any) => {
   return (
     <div
       className={`${
-        hasStock === "IN-STOCK"
+        hasStock === "STOCK"
           ? "bg-success" 
-          : hasStock === "STOCK"
+          : hasStock === "NO-STOCK"
           ? "bg-red-600" 
           : hasStock === "LOW-STOCK"
           ? "bg-orange-600" 
