@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
 import { FaAddressBook } from "react-icons/fa";
 import { CiMenuKebab } from "react-icons/ci";
@@ -34,11 +34,16 @@ const SelectCustomer = () => {
   const { setSelectedClientId } = useClient();
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
     null
   );
 
+  
   const openUpdateModal = (id: string) => {
     setCurrentCustomerId(id);
     setUpdateModalOpen(true);
@@ -74,6 +79,45 @@ const SelectCustomer = () => {
     seller_id: searchParams.seller_id,
   });
 
+  
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
   const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: documentsData } = useGetDocumentsQuery(null);
@@ -92,7 +136,7 @@ const SelectCustomer = () => {
     router.push("/catalogue");
   };
 
-  const tableData = data?.map((customer) => {
+  const tableData = items?.map((customer) => {
     const filteredDocuments = documentsData
       ?.filter((data) => customer.documents_balance.includes(data.id))
       .map((data) => ({
@@ -282,18 +326,6 @@ const SelectCustomer = () => {
     results: `${countCustomersData || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countCustomersData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
@@ -302,26 +334,6 @@ const SelectCustomer = () => {
         <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countCustomersData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countCustomersData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
 
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentCustomerId && (
@@ -340,6 +352,7 @@ const SelectCustomer = () => {
             />
           )}
         </Modal>
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

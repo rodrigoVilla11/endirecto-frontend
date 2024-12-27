@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -21,13 +21,19 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
-  const [notificationType, setNotificationType] = useState<NotificationType | undefined>(undefined)
+  const [notificationType, setNotificationType] = useState<
+    NotificationType | undefined
+  >(undefined);
   const { data: countNotificationsData } = useCountNotificationsQuery(null);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentNotificationId, setCurrentNotificationId] = useState<
     string | null
   >(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const { data: brandsData } = useGetBrandsQuery(null);
   const {
@@ -41,6 +47,45 @@ const Page = () => {
     query: searchQuery,
     type: notificationType,
   }); // Agregar type aquí
+
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -59,17 +104,17 @@ const Page = () => {
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as NotificationType | "all"; 
+    const value = e.target.value as NotificationType | "all";
     setNotificationType(value === "all" ? undefined : value);
-    setPage(1); 
-    refetch(); 
+    setPage(1);
+    refetch();
   };
-  
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
   const tableData =
-    notifications?.map((notification) => {
+    items?.map((notification) => {
       const brand = brandsData?.find(
         (data: any) => data.id === notification.brand_id
       );
@@ -84,10 +129,11 @@ const Page = () => {
 
         erase: (
           <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(notification._id)}
-          /></div>
+            <FaTrashCan
+              className="text-center text-lg hover:cursor-pointer"
+              onClick={() => openDeleteModal(notification._id)}
+            />
+          </div>
         ),
       };
     }) || [];
@@ -142,18 +188,6 @@ const Page = () => {
       : `${countNotificationsData || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countNotificationsData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
@@ -171,25 +205,7 @@ const Page = () => {
             closeModal={closeDeleteModal}
           />
         </Modal>
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countNotificationsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countNotificationsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

@@ -4,12 +4,12 @@ import React, { useState } from "react";
 const Tag = ({ onSelectTags }: any) => {
   const [selectedItem, setSelectedItem] = useState("");
 
-  const tags = ["OFFERS", "PROMO", "NEW", "KITS"];
+  const tags = ["OFFER", "OUTLET", "NEW", "COMBO"];
   const tagColors: Record<string, string> = {
-    OFFERS: "#F2420A", // Red-orange
-    PROMO: "#00BF63", // Green
+    OFFER: "#F2420A", // Red-orange
+    OUTLET: "#00BF63", // Green
     NEW: "#FFBD59", // Yellow-orange
-    KITS: "#F97316", // Orange
+    COMBO: "#F97316", // Orange
   };
 
   const handleButtonClick = (value: string) => {

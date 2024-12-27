@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -26,7 +26,10 @@ const Page = () => {
   );
 
   const filterBy = "header";
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
+  const observerRef = useRef<HTMLDivElement | null>(null);
   const {
     data: marketing,
     error,
@@ -35,6 +38,45 @@ const Page = () => {
   } = useGetMarketingByFilterQuery({ filterBy, page, limit });
 
   const { data: countMarketingData } = useCountMarketingQuery(null);
+
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -66,17 +108,16 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData =
-    marketing?.map((item) => {
+    items?.map((item) => {
       return {
         key: item._id,
         enable: item.header.enable ? "true" : "false",
-        img:
-          (
-            <div className="flex justify-center items-center">
-              <img src={item.header.img && item.header.img} className="h-10"/>
-            </div>
-          ) ,
-        url: item.header.url , 
+        img: (
+          <div className="flex justify-center items-center">
+            <img src={item.header.img && item.header.img} className="h-10" />
+          </div>
+        ),
+        url: item.header.url,
         edit: (
           <div className="flex justify-center items-center">
             <FaPencil
@@ -115,18 +156,6 @@ const Page = () => {
     results: `${marketing?.length} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countMarketingData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
@@ -153,25 +182,7 @@ const Page = () => {
             closeModal={closeDeleteModal}
           />
         </Modal>
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countMarketingData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countMarketingData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

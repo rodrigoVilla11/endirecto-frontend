@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -26,13 +26,55 @@ const Page = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentFaqId, setCurrentFaqId] = useState<string | null>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
+  const observerRef = useRef<HTMLDivElement | null>(null);
   const {
     data: faqs,
     error,
     isLoading,
     refetch,
   } = useGetFaqsPagQuery({ page, limit, query: searchQuery });
+
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -61,23 +103,25 @@ const Page = () => {
   };
 
   const tableData =
-    faqs?.map((faq) => ({
+    items?.map((faq) => ({
       key: faq._id,
       question: faq.question,
       answer: faq.answer,
       edit: (
         <div className="flex justify-center items-center">
-        <FaPencil
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openUpdateModal(faq._id)}
-        /></div>
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(faq._id)}
+          />
+        </div>
       ),
       erase: (
         <div className="flex justify-center items-center">
-        <FaTrashCan
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openDeleteModal(faq._id)}
-        /></div>
+          <FaTrashCan
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openDeleteModal(faq._id)}
+          />
+        </div>
       ),
     })) || [];
 
@@ -120,18 +164,6 @@ const Page = () => {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countFaqsData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
@@ -155,25 +187,7 @@ const Page = () => {
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
           <DeleteFaq faqId={currentFaqId || ""} closeModal={closeDeleteModal} />
         </Modal>
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countFaqsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countFaqsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

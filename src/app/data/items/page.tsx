@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -19,18 +19,56 @@ const Page = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
-  const {
-    data: items,
-    error,
-    isLoading,
-    refetch,
-  } = useGetItemsPagQuery({
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const { data, error, isLoading, refetch } = useGetItemsPagQuery({
     page,
     limit,
     query: searchQuery,
   });
   const { data: countItemsData } = useCountItemsQuery(null);
+
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -50,7 +88,11 @@ const Page = () => {
     key: item.id,
     id: item.id,
     name: item.name,
-    image: <div className="flex justify-center items-center"><img src={item?.image || "NOT FOUND"} className="h-10"/></div> ,
+    image: (
+      <div className="flex justify-center items-center">
+        <img src={item?.image || "NOT FOUND"} className="h-10" />
+      </div>
+    ),
     edit: (
       <div className="flex justify-center items-center">
         <FaPencil
@@ -92,20 +134,8 @@ const Page = () => {
       : `${countItemsData || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countItemsData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
-    <PrivateRoute  requiredRoles={["ADMINISTRADOR"]}>
+    <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">ITEMS</h3>
         <Header headerBody={headerBody} />
@@ -118,25 +148,7 @@ const Page = () => {
             />
           )}
         </Modal>
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countItemsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countItemsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

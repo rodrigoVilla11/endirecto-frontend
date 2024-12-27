@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -36,7 +36,10 @@ const Page = () => {
   const [updateCollection, { isLoading: isUpdating }] =
     useUpdateCollectionMutation();
   const { selectedClientId } = useClient();
+  const [items, setItems] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
+  const observerRef = useRef<HTMLDivElement | null>(null);
   const [customer_id, setCustomer_id] = useState("");
 
   const [searchParams, setSearchParams] = useState({
@@ -78,6 +81,45 @@ const Page = () => {
 
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
+   useEffect(() => {
+      if (!isFetching) {
+        setIsFetching(true);
+        refetch()
+          .then((result) => {
+            const newBrands = result.data || []; // Garantiza que siempre sea un array
+            setItems((prev) => [...prev, ...newBrands]);
+          })
+          .catch((error) => {
+            console.error("Error fetching articles:", error);
+          })
+          .finally(() => {
+            setIsFetching(false);
+          });
+      }
+    }, [page]);
+  
+    // Configurar Intersection Observer para scroll infinito
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && !isFetching) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 1.0 }
+      );
+  
+      if (observerRef.current) {
+        observer.observe(observerRef.current);
+      }
+  
+      return () => {
+        if (observerRef.current) {
+          observer.unobserve(observerRef.current);
+        }
+      };
+    }, [isFetching]);
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error fetching collections.</p>;
 
@@ -93,7 +135,7 @@ const Page = () => {
     }
   };
 
-  const tableData = data?.map((collection) => {
+  const tableData = items?.map((collection) => {
     const customer = customersData?.find(
       (data) => data.id === collection.customer_id
     );
@@ -208,15 +250,6 @@ const Page = () => {
     results: `${data?.length || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) setPage(page - 1);
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countCollectionsData || 0) / limit))
-      setPage(page + 1);
-  };
-
   return (
     <PrivateRoute
       requiredRoles={[
@@ -235,23 +268,8 @@ const Page = () => {
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreatePaymentComponent closeModal={closeCreateModal} />
         </Modal>
-
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={handleNextPage}
-            disabled={page >= Math.ceil((countCollectionsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <div ref={observerRef} className="h-10" />
+F
       </div>
     </PrivateRoute>
   );

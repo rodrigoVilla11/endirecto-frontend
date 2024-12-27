@@ -8,7 +8,7 @@ import {
   useCountUsersQuery,
   useGetUsersPagQuery,
 } from "@/redux/services/usersApi";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import UpdateUserComponent from "./UpdateUser";
@@ -18,12 +18,16 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
+  const [limit] = useState(5);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tableData, setTableData] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data, error, isLoading, refetch } = useGetUsersPagQuery({
@@ -33,8 +37,61 @@ const Page = () => {
   });
   const { data: countUsersData } = useCountUsersQuery(null);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  useEffect(() => {
+    if (data) {
+      const newTableData = data.map((user) => {
+        const branch = branchData?.find((data) => data.id == user.branch);
+        return {
+          key: user._id,
+          id: user._id,
+          name: user.username,
+          email: user.email,
+          role: user.role,
+          branch: branch?.name,
+          zone: user.zone ? user.zone : "No Zone",
+          edit: (
+            <div className="flex justify-center items-center">
+              <FaPencil
+                className="text-center text-lg hover:cursor-pointer"
+                onClick={() => openUpdateModal(user._id)}
+              />
+            </div>
+          ),
+          erase: (
+            <div className="flex justify-center items-center">
+              <FaTrashCan
+                className="text-center text-lg hover:cursor-pointer"
+                onClick={() => openDeleteModal(user._id)}
+              />
+            </div>
+          ),
+        };
+      });
+
+      setTableData((prevData) => [...prevData, ...newTableData]);
+    }
+  }, [data, branchData]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetching) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => {
+      if (bottomRef.current) {
+        observer.unobserve(bottomRef.current);
+      }
+    };
+  }, [isFetching]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -64,32 +121,6 @@ const Page = () => {
     refetch();
   };
 
-  const tableData = data?.map((user) => {
-    const branch = branchData?.find((data) => data.id == user.branch);
-    return {
-      key: user._id,
-      id: user._id,
-      name: user.username,
-      email: user.email,
-      role: user.role,
-      branch: branch?.name,
-      zone: user.zone ? user.zone : "No Zone",
-      edit: (
-        <div className="flex justify-center items-center">
-        <FaPencil
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openUpdateModal(user._id)}
-        /></div>
-      ),
-      erase: (
-        <div className="flex justify-center items-center">
-        <FaTrashCan
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openDeleteModal(user._id)}
-        /></div>
-      ),
-    };
-  });
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "User", key: "user" },
@@ -100,6 +131,7 @@ const Page = () => {
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
+
   const headerBody = {
     buttons: [
       {
@@ -117,6 +149,8 @@ const Page = () => {
             onChange={(e: any) => setSearchQuery(e.target.value)}
             onKeyDown={(e: any) => {
               if (e.key === "Enter") {
+                setTableData([]);
+                setPage(1);
                 refetch();
               }
             }}
@@ -129,17 +163,8 @@ const Page = () => {
       : `${countUsersData || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countUsersData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error</p>;
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
@@ -168,25 +193,8 @@ const Page = () => {
           />
         </Modal>
 
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countUsersData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countUsersData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        {/* Scroll Trigger */}
+        <div ref={bottomRef} className="h-10"></div>
       </div>
     </PrivateRoute>
   );

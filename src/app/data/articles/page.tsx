@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -24,7 +24,10 @@ const Page = () => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [articles, setArticles] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const { data: brandData } = useGetBrandsQuery(null);
   const { data: itemData } = useGetItemsQuery(null);
@@ -35,7 +38,49 @@ const Page = () => {
     query: searchQuery,
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  // Cargar más artículos cuando cambia la página
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newArticles = result.data || []; // Garantiza que siempre sea un array
+          setArticles((prev) => [...prev, ...newArticles]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+  
+  
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
+
+  if (isLoading && articles.length === 0) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
   const openUpdateModal = (id: string) => {
@@ -60,7 +105,7 @@ const Page = () => {
     refetch();
   };
 
-  const tableData = data?.map((article) => {
+  const tableData = articles?.map((article) => {
     const brand = brandData?.find((data) => data.id === article.brand_id);
     const item = itemData?.find((data) => data.id === article.item_id);
 
@@ -126,7 +171,8 @@ const Page = () => {
             onChange={(e: any) => setSearchQuery(e.target.value)}
             onKeyDown={(e: any) => {
               if (e.key === "Enter") {
-                refetch();
+                setArticles([]); // Limpiar los artículos para nueva búsqueda
+                setPage(1); // Reiniciar paginación
               }
             }}
           />
@@ -134,20 +180,8 @@ const Page = () => {
       },
     ],
     results: searchQuery
-      ? `${data?.length || 0} Results`
+      ? `${articles.length || 0} Results`
       : `${countArticlesData || 0} Results`,
-  };
-
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countArticlesData || 0) / limit)) {
-      setPage(page + 1);
-    }
   };
 
   return (
@@ -173,25 +207,8 @@ const Page = () => {
           />
         </Modal>
 
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countArticlesData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countArticlesData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        {/* Elemento observado para scroll infinito */}
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );
