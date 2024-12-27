@@ -30,6 +30,8 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     item,
     setVehicleBrand,
     vehicleBrand,
+    setSearch,
+    search
   } = useFilters();
 
   const { data: dataBrand } = useGetBrandByIdQuery({ id: brand });
@@ -54,7 +56,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
               <FaXmark />
             </button>
           </div>
-          {(tags.length > 0 || brand || item || vehicleBrand || stock) && (
+          {(tags.length > 0 || brand || item || vehicleBrand || stock || search) && (
             <div className="px-4 text-sm">
               <h3 className="block text-gray-700 text-sm font-bold mb-2">
                 Filters Applied
@@ -66,6 +68,17 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                     <button
                       className="absolute top-0 right-0 text-red-500"
                       onClick={() => setTags([])}
+                    >
+                      <FaTrashCan />
+                    </button>
+                  </div>
+                )}
+                 {search && search !== ""  && (
+                  <div className="bg-gray-200 rounded-md p-1 relative m-1">
+                    {search}
+                    <button
+                      className="absolute top-0 right-0 text-red-500"
+                      onClick={() => setSearch("")}
                     >
                       <FaTrashCan />
                     </button>

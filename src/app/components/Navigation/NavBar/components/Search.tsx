@@ -20,7 +20,7 @@ const Search = () => {
           className="h-10 rounded-3xl pl-8 border-none focus:ring-0 outline-none"
           placeholder="Buscá lo que estás necesitando..."
         />
-        <ArticleSearchResults query={searchQuery} />
+        <ArticleSearchResults query={searchQuery} setSearchQuery={setSearchQuery}/>
       </div>
     </div>
   );

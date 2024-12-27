@@ -13,6 +13,7 @@ const Articles = ({
   order,
   showPurchasePrice,
   showArticles,
+  query,
 }: any) => {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -21,6 +22,7 @@ const Articles = ({
     vehicleBrand,
     stock,
     tags,
+    query,
   });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -82,9 +84,10 @@ const Articles = ({
       vehicleBrand,
       stock,
       tags,
+      query,
     });
-  }, [brand, item, vehicleBrand, stock, tags]);
-  
+  }, [brand, item, vehicleBrand, stock, tags, query]);
+
   return (
     <div className="h-full m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (

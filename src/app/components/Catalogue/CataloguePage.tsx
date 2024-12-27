@@ -28,6 +28,7 @@ const CataloguePage = () => {
     brand,
     item,
     vehicleBrand,
+    search
   } = useFilters();
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -37,7 +38,8 @@ const CataloguePage = () => {
     item: item,
     tags: tags[0],
     stock: stock,
-    vehicle_brand: vehicleBrand
+    vehicle_brand: vehicleBrand,
+    query: search
   });
 
   const filterBy = "popups";
@@ -94,7 +96,7 @@ const CataloguePage = () => {
     setModalVisible(false);
   };
 
-  const isFiltered = brand || tags?.length || stock || item || vehicleBrand;
+  const isFiltered = brand || tags?.length || stock || item || vehicleBrand || search;
 
   return (
     
@@ -166,6 +168,7 @@ const CataloguePage = () => {
             cart={cart}
             showPurchasePrice={showPurchasePrice}
             showArticles={showArticles}
+            query={search}
           />
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal
