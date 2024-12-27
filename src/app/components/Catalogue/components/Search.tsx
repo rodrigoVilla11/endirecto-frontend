@@ -2,10 +2,17 @@
 import React from "react";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
-import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 
-const ArticleSearchResults = ({ query, setSearchQuery }: { query: string, setSearchQuery:any }) => {
+const ArticleSearchResults = ({
+  query,
+  setSearchQuery,
+  router,
+}: {
+  query: string;
+  setSearchQuery: any;
+  router: any;
+}) => {
   const limit = 6;
   const {
     data: articles,
@@ -16,21 +23,17 @@ const ArticleSearchResults = ({ query, setSearchQuery }: { query: string, setSea
     limit,
     query,
   });
-  const {
-      setSearch
-    } = useFilters();
+  const { setSearch } = useFilters();
 
   if (!query) {
     return null; // Si no hay texto en la barra de búsqueda, no mostramos nada
   }
-  const router = useRouter();
-
 
   const handleRedirect = (path: string) => {
     if (path) {
-      setSearch(query)
+      setSearch(query);
       router.push(path);
-      setSearchQuery("")
+      setSearchQuery("");
     }
   };
 
@@ -54,10 +57,15 @@ const ArticleSearchResults = ({ query, setSearchQuery }: { query: string, setSea
       {/* Resultados */}
       <div className="flex flex-wrap justify-center gap-6 overflow-auto">
         {articles &&
-          articles.map((article: any) => <CardSearch article={article} setSearchQuery={setSearchQuery} />)}
+          articles.map((article: any) => (
+            <CardSearch article={article} setSearchQuery={setSearchQuery} />
+          ))}
       </div>
 
-      <button onClick={() => handleRedirect(`/catalogue`)} className="mt-6 bg-white text-black px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105 focus:outline-none shadow-lg">
+      <button
+        onClick={() => handleRedirect(`/catalogue`)}
+        className="mt-6 bg-white text-black px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105 focus:outline-none shadow-lg"
+      >
         Ver más...
       </button>
     </div>
