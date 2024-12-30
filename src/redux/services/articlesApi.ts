@@ -78,6 +78,7 @@ export const articlesApi = createApi({
         tags?: string;
         stock?: string;
         vehicle_brand?: string;
+        order?: string; // Nuevo parámetro para el ordenamiento
       }
     >({
       query: ({
@@ -89,8 +90,9 @@ export const articlesApi = createApi({
         tags = "",
         stock = "",
         vehicle_brand = "",
+        order = "", // Inicializado como cadena vacía
       } = {}) => {
-        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&item=${item}&stock=${stock}&tags=${tags}&vehicle_brand=${vehicle_brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&item=${item}&stock=${stock}&tags=${tags}&vehicle_brand=${vehicle_brand}&sortBy=${order}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {
@@ -100,8 +102,10 @@ export const articlesApi = createApi({
         return response;
       },
     }),
+
     getArticleById: builder.query<Article, { id: string }>({
-      query: ({ id }) => `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     countArticles: builder.query<number, null>({
       query: () => {

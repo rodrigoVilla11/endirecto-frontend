@@ -23,6 +23,7 @@ const Articles = ({
     stock,
     tags,
     query,
+    order,
   });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -85,8 +86,9 @@ const Articles = ({
       stock,
       tags,
       query,
+      order,
     });
-  }, [brand, item, vehicleBrand, stock, tags, query]);
+  }, [brand, item, vehicleBrand, stock, tags, query, order]);
 
   return (
     <div className="h-full m-4 flex flex-col text-sm">

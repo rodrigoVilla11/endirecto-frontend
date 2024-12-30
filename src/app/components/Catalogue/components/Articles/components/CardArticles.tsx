@@ -16,6 +16,7 @@ import {
 } from "@/redux/services/customersApi";
 import ArticleDetails from "./ArticleDetails";
 import { useArticleId } from "@/app/context/AritlceIdContext";
+import Tag from "@/app/components/Home/components/Catalogue/Articles/components/Tag";
 
 interface FormState {
   id: string;
@@ -37,6 +38,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   }, [articleId, article.id]); 
 
 
+  console.log(article)
   const {
     data: customer,
     error,
@@ -122,6 +124,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           article={article}
         />
         <div onClick={openModal}>
+          <div className="absolute w-full h-3/6 flex justify-end items-end pb-8"><Tag articleId={article.id}/></div>
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <div className="bg-gray-200">

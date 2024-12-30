@@ -5,16 +5,17 @@ import { FaAngleDown } from "react-icons/fa6";
 const Order = ({onChange} : any) => {
   const [selectedOrder, setSelectedOrder] = useState(1);
   const order = [
-    { id: 1, name: 'Best Sellers' },
-    { id: 2, name: 'By Brands' },
-    { id: 3, name: 'By Code' },
-    { id: 4, name: 'Lower Price' },
-    { id: 5, name: 'Higher Price' },
-    { id: 6, name: 'Stock' },
+    { id: "best-seller", name: 'Best Sellers' },
+    { id: "brand", name: 'By Brands' },
+    { id: "code", name: 'By Code' },
+    { id: "lowerPrice", name: 'Lower Price' },
+    { id: "higherPrice", name: 'Higher Price' },
+    { id: "stock", name: 'Stock' },
   ];
 
   const handleOrderChange = (event : any) => {
     setSelectedOrder(event.target.value);
+    onChange(event.target.value)
   };
 
   return (

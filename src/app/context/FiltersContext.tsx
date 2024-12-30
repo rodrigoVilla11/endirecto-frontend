@@ -35,7 +35,7 @@ const FiltersContext = createContext<FiltersContextProps | undefined>(
 export const FiltersProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [order, setOrder] = useState("Best Sellers");
+  const [order, setOrder] = useState("");
   const [cart, setCart] = useState("");
   const [showPurchasePrice, setShowPurchasePrice] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
