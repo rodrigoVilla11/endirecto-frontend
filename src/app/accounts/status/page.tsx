@@ -20,6 +20,7 @@ import { FaPlus } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
 import CreateInstanceComponent from "./CreateInstance";
 import Instance from "./Instance";
+import CRM from "./CRM";
 
 const Page = () => {
   const [page, setPage] = useState(1);
@@ -33,7 +34,7 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
- const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -65,48 +66,47 @@ const Page = () => {
   const { data: sumAmountsData } = useSumAmountsQuery(null);
 
   useEffect(() => {
-      if (!isFetching) {
-        setIsFetching(true);
-        refetch()
-          .then((result) => {
-            const newBrands = result.data || []; // Garantiza que siempre sea un array
-            setItems((prev) => [...prev, ...newBrands]);
-          })
-          .catch((error) => {
-            console.error("Error fetching articles:", error);
-          })
-          .finally(() => {
-            setIsFetching(false);
-          });
-      }
-    }, [page]);
-  
-    // Configurar Intersection Observer para scroll infinito
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && !isFetching) {
-            setPage((prev) => prev + 1);
-          }
-        },
-        { threshold: 1.0 }
-      );
-  
-      if (observerRef.current) {
-        observer.observe(observerRef.current);
-      }
-  
-      return () => {
-        if (observerRef.current) {
-          observer.unobserve(observerRef.current);
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
         }
-      };
-    }, [isFetching]);
-  
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  
   const tableData = items?.map((document) => {
     const customer = customersData?.find(
       (data) => data.id == document.customer_id
@@ -170,7 +170,7 @@ const Page = () => {
         logo: <AiOutlineDownload />,
         title: "Download",
       },
-      { logo: <FaPlus />, title: "New Instance", onClick: openCreateModal },
+      { logo: <FaPlus />, title: "CRM", onClick: openCreateModal },
     ],
     filters: [
       {
@@ -234,14 +234,13 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />
-        <Instance selectedClientId={selectedClientId}/>
+       {/* <Instance selectedClientId={selectedClientId} /> */}
         <Table headers={tableHeader} data={tableData} />
 
         <div ref={observerRef} className="h-10" />
-      
       </div>
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreateInstanceComponent closeModal={closeCreateModal} />
+        <CRM closeModal={closeCreateModal} selectedClientId={selectedClientId} />
       </Modal>
     </PrivateRoute>
   );

@@ -1,16 +1,9 @@
-"use client"
+"use client";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import React, { useEffect } from "react";
 
-const Instance = ({ selectedClientId }: any) => {
-  const {
-    data: customer,
-    error,
-    isLoading,
-    refetch,
-  } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
+const Instance = ({ instances }: any) => {
+  
 
   const priorityColors: Record<string, string> = {
     HIGH: "#F2420A", // Red-orange
@@ -18,26 +11,19 @@ const Instance = ({ selectedClientId }: any) => {
     LOW: "#00BF63", // Green
   };
 
-  // Obtener color según la prioridad
-  const bgColor = customer?.instance.priority
-    ? priorityColors[customer.instance.priority]
-    : "#FFFFFF"; // Blanco por defecto si no hay prioridad
-
-    useEffect(() => {
-        if (customer?.instance) {
-          refetch();
-        }
-      }, [customer?.instance, refetch]);
+  const bgColor = instances.priority
+    ? priorityColors[instances.priority] || "#FFFFFF"
+    : "#FFFFFF"; 
 
   return (
     <div
       className={`h-auto m-5 p-1 flex justify-between items-center text-sm`}
-      style={{ backgroundColor: bgColor }} // Estilo inline para el fondo
+      style={{ backgroundColor: bgColor }}
     >
       <h3 className="font-bold px-4">INSTANCE</h3>
       <div className="flex justify-center items-center w-full">
-        <p className="font-bold px-4">Type: {customer?.instance.type}</p>
-        <p className="font-bold px-4">Notes: {customer?.instance.notes}</p>
+        <p className="font-bold px-4">Type: {instances.type}</p>
+        <p className="font-bold px-4">Notes: {instances.notes}</p>
       </div>
     </div>
   );

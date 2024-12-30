@@ -38,7 +38,7 @@ type Customer = {
   documents_balance: string[];
   shopping_cart: string[];
   favourites: string[];
-  instance: Instance;
+  instance: Instance[];
   logo: string;
   password: string
   profileImg: string;
@@ -51,7 +51,7 @@ type UpdateCustomersPayload = {
   logo?: string;
   shopping_cart?: string[];
   favourites?: string[];
-  instance?: Instance;
+  instance?: Instance[];
   password?: string
   profileImg?: string;
 };

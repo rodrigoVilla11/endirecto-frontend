@@ -2,6 +2,7 @@ import { useClient } from "@/app/context/ClientContext";
 import {
   InstanceType,
   PriorityInstance,
+  useGetCustomerByIdQuery,
   useUpdateCustomerMutation,
 } from "@/redux/services/customersApi";
 import React, { useState } from "react";
@@ -13,19 +14,26 @@ const CreateInstanceComponent = ({
   closeModal: () => void;
 }) => {
   const { selectedClientId } = useClient();
+    const {
+      data: customer,
+      error,
+      isLoading,
+      refetch,
+    } = useGetCustomerByIdQuery({
+      id: selectedClientId || "",
+    });
 
+  // Form state
   const [form, setForm] = useState({
-    id: selectedClientId ? selectedClientId : "",
-    instance: {
-      type: InstanceType.WHATSAPP_MESSAGE,
-      priority: PriorityInstance.MEDIUM,
-      notes: "",
-    },
+    type: InstanceType.WHATSAPP_MESSAGE,
+    priority: PriorityInstance.MEDIUM,
+    notes: "",
   });
 
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
 
+  // Handle input changes
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -35,23 +43,42 @@ const CreateInstanceComponent = ({
 
     setForm((prevForm) => ({
       ...prevForm,
-      instance: {
-        ...prevForm.instance,
-        [name]: value,
-      },
+      [name]: value,
     }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateCustomer(form).unwrap();
+      // Recupera las instancias actuales del cliente, suponiendo que tienes esta información
+      const currentInstances = customer?.instance ?? []
+  
+      // Nueva instancia a agregar
+      const newInstance = {
+        type: form.type,
+        priority: form.priority,
+        notes: form.notes,
+      };
+  
+      // Agregar la nueva instancia a las instancias existentes
+      const updatedInstances = [...currentInstances, newInstance];
+  
+      // Payload para actualizar al cliente con la nueva instancia
+      const payload = {
+        id: selectedClientId || "", // ID del cliente
+        instance: updatedInstances, // Aquí estás enviando todas las instancias, incluida la nueva
+      };
+  
+      // Enviar la mutación para actualizar el cliente
+      await updateCustomer(payload).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el CRM:", err);
+      console.error("Error al crear la instancia:", err);
     }
   };
-
+  
+  
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
@@ -69,21 +96,10 @@ const CreateInstanceComponent = ({
           {/* General Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium">Client Id</label>
-              <input
-                type="text"
-                name="id"
-                value={form.id}
-                disabled
-                className="border border-gray-300 rounded-md p-1 text-sm w-full"
-              />
-            </div>
-
-            <div>
               <label className="block text-xs font-medium">Type</label>
               <select
                 name="type"
-                value={form.instance.type}
+                value={form.type}
                 onChange={handleChange}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               >
@@ -99,7 +115,7 @@ const CreateInstanceComponent = ({
               <label className="block text-xs font-medium">Priority</label>
               <select
                 name="priority"
-                value={form.instance.priority}
+                value={form.priority}
                 onChange={handleChange}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               >
@@ -116,7 +132,7 @@ const CreateInstanceComponent = ({
               <textarea
                 name="notes"
                 onChange={handleChange}
-                value={form.instance.notes}
+                value={form.notes}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
