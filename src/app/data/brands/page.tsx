@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil } from "react-icons/fa6";
+import { FaTimes } from "react-icons/fa";
 import {
   useCountBrandsQuery,
   useGetBrandsPagQuery,
@@ -11,154 +12,239 @@ import {
 import Modal from "@/app/components/components/Modal";
 import UpdateBrandComponent from "./UpdateBrand";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import debounce from "@/app/context/debounce";
+
+const ITEMS_PER_PAGE = 10;
 
 const Page = () => {
+  // Basic states
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Modal states
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [brands, setBRands] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
 
+  // References
   const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, error, isLoading, refetch } = useGetBrandsPagQuery({
+  // Redux queries
+  const { data: countBrandsData } = useCountBrandsQuery(null);
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetBrandsPagQuery({
     page,
-    limit,
+    limit: ITEMS_PER_PAGE,
     query: searchQuery,
   });
-  const { data: countBrandsData } = useCountBrandsQuery(null);
 
-  // Cargar más artículos cuando cambia la página
+  // Debounced search
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setBrands([]);
+    setHasMore(true);
+  }, 100);
+
+  // Effect for handling initial load and searches
   useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setBRands((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
+    const loadBrands = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newBrands = result || [];
+
+          if (page === 1) {
+            setBrands(newBrands);
+          } else {
+            setBrands((prev) => [...prev, ...newBrands]);
+          }
+
+          setHasMore(newBrands.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading brands:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadBrands();
   }, [page, searchQuery]);
 
-  useEffect(() => {
-    setPage(1); // Reinicia la paginación
-    setBRands([]); // Limpia los datos anteriores
-  }, [searchQuery]);
-
-  // Configurar Intersection Observer para scroll infinito
+  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 0.5 }
     );
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
     }
 
     return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
       }
     };
-  }, [isFetching]);
+  }, [hasMore, isLoading]);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
-  const openUpdateModal = (id: string) => {
+  // Modal handlers
+  const handleModalOpen = (id: string) => {
     const encodedId = encodeURIComponent(id);
     setCurrentBrandId(encodedId);
     setUpdateModalOpen(true);
   };
-  const closeUpdateModal = () => {
+
+  const handleModalClose = () => {
     setUpdateModalOpen(false);
     setCurrentBrandId(null);
     refetch();
   };
 
+  // Reset search
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setBrands([]);
+    setHasMore(true);
+  };
+
+  console.log(brands[0])
+  // Table configuration
   const tableData = brands?.map((brand) => ({
     key: brand.id,
     id: brand.id,
     name: brand.name,
     image: (
       <div className="flex justify-center items-center">
-        <img
-          src={(brand.images && brand.images[0]) || "NOT FOUND"}
-          className="h-10"
-        />
+        {brand.images ? (
+          <img
+            src={brand.images}
+            alt={brand.name}
+            className="h-10 w-auto object-contain"
+          />
+        ) : (
+          <span className="text-gray-400">No image</span>
+        )}
       </div>
     ),
     sequence: brand.sequence,
     edit: (
       <div className="flex justify-center items-center">
         <FaPencil
-          className="text-center text-lg hover:cursor-pointer"
-          onClick={() => openUpdateModal(brand.id)}
+          className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+          onClick={() => handleModalOpen(brand.id)}
         />
       </div>
     ),
   }));
+
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
-    {
-      component: <FaImage className="text-center text-xl" />,
-      key: "image",
-    },
+    { component: <FaImage className="text-center text-xl" />, key: "image" },
     { name: "Sequence", key: "sequence" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
   ];
+
   const headerBody = {
     buttons: [],
     filters: [
       {
         content: (
-          <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                refetch();
+          <div className="relative">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
               }
-            }}
-          />
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
     ],
     results: searchQuery
-      ? `${brands?.length || 0} Results`
+      ? `${brands.length} Results`
       : `${countBrandsData || 0} Results`,
   };
 
+  if (isQueryLoading && brands.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading brands. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
-      <div className="gap-4">
+      <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">BRANDS</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
-        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+
+        {isLoading && brands.length === 0 ? (
+          <div ref={loadingRef} className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          </div>
+        ) : brands.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No brands found
+          </div>
+        ) : (
+          <>
+            <Table headers={tableHeader} data={tableData} />
+            {isLoading && (
+              <div ref={loadingRef} className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}
+          </>
+        )}
+        <div ref={observerRef} className="h-10" />
+
+        <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
           {currentBrandId && (
             <UpdateBrandComponent
               brandId={currentBrandId}
-              closeModal={closeUpdateModal}
+              closeModal={handleModalClose}
             />
           )}
         </Modal>
-        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );
