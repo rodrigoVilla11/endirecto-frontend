@@ -107,11 +107,36 @@ export const articlesApi = createApi({
       query: ({ id }) =>
         `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    countArticles: builder.query<number, null>({
-      query: () => {
-        return `/articles/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    countArticles: builder.query<
+      number,
+      {
+        query?: string;
+        brand?: string;
+        item?: string;
+        tags?: string;
+        stock?: string;
+        vehicle_brand?: string;
+      }
+    >({
+      query: ({ query, brand, item, tags, stock, vehicle_brand }) => {
+        // Construcción dinámica de parámetros
+        const params = new URLSearchParams();
+
+        if (query) params.append("q", query);
+        if (brand) params.append("brand", brand);
+        if (item) params.append("item", item);
+        if (tags) params.append("tags", tags);
+        if (stock) params.append("stock", stock);
+        if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
+
+        // Agregar el token
+        params.append("token", process.env.NEXT_PUBLIC_TOKEN || "");
+
+        // Construir y devolver la URL completa
+        return `/articles/count-all?${params.toString()}`;
       },
     }),
+
     updateArticle: builder.mutation<Article, UpdateArticlesPayload>({
       query: ({ id, ...updatedArticle }) => ({
         url: `/articles/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,

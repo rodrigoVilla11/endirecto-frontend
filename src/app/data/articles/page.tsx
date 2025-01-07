@@ -31,7 +31,9 @@ const Page = () => {
 
   const { data: brandData } = useGetBrandsQuery(null);
   const { data: itemData } = useGetItemsQuery(null);
-  const { data: countArticlesData } = useCountArticlesQuery(null);
+  const { data: countArticlesData } = useCountArticlesQuery({
+    query: searchQuery,
+  });
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
     limit,
@@ -55,12 +57,11 @@ const Page = () => {
         });
     }
   }, [page, searchQuery]);
-  
-  
+
   useEffect(() => {
-        setPage(1); // Reinicia la paginación
-        setArticles([]); // Limpia los datos anteriores
-      }, [searchQuery]);
+    setPage(1); // Reinicia la paginación
+    setArticles([]); // Limpia los datos anteriores
+  }, [searchQuery]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
@@ -116,7 +117,14 @@ const Page = () => {
     return {
       key: article.id,
       brand: brand?.name || "NO BRAND",
-      image: <div className="flex justify-center items-center"><img src={article.images && article.images[0] || "NOT FOUND"} className="h-10"/></div>,
+      image: (
+        <div className="flex justify-center items-center">
+          <img
+            src={(article.images && article.images[0]) || "NOT FOUND"}
+            className="h-10"
+          />
+        </div>
+      ),
       pdf: article.pdfs,
       item: item?.name || "NO ITEM",
       id: article.id,
@@ -183,11 +191,10 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${articles.length || 0} Results`
-      : `${countArticlesData || 0} Results`,
+    results: `${countArticlesData || 0} Results`,
   };
 
+  console.log(countArticlesData);
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
