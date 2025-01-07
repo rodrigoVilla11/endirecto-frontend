@@ -55,15 +55,24 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
       try {
         const response = await uploadImage(selectedHomeFile).unwrap();
         setHomeUploadResponse(response.url);
+        setForm((prevForm) => ({
+          ...prevForm,
+          headers: {
+            ...prevForm.headers,
+            homeWeb: response.url,
+          },
+        }));
       } catch (err) {
         console.error("Error uploading home image:", err);
       }
     }
   };
+  console.log("form", form)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+
       await createMarketing(form).unwrap();
       closeModal();
     } catch (err) {

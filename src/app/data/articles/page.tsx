@@ -5,7 +5,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil, FaTrashCan } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
-import { FaRegFilePdf } from "react-icons/fa";
+import { FaRegFilePdf, FaTimes } from "react-icons/fa";
 import {
   useCountArticlesQuery,
   useGetArticlesQuery,
@@ -16,152 +16,180 @@ import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
 import DeleteArticleComponent from "./DeleteArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import debounce from "@/app/context/debounce";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  // Estados básicos
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Estados para modales
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [articles, setArticles] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
 
+  // Referencias
   const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
 
+  // Queries de Redux (mantenidas como estaban)
   const { data: brandData } = useGetBrandsQuery(null);
   const { data: itemData } = useGetItemsQuery(null);
   const { data: countArticlesData } = useCountArticlesQuery({
     query: searchQuery,
   });
-  const { data, error, isLoading, refetch } = useGetArticlesQuery({
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetArticlesQuery({
     page,
-    limit,
+    limit: ITEMS_PER_PAGE,
     query: searchQuery,
   });
 
-  // Cargar más artículos cuando cambia la página
+  // Búsqueda con debounce
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setArticles([]);
+    setHasMore(true);
+  }, 100);
+
+  // Efecto para manejar la carga inicial y las búsquedas
   useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newArticles = result.data || []; // Garantiza que siempre sea un array
-          setArticles((prev) => [...prev, ...newArticles]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
+    const loadArticles = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newArticles = result || [];
+
+          if (page === 1) {
+            setArticles(newArticles);
+          } else {
+            setArticles((prev) => [...prev, ...newArticles]);
+          }
+
+          setHasMore(newArticles.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading articles:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadArticles();
   }, [page, searchQuery]);
 
-  useEffect(() => {
-    setPage(1); // Reinicia la paginación
-    setArticles([]); // Limpia los datos anteriores
-  }, [searchQuery]);
-
-  // Configurar Intersection Observer para scroll infinito
+  // Intersection Observer para scroll infinito
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 0.5 }
     );
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
     }
 
     return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
       }
     };
-  }, [isFetching]);
+  }, [hasMore, isLoading]);
 
-  if (isLoading && articles.length === 0) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
-  const openUpdateModal = (id: string) => {
+  // Manejadores de modales
+  const handleModalOpen = (type: "update" | "delete", id: string) => {
     const encodedId = encodeURIComponent(id);
     setCurrentArticleId(encodedId);
-    setUpdateModalOpen(true);
+    if (type === "update") {
+      setUpdateModalOpen(true);
+    } else {
+      setDeleteModalOpen(true);
+    }
   };
-  const closeUpdateModal = () => {
-    setUpdateModalOpen(false);
+
+  const handleModalClose = (type: "update" | "delete") => {
+    if (type === "update") {
+      setUpdateModalOpen(false);
+    } else {
+      setDeleteModalOpen(false);
+    }
     setCurrentArticleId(null);
     refetch();
   };
 
-  const openDeleteModal = (id: string) => {
-    const encodedId = encodeURIComponent(id);
-    setCurrentArticleId(encodedId);
-    setDeleteModalOpen(true);
-  };
-  const closeDeleteModal = () => {
-    setDeleteModalOpen(false);
-    setCurrentArticleId(null);
-    refetch();
+  // Reset de búsqueda
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setArticles([]);
+    setHasMore(true);
   };
 
-  const tableData = articles?.map((article) => {
-    const brand = brandData?.find((data) => data.id === article.brand_id);
-    const item = itemData?.find((data) => data.id === article.item_id);
-
-    return {
-      key: article.id,
-      brand: brand?.name || "NO BRAND",
-      image: (
-        <div className="flex justify-center items-center">
+  // Configuración de la tabla
+  const tableData = articles?.map((article) => ({
+    key: article.id,
+    brand:
+      brandData?.find((b) => b.id === article.brand_id)?.name || "NO BRAND",
+    image: (
+      <div className="flex justify-center items-center">
+        {article.images?.[0] ? (
           <img
-            src={(article.images && article.images[0]) || "NOT FOUND"}
-            className="h-10"
+            src={article.images[0]}
+            alt={article.name}
+            className="h-10 w-auto object-contain"
           />
-        </div>
-      ),
-      pdf: article.pdfs,
-      item: item?.name || "NO ITEM",
-      id: article.id,
-      supplier: article.supplier_code,
-      name: article.name,
-      edit: (
-        <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openUpdateModal(article.id)}
-          />
-        </div>
-      ),
-      erase: (
-        <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(article.id)}
-          />
-        </div>
-      ),
-    };
-  });
+        ) : (
+          <span className="text-gray-400">No image</span>
+        )}
+      </div>
+    ),
+    pdf: article.pdfs,
+    item: itemData?.find((i) => i.id === article.item_id)?.name || "NO ITEM",
+    id: article.id,
+    supplier: article.supplier_code,
+    name: article.name,
+    edit: (
+      <div className="flex justify-center items-center">
+        <FaPencil
+          className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+          onClick={() => handleModalOpen("update", article.id)}
+        />
+      </div>
+    ),
+    erase: (
+      <div className="flex justify-center items-center">
+        <FaTrashCan
+          className="text-center text-lg hover:cursor-pointer hover:text-red-500"
+          onClick={() => handleModalOpen("delete", article.id)}
+        />
+      </div>
+    ),
+  }));
 
   const tableHeader = [
     { name: "Brand", key: "brand" },
-    {
-      component: <FaImage className="text-center text-xl" />,
-      key: "image",
-    },
-    {
-      component: <FaRegFilePdf className="text-center text-xl" />,
-      key: "pdf",
-    },
+    { component: <FaImage className="text-center text-xl" />, key: "image" },
+    { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
     { name: "Item", key: "item" },
     { name: "Id", key: "id" },
-    { name: "Supplier Code", key: "supplier code" },
+    { name: "Supplier Code", key: "supplier" },
     { name: "Name", key: "name" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
@@ -177,49 +205,98 @@ const Page = () => {
     filters: [
       {
         content: (
-          <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                setArticles([]); // Limpiar los artículos para nueva búsqueda
-                setPage(1); // Reiniciar paginación
+          <div className="relative">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
               }
-            }}
-          />
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
     ],
-    results: `${countArticlesData || 0} Results`,
+    results: searchQuery
+      ? `${articles.length} Results`
+      : `${countArticlesData || 0} Results`,
   };
 
-  console.log(countArticlesData);
+  if (isQueryLoading && articles.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading articles. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
-      <div className="gap-4">
+      <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">ARTICLES</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
 
-        <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+        {isLoading && articles.length === 0 ? (
+          <div ref={loadingRef} className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No articles found
+          </div>
+        ) : (
+          <>
+            <Table headers={tableHeader} data={tableData} />
+            {isLoading && (
+              <div ref={loadingRef} className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}
+          </>
+        )}
+        <div ref={observerRef} className="h-10" />
+
+        <Modal
+          isOpen={isUpdateModalOpen}
+          onClose={() => handleModalClose("update")}
+        >
           {currentArticleId && (
             <UpdateArticleComponent
               articleId={currentArticleId}
-              closeModal={closeUpdateModal}
+              closeModal={() => handleModalClose("update")}
             />
           )}
         </Modal>
 
-        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteArticleComponent
-            articleId={currentArticleId || ""}
-            closeModal={closeDeleteModal}
-          />
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => handleModalClose("delete")}
+        >
+          {currentArticleId && (
+            <DeleteArticleComponent
+              articleId={currentArticleId}
+              closeModal={() => handleModalClose("delete")}
+            />
+          )}
         </Modal>
-
-        {/* Elemento observado para scroll infinito */}
-        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

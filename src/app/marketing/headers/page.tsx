@@ -16,8 +16,6 @@ import UpdateHeaderComponent from "./UpdateHeader";
 import DeleteHeaderComponent from "./DeleteHeader";
 
 const Page = () => {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(15);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -26,8 +24,6 @@ const Page = () => {
   );
 
   const filterBy = "header";
-  const [items, setItems] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -35,48 +31,9 @@ const Page = () => {
     error,
     isLoading,
     refetch,
-  } = useGetMarketingByFilterQuery({ filterBy, page, limit });
+  } = useGetMarketingByFilterQuery({ filterBy });
 
   const { data: countMarketingData } = useCountMarketingQuery(null);
-
-  useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [page]);
-
-  // Configurar Intersection Observer para scroll infinito
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [isFetching]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -108,7 +65,7 @@ const Page = () => {
   if (error) return <p>Error</p>;
 
   const tableData =
-    items?.map((item) => {
+    marketing?.map((item) => {
       return {
         key: item._id,
         enable: item.header.enable ? "true" : "false",
