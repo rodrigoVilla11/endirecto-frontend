@@ -2,7 +2,10 @@
 import React, { useState } from "react";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
-import { useCountArticlesQuery, useGetArticlesQuery } from "@/redux/services/articlesApi";
+import {
+  useCountArticlesQuery,
+  useGetArticlesQuery,
+} from "@/redux/services/articlesApi";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import Articles from "./Articles/Articles";
@@ -11,9 +14,6 @@ import PopUpModal from "./Articles/PopUpModal";
 import FilterBox from "./FilterBox/FilterBox";
 
 const CataloguePage = () => {
-   const { data: countArticlesData } = useCountArticlesQuery(null);
- 
-
   const {
     order,
     cart,
@@ -24,6 +24,12 @@ const CataloguePage = () => {
     item,
     vehicleBrand,
   } = useFilters();
+  const { data: countArticlesData } = useCountArticlesQuery({
+    stock,
+    brand,
+    item,
+    vehicle_brand: vehicleBrand,
+  });
   const router = useRouter();
 
   // Estado para mostrar filtros, artículos como catálogo o lista, y el modal

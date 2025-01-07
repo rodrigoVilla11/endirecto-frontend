@@ -6,7 +6,7 @@ import React from "react";
 
 const BannerInfo = () => {
   const { data: countCustomersData } = useCountCustomersQuery(null);
-  const { data: countArticlesData } = useCountArticlesQuery(null);
+  const { data: countArticlesData } = useCountArticlesQuery({});
   const { data: brands } = useGetBrandsQuery(null);
 
 

@@ -17,8 +17,6 @@ import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 
 const CataloguePage = () => {
-  const { data: countArticlesData } = useCountArticlesQuery(null);
-
   const {
     order,
     cart,
@@ -28,8 +26,16 @@ const CataloguePage = () => {
     brand,
     item,
     vehicleBrand,
-    search
+    search,
   } = useFilters();
+
+  const { data: countArticlesData } = useCountArticlesQuery({
+    stock,
+    brand,
+    item,
+    vehicle_brand: vehicleBrand,
+    query: search,
+  });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page: 1,
@@ -39,7 +45,7 @@ const CataloguePage = () => {
     tags: tags[0],
     stock: stock,
     vehicle_brand: vehicleBrand,
-    query: search
+    query: search,
   });
 
   const filterBy = "popups";
@@ -96,10 +102,10 @@ const CataloguePage = () => {
     setModalVisible(false);
   };
 
-  const isFiltered = brand || tags?.length || stock || item || vehicleBrand || search;
+  const isFiltered =
+    brand || tags?.length || stock || item || vehicleBrand || search;
 
   return (
-    
     <div className="gap-4 p-2">
       <h3 className="text-bold p-4">CATALOGUE</h3>
       <div className="flex gap-2 ">
