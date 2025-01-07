@@ -227,9 +227,7 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${articles.length} Results`
-      : `${countArticlesData || 0} Results`,
+    results:  `${countArticlesData || 0} Results`,
   };
 
   if (isQueryLoading && articles.length === 0) {

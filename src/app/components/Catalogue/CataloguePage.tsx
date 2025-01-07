@@ -160,9 +160,7 @@ const CataloguePage = () => {
                 />
               </button>
             </div>
-            <p className="text-xs pr-4">
-              {isFiltered ? data?.length : countArticlesData || 0}
-            </p>
+            <p className="text-xs pr-4">{countArticlesData || 0}</p>
           </div>
           <Articles
             brand={brand}
