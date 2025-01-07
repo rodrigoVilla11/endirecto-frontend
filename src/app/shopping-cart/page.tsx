@@ -1,12 +1,13 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage } from "react-icons/fa";
+import { FaImage, FaTrashCan } from "react-icons/fa6";
 import { MdShoppingCart } from "react-icons/md";
 import PrivateRoute from "../context/PrivateRoutes";
 import ButtonOnOff from "../components/components/ButtonOnOff";
+import Modal from "../components/components/Modal";
 import {
   useGetCustomerByIdQuery,
   useUpdateCustomerMutation,
@@ -16,278 +17,252 @@ import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetArticlesPricesQuery } from "@/redux/services/articlesPricesApi";
-import DeleteArticleComponent from "./DeleteArticle";
-import Modal from "../components/components/Modal";
-import { FaTrashCan } from "react-icons/fa6";
 
-const Page: React.FC = () => {
+interface CartItem {
+  id: string;
+  quantity: number;
+  price: number;
+  name: string;
+  brand: string;
+  stock: any;
+  image?: string;
+}
+
+interface OrderItem extends CartItem {
+  selected: boolean;
+}
+
+const ShoppingCart = () => {
   const { selectedClientId } = useClient();
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
 
-  const [order, setOrder] = useState<
-    { id: string; quantity: number; price: number; total: number }[]
-  >([]);
-  
+  const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
+  const { data: articles } = useGetAllArticlesQuery(null);
+  const { data: brands } = useGetBrandsQuery(null);
+  const { data: stock } = useGetStockQuery(null);
+  const { data: prices } = useGetArticlesPricesQuery(null);
   const [updateCustomer] = useUpdateCustomerMutation();
-  const {
-    data: customer,
-    error: customerError,
-    isLoading: isCustomerLoading,
-    refetch: refetchCustomer,
-  } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
-  const {
-    data: articles,
-    error: articlesError,
-    isLoading: isArticlesLoading,
-  } = useGetAllArticlesQuery(null);
-  const { data: stockData, error: stockError } = useGetStockQuery(null);
-  const { data: brandData, error: brandError } = useGetBrandsQuery(null);
-  const { data: articlePricesData, error: pricesError } =
-    useGetArticlesPricesQuery(null);
 
-  const articleCount = useMemo(() => {
-    return (
-      customer?.shopping_cart.reduce<Record<string, number>>(
-        (acc, articleId) => {
-          acc[articleId] = (acc[articleId] || 0) + 1;
-          return acc;
-        },
-        {}
-      ) || {}
-    );
-  }, [customer?.shopping_cart]);
-
+  // Inicializar carrito y orden
   useEffect(() => {
-    if (customer) {
-      // Definir el tipo explícito para articleQuantity
-      const articleQuantity: Record<string, number> =
-        customer.shopping_cart.reduce(
-          (acc, articleId) => {
-            acc[articleId] = (acc[articleId] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number> // Inicializar el objeto como un Record<string, number>
-        );
+    if (!customer || !articles || !brands || !prices || !stock) return;
 
-      // Ahora mapeamos el carrito inicial considerando las cantidades ya agrupadas
-      const initialOrder = Object.keys(articleQuantity).map((articleId) => {
-        const article = articles?.find((data) => data.id === articleId);
-        const quantity = articleQuantity[articleId]; // Usar la cantidad agrupada
-        const price =
-          articlePricesData?.find((data) => data.article_id === articleId)
-            ?.price || 0;
-        const total = price * quantity;
+    const items = customer.shopping_cart.reduce((acc: CartItem[], articleId) => {
+      const article = articles.find(a => a.id === articleId);
+      const brand = brands.find(b => b.id === article?.brand_id);
+      const price = prices.find(p => p.article_id === articleId)?.price || 0;
+      const stockItem = stock.find(s => s.article_id === articleId);
 
-        return { id: articleId, quantity, price, total };
-      });
-      setOrder(initialOrder); // Establecer el pedido con todos los artículos incluidos
-    }
-  }, [customer, articles, articlePricesData]);
+      const existingItem = acc.find(item => item.id === articleId);
+      
+      if (existingItem) {
+        existingItem.quantity += 1;
+        return acc;
+      }
 
-  const openDeleteModal = (id: string) => {
-    setCurrentArticleId(encodeURIComponent(id));
-    setDeleteModalOpen(true);
-  };
+      if (article) {
+        acc.push({
+          id: articleId,
+          quantity: 1,
+          price,
+          name: article.name,
+          brand: brand?.name || 'Sin marca',
+          stock: stockItem?.quantity || 0,
+          image: article.images?.[0]
+        });
+      }
 
-  const closeDeleteModal = () => {
-    setDeleteModalOpen(false);
-    setCurrentArticleId(null);
-    refetchCustomer();
-  };
+      return acc;
+    }, []);
 
-  const openConfirmModal = () => setConfirmModalOpen(true);
-  const closeConfirmModal = () => setConfirmModalOpen(false);
+    setCartItems(items);
+    // Inicializar orderItems con todos los items del carrito pero no seleccionados
+    setOrderItems(items.map(item => ({ ...item, selected: true })));
+  }, [customer, articles, brands, prices, stock]);
 
-  const handleEmptyCart = async () => {
-    if (!customer) return;
+  const handleQuantityChange = async (articleId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
 
     try {
-      await updateCustomer({
-        id: customer.id,
-        shopping_cart: [],
-      });
-      refetchCustomer();
-      closeConfirmModal();
-      setOrder([]);
-    } catch (err) {
-      console.error("Error emptying the cart:", err);
+      // Actualizar cantidad en el carrito
+      setCartItems(prevItems =>
+        prevItems.map(item =>
+          item.id === articleId
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
+
+      // Actualizar cantidad en la orden
+      setOrderItems(prevItems =>
+        prevItems.map(item =>
+          item.id === articleId
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
+
+      if (customer) {
+        const updatedCart = cartItems.flatMap(item =>
+          item.id === articleId
+            ? Array(newQuantity).fill(item.id)
+            : Array(item.quantity).fill(item.id)
+        );
+
+        await updateCustomer({
+          id: customer.id,
+          shopping_cart: updatedCart
+        });
+        
+        refetchCustomer();
+      }
+    } catch (error) {
+      console.error('Error al actualizar cantidad:', error);
     }
   };
 
-  const uniqueArticleIds = useMemo(
-    () => Array.from(new Set(customer?.shopping_cart)),
-    [customer?.shopping_cart]
-  );
-
-
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString("es-ES", {
+  function formatPriceWithCurrency(price: number): string {
+    const formattedNumber = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    });
-  };
+    })
+      .format(price)
+      .replace("ARS", "") // Elimina "ARS" del formato.
+      .trim(); // Elimina espacios extra.
+  
+    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+  }
 
-  const handleUpdate = async (articleId: string, newQuantity: number) => {
-    if (!customer) return;
-
+  const handleRemoveItem = async (articleId: string) => {
     try {
-      const updatedShoppingCart = customer.shopping_cart.filter(
-        (id) => id !== articleId
-      );
-      updatedShoppingCart.push(...Array(newQuantity).fill(articleId));
+      setCartItems(prev => prev.filter(item => item.id !== articleId));
+      setOrderItems(prev => prev.filter(item => item.id !== articleId));
 
-      await updateCustomer({
-        id: customer.id,
-        shopping_cart: updatedShoppingCart,
-      });
+      if (customer) {
+        const updatedCart = cartItems
+          .filter(item => item.id !== articleId)
+          .flatMap(item => Array(item.quantity).fill(item.id));
 
-      refetchCustomer();
+        await updateCustomer({
+          id: customer.id,
+          shopping_cart: updatedCart
+        });
 
-      // Actualizar cantidad y total en 'order' si el artículo está incluido
-      setOrder((prevOrder) =>
-        prevOrder.map((item) => {
-          if (item.id === articleId) {
-            const newTotal = item.price * newQuantity;
-            return { ...item, quantity: newQuantity, total: newTotal };
-          }
-          return item;
-        })
-      );
-    } catch (err) {
-      console.error("Error updating article quantity:", err);
+        refetchCustomer();
+      }
+    } catch (error) {
+      console.error('Error al eliminar artículo:', error);
     }
   };
 
-  const filteredArticles = useMemo(() => {
-    console.log("uniqueArticleIds",uniqueArticleIds)
-    const result = uniqueArticleIds.filter((articleId) => {
-      const article = articles?.find((data) => data.id === articleId);
-      console.log("article",article)
-      return article?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-    return result;
-  }, [articles, uniqueArticleIds, searchTerm]);
-
-  const handleIncludeToggle = (articleId: string, included: boolean) => {
-    const article = articles?.find((data) => data.id === articleId);
-    if (!article) return;
-
-    const quantity = articleCount[articleId] || 1;
-    const price =
-      articlePricesData?.find((data) => data.article_id === articleId)?.price ||
-      0;
-    const total = price * quantity;
-
-    setOrder((prevOrder) => {
-      if (included) {
-        // Verificar si el artículo ya está en 'order'
-        const existingItem = prevOrder.find((item) => item.id === articleId);
-        if (existingItem) {
-          // Actualizar cantidad y total
-          return prevOrder.map((item) =>
-            item.id === articleId ? { ...item, quantity, total } : item
-          );
-        } else {
-          // Agregar nuevo artículo
-          return [...prevOrder, { id: articleId, quantity, price, total }];
-        }
-      } else {
-        // Eliminar artículo de 'order'
-        return prevOrder.filter((item) => item.id !== articleId);
+  const handleEmptyCart = async () => {
+    try {
+      if (customer) {
+        await updateCustomer({
+          id: customer.id,
+          shopping_cart: []
+        });
+        
+        setCartItems([]);
+        setOrderItems([]);
+        setConfirmModalOpen(false);
+        refetchCustomer();
       }
-    });
+    } catch (error) {
+      console.error('Error al vaciar carrito:', error);
+    }
   };
 
-  const totalPedido = order.reduce((acc, item) => acc + item.total, 0);
-  const cantidadObjetos = order.reduce((acc, item) => acc + item.quantity, 0); // Sumar cantidades
+  // Manejador para toggle de selección individual
+  const handleToggleSelect = (articleId: string) => {
+    setOrderItems(prevItems =>
+      prevItems.map(item =>
+        item.id === articleId
+          ? { ...item, selected: !item.selected }
+          : item
+      )
+    );
+  };
 
-  const tableData = useMemo(() => {
-    return filteredArticles
-      .map((articleId) => {
-        const article = articles?.find((data) => data.id === articleId);
-        const stock = stockData?.find(
-          (data) => data.article_id === article?.id
-        );
-        const articlePrice = articlePricesData?.find(
-          (data) => data.article_id === article?.id
-        );
-        const brand = brandData?.find((data) => data.id === article?.brand_id);
-        const quantity = articleCount[articleId] || 1;
-        const price = articlePrice?.price || 0;
+  // Manejador para select all
+  const handleSelectAll = (selected: boolean) => {
+    setOrderItems(prevItems =>
+      prevItems.map(item => ({ ...item, selected }))
+    );
+  };
 
-        const formattedPrice = formatNumber(price);
-        const totalPrice = price * quantity;
-        const formattedTotal = formatNumber(totalPrice);
+  // Obtener solo los items seleccionados para la orden
+  const getSelectedItems = () => {
+    return orderItems.filter(item => item.selected);
+  };
 
-        const isIncluded = order.some((item) => item.id === articleId);
+  // Calcular totales solo de items seleccionados
+  const totalAmount = orderItems
+    .filter(item => item.selected)
+    .reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        return {
-          key: article?.id,
-          included: (
-            <ButtonOnOff
-              title=""
-              active={isIncluded}
-              onChange={(newValue: boolean) =>
-                handleIncludeToggle(articleId, newValue)
-              }
-            />
-          ),
-          brand: brand?.name || "NO BRAND",
-          image: article?.images?.[0] ? (
-            <img
-              src={article.images[0]}
-              alt={article.name || "Article Image"}
-              className="h-16 w-16 object-contain rounded-md"
-            />
-          ) : (
-            "No Image"
-          ),
-          name: article?.name || "Unknown Article",
-          stock: stock?.quantity || 0,
-          price: `$ ${formattedPrice} + impuestos`,
-          quantity: (
-            <input
-              type="number"
-              value={quantity}
-              className="w-20 text-center border rounded-md"
-              min={1}
-              onChange={(e) => {
-                const newQuantity = Number(e.target.value);
-                if (!isNaN(newQuantity) && newQuantity >= 1) {
-                  handleUpdate(articleId, newQuantity);
-                }
-              }}
-            />
-          ),
-          total: `$ ${formattedTotal} + impuestos`,
-          erase: (
-            <div className="flex justify-center items-center">
-              <FaTrashCan
-                className="text-center text-lg hover:cursor-pointer"
-                onClick={() => openDeleteModal(article?.id || "")}
-              />
-            </div>
-          ),
-        };
-      })
-      .sort((a, b) => {
-        // Ordena los artículos, por ejemplo, por su ID o nombre
-        return a.name.localeCompare(b.name); // o a.id - b.id si prefieres ordenar por ID
-      });
-  }, [
-    filteredArticles,
-    articles,
-    stockData,
-    articlePricesData,
-    brandData,
-    articleCount,
-    order,
-  ]);
+  const totalItems = orderItems
+    .filter(item => item.selected)
+    .reduce((sum, item) => sum + item.quantity, 0);
 
-  const tableHeader = [
+  const filteredItems = cartItems.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Verificar si todos los items están seleccionados
+  const allSelected = orderItems.length > 0 && orderItems.every(item => item.selected);
+
+  const tableData = filteredItems.map(item => {
+    const orderItem = orderItems.find(o => o.id === item.id);
+    return {
+      key: item.id,
+      included: (
+        <ButtonOnOff
+          title=""
+          active={orderItem?.selected || false}
+          onChange={() => handleToggleSelect(item.id)}
+        />
+      ),
+      brand: item.brand,
+      image: item.image ? (
+        <img
+          src={item.image}
+          alt={item.name}
+          className="h-16 w-16 object-contain rounded-md"
+        />
+      ) : (
+        "Sin imagen"
+      ),
+      name: item.name,
+      stock: item.stock,
+      price: formatPriceWithCurrency(item.price),
+      quantity: (
+        <input
+          type="number"
+          value={item.quantity}
+          className="w-20 text-center border rounded-md"
+          min={1}
+          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
+        />
+      ),
+      total: formatPriceWithCurrency(item.price * item.quantity),
+      erase: (
+        <FaTrashCan
+          className="text-center text-lg hover:cursor-pointer"
+          onClick={() => handleRemoveItem(item.id)}
+        />
+      )
+    };
+  });
+
+  const tableHeaders = [
     { name: "Incluir", key: "included" },
     { name: "Marca", key: "brand" },
     { component: <FaImage className="text-center text-xl" />, key: "image" },
@@ -296,123 +271,91 @@ const Page: React.FC = () => {
     { name: "Precio", key: "price" },
     { name: "Cantidad", key: "quantity" },
     { name: "Total", key: "total" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" }
   ];
 
-  const headerBody = {
+  const headerConfig = {
     buttons: [
       {
         logo: <FaTrashCan />,
-        title: "Empty Cart",
+        title: "Vaciar Carrito",
         red: true,
-        onClick: openConfirmModal,
+        onClick: () => setConfirmModalOpen(true)
       },
-      { logo: <MdShoppingCart />, title: "Close Order" },
+      {
+        logo: <MdShoppingCart />,
+        title: "Cerrar Pedido",
+        onClick: () => {
+          const selectedOrder = getSelectedItems();
+          console.log("Orden a enviar:", selectedOrder);
+          // Aquí puedes agregar la lógica para procesar la orden
+        }
+      }
     ],
     filters: [
       {
         content: (
           <ButtonOnOff
-            title="Select All"
-            active={order.length === filteredArticles.length}
-            onChange={(checked: boolean) => {
-              if (checked) {
-                const newOrder = filteredArticles.map((articleId) => {
-                  const article = articles?.find(
-                    (data) => data.id === articleId
-                  );
-                  const price =
-                    articlePricesData?.find(
-                      (data) => data.article_id === articleId
-                    )?.price || 0;
-                  const quantity = articleCount[articleId] || 1;
-                  const total = price * quantity;
-
-                  return { id: articleId, quantity, price, total };
-                });
-                setOrder(newOrder);
-              } else {
-                setOrder([]);
-              }
-            }}
+            title="Seleccionar Todo"
+            active={allSelected}
+            onChange={handleSelectAll}
           />
-        ),
+        )
       },
       {
         content: (
           <Input
-            placeholder="Search..."
+            placeholder="Buscar..."
             value={searchTerm}
-            onChange={(e: any) => setSearchTerm(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              setSearchTerm(e.target.value)
+            }
           />
-        ),
-      },
+        )
+      }
     ],
     secondSection: {
-      title: "Total Without Taxes",
-      amount: `$ ${formatNumber(totalPedido)}`,
-      total: `PEDIDO (${cantidadObjetos}): $ ${formatNumber(totalPedido)}`,
+      title: "Total sin impuestos",
+      amount: formatPriceWithCurrency(totalAmount),
+      total: `PEDIDO (${totalItems}): $ ${formatPriceWithCurrency(totalAmount)}`
     },
-    results: `${filteredArticles.length} Results`,
+    results: `${filteredItems.length} Resultados`
   };
-
-  if (isCustomerLoading || isArticlesLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (
-    customerError ||
-    articlesError ||
-    stockError ||
-    brandError ||
-    pricesError
-  ) {
-    return <div>Error loading data. Please try again later.</div>;
-  }
 
   return (
     <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">Shopping Cart</h3>
-        <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        <h3 className="font-bold p-4">Carrito de Compras</h3>
+        <Header headerBody={headerConfig} />
+        
+        {cartItems.length > 0 ? (
+          <Table headers={tableHeaders} data={tableData} />
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            El carrito está vacío
+          </div>
+        )}
 
-        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteArticleComponent
-            articleId={currentArticleId || ""}
-            closeModal={closeDeleteModal}
-            data={customer}
-          />
-        </Modal>
-
-        {/* Modal para confirmar vaciar carrito */}
-        <Modal isOpen={isConfirmModalOpen} onClose={closeConfirmModal}>
+        <Modal isOpen={isConfirmModalOpen} onClose={() => setConfirmModalOpen(false)}>
           <div className="p-6">
-            <h2 className="text-lg font-semibold">Confirm Empty Cart</h2>
+            <h2 className="text-lg font-semibold">Confirmar vaciado del carrito</h2>
             <p className="mt-4">
-              Are you sure you want to empty the cart? This action cannot be
-              undone.
+              ¿Estás seguro de que deseas vaciar el carrito? Esta acción no se puede deshacer.
             </p>
             <div className="flex justify-end gap-4 mt-6">
               <button
-                onClick={closeConfirmModal}
+                onClick={() => setConfirmModalOpen(false)}
                 className="bg-gray-400 text-white px-4 py-2 rounded-md"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 onClick={handleEmptyCart}
                 className="bg-red-500 text-white px-4 py-2 rounded-md"
               >
-                Confirm
+                Confirmar
               </button>
             </div>
           </div>
@@ -422,4 +365,4 @@ const Page: React.FC = () => {
   );
 };
 
-export default Page;
+export default ShoppingCart;
