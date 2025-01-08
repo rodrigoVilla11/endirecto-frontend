@@ -34,7 +34,6 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     search
   } = useFilters();
 
-  console.log(order)
   const { data: dataBrand } = useGetBrandByIdQuery({ id: brand });
   const { data: dataItem } = useGetItemByIdQuery({ id: item });
   const formatStock = (stock: any) => {

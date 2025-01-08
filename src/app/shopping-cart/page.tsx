@@ -58,11 +58,9 @@ const ShoppingCart = () => {
       const article = articles.find(a => a.id === articleId);
 
       const brand = brands.find(b => b.id === article?.brand_id);
-      console.log(article?.brand_id)
 
       const price = prices.find(p => p.article_id === articleId)?.price || 0;
       const stockItem = stock.find(s => s.article_id === articleId);
-
       const existingItem = acc.find(item => item.id === articleId);
       
       if (existingItem) {

@@ -67,7 +67,6 @@ const CreateBannerComponent = ({ closeModal }: { closeModal: () => void }) => {
       }
     }
   };
-  console.log("form", form)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

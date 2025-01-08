@@ -125,7 +125,6 @@ const Page = () => {
     setHasMore(true);
   };
 
-  console.log(brands[0])
   // Table configuration
   const tableData = brands?.map((brand) => ({
     key: brand.id,

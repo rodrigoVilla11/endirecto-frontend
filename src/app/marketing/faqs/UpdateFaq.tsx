@@ -10,7 +10,7 @@ type UpdateFaqComponentProps = {
 };
 
 const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
-  console.log(faqId)
+
   const { data: faq, error, isLoading } = useGetFaqByIdQuery({ id: faqId });
   const [updateFaq, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateFaqMutation();

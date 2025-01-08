@@ -17,7 +17,7 @@ export const stockApi = createApi({
   }),
   endpoints: (builder) => ({
     getStock: builder.query<Stock[], null>({
-      query: () => `/stocks?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/stocks/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Stock[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron stocks en la respuesta");

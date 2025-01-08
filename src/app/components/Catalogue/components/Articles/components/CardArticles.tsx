@@ -38,7 +38,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   }, [articleId, article.id]); 
 
 
-  console.log(article)
   const {
     data: customer,
     error,
