@@ -17,6 +17,7 @@ import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetArticlesPricesQuery } from "@/redux/services/articlesPricesApi";
+import { customersBrandsApi } from "@/redux/services/customersBrandsApi";
 
 interface CartItem {
   id: string;
@@ -53,8 +54,12 @@ const ShoppingCart = () => {
     if (!customer || !articles || !brands || !prices || !stock) return;
 
     const items = customer.shopping_cart.reduce((acc: CartItem[], articleId) => {
+
       const article = articles.find(a => a.id === articleId);
+
       const brand = brands.find(b => b.id === article?.brand_id);
+      console.log(article?.brand_id)
+
       const price = prices.find(p => p.article_id === articleId)?.price || 0;
       const stockItem = stock.find(s => s.article_id === articleId);
 
@@ -212,6 +217,8 @@ const ShoppingCart = () => {
     .filter(item => item.selected)
     .reduce((sum, item) => sum + item.quantity, 0);
 
+
+
   const filteredItems = cartItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -221,6 +228,7 @@ const ShoppingCart = () => {
 
   const tableData = filteredItems.map(item => {
     const orderItem = orderItems.find(o => o.id === item.id);
+
     return {
       key: item.id,
       included: (

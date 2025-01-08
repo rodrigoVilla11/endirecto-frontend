@@ -58,7 +58,7 @@ export const articlesApi = createApi({
   }),
   endpoints: (builder) => ({
     getAllArticles: builder.query<Article[], null>({
-      query: () => `/articles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/articles/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron usuarios en la respuesta");
