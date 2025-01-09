@@ -18,7 +18,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { FaTimes } from "react-icons/fa";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   // Estados básicos
