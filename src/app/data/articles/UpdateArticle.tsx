@@ -10,18 +10,25 @@ import { IoMdClose } from "react-icons/io";
 type UpdateArticleComponentProps = {
   articleId: string;
   closeModal: () => void;
+  onUpdateSuccess?: () => void;
 };
 
 const UpdateArticleComponent = ({
   articleId,
   closeModal,
+  onUpdateSuccess,
 }: UpdateArticleComponentProps) => {
   const {
     data: article,
     error,
     isLoading,
-    refetch
-  } = useGetArticleByIdQuery({ id: articleId });
+    refetch,
+  } = useGetArticleByIdQuery(
+    { id: articleId },
+    {
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
   const [updateArticle, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateArticleMutation();
@@ -45,12 +52,12 @@ const UpdateArticleComponent = ({
 
   const handleUpload = async (event?: React.MouseEvent<HTMLButtonElement>) => {
     if (event) event.preventDefault(); // Prevenir comportamiento por defecto
-  
+
     if (selectedFiles.length === 0) {
       console.error("No hay archivos seleccionados para subir");
       return;
     }
-  
+
     try {
       const responses = await Promise.all(
         selectedFiles.map(async (file) => {
@@ -58,15 +65,13 @@ const UpdateArticleComponent = ({
           return response.url;
         })
       );
-  
+
       setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
       setSelectedFiles([]); // Limpiar los archivos seleccionados después de subir
     } catch (err) {
       console.error("Error al subir imágenes:", err);
     }
   };
-  
-  
 
   const [form, setForm] = useState({
     id: "",
@@ -78,7 +83,7 @@ const UpdateArticleComponent = ({
 
   useEffect(() => {
     if (article) {
-      refetch()
+      refetch();
       setForm({
         id: article.id ?? "",
         supplier_code: article.supplier_code ?? "",
@@ -115,8 +120,22 @@ const UpdateArticleComponent = ({
         images: [...form.images, ...uploadResponses],
         id: articleId
       };
+      
       await updateArticle(updatedForm).unwrap();
-      closeModal();
+      
+      // Refetch después de actualizar
+      await refetch();
+      
+      // Notificar al componente padre del éxito
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      }
+      
+      // Esperar un momento antes de cerrar para asegurar que los datos se actualizaron
+      setTimeout(() => {
+        closeModal();
+      }, 100);
+      
     } catch (err) {
       console.error("Error updating the article:", err);
     }
@@ -129,167 +148,164 @@ const UpdateArticleComponent = ({
     }));
   };
 
-
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error fetching the article.</p>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
-    
-      {/* Título y botón de cierre */}
-      <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Article</h2>
-        <button
-          onClick={closeModal}
-          className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
-        >
-          <IoMdClose />
-        </button>
-      </div>
-  
-      {/* Formulario */}
-      <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
-        <label className="flex flex-col">
-          ID:
-          <input
-            name="id"
-            value={form.id}
-            placeholder="ID"
-            readOnly
-            className="border border-black rounded-md p-2 bg-gray-200"
-          />
-        </label>
-  
-        <label className="flex flex-col">
-          Supplier Code:
-          <input
-            name="supplier_code"
-            readOnly
-            value={form.supplier_code}
-            placeholder="Supplier Code"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2 bg-gray-200"
-          />
-        </label>
-  
-        <label className="flex flex-col">
-          Description:
-          <textarea
-            name="description"
-            readOnly
-            value={form.description}
-            placeholder="Description"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2 bg-gray-200"
-          />
-        </label>
-  
-        <label className="flex flex-col">
-          Images:
-          <div className="flex justify-between p-1">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-            />
-            <button
-              onClick={handleUpload}
-              disabled={selectedFiles.length === 0 && isLoadingUpload}
-              className={`rounded-md p-2 text-white ${
-                isLoadingUpload ? "bg-gray-500" : "bg-success"
-              }`}
-            >
-              {isLoadingUpload ? "Uploading..." : "Upload Images"}
-            </button>
-  
-            {isSuccessUpload && <div>Images uploaded successfully!</div>}
-            {isErrorUpload && <div>Error uploading images</div>}
-          </div>
-          <div className="border rounded-md p-2 overflow-x-auto">
-            <table className="min-w-full table-auto">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Link</th>
-                  <th>
-                    <FaTrashCan />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {form.images.map((image, index) => (
-                  <tr key={index}>
-                    <td>
-                      <img src={image} alt="brand_image" className="h-10" />
-                    </td>
-                    <td>
-                      <a
-                        href={image}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500"
-                      >
-                        {image}
-                      </a>
-                    </td>
-                    <td>
-                      <div className="flex justify-center items-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(index)}
-                          className="text-red-500 "
-                        >
-                          <FaTrashCan />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </label>
-  
-        <label className="flex flex-col">
-          PDFs:
-          <input
-            name="pdfs"
-            value={form.pdfs.join(", ")}
-            placeholder="PDFs (comma separated)"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          />
-        </label>
-  
-        <div className="flex justify-end gap-4 mt-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
+        {/* Título y botón de cierre */}
+        <div className="flex justify-between">
+          <h2 className="text-lg mb-4">Update Article</h2>
           <button
-            type="button"
             onClick={closeModal}
-            className="bg-gray-400 rounded-md p-2 text-white"
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={`rounded-md p-2 text-white ${
-              isUpdating ? "bg-gray-500" : "bg-success"
-            }`}
-            disabled={isUpdating}
-          >
-            {isUpdating ? "Updating..." : "Update"}
+            <IoMdClose />
           </button>
         </div>
-  
-        {isSuccess && (
-          <p className="text-green-500">Article updated successfully!</p>
-        )}
-        {isError && <p className="text-red-500">Error updating article</p>}
-      </form>
+
+        {/* Formulario */}
+        <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
+          <label className="flex flex-col">
+            ID:
+            <input
+              name="id"
+              value={form.id}
+              placeholder="ID"
+              readOnly
+              className="border border-black rounded-md p-2 bg-gray-200"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Supplier Code:
+            <input
+              name="supplier_code"
+              readOnly
+              value={form.supplier_code}
+              placeholder="Supplier Code"
+              onChange={handleChange}
+              className="border border-black rounded-md p-2 bg-gray-200"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Description:
+            <textarea
+              name="description"
+              readOnly
+              value={form.description}
+              placeholder="Description"
+              onChange={handleChange}
+              className="border border-black rounded-md p-2 bg-gray-200"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Images:
+            <div className="flex justify-between p-1">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+              />
+              <button
+                onClick={handleUpload}
+                disabled={selectedFiles.length === 0 && isLoadingUpload}
+                className={`rounded-md p-2 text-white ${
+                  isLoadingUpload ? "bg-gray-500" : "bg-success"
+                }`}
+              >
+                {isLoadingUpload ? "Uploading..." : "Upload Images"}
+              </button>
+
+              {isSuccessUpload && <div>Images uploaded successfully!</div>}
+              {isErrorUpload && <div>Error uploading images</div>}
+            </div>
+            <div className="border rounded-md p-2 overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Link</th>
+                    <th>
+                      <FaTrashCan />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {form.images.map((image, index) => (
+                    <tr key={index}>
+                      <td>
+                        <img src={image} alt="brand_image" className="h-10" />
+                      </td>
+                      <td>
+                        <a
+                          href={image}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500"
+                        >
+                          {image}
+                        </a>
+                      </td>
+                      <td>
+                        <div className="flex justify-center items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="text-red-500 "
+                          >
+                            <FaTrashCan />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </label>
+
+          <label className="flex flex-col">
+            PDFs:
+            <input
+              name="pdfs"
+              value={form.pdfs.join(", ")}
+              placeholder="PDFs (comma separated)"
+              onChange={handleChange}
+              className="border border-black rounded-md p-2"
+            />
+          </label>
+
+          <div className="flex justify-end gap-4 mt-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-gray-400 rounded-md p-2 text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={`rounded-md p-2 text-white ${
+                isUpdating ? "bg-gray-500" : "bg-success"
+              }`}
+              disabled={isUpdating}
+            >
+              {isUpdating ? "Updating..." : "Update"}
+            </button>
+          </div>
+
+          {isSuccess && (
+            <p className="text-green-500">Article updated successfully!</p>
+          )}
+          {isError && <p className="text-red-500">Error updating article</p>}
+        </form>
+      </div>
     </div>
-  </div>
-  
   );
 };
 
