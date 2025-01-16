@@ -38,7 +38,7 @@ export const paymentConditionsApi = createApi({
       },
     }),
     getPaymentConditionById: builder.query<PaymentCondition, { id: string }>({
-      query: ({ id }) => `/payment-conditions/${id}`,
+      query: ({ id }) => `/payment-conditions/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     countPaymentConditions: builder.query<number, null>({
       query: () => {

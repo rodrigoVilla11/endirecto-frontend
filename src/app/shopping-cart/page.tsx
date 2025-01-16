@@ -392,7 +392,8 @@ const ShoppingCart = () => {
           onClose={() => setShowConfirmation(false)}
         >
           <OrderConfirmation
-            total={formatPriceWithCurrency(totalAmount)}
+            total={totalAmount}
+            totalFormatted={formatPriceWithCurrency(totalAmount)}
             itemCount={totalItems}
             onCancel={() => setShowConfirmation(false)}
             order={order}
