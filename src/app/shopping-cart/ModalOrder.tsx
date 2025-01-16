@@ -6,6 +6,7 @@ import { CiGps } from "react-icons/ci";
 import { useClient } from "../context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
+import { useCreateOrderMutation } from "@/redux/services/ordersApi";
 
 interface OrderItem {
   id: string;
@@ -63,8 +64,11 @@ export default function OrderConfirmation({
   itemCount,
   onCancel,
   order,
-  totalFormatted
+  totalFormatted,
 }: OrderConfirmationProps) {
+  const [createOrder, { isLoading: isLoadingCreate, isSuccess, isError }] =
+    useCreateOrderMutation();
+
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,21 +83,21 @@ export default function OrderConfirmation({
     id: selectedClientId || "",
   });
 
-  const { 
+  const {
     data: paymentsConditionsData,
     error: paymentError,
-    isLoading: isPaymentLoading 
+    isLoading: isPaymentLoading,
   } = useGetPaymentConditionByIdQuery({
-    id: customer?.payment_condition_id || ""
+    id: customer?.payment_condition_id || "",
   });
 
   const [transaction, setTransaction] = useState<Transaction>({
     status: "sended",
     customer: { id: selectedClientId },
     seller: { id: customer?.seller_id },
-    payment_condition: { 
-      id: customer?.payment_condition_id, 
-      percentage: paymentsConditionsData?.percentage
+    payment_condition: {
+      id: customer?.payment_condition_id,
+      percentage: paymentsConditionsData?.percentage,
     },
     transport: { id: "00465" },
     tmp_id: crypto.randomUUID(),
@@ -113,12 +117,12 @@ export default function OrderConfirmation({
         netprice: item.price,
         total: item.quantity * item.price,
         branch: { id: "001" },
-        id: item.id
+        id: item.id,
       }));
 
       setTransaction((prev) => ({
         ...prev,
-        details: mappedDetails
+        details: mappedDetails,
       }));
     }
   }, [order]);
@@ -130,6 +134,7 @@ export default function OrderConfirmation({
     setObservations(newNotes);
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
   };
+  console.log(transaction);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,10 +142,13 @@ export default function OrderConfirmation({
     setError(null);
 
     try {
-      console.log(transaction)
+      await createOrder(transaction).unwrap();
+
       onCancel();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al procesar el pedido");
+      setError(
+        err instanceof Error ? err.message : "Error al procesar el pedido"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +209,7 @@ export default function OrderConfirmation({
           <div className="space-y-2">
             <p className="font-medium text-gray-700">GPS</p>
             <div className="flex items-center space-x-2">
-              <button 
+              <button
                 type="button"
                 className="w-6 h-6 rounded-full bg-emerald-500 cursor-pointer flex justify-center items-center"
               >

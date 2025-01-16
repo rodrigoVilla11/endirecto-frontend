@@ -35,6 +35,7 @@ import { crmApi } from "./services/crmApi";
 import { cloduinaryApi } from "./services/cloduinaryApi";
 import { customersBrandsApi } from "./services/customersBrandsApi";
 import { customersItemsApi } from "./services/customersItemsApi";
+import { ordersApi } from "./services/ordersApi";
 
 export const store = configureStore({
   reducer: {
@@ -73,6 +74,7 @@ export const store = configureStore({
     cloduinaryApi: cloduinaryApi.reducer,
     customersBrandsApi: customersBrandsApi.reducer,
     customersItemsApi: customersItemsApi.reducer,
+    ordersApi: ordersApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat([
@@ -111,6 +113,7 @@ export const store = configureStore({
       cloduinaryApi.middleware,
       customersBrandsApi.middleware,
       customersItemsApi.middleware,
+      ordersApi.middleware,
     ]),
 });
 
