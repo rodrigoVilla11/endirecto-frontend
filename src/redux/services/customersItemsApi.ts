@@ -65,6 +65,10 @@ export const customersItemsApi = createApi({
       query: ({ id }) =>
         `/customers-items/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+    getCustomersItemsByItemAndCustomerId: builder.query<CustomersItems, { id: string, customer: string }>({
+      query: ({ id, customer }) =>
+        `/customers-items/item/${id}/${customer}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
     createCustomersItems: builder.mutation<
       CustomersItems,
       CreateCustomerItemsPayload
@@ -115,4 +119,5 @@ export const {
   useGetCustomersItemsByCustomerQuery,
   useCreateCustomersItemsMutation,
   useUpdateMassiveCustomersItemsMutation,
+  useGetCustomersItemsByItemAndCustomerIdQuery
 } = customersItemsApi;

@@ -84,7 +84,7 @@ const Page = () => {
         Promise.all(
           missingItems.map((item) =>
             createCustomersItems({
-              margin: 50,
+              margin: 0,
               item_id: item.id,
               customer_id: selectedClientId,
             })

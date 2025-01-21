@@ -34,7 +34,7 @@ export const articlesBonusesApi = createApi({
       },
     }),
     getArticleBonusById: builder.query<ArticleBonus, { id: string }>({
-      query: ({ id }) => `/articles-bonuses/${id}`,
+      query: ({ id }) => `/articles-bonuses/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getArticlesBonusesPag: builder.query<
       ArticleBonus[],
@@ -58,6 +58,9 @@ export const articlesBonusesApi = createApi({
         return `/articles-bonuses/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
+    getArticleBonusByItemId: builder.query<ArticleBonus, { id: string }>({
+      query: ({ id }) => `/articles-bonuses/item/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
   }),
 });
 
@@ -66,4 +69,5 @@ export const {
   useGetArticleBonusByIdQuery,
   useGetArticlesBonusesPagQuery,
   useCountArticlesBonusesQuery,
+  useGetArticleBonusByItemIdQuery
 } = articlesBonusesApi;

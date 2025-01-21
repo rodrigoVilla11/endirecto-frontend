@@ -70,6 +70,10 @@ export const customersBrandsApi = createApi({
       query: ({ id }) =>
         `/customers-brands/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+    getCustomersBrandsByBrandAndCustomerId: builder.query<CustomersBrands, { id: string, customer: string }>({
+      query: ({ id, customer }) =>
+        `/customers-brands/brand/${id}/${customer}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
     createCustomersBrands: builder.mutation<
       CustomersBrands,
       CreateCustomersBrandsPayload
@@ -120,4 +124,5 @@ export const {
   useGetCustomersBrandsByCustomerQuery,
   useCreateCustomersBrandsMutation,
   useUpdateMassiveCustomersBrandsMutation,
+  useGetCustomersBrandsByBrandAndCustomerIdQuery
 } = customersBrandsApi;

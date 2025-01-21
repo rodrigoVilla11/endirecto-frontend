@@ -2,28 +2,84 @@ import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
+import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
+import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
+import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
 
 const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   const encodedId = encodeURIComponent(articleId);
-  const { data, error, isLoading, refetch } =
-    useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
   const { selectedClientId } = useClient();
 
+  const { data, error, isLoading, refetch } =
+  useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
+  // Consultas de datos
+  const { data: article } = useGetArticleByIdQuery({ id: encodedId });
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  const priceEntry = data?.find((item) => item.price_list_id === customer?.price_list_id);
-  const price = priceEntry ? priceEntry.price : "N/A";
+  const { data: bonus } = useGetArticleBonusByItemIdQuery({
+    id: article?.item_id || "",
+  });
+  const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
+    id: article?.brand_id || "",
+    customer: selectedClientId || "",
+  });
+  const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
+    id: article?.item_id || "",
+    customer: selectedClientId || "",
+  });
 
-  // Función para calcular el precio con IVA
-  const calculatePriceWithVAT = (price: any, vatRate: number) => {
-    if (typeof price === "number") {
-      return price + price * (vatRate / 100);
+  // Obtener el margen de la marca
+  let margin: number | undefined;
+  if (Array.isArray(brandMargin) && brandMargin.length > 0) {
+    margin = brandMargin[0]?.margin;
+  } else {
+    console.log("brandMargin no es un array o está vacío.");
+  }
+
+  // Obtener el margen del artículo
+  let marginItem: number | undefined;
+  if (Array.isArray(itemMargin) && itemMargin.length > 0) {
+    marginItem = itemMargin[0]?.margin;
+  } else {
+    console.log("itemMargin no es un array o está vacío.");
+  }
+
+  // Obtener el precio base
+  const priceEntry = data?.find(
+    (item) => item.price_list_id === customer?.price_list_id
+  );
+  let price = priceEntry ? priceEntry.price : 0;
+
+  // Aplicar descuento si existe
+  if (bonus?.percentage_1 && typeof price === "number") {
+    const discount = (price * bonus.percentage_1) / 100; // Calcular el descuento
+    price -= discount; // Aplicar el descuento al precio
+  }
+
+  // Calcular el margen total (sumando margin y marginItem si son mayores a 0)
+  const totalMargin = (margin || 0) + (marginItem || 0);
+
+  // Función para calcular el precio con margen y luego IVA
+  const calculatePriceWithMarginAndVAT = (
+    price: number,
+    margin: number,
+    vatRate: number
+  ) => {
+    if (typeof price === "number" && margin !== undefined) {
+      // Primero aplicamos el margen total (sumado margin + marginItem)
+      const priceWithMargin = price * (1 + margin / 100);
+
+      // Luego aplicamos el IVA sobre el precio con margen
+      const finalPrice = priceWithMargin * (1 + vatRate / 100);
+      return finalPrice;
     }
-    return "N/A";
+    return 0;
   };
 
-  const priceWithVAT = calculatePriceWithVAT(price, 21); // 21% de IVA
+  // Calculamos el precio con el margen total y luego con IVA
+  const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(price, totalMargin, 21);
 
   // Función para formatear el precio con separadores de miles
   const formatPrice = (price: any) => {
@@ -35,14 +91,16 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
       }).format(price);
       return formatted.split(",");
     }
-    return ["N/A", ""];
+    return ["N/A", ""]; // Devuelve "N/A" si no es un número válido
   };
 
-  const [integerPart, decimalPart] = formatPrice(priceWithVAT);
+  const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
 
   return (
     <div
-      className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center ${
+      className={`flex ${
+        onlyPrice ? "justify-center" : "justify-between"
+      } items-center ${
         showPurchasePrice ? "text-xs" : "text-xs"
       } px-4 pb-2 h-4 `}
     >
@@ -50,7 +108,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
       <p>
         $
         <span className="font-semibold text-gray-600 text-lg">
-          {integerPart}
+          {integerPart || "0"}
         </span>
         {decimalPart && (
           <span className="font-semibold text-gray-600">,{decimalPart}</span>

@@ -27,10 +27,14 @@ export const customersTransportsApi = createApi({
     getCustomerTransportById: builder.query<CustomerTransport, { id: string }>({
       query: ({ id }) => `/customers-transports/${id}`,
     }),
+    getCustomerTransportByCustomerId: builder.query<CustomerTransport, { id: string }>({
+      query: ({ id }) => `/customers-transports/customer/${id}`,
+    }),
   }),
 });
 
 export const {
   useGetCustomersTransportsQuery,
   useGetCustomerTransportByIdQuery,
+  useGetCustomerTransportByCustomerIdQuery
 } = customersTransportsApi;

@@ -61,9 +61,11 @@ const ShoppingCart = () => {
         const article = articles.find((a) => a.id === articleId);
 
         const brand = brands.find((b) => b.id === article?.brand_id);
-
         const price =
-          prices.find((p) => p.article_id === articleId)?.price || 0;
+        prices.find(
+          (p) => p.article_id === articleId && p.price_list_id === customer?.price_list_id
+        )?.price || 0;
+      
         const stockItem = stock.find((s) => s.article_id === articleId);
         const existingItem = acc.find((item) => item.id === articleId);
 
@@ -336,6 +338,7 @@ const ShoppingCart = () => {
     results: `${filteredItems.length} Resultados`,
   };
 
+  console.log(tableData)
   return (
     <PrivateRoute
       requiredRoles={[
