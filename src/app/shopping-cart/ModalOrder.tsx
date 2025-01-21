@@ -7,6 +7,7 @@ import { useClient } from "../context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/customersTransports";
+import { useCreateOrderMutation } from "@/redux/services/ordersApi";
 
 interface OrderItem {
   id: string;
@@ -66,6 +67,9 @@ export default function OrderConfirmation({
   order,
   totalFormatted,
 }: OrderConfirmationProps) {
+  const [createOrder, { isLoading: isLoadingCreate, isSuccess, isError }] =
+    useCreateOrderMutation();
+
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +143,7 @@ export default function OrderConfirmation({
     setObservations(newNotes);
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
   };
+  console.log(transaction);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +151,8 @@ export default function OrderConfirmation({
     setError(null);
 
     try {
-      console.log(transaction);
+      await createOrder(transaction).unwrap();
+
       onCancel();
     } catch (err) {
       setError(
