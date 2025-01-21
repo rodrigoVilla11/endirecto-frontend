@@ -17,8 +17,13 @@ import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetArticlesPricesQuery } from "@/redux/services/articlesPricesApi";
-import { customersBrandsApi } from "@/redux/services/customersBrandsApi";
+import {
+  customersBrandsApi,
+  useGetCustomersBrandsByCustomerQuery,
+} from "@/redux/services/customersBrandsApi";
 import OrderConfirmation from "./ModalOrder";
+import { useGetArticlesBonusesQuery } from "@/redux/services/articlesBonusesApi";
+import { useGetCustomersItemsByCustomerQuery } from "@/redux/services/customersItemsApi";
 
 interface CartItem {
   id: string;
@@ -52,6 +57,15 @@ const ShoppingCart = () => {
   const { data: prices } = useGetArticlesPricesQuery(null);
   const [updateCustomer] = useUpdateCustomerMutation();
 
+  const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
+  const { data: customersBrands } = useGetCustomersBrandsByCustomerQuery({
+    customer_id: selectedClientId || "",
+  });
+  const { data: customersItems } = useGetCustomersItemsByCustomerQuery({
+    customer_id: selectedClientId || "",
+  });
+
+
   // Inicializar carrito y orden
   useEffect(() => {
     if (!customer || !articles || !brands || !prices || !stock) return;
@@ -59,13 +73,44 @@ const ShoppingCart = () => {
     const items = customer.shopping_cart.reduce(
       (acc: CartItem[], articleId) => {
         const article = articles.find((a) => a.id === articleId);
-
         const brand = brands.find((b) => b.id === article?.brand_id);
-        const price =
-        prices.find(
-          (p) => p.article_id === articleId && p.price_list_id === customer?.price_list_id
-        )?.price || 0;
-      
+
+        // Obtener precio base
+        let price =
+          prices.find(
+            (p) =>
+              p.article_id === articleId &&
+              p.price_list_id === customer?.price_list_id
+          )?.price || 0;
+
+        // Aplicar bonus si existe
+        const bonus = articlesBonuses?.find(
+          (b) => b.item_id === article?.item_id
+        );
+        if (bonus?.percentage_1 && typeof price === "number") {
+          const discount = (price * bonus.percentage_1) / 100;
+          price -= discount;
+        }
+
+        // Obtener márgenes
+        const brandMargin =
+          customersBrands?.find((cb) => cb.brand_id === article?.brand_id)
+            ?.margin || 0;
+        const itemMargin =
+          customersItems?.find((ci) => ci.item_id === article?.item_id)
+            ?.margin || 0;
+
+        // Calcular margen total
+        const totalMargin = brandMargin + itemMargin;
+
+        // Aplicar margen e IVA
+        if (typeof price === "number" && totalMargin !== undefined) {
+          // Primero aplicamos el margen total
+          const priceWithMargin = price * (1 + totalMargin / 100);
+          // Luego aplicamos el IVA (21%)
+          price = priceWithMargin * (1 + 21 / 100);
+        }
+
         const stockItem = stock.find((s) => s.article_id === articleId);
         const existingItem = acc.find((item) => item.id === articleId);
 
@@ -92,9 +137,17 @@ const ShoppingCart = () => {
     );
 
     setCartItems(items);
-    // Inicializar orderItems con todos los items del carrito pero no seleccionados
     setOrderItems(items.map((item) => ({ ...item, selected: true })));
-  }, [customer, articles, brands, prices, stock]);
+  }, [
+    customer,
+    articles,
+    brands,
+    prices,
+    stock,
+    articlesBonuses,
+    customersBrands,
+    customersItems,
+  ]);
 
   const handleQuantityChange = async (
     articleId: string,
@@ -299,9 +352,9 @@ const ShoppingCart = () => {
         title: "Cerrar Pedido",
         onClick: () => {
           const selectedOrder = getSelectedItems();
-          setOrder(selectedOrder)
+          setOrder(selectedOrder);
           console.log("Orden a enviar:", selectedOrder);
-          setShowConfirmation(true)
+          setShowConfirmation(true);
           // Aquí puedes agregar la lógica para procesar la orden
         },
       },
@@ -338,7 +391,6 @@ const ShoppingCart = () => {
     results: `${filteredItems.length} Resultados`,
   };
 
-  console.log(tableData)
   return (
     <PrivateRoute
       requiredRoles={[

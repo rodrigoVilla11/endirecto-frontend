@@ -90,7 +90,6 @@ const Articles = ({
     });
   }, [brand, item, vehicleBrand, stock, tags, query, order]);
 
-  console.log(items)
   return (
     <div className="h-full m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (
