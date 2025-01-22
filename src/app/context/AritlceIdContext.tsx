@@ -2,14 +2,14 @@
 import React, { createContext, useContext, useState } from 'react';
 
 interface ArticleIdContextType {
-  articleId: number | null;
-  setArticleId: React.Dispatch<React.SetStateAction<number | null>>;
+  articleId: string | null;
+  setArticleId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const ArticleIdContext = createContext<ArticleIdContextType | null>(null);
 
 export const ArticleIdProvider = ({ children }: any) => {
-  const [articleId, setArticleId] = useState<number | null>(null);
+  const [articleId, setArticleId] = useState<string | null>(null);
 
   return (
     <ArticleIdContext.Provider value={{ articleId, setArticleId }}>

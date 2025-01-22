@@ -27,8 +27,8 @@ const ButtonsIcons = () => {
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
   const cartItemCount = customer?.shopping_cart
-  ? [...new Set(customer?.shopping_cart.map((item) => item))].length
-  : 0;
+    ? [...new Set(customer?.shopping_cart.map((item) => item))].length
+    : 0;
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
@@ -78,7 +78,10 @@ const ButtonsIcons = () => {
 
       {/* Tick de confirmación */}
       {showTick && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse">
+        <div
+          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"
+          style={{ zIndex: 9999 }} // Añadido z-index alto
+        >
           <FaCheckCircle />
         </div>
       )}

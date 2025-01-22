@@ -46,22 +46,55 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
 
   const [integerPart, decimalPart] = formatPrice(price);
 
+  const offer = data?.find(
+    (item) => item.price_list_id === customer?.price_list_id
+  )?.offer;
+
+  const [integerPartOffer, decimalPartOffer] = formatPrice(offer);
+
   return (
     <div
       className={`flex ${
         onlyPrice ? "justify-center" : "justify-between"
       } text-xs px-4 h-4 items-center`}
     >
-      {!onlyPrice && <p>Cost Price s/IVA</p>}
-      <p>
-        $
-        <span className="font-semibold text-gray-800 text-lg">
-          {integerPart || "0"}
-        </span>
-        {decimalPart && (
-          <span className="font-semibold text-gray-800">,{decimalPart}</span>
-        )}
-      </p>
+      {!onlyPrice && <p>P. Costo s/IVA</p>}
+
+      {offer !== null ? (
+        <div className="flex flex-col items-end">
+          {/* Precio original tachado */}
+          <span className="line-through text-red-500 text-sm flex">
+            <p className="text-gray-800">$ {integerPart || "0"}</p>
+            {decimalPart && (
+              <p className="font-semibold text-gray-800">
+                ,{decimalPart}
+              </p>
+            )}
+          </span>
+          {/* Precio actual */}
+          <p>
+            $
+            <span className="font-semibold text-gray-800 text-lg">
+              {integerPartOffer}
+            </span>
+            {decimalPartOffer && (
+              <span className="font-semibold text-gray-800">
+                ,{decimalPartOffer}
+              </span>
+            )}
+          </p>
+        </div>
+      ) : (
+        <p>
+          $
+          <span className="font-semibold text-gray-800 text-lg">
+            {integerPart || "0"}
+          </span>
+          {decimalPart && (
+            <span className="font-semibold text-gray-800">,{decimalPart}</span>
+          )}
+        </p>
+      )}
     </div>
   );
 };

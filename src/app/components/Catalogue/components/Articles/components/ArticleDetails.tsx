@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import ArticleMenu from "./ArticleMenu";
 import ArticleImage from "./ArticleImage";
@@ -9,9 +9,106 @@ import SuggestedPrice from "./SuggestedPrice";
 import AddToCart from "./AddToCart";
 import Description from "./Description/Description";
 import { useClient } from "@/app/context/ClientContext";
+import {
+  useGetCustomerByIdQuery,
+  useUpdateCustomerMutation,
+} from "@/redux/services/customersApi";
+import { useArticleId } from "@/app/context/AritlceIdContext";
+import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
 
-const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, toggleShoppingCart, quantity, setQuantity} : any) => {
-    const { selectedClientId } = useClient();  
+interface FormState {
+  id: string;
+  favourites: string[];
+  shopping_cart: string[];
+}
+
+const ArticleDetails = ({ closeModal }: any) => {
+  const { selectedClientId } = useClient();
+  const [quantity, setQuantity] = useState(1);
+  const { articleId } = useArticleId();
+
+  const { data: article, isLoading: isArticleLoading, error: articleError } = 
+    useGetArticleByIdQuery({ id: articleId || "" }, { skip: !articleId });
+
+  const {
+    data: customer,
+    error: customerError,
+    isLoading: isCustomerLoading,
+    refetch,
+  } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
+
+  const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
+    useUpdateCustomerMutation();
+
+  const [form, setForm] = useState<FormState>({
+    id: "",
+    favourites: [],
+    shopping_cart: [],
+  });
+
+  useEffect(() => {
+    if (customer) {
+      setForm({
+        id: customer.id || "",
+        favourites: customer.favourites || [],
+        shopping_cart: customer.shopping_cart || [],
+      });
+    }
+  }, [customer]);
+
+  const toggleFavourite = () => {
+    if (!article) return;
+    setForm((prev) => {
+      const isFavourite = prev.favourites.includes(article.id);
+      const updatedFavourites = isFavourite
+        ? prev.favourites.filter((id) => id !== article.id)
+        : [...prev.favourites, article.id];
+
+      updateCustomer({ id: form.id, favourites: updatedFavourites }).then(
+        () => refetch()
+      );
+
+      return { ...prev, favourites: updatedFavourites };
+    });
+  };
+
+  const toggleShoppingCart = () => {
+    if (!article || quantity < 1) return;
+    setForm((prev) => {
+      const newShoppingCart = [...prev.shopping_cart];
+      for (let i = 0; i < quantity; i++) {
+        newShoppingCart.push(article.id);
+      }
+
+      updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(
+        () => refetch()
+      );
+
+      return { ...prev, shopping_cart: newShoppingCart };
+    });
+  };
+
+  if (isCustomerLoading || isArticleLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (customerError || articleError) {
+    return (
+      <div>
+        Error loading data
+      </div>
+    );
+  }
+
+  if (!article) {
+    return <div>No article selected</div>;
+  }
+
+  const isFavourite = form.favourites.includes(article.id);
+
   return (
     <div>
       <div className="flex justify-between">
@@ -30,19 +127,26 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
             isFavourite={isFavourite}
             article={article}
           />
-          <ArticleImage img={article.images} />
+          <ArticleImage img={article.images || [""]} />
           <StripeStock articleId={article.id} />
-          <ArticleName name={article.name} id={article.id} code={article.supplier_code}/>
+          <ArticleName
+            name={article.name}
+            id={article.id}
+            code={article.supplier_code}
+          />
           <div className="pb-4">
-          <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
-          <hr className="my-4"/>
-          <SuggestedPrice articleId={article.id} />
+            <CostPrice
+              articleId={article.id}
+              selectedClientId={selectedClientId}
+            />
+            <hr className="my-4" />
+            <SuggestedPrice articleId={article.id} />
           </div>
           <AddToCart
             articleId={article.id}
             onAddToCart={toggleShoppingCart}
             quantity={quantity}
-            setQuantity={setQuantity}
+            setQuantity={(value) => setQuantity(Math.max(1, value))}
           />
         </div>
         <Description article={article} description={article.description} />

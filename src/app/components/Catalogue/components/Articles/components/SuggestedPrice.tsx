@@ -35,7 +35,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   if (Array.isArray(brandMargin) && brandMargin.length > 0) {
     margin = brandMargin[0]?.margin;
   } else {
-    console.log("brandMargin no es un array o está vacío.");
+    // console.log("brandMargin no es un array o está vacío.");
   }
 
   // Obtener el margen del artículo
@@ -43,7 +43,7 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   if (Array.isArray(itemMargin) && itemMargin.length > 0) {
     marginItem = itemMargin[0]?.margin;
   } else {
-    console.log("itemMargin no es un array o está vacío.");
+    // console.log("itemMargin no es un array o está vacío.");
   }
 
   // Obtener el precio base

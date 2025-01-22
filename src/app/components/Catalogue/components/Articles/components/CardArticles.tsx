@@ -30,14 +30,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const [quantity, setQuantity] = useState(1);
   const { articleId, setArticleId} = useArticleId(); 
 
-  useEffect(() => {
-    if (articleId && articleId === article.id) {
-      setModalOpen(true);
-      setArticleId(null); 
-    }
-  }, [articleId, article.id]); 
-
-
   const {
     data: customer,
     error,
@@ -111,9 +103,14 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
   const isFavourite = form.favourites.includes(article.id);
 
-  const openModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
 
+  const handleOpenModal = (id: string) => {
+    console.log("setting article id", id)
+    setModalOpen(true)
+    setArticleId(id);
+  };
+  
   return (
     <div>
       <div className="relative flex flex-col justify-between shadow-lg bg-white w-60 cursor-pointer">
@@ -122,7 +119,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           isFavourite={isFavourite}
           article={article}
         />
-        <div onClick={openModal}>
+        <div onClick={() => handleOpenModal(article.id)}>
           <div className="absolute w-full h-3/6 flex justify-end items-end pb-8"><Tag articleId={article.id}/></div>
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
@@ -143,12 +140,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ArticleDetails
           closeModal={closeModal}
-          toggleFavourite={toggleFavourite}
-          isFavourite={isFavourite}
-          article={article}
-          toggleShoppingCart={toggleShoppingCart}
-          quantity={quantity}
-          setQuantity={setQuantity}
         />
       </Modal>
     </div>

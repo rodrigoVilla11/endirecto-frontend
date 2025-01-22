@@ -19,6 +19,8 @@ import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetArticlesPricesQuery } from "@/redux/services/articlesPricesApi";
 import OrderConfirmation from "./ModalOrder";
 import { useGetArticlesBonusesQuery } from "@/redux/services/articlesBonusesApi";
+import ArticleDetails from "../components/Catalogue/components/Articles/components/ArticleDetails";
+import { useArticleId } from "../context/AritlceIdContext";
 
 interface CartItem {
   id: string;
@@ -36,6 +38,9 @@ interface OrderItem extends CartItem {
 }
 
 const ShoppingCart = () => {
+  const { articleId, setArticleId } = useArticleId();
+  const [isModalOpen, setModalOpen] = useState(false);
+
   const { selectedClientId } = useClient();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -112,14 +117,7 @@ const ShoppingCart = () => {
 
     setCartItems(items);
     setOrderItems(items.map((item) => ({ ...item, selected: true })));
-  }, [
-    customer,
-    articles,
-    brands,
-    prices,
-    stock,
-    articlesBonuses,
-  ]);
+  }, [customer, articles, brands, prices, stock, articlesBonuses]);
 
   const handleQuantityChange = async (
     articleId: string,
@@ -253,6 +251,12 @@ const ShoppingCart = () => {
   const allSelected =
     orderItems.length > 0 && orderItems.every((item) => item.selected);
 
+  const handleOpenModal = (id: string) => {
+    console.log("setting article id", id);
+    setModalOpen(true);
+    setArticleId(id);
+  };
+
   const tableData = filteredItems.map((item) => {
     const orderItem = orderItems.find((o) => o.id === item.id);
 
@@ -279,12 +283,13 @@ const ShoppingCart = () => {
           src={item.image}
           alt={item.name}
           className="h-16 w-16 object-contain rounded-md"
+          onClick={() => handleOpenModal(item.id)}
         />
       ) : (
         "Sin imagen"
       ),
       name: (
-        <div className="flex">
+        <div className="flex" onClick={() => handleOpenModal(item.id)}>
           <p className="font-bold">{item.supplier_code}</p>-<p>{item.name}</p>
         </div>
       ),
@@ -389,6 +394,8 @@ const ShoppingCart = () => {
     results: `${filteredItems.length} Resultados`,
   };
 
+  const closeModal = () => setModalOpen(false);
+
   return (
     <PrivateRoute
       requiredRoles={[
@@ -451,6 +458,10 @@ const ShoppingCart = () => {
             onCancel={() => setShowConfirmation(false)}
             order={order}
           />
+        </Modal>
+
+        <Modal isOpen={isModalOpen} onClose={closeModal}>
+          <ArticleDetails closeModal={closeModal} />
         </Modal>
       </div>
     </PrivateRoute>
