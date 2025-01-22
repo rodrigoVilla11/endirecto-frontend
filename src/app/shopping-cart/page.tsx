@@ -17,13 +17,8 @@ import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetStockQuery } from "@/redux/services/stockApi";
 import { useGetArticlesPricesQuery } from "@/redux/services/articlesPricesApi";
-import {
-  customersBrandsApi,
-  useGetCustomersBrandsByCustomerQuery,
-} from "@/redux/services/customersBrandsApi";
 import OrderConfirmation from "./ModalOrder";
 import { useGetArticlesBonusesQuery } from "@/redux/services/articlesBonusesApi";
-import { useGetCustomersItemsByCustomerQuery } from "@/redux/services/customersItemsApi";
 
 interface CartItem {
   id: string;
@@ -59,12 +54,6 @@ const ShoppingCart = () => {
   const [updateCustomer] = useUpdateCustomerMutation();
 
   const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
-  const { data: customersBrands } = useGetCustomersBrandsByCustomerQuery({
-    customer_id: selectedClientId || "",
-  });
-  const { data: customersItems } = useGetCustomersItemsByCustomerQuery({
-    customer_id: selectedClientId || "",
-  });
 
   // Inicializar carrito y orden
   useEffect(() => {
@@ -90,25 +79,6 @@ const ShoppingCart = () => {
         if (bonus?.percentage_1 && typeof price === "number") {
           const discount = (price * bonus.percentage_1) / 100;
           price -= discount;
-        }
-
-        // Obtener márgenes
-        const brandMargin =
-          customersBrands?.find((cb) => cb.brand_id === article?.brand_id)
-            ?.margin || 0;
-        const itemMargin =
-          customersItems?.find((ci) => ci.item_id === article?.item_id)
-            ?.margin || 0;
-
-        // Calcular margen total
-        const totalMargin = brandMargin + itemMargin;
-
-        // Aplicar margen e IVA
-        if (typeof price === "number" && totalMargin !== undefined) {
-          // Primero aplicamos el margen total
-          const priceWithMargin = price * (1 + totalMargin / 100);
-          // Luego aplicamos el IVA (21%)
-          price = priceWithMargin * (1 + 21 / 100);
         }
 
         const stockItem = stock.find((s) => s.article_id === articleId);
@@ -149,8 +119,6 @@ const ShoppingCart = () => {
     prices,
     stock,
     articlesBonuses,
-    customersBrands,
-    customersItems,
   ]);
 
   const handleQuantityChange = async (

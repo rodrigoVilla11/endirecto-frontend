@@ -30,7 +30,6 @@ const TablePrices = ({ article }: any) => {
     priceNoIva -= discount; // Aplicar el descuento al precio
   }
 
-
   const formatPrice = (price: any) => {
     if (typeof price === "number") {
       const formatted = new Intl.NumberFormat("es-AR", {
@@ -44,7 +43,6 @@ const TablePrices = ({ article }: any) => {
   };
 
   const [integerPartNoIva, decimalPartNoIva] = formatPrice(priceNoIva);
-
 
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
     id: article?.brand_id || "",
@@ -72,6 +70,16 @@ const TablePrices = ({ article }: any) => {
   }
   const totalMargin = (margin || 0) + (marginItem || 0);
 
+  const calculateMargin = (price: string | number, margin: number) => {
+    if (typeof price === "number" && margin !== undefined) {
+      // Calculamos el margen como un valor absoluto
+      const marginAmount = price * (margin / 100);
+      return marginAmount;
+    }
+    return 0;
+  };
+  
+
   const calculatePriceWithMarginAndVAT = (
     price: string | number,
     margin: number,
@@ -88,10 +96,19 @@ const TablePrices = ({ article }: any) => {
     return 0;
   };
 
+  const finalMargin = calculateMargin(priceNoIva, totalMargin);
+
+  
   // Calculamos el precio con el margen total y luego con IVA
-  const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(priceNoIva, totalMargin, 21);
+  const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(
+    priceNoIva,
+    totalMargin,
+    21
+  );
 
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
+
+  const [integerPartMargin, decimalPartMargin] = formatPrice(finalMargin);
 
   return (
     <div className="">
@@ -110,23 +127,29 @@ const TablePrices = ({ article }: any) => {
 
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">
         <p className="font-bold">Net Price</p>
-        <p className="font-light max-w-40">$ {integerPartNoIva},{decimalPartNoIva}</p>
+        <p className="font-light max-w-40">
+          $ {integerPartNoIva},{decimalPartNoIva}
+        </p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Margin</p>
-        <p className="font-light max-w-40">{margin},00% {marginItem ? + `${marginItem},00%` : ""}</p>
+        <p className="font-light max-w-40">
+          {margin},00% {marginItem ? +`${marginItem},00%` : ""}
+        </p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Margin $</p>
-        <p className="font-light max-w-40">$ 2.032,86</p>
+        <p className="font-light max-w-40">$ {integerPartMargin},{decimalPartMargin}</p>
       </div>
 
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Suggested Price w/IVA</p>
-        <p className="font-light max-w-40">$ {integerPart},{decimalPart}</p>
+        <p className="font-light max-w-40">
+          $ {integerPart},{decimalPart}
+        </p>
       </div>
       <hr />
     </div>
