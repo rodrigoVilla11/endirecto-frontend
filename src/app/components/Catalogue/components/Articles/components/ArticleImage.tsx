@@ -10,11 +10,13 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   // Imagen predeterminada para mostrar cuando no hay imágenes
   const defaultImage = "http://res.cloudinary.com/dw3folb8p/image/upload/v1735595292/wgrcaa3fcibzyvykozd9.png"; // Reemplaza con la URL o ruta de tu imagen de "Foto no disponible"
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setCurrentIndex((prevIndex) => (prevIndex + 1) % img.length);
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? img.length - 1 : prevIndex - 1
     );

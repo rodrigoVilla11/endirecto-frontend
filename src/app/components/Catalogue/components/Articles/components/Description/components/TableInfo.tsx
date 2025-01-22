@@ -9,7 +9,7 @@ const TableInfo = ({article} : any) => {
     <div className="">
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Code</p>
-        <p className="font-light">BUSCAR BIEN</p>
+        <p className="font-light">{article.id}</p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">

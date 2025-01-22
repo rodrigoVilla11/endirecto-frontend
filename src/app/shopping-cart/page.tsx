@@ -33,6 +33,7 @@ interface CartItem {
   brand: string;
   stock: any;
   image?: string;
+  supplier_code?: string;
 }
 
 interface OrderItem extends CartItem {
@@ -64,7 +65,6 @@ const ShoppingCart = () => {
   const { data: customersItems } = useGetCustomersItemsByCustomerQuery({
     customer_id: selectedClientId || "",
   });
-
 
   // Inicializar carrito y orden
   useEffect(() => {
@@ -125,9 +125,13 @@ const ShoppingCart = () => {
             quantity: 1,
             price,
             name: article.name,
-            brand: brand?.name || "Sin marca",
-            stock: stockItem?.quantity || 0,
+            brand: brand?.images || "Sin marca",
+            stock: {
+              quantity: stockItem?.quantity || 0,
+              status: stockItem?.status,
+            },
             image: article.images?.[0],
+            supplier_code: article.supplier_code,
           });
         }
 
@@ -293,7 +297,15 @@ const ShoppingCart = () => {
           onChange={() => handleToggleSelect(item.id)}
         />
       ),
-      brand: item.brand,
+      brand: item.brand ? (
+        <img
+          src={item.brand}
+          alt={item.brand}
+          className="h-16 w-16 object-contain rounded-md"
+        />
+      ) : (
+        "Sin imagen"
+      ),
       image: item.image ? (
         <img
           src={item.image}
@@ -303,9 +315,27 @@ const ShoppingCart = () => {
       ) : (
         "Sin imagen"
       ),
-      name: item.name,
-      stock: item.stock,
-      price: formatPriceWithCurrency(item.price),
+      name: (
+        <div className="flex">
+          <p className="font-bold">{item.supplier_code}</p>-<p>{item.name}</p>
+        </div>
+      ),
+      stock: (
+        <div
+          className={`${
+            item.stock.status === "STOCK"
+              ? "bg-success"
+              : item.stock.status === "NO-STOCK"
+              ? "bg-red-600"
+              : item.stock.status === "LOW-STOCK"
+              ? "bg-orange-600"
+              : "bg-gray-500"
+          } font-bold text-white text-center p-1 rounded-lg text-xs`}
+        >
+          <p>{item.stock.status}</p>
+        </div>
+      ),
+      price: `${formatPriceWithCurrency(item.price)} + taxes`,
       quantity: (
         <input
           type="number"
@@ -317,7 +347,7 @@ const ShoppingCart = () => {
           }
         />
       ),
-      total: formatPriceWithCurrency(item.price * item.quantity),
+      total: `${formatPriceWithCurrency(item.price * item.quantity)} + taxes`,
       erase: (
         <FaTrashCan
           className="text-center text-lg hover:cursor-pointer"

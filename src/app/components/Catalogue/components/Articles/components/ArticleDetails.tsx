@@ -32,7 +32,7 @@ const ArticleDetails = ({closeModal, toggleFavourite, isFavourite, article, togg
           />
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
-          <ArticleName name={article.name} id={article.id} />
+          <ArticleName name={article.name} id={article.id} code={article.supplier_code}/>
           <div className="pb-4">
           <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
           <hr className="my-4"/>

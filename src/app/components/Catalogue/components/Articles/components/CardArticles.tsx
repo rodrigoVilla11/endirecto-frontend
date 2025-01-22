@@ -127,7 +127,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <div className="bg-gray-200">
-            <ArticleName name={article.name} id={article.id} />
+            <ArticleName name={article.name} id={article.id} code={article.supplier_code}/>
             {showPurchasePrice && <CostPrice articleId={article.id} selectedClientId={selectedClientId} />}
             {showPurchasePrice && <hr className="bg-white border-white m-4" />}
             <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} />
