@@ -16,42 +16,81 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useClient } from "@/app/context/ClientContext";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
 import CreateInstanceComponent from "./CreateInstance";
 import Instance from "./Instance";
 import CRM from "./CRM";
+import debounce from "@/app/context/debounce";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  // Basic states
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const { data: customersData } = useGetCustomersQuery(null);
-  const { data: sellersData } = useGetSellersQuery(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { selectedClientId } = useClient();
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
-  const [items, setItems] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
 
+  const { data: customersData } = useGetCustomersQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const { selectedClientId } = useClient();
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+
+  // References
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
-    page,
-    limit,
-    query: searchQuery,
-    startDate: startDate ? startDate.toISOString() : undefined,
-    endDate: endDate ? endDate.toISOString() : undefined,
-    customer_id,
-  });
+  const loadingRef = useRef<HTMLDivElement | null>(null);
 
+  function formatDate(date: any) {
+    if (!date) return undefined;
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  // Redux queries
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetDocumentsPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      startDate: startDate ? formatDate(startDate) : undefined,
+      endDate: endDate ? formatDate(endDate) : undefined,
+      customer_id,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
+
+  const { data: countDocumentsData } = useCountDocumentsQuery(null);
+  const { data: sumAmountsData } = useSumAmountsQuery(null);
+
+  // Modal states
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
     refetch();
   };
+
+  // Debounced search
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setItems([]);
+    setHasMore(true);
+  }, 100);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -62,75 +101,106 @@ const Page = () => {
       refetch;
     }
   }, [selectedClientId]);
-  const { data: countDocumentsData } = useCountDocumentsQuery(null);
-  const { data: sumAmountsData } = useSumAmountsQuery(null);
 
+  // Effect for handling initial load and searches
   useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [page]);
+    const loadDocuments = async () => {
+      if (!isLoading) {
+        try {
+          const result = await refetch().unwrap();
+          const newDocuments = result || [];
 
-  // Configurar Intersection Observer para scroll infinito
+          if (page === 1) {
+            setItems(newDocuments);
+          } else {
+            setItems((prev) => [...prev, ...newDocuments]);
+          }
+
+          setHasMore(newDocuments.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading documents:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadDocuments();
+  }, [page, searchQuery, startDate, endDate, customer_id]);
+
+  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 0.5 }
     );
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
     }
 
     return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
       }
     };
-  }, [isFetching]);
+  }, [hasMore, isLoading]);
+
+  // Reset search
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+  };
+
+  const handleResetDate = () => {
+    setEndDate(null);
+    setStartDate(null);
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+  };
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const tableData = items?.map((document) => {
-    const customer = customersData?.find(
-      (data) => data.id == document.customer_id
-    );
-    const seller = sellersData?.find((data) => data.id == document.seller_id);
+  const tableData = items
+    ?.filter((document) => {
+      return !customer_id || document.customer_id === customer_id;
+    })
+    ?.map((document) => {
+      const customer = customersData?.find(
+        (data) => data.id == document.customer_id
+      );
+      const seller = sellersData?.find((data) => data.id == document.seller_id);
 
-    return {
-      key: document.id,
-      id: (
-        <div className="flex justify-center items-center">
-          <IoInformationCircleOutline className="text-center text-xl" />
-        </div>
-      ),
-      customer: customer ? `${customer?.id} - ${customer?.name}` : "NOT FOUND",
-      type: document.type,
-      number: document.number,
-      date: document.date,
-      amount: document.amount,
-      balance: document.amount,
-      expiration: document.expiration_date,
-      logistic: document.expiration_status,
-      seller: seller?.name || "NOT FOUND",
-    };
-  });
+      return {
+        key: document.id,
+        id: (
+          <div className="flex justify-center items-center">
+            <IoInformationCircleOutline className="text-center text-xl" />
+          </div>
+        ),
+        customer: customer
+          ? `${customer?.id} - ${customer?.name}`
+          : "NOT FOUND",
+        type: document.type,
+        number: document.number,
+        date: document.date,
+        amount: document.amount,
+        balance: document.amount,
+        expiration: document.expiration_date,
+        logistic: document.expiration_status || "NOT FOUND",
+        seller: seller?.name || "NOT FOUND",
+      };
+    });
 
   const tableHeader = [
     {
@@ -175,6 +245,7 @@ const Page = () => {
     filters: [
       {
         content: (
+          <div>
           <DatePicker
             selected={startDate}
             onChange={(date) => setStartDate(date)}
@@ -182,6 +253,16 @@ const Page = () => {
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
+          {startDate && (
+            <button
+              className="-translate-y-1/2"
+              onClick={handleResetDate}
+              aria-label="Clear date"
+            >
+              <FaTimes className="text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
         ),
       },
       {
@@ -195,20 +276,31 @@ const Page = () => {
           />
         ),
       },
-      {
-        content: (
-          <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                refetch();
-              }
-            }}
-          />
-        ),
-      },
+      // {
+      //   content: (
+      //     <div>
+      //       <Input
+      //         placeholder={"Search..."}
+      //         value={searchQuery}
+      //         onChange={(e: any) => debouncedSearch(e.target.value)}
+      //         onKeyDown={(e: any) => {
+      //           if (e.key === "Enter") {
+      //             refetch();
+      //           }
+      //         }}
+      //       />
+      //       {searchQuery && (
+      //         <button
+      //           className="-translate-y-1/2"
+      //           onClick={handleResetSearch}
+      //           aria-label="Clear search"
+      //         >
+      //           <FaTimes className="text-gray-400 hover:text-gray-600" />
+      //         </button>
+      //       )}
+      //     </div>
+      //   ),
+      // },
     ],
     secondSection: {
       title: "Total Owed",
@@ -234,13 +326,16 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />
-       {/* <Instance selectedClientId={selectedClientId} /> */}
+        {/* <Instance selectedClientId={selectedClientId} /> */}
         <Table headers={tableHeader} data={tableData} />
 
         <div ref={observerRef} className="h-10" />
       </div>
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CRM closeModal={closeCreateModal} selectedClientId={selectedClientId} />
+        <CRM
+          closeModal={closeCreateModal}
+          selectedClientId={selectedClientId}
+        />
       </Modal>
     </PrivateRoute>
   );

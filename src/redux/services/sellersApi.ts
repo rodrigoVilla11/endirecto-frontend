@@ -31,7 +31,7 @@ export const sellersApi = createApi({
       { page?: number; limit?: number; query?: string }
     >({
       query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/sellers?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        return `/sellers/all?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Seller[]) => {
         if (!response || response.length === 0) {
