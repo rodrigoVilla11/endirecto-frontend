@@ -2,14 +2,17 @@ import React from "react";
 
 const CardShortcuts = ({ title, logo }: any) => {
   return (
-    <button className="bg-white h-24 w-72 m-5 shadow-lg hover:shadow-2xl p-4">
-      <div className="flex h-1/2 items-center justify-between">
-        <h3 className="text-sm">{title}</h3>
-        <div className="rounded-full h-10 w-10 bg-secondary text-white flex justify-center items-center text-2xl m-5">
-          {logo}
-        </div>
-      </div>
-    </button>
+    <button
+    className={`
+      h-24 w-90 sm:w-72
+      flex items-center justify-between
+      bg-white rounded-lg shadow-md
+      p-4 hover:bg-gray-50 transition-colors
+    `}
+  >
+    <span className="text-lg font-medium text-gray-900">{title}</span>
+    <span className="text-2xl">{logo}</span>
+  </button>
   );
 };
 

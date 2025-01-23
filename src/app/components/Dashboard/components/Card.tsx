@@ -1,22 +1,24 @@
 import React from "react";
 
-
 const Card = ({ logo, title, subtitle, text }: any) => {
   return (
-    <button className="bg-white h-40 w-72 my-4 mx-5 shadow-lg hover:shadow-2xl p-4 border-b-4 border-primary">
-      <div className="flex h-1/2 items-center">
-        <div className="rounded-full h-14 w-14 bg-secondary text-white flex justify-center items-center text-2xl m-5">
-          {logo}
+    <div className="w-90 sm:w-72 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer">
+      <div className="space-y-4">
+        <div className="flex space-x-4 items-center">
+          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
+            {logo}
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-semibold text-base text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-500">{subtitle}</p>
+          </div>
         </div>
-        <div className="flex flex-col items-start">
-          <h3 className="text-sm">{title}</h3>
-          {subtitle && <h4 className="text-md font-bold">{subtitle}</h4>}
+
+        <div className="h-1/2 flex justify-center items-center font-semibold text-lg text-gray-900">
+          {text && <p className="text-xs sm:text-sm text-center">{text}</p>}
         </div>
       </div>
-      <div className="h-1/2 flex justify-center items-center">
-        {text && <p className="text-sm">{text}</p>}
-      </div>
-    </button>
+    </div>
   );
 };
 

@@ -110,9 +110,9 @@ const ArticleDetails = ({ closeModal }: any) => {
   const isFavourite = form.favourites.includes(article.id);
 
   return (
-    <div>
+    <div className="z-50">
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Article Details</h2>
+        <h2 className="text-lg mb-2">Article Details</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -120,8 +120,8 @@ const ArticleDetails = ({ closeModal }: any) => {
           <IoMdClose />
         </button>
       </div>
-      <div className="flex gap-4">
-        <div className="h-auto w-72 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
+      <div className="flex gap-4 flex-col sm:justify-center sm:items-start items-center sm:flex-row">
+        <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
           <ArticleMenu
             onAddToFavourites={toggleFavourite}
             isFavourite={isFavourite}
@@ -134,12 +134,12 @@ const ArticleDetails = ({ closeModal }: any) => {
             id={article.id}
             code={article.supplier_code}
           />
-          <div className="pb-4">
+          <div className="pb-3">
             <CostPrice
               articleId={article.id}
               selectedClientId={selectedClientId}
             />
-            <hr className="my-4" />
+            <hr className="my-3" />
             <SuggestedPrice articleId={article.id} />
           </div>
           <AddToCart

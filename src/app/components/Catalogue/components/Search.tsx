@@ -51,7 +51,7 @@ const ArticleSearchResults = ({
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="fixed top-16 left-20 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black">
+    <div className="fixed top-28 md:top-20 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black">
       <div className="flex justify-between items-center w-full mb-4">
         <h3 className="text-lg font-bold text-white">
           Resultados para {query}:
@@ -72,12 +72,16 @@ const ArticleSearchResults = ({
         </p>
       )}
 
-      <div className="flex flex-wrap justify-center gap-6 overflow-auto w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full px-2 overflow-auto">
         {articles &&
           articles.length > 0 &&
           articles.map((article) => (
-            <div key={article.id} className="w-full sm:w-auto">
-              <CardSearch article={article} setSearchQuery={setSearchQuery} handleOpenModal={handleOpenModal}/>
+            <div key={article.id} className="w-full">
+              <CardSearch
+                article={article}
+                setSearchQuery={setSearchQuery}
+                handleOpenModal={handleOpenModal}
+              />
             </div>
           ))}
       </div>

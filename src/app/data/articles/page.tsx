@@ -18,6 +18,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useInfiniteScroll } from "@/app/context/UseInfiniteScroll";
 import { FaTimes } from "react-icons/fa";
+import MobileTable from "@/app/components/components/MobileTable";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -253,6 +254,7 @@ const Page = () => {
       </div>
     );
   }
+  const isMobile = window.innerWidth < 640;
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
@@ -266,7 +268,7 @@ const Page = () => {
           </div>
         ) : (
           <>
-            <Table headers={tableHeader} data={tableData} />
+            {isMobile ? <MobileTable data={tableData} handleModalOpen={handleModalOpen}/>:<Table headers={tableHeader} data={tableData} />}
             {isLoading && (
               <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

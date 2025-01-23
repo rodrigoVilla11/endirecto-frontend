@@ -38,7 +38,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   return (
     <div className="relative w-full max-w-md mx-auto">
       {/* Imagen actual */}
-      <div className="flex justify-center h-64 items-center bg-white">
+      <div className="flex justify-center h-48 items-center bg-white">
         <img
           className="w-full h-44 object-contain"
           src={img[currentIndex]}

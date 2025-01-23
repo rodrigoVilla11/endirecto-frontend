@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
-const ButtonsIcons = () => {
+const ButtonsIcons = ({ isMobile }: any) => {
   const { selectedClientId } = useClient();
 
   const {
@@ -56,10 +56,10 @@ const ButtonsIcons = () => {
   }, [cartItemCount]);
 
   return (
-    <div className="w-60 flex items-center justify-between text-2xl text-white relative">
-      <MdNotificationsOff className="cursor-pointer text-red-600" />
-      <GiUsaFlag className="cursor-pointer" />
-      <MdFullscreen className="cursor-pointer" />
+    <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
+     {!isMobile && <MdNotificationsOff className="cursor-pointer text-red-600" />}
+     {!isMobile &&<GiUsaFlag className="cursor-pointer" />}
+     {!isMobile &&<MdFullscreen className="cursor-pointer" />}
       {selectedClientId && (
         <div className="relative">
           <MdShoppingCart
@@ -76,7 +76,6 @@ const ButtonsIcons = () => {
       <MdNotifications className="cursor-pointer" />
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
 
-      {/* Tick de confirmación */}
       {showTick && (
         <div
           className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"

@@ -217,8 +217,7 @@ const SideMenu = ({ isOpen }: any) => {
           name: "Pedidos",
           path: "/orders/orders",
         },
-        selectedClientId &&
-        {
+        selectedClientId && {
           name: "Shopping Cart",
           path: "/shopping-cart",
         },
@@ -403,8 +402,10 @@ const SideMenu = ({ isOpen }: any) => {
   return (
     <div
       className={`${
-        isOpen ? "w-68 items-start px-8" : "w-20 items-center"
-      } bg-header-color h-full py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar mt-20`}
+        isOpen
+          ? "fixed inset-0 w-full h-full z-50 bg-header-color px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto" // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
+          : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100" // Mobile: oculto | Desktop: visible sin opacidad
+      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar sm:mt-20 mt-28`}
     >
       {filteredIcons.map((icon: any, index: any) => (
         <ButtonsIcons

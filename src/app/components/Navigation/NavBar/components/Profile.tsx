@@ -9,7 +9,7 @@ import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { SlLogout } from "react-icons/sl";
 
-const Profile = () => {
+const Profile = ({ isMobile }: any) => {
   const { selectedClientId, setSelectedClientId } = useClient();
   const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -55,7 +55,6 @@ const Profile = () => {
       setIsMenuOpen(false);
     }, 50); // Ajusta el tiempo según sea necesario (50 ms es un valor común para este caso)
   };
-  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -77,14 +76,18 @@ const Profile = () => {
         onClick={toggleMenu}
       >
         <div className="rounded-full h-10 w-10 bg-white flex justify-center items-center">
-         
-          {data?.profileImg ? <img src={data.profileImg} className="rounded-full h-10 w-10" /> :  <p>{getInitial()}</p>}
-
+          {data?.profileImg ? (
+            <img src={data.profileImg} className="rounded-full h-10 w-10" />
+          ) : (
+            <p>{getInitial()}</p>
+          )}
         </div>
-        <div className="flex justify-center items-center text-white">
-          <p>{selectedClientId ? data?.name : userData?.username}</p>
-          <IoIosArrowDown />
-        </div>
+        {!isMobile && (
+          <div className="flex justify-center items-center text-white">
+            <p>{selectedClientId ? data?.name : userData?.username}</p>
+            <IoIosArrowDown />
+          </div>
+        )}
       </button>
       {isMenuOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg">
