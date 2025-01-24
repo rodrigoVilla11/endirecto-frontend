@@ -67,7 +67,7 @@ const Header = () => {
 
           <div className="flex flex-col items-center">
             <span className="text-2xl font-semibold">
-              {data?.notifications_id.length}
+            {selectedClientId && data?.notifications_id.length}
             </span>
             <span className="text-sm text-gray-600 text-center">
               Notificaciones
