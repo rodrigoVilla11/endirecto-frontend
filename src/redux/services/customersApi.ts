@@ -142,4 +142,5 @@ export const {
   useGetCustomersPagQuery,
   useCountCustomersQuery,
   useUpdateCustomerMutation,
+  useLazyGetCustomersPagQuery
 } = customerApi;

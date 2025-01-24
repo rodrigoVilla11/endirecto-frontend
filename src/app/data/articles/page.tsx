@@ -87,7 +87,7 @@ const Page = () => {
       setSearchQuery(query);
       setPage(1);
       setArticles([]);
-    }, 300),
+    }, 100),
     []
   );
 
@@ -223,7 +223,7 @@ const Page = () => {
               />
               {searchQuery && (
                 <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  className="right-2 top-1/2 -translate-y-1/2"
                   onClick={handleResetSearch}
                   aria-label="Clear search"
                 >

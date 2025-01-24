@@ -1,14 +1,13 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { CgProfile } from "react-icons/cg";
-import { FaAddressBook } from "react-icons/fa";
+import { FaAddressBook, FaTimes } from "react-icons/fa";
 import { CiMenuKebab } from "react-icons/ci";
 import Header from "../components/components/Header";
 import Table from "../components/components/Table";
 import { FiMapPin } from "react-icons/fi";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
-import Buttons from "../components/components/Buttons";
 import ButtonOnOff from "../components/components/ButtonOnOff";
 import {
   useCountCustomersQuery,
@@ -23,11 +22,15 @@ import { useRouter } from "next/navigation";
 import Modal from "../components/components/Modal";
 import ResetPassword from "./ResetPassword";
 import UpdateGPS from "./UpdateGPS";
+import debounce from "../context/debounce";
+import { useInfiniteScroll } from "../context/UseInfiniteScroll";
 require("dotenv").config();
+
+const ITEMS_PER_PAGE = 15;
 
 const SelectCustomer = () => {
   const router = useRouter();
-
+  // Estados básicos con tipos apropiados
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -36,14 +39,67 @@ const SelectCustomer = () => {
   const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(false);
-
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
     null
   );
+  const [searchParams, setSearchParams] = useState({
+    hasDebt: "",
+    hasDebtExpired: "",
+    seller_id: "",
+  });
 
-  
+  // Queries de Redux con mejor manejo de tipos
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetCustomersPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      hasDebtExpired: searchParams.hasDebtExpired,
+      hasDebt: searchParams.hasDebt,
+      seller_id: searchParams.seller_id,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
+  const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const { data: documentsData } = useGetDocumentsQuery(null);
+  const { data: countCustomersData } = useCountCustomersQuery(null);
+
+  // Búsqueda optimizada con debounce
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setSearchQuery(query);
+      setPage(1);
+      setItems([]);
+    }, 100),
+    []
+  );
+
+  // Custom hook para infinite scroll
+  const { observerRef, isLoading } = useInfiniteScroll({
+    hasMore: data?.length === ITEMS_PER_PAGE,
+    isLoading: isQueryLoading,
+    onIntersect: () => setPage((prev) => prev + 1),
+  });
+
+  // Efecto para manejar la carga de artículos
+  useEffect(() => {
+    if (!isQueryLoading && data) {
+      setItems((prev) => (page === 1 ? data : [...prev, ...data]));
+    }
+  }, [data, isQueryLoading, page]);
+
+  // Manejadores optimizados
   const openUpdateModal = (id: string) => {
     setCurrentCustomerId(id);
     setUpdateModalOpen(true);
@@ -63,71 +119,14 @@ const SelectCustomer = () => {
     setCurrentCustomerId(null);
     refetch();
   };
-
-  const [searchParams, setSearchParams] = useState({
-    query: "",
-    hasDebt: "",
-    hasDebtExpired: "",
-    seller_id: "",
-  });
-  const { data, error, isLoading, refetch } = useGetCustomersPagQuery({
-    page,
-    limit,
-    query: searchParams.query,
-    hasDebtExpired: searchParams.hasDebtExpired,
-    hasDebt: searchParams.hasDebt,
-    seller_id: searchParams.seller_id,
-  });
-
   
-  useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [page, searchParams]);
+  const handleResetSearch = useCallback(() => {
+    setSearchQuery("");
+    setPage(1);
+    setItems([]);
+  }, []);
 
-   useEffect(() => {
-        setPage(1); // Reinicia la paginación
-        setItems([]); // Limpia los datos anteriores
-      }, [searchParams]);
 
-  // Configurar Intersection Observer para scroll infinito
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [isFetching]);
-  const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
-  const { data: sellersData } = useGetSellersQuery(null);
-  const { data: documentsData } = useGetDocumentsQuery(null);
-
-  const { data: countCustomersData } = useCountCustomersQuery(null);
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -248,13 +247,6 @@ const SelectCustomer = () => {
     },
   ];
 
-  const handleSearch = (e: any) => {
-    if (e.key === "Enter") {
-      setSearchParams({ ...searchParams, query: e.target.value });
-      setPage(1);
-      refetch();
-    }
-  };
   const handleDebtFilter = () => {
     setSearchParams((prev) => ({
       ...prev,
@@ -299,14 +291,25 @@ const SelectCustomer = () => {
       },
       {
         content: (
-          <Input
-            placeholder="Search..."
-            value={searchParams.query}
-            onChange={(e: any) =>
-              setSearchParams({ ...searchParams, query: e.target.value })
-            }
-            onKeyDown={handleSearch}
-          />
+          <div className="relative">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
+              }
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
       {

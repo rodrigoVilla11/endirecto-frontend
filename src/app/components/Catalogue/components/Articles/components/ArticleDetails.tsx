@@ -26,9 +26,10 @@ const ArticleDetails = ({ closeModal }: any) => {
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
   const { articleId } = useArticleId();
+  const encodedId = encodeURIComponent(articleId || "");
 
   const { data: article, isLoading: isArticleLoading, error: articleError } = 
-    useGetArticleByIdQuery({ id: articleId || "" }, { skip: !articleId });
+    useGetArticleByIdQuery({ id: encodedId || "" }, { skip: !encodedId });
 
   const {
     data: customer,

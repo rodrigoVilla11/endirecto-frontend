@@ -25,6 +25,7 @@ const NavBar = ({ setIsOpen, isOpen }: any) => {
         <>
           <div className="flex items-center gap-4">
             <Logo />
+            <ButtonSideMenu setIsOpen={setIsOpen} isOpen={isOpen} />
             <Search />
           </div>
           <div className="flex items-center">
