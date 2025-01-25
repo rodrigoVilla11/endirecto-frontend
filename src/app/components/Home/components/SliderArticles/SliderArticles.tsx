@@ -7,9 +7,11 @@ import 'swiper/css/pagination';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import CardArticles from './components/CardArticles';
 import { useGetArticlesQuery } from '@/redux/services/articlesApi';
+import { useMobile } from '@/app/context/ResponsiveContext';
 
 const SliderArticles = () => {
   const { data, error, isLoading } = useGetArticlesQuery({ page: 1, limit: 10 });
+  const { isMobile } = useMobile();
 
   if (isLoading)
     return (
@@ -35,7 +37,7 @@ const SliderArticles = () => {
       <Swiper
         modules={[Navigation, Autoplay]}
         spaceBetween={4} // Espaciado entre slides
-        slidesPerView={5} // Cantidad de slides visibles
+        slidesPerView={isMobile ? 2 :5} // Cantidad de slides visibles
         navigation // Habilita flechas
         pagination={{ clickable: true }} // Habilita paginación
         autoplay={{ delay: 5000 }} // Autoplay cada 5 segundos

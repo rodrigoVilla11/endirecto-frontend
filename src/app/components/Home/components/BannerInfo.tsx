@@ -1,4 +1,5 @@
 "use client";
+import { useMobile } from "@/app/context/ResponsiveContext";
 import { useCountArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
@@ -8,10 +9,11 @@ const BannerInfo = () => {
   const { data: countCustomersData } = useCountCustomersQuery(null);
   const { data: countArticlesData } = useCountArticlesQuery({});
   const { data: brands } = useGetBrandsQuery(null);
+  const { isMobile } = useMobile();
 
 
   return (
-    <div className="h-60 w-full bg-secondary flex justify-center items-center gap-10">
+    <div className={`h-auto w-full p-10 bg-secondary flex ${isMobile ? "flex-col" : ""} justify-center items-center gap-10`}>
       <div className="h-44 w-90 bg-white rounded-lg flex flex-col justify-center items-center">
         <p className="text-7xl">{countCustomersData}</p>
         <p className="text-secondary">Customers</p>

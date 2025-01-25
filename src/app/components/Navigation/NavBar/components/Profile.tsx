@@ -70,7 +70,7 @@ const Profile = ({ isMobile }: any) => {
   }, [menuRef]);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative z-50" ref={menuRef}>
       <button
         className="flex justify-center items-center gap-1"
         onClick={toggleMenu}

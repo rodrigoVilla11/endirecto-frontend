@@ -72,7 +72,7 @@ export const usersApi = createApi({
       },
     }),
     getUserById: builder.query<User, { id: string }>({
-      query: ({ id }) => `/users/findOne/${id}`,
+      query: ({ id }) => `/users/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     createUser: builder.mutation<User, CreateUserPayload>({
       query: (newUser) => ({

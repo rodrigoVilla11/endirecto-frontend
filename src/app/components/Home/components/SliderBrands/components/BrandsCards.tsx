@@ -1,4 +1,5 @@
 import { useFilters } from "@/app/context/FiltersContext";
+import { useMobile } from "@/app/context/ResponsiveContext";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -9,8 +10,14 @@ interface BrandsCardsProps {
   isAuthenticated: boolean;
 }
 
-const BrandsCards: React.FC<BrandsCardsProps> = ({ name, logo, id, isAuthenticated }) => {
+const BrandsCards: React.FC<BrandsCardsProps> = ({
+  name,
+  logo,
+  id,
+  isAuthenticated,
+}) => {
   const { setBrand } = useFilters();
+  const { isMobile } = useMobile();
 
   const router = useRouter();
 
@@ -23,13 +30,17 @@ const BrandsCards: React.FC<BrandsCardsProps> = ({ name, logo, id, isAuthenticat
   };
   return (
     <div
-      onClick={() => handleRedirect(isAuthenticated ? `/catalogue` : `/catalogues`, id)}
-      className=" bg-transparent flex items-center justify-center m-6"
+      onClick={() =>
+        handleRedirect(isAuthenticated ? `/catalogue` : `/catalogues`, id)
+      }
+      className="flex items-center justify-center"
     >
       <img
         src={logo}
         alt={name}
-        className="w-20 h-20 object-contain object-center bg-transparent "
+        className={`object-contain object-center ${
+          isMobile ? "w-24 h-24 sm:w-32 sm:h-32" : "w-40 h-40"
+        }`}
       />
     </div>
   );

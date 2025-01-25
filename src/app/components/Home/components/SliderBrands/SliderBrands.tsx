@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React from "react";
 import BrandsCards from "./components/BrandsCards";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
@@ -7,11 +7,12 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { Navigation, Autoplay } from "swiper/modules";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const SliderBrands = () => {
   const { isAuthenticated } = useAuth();
   const { data: brands, isLoading, error } = useGetBrandsQuery(null);
-
+  const { isMobile } = useMobile();
 
   // Procesar los datos de marcas visibles
   const logos = brands?.map((brand) => ({
@@ -34,12 +35,11 @@ const SliderBrands = () => {
   }
 
   return (
-    <div className="w-full p-4" id="brands">
+    <div className="w-full p-4 flex justify-center items-center" id="brands">
       <Swiper
         modules={[Navigation, Autoplay]} // Módulos necesarios
         spaceBetween={16} // Espacio entre slides
-        slidesPerView={6} // Cantidad de slides visibles
-        navigation // Habilita navegación (flechas)
+        slidesPerView={isMobile ? 3 : 6} // Cantidad de slides visibles
         autoplay={{ delay: 5000 }} // Habilita autoplay con 5 segundos de intervalo
         loop // Loop infinito
         centeredSlides={false} // No centra los slides

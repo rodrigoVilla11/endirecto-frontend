@@ -21,7 +21,8 @@ const UpdateUserComponent = ({
   const [updateUser, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateUserMutation();
 
-  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
+  const { data: branchData, isLoading: isLoadingBranch } =
+    useGetBranchesQuery(null);
 
   const [form, setForm] = useState({
     _id: "",
@@ -81,141 +82,143 @@ const UpdateUserComponent = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">  
-        <h2 className="text-lg font-semibold">Update User</h2>
-        <button
-          onClick={closeModal}
-          className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
-        >
-          <IoMdClose />
-        </button>
-      </div>
-
-      <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
-        <label className="flex flex-col">
-          ID:
-          <input
-            name="_id"
-            value={form._id}
-            readOnly
-            className="border border-gray-300 rounded-md p-2 bg-gray-200"
-          />
-        </label>
-
-        <label className="flex flex-col">
-          Username:
-          <input
-            name="username"
-            value={form.username}
-            placeholder="Username"
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          />
-        </label>
-
-        <label className="flex flex-col">
-          Email:
-          <input
-            name="email"
-            value={form.email}
-            placeholder="Email"
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          />
-        </label>
-
-        <label className="flex flex-col">
-          Password:
-          <input
-            name="password"
-            type="password"
-            value={form.password}
-            placeholder="Password"
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          />
-        </label>
-
-        <label className="flex flex-col">
-          Confirm Password:
-          <input
-            name="confirmPassword"
-            type="password"
-            value={form.confirmPassword}
-            placeholder="Confirm Password"
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          />
-        </label>
-
-        {passwordError && (
-          <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
-        )}
-
-        <label className="flex flex-col">
-          Role:
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          >
-            <option value="">Select role</option>
-            <option value={Roles.ADMINISTRADOR}>Administrador</option>
-            <option value={Roles.OPERADOR}>Operador</option>
-            <option value={Roles.MARKETING}>Marketing</option>
-            <option value={Roles.VENDEDOR}>Vendedor</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col">
-          Branch:
-          <select
-            name="branch"
-            value={form.branch}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2"
-          >
-            <option value="">Select branch</option>
-            {!isLoadingBranch &&
-              branchData?.map((branch: { id: string; name: string }) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-          </select>
-        </label>
-
-        <div className="col-span-2 flex justify-end gap-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Update User</h2>
           <button
-            type="button"
             onClick={closeModal}
-            className="bg-gray-400 text-white rounded-md p-2"
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={`bg-green-500 text-white rounded-md p-2 ${
-              isUpdating ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={isUpdating}
-          >
-            {isUpdating ? "Updating..." : "Update"}
+            <IoMdClose />
           </button>
         </div>
 
-        {isSuccess && (
-          <p className="text-green-500 col-span-2 text-sm">
-            User updated successfully!
-          </p>
-        )}
-        {isError && (
-          <p className="text-red-500 col-span-2 text-sm">
-            Error updating user
-          </p>
-        )}
-      </form>
+        <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
+          <label className="flex flex-col">
+            ID:
+            <input
+              name="_id"
+              value={form._id}
+              readOnly
+              className="border border-gray-300 rounded-md p-2 bg-gray-200"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Username:
+            <input
+              name="username"
+              value={form.username}
+              placeholder="Username"
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Email:
+            <input
+              name="email"
+              value={form.email}
+              placeholder="Email"
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Password:
+            <input
+              name="password"
+              type="password"
+              value={form.password}
+              placeholder="Password"
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            />
+          </label>
+
+          <label className="flex flex-col">
+            Confirm Password:
+            <input
+              name="confirmPassword"
+              type="password"
+              value={form.confirmPassword}
+              placeholder="Confirm Password"
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            />
+          </label>
+
+          {passwordError && (
+            <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
+          )}
+
+          <label className="flex flex-col">
+            Role:
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            >
+              <option value="">Select role</option>
+              <option value={Roles.ADMINISTRADOR}>Administrador</option>
+              <option value={Roles.OPERADOR}>Operador</option>
+              <option value={Roles.MARKETING}>Marketing</option>
+              <option value={Roles.VENDEDOR}>Vendedor</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col">
+            Branch:
+            <select
+              name="branch"
+              value={form.branch}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2"
+            >
+              <option value="">Select branch</option>
+              {!isLoadingBranch &&
+                branchData?.map((branch: { id: string; name: string }) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <div className="col-span-2 flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-gray-400 text-white rounded-md p-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={`bg-green-500 text-white rounded-md p-2 ${
+                isUpdating ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={isUpdating}
+            >
+              {isUpdating ? "Updating..." : "Update"}
+            </button>
+          </div>
+
+          {isSuccess && (
+            <p className="text-green-500 col-span-2 text-sm">
+              User updated successfully!
+            </p>
+          )}
+          {isError && (
+            <p className="text-red-500 col-span-2 text-sm">
+              Error updating user
+            </p>
+          )}
+        </form>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useFilters } from "@/app/context/FiltersContext";
+import { useMobile } from "@/app/context/ResponsiveContext";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -10,6 +11,7 @@ interface ButtonsImageProps {
 const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
   const { setTags } = useFilters();
   const router = useRouter();
+  const { isMobile } = useMobile();
 
   const handleRedirect = (path: string, id: string) => {
     if (path) {
@@ -22,7 +24,7 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
     <img
       src={logo}
       alt={name}
-      className="w-full h-full object-fill cursor-pointer bg-transparent rounded-md"
+      className={`${isMobile ? "w-[70%] h-[70%]" : "w-full h-full"} object-fill cursor-pointer rounded-md`}
       onClick={() => handleRedirect(`/catalogue`, name)}
     />
   );
