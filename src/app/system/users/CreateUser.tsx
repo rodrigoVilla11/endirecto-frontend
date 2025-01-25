@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 
 const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
-  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
+  const { data: branchData, isLoading: isLoadingBranch } =
+    useGetBranchesQuery(null);
   const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateUserMutation();
 
@@ -15,6 +16,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
     email: "",
     role: Roles.ADMINISTRADOR,
     branch: "",
+    seller_id: ""
   });
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -158,6 +160,21 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             </select>
           </label>
 
+          {form.role === "VENDEDOR" && (
+            <label className="flex flex-col">
+              Seller ID:
+              <input
+                name="seller_id"
+                type="text"
+                value={form.seller_id}
+                placeholder="Seller ID"
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
+                required
+              />
+            </label>
+          )}
+
           {/* Buttons */}
           <div className="col-span-2 flex justify-end gap-4 mt-4">
             <button
@@ -185,7 +202,9 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             </p>
           )}
           {isError && (
-            <p className="text-red-500 col-span-2 text-sm">Error creating user</p>
+            <p className="text-red-500 col-span-2 text-sm">
+              Error creating user
+            </p>
           )}
         </form>
       </div>

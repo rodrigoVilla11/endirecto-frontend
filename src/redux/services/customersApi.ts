@@ -4,9 +4,8 @@ export enum InstanceType {
   COLLECTION_CALL = "COLLECTION CALL",
   WHATSAPP_MESSAGE = "WHATSAPP MESSAGE",
   SEND_ACCOUNT_SUMMARY = "SEND ACCOUNT SUMMARY",
-  PAYMENT_CLAIM = "PAYMENT CLAIM"
+  PAYMENT_CLAIM = "PAYMENT CLAIM",
 }
-
 
 export interface Instance {
   type: InstanceType;
@@ -14,11 +13,10 @@ export interface Instance {
   notes: string;
 }
 
-
 export enum PriorityInstance {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW'
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 type Customer = {
@@ -40,7 +38,7 @@ type Customer = {
   favourites: string[];
   instance: Instance[];
   logo: string;
-  password: string
+  password: string;
   profileImg: string;
 };
 
@@ -52,7 +50,7 @@ type UpdateCustomersPayload = {
   shopping_cart?: string[];
   favourites?: string[];
   instance?: Instance[];
-  password?: string
+  password?: string;
   profileImg?: string;
 };
 
@@ -125,13 +123,21 @@ export const customerApi = createApi({
         body: updatedCustomer,
       }),
     }),
-    countCustomers: builder.query<number, null>({
-      query: () => {
-        return `/customers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    countCustomers: builder.query<number, { seller_id?: string }>({
+      query: ({ seller_id = "" }) => {
+        let url = `/customers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        console.log(seller_id);
+
+        if (seller_id) {
+          url += `&sellerId=${seller_id}`;
+        }
+        console.log(url);
+        return url;
       },
     }),
     getCustomerById: builder.query<Customer, { id: string }>({
-      query: ({ id }) => `/customers/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/customers/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
@@ -142,5 +148,5 @@ export const {
   useGetCustomersPagQuery,
   useCountCustomersQuery,
   useUpdateCustomerMutation,
-  useLazyGetCustomersPagQuery
+  useLazyGetCustomersPagQuery,
 } = customerApi;

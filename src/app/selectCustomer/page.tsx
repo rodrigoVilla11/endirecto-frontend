@@ -24,12 +24,15 @@ import ResetPassword from "./ResetPassword";
 import UpdateGPS from "./UpdateGPS";
 import debounce from "../context/debounce";
 import { useInfiniteScroll } from "../context/UseInfiniteScroll";
+import { useAuth } from "../context/AuthContext";
 require("dotenv").config();
 
 const ITEMS_PER_PAGE = 15;
 
 const SelectCustomer = () => {
   const router = useRouter();
+  const { role, userData } = useAuth();
+
   // Estados básicos con tipos apropiados
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
@@ -46,7 +49,7 @@ const SelectCustomer = () => {
   const [searchParams, setSearchParams] = useState({
     hasDebt: "",
     hasDebtExpired: "",
-    seller_id: "",
+    seller_id: role === "VENDEDOR" ? userData?.seller_id : "",
   });
 
   // Queries de Redux con mejor manejo de tipos
@@ -73,7 +76,9 @@ const SelectCustomer = () => {
   const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: documentsData } = useGetDocumentsQuery(null);
-  const { data: countCustomersData } = useCountCustomersQuery(null);
+  const { data: countCustomersData } = useCountCustomersQuery(
+    role === "VENDEDOR" ? { seller_id: userData?.seller_id } : {}
+  );
 
   // Búsqueda optimizada con debounce
   const debouncedSearch = useCallback(
@@ -119,14 +124,12 @@ const SelectCustomer = () => {
     setCurrentCustomerId(null);
     refetch();
   };
-  
+
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
     setPage(1);
     setItems([]);
   }, []);
-
-
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;

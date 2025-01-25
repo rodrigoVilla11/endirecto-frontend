@@ -32,7 +32,9 @@ const DashboardSeller = () => {
   const { isOpen } = useSideMenu();
 
   const { role, userData } = useAuth();
-  const { data: countCustomersData } = useCountCustomersQuery(null);
+  const { data: countCustomersData } = useCountCustomersQuery({
+    seller_id: userData?.seller_id,
+  });
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
   const { data: sumAmountsData } = useSumAmountsQuery(null);
   const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
@@ -324,11 +326,11 @@ const DashboardSeller = () => {
         (icon) => !icon.allowedRoles || icon.allowedRoles.includes(role)
       )
     : itemsCard;
-    
+
   return (
     <div className="gap-4 bg-black">
       <div className="mt-12 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
-        Hello {userData?.username} 
+        Hello {userData?.username} {userData?.seller_id}
       </div>
       <div className="overflow-x-auto h-auto">
         <div

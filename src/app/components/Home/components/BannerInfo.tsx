@@ -6,7 +6,7 @@ import { useCountCustomersQuery } from "@/redux/services/customersApi";
 import React from "react";
 
 const BannerInfo = () => {
-  const { data: countCustomersData } = useCountCustomersQuery(null);
+  const { data: countCustomersData } = useCountCustomersQuery({});
   const { data: countArticlesData } = useCountArticlesQuery({});
   const { data: brands } = useGetBrandsQuery(null);
   const { isMobile } = useMobile();

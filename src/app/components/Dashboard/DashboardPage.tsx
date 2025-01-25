@@ -32,7 +32,7 @@ const DashboardPage = () => {
   const { isOpen } = useSideMenu();
 
   const { role } = useAuth();
-  const { data: countCustomersData } = useCountCustomersQuery(null);
+  const { data: countCustomersData } = useCountCustomersQuery({});
   const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
   const { data: sumAmountsData } = useSumAmountsQuery(null);
   const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {

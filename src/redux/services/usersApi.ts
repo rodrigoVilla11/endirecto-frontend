@@ -16,6 +16,7 @@ type User = {
   username_customer: string;
   branch: string;
   zone?: string;
+  seller_id?: string;
 };
 type CreateUserPayload = {
   _id?: string;
@@ -24,6 +25,7 @@ type CreateUserPayload = {
   email: string;
   role: Roles;
   branch: string;
+  seller_id?: string;
 };
 type UpdateUserPayload = {
   _id: string;
@@ -72,7 +74,8 @@ export const usersApi = createApi({
       },
     }),
     getUserById: builder.query<User, { id: string }>({
-      query: ({ id }) => `/users/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/users/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     createUser: builder.mutation<User, CreateUserPayload>({
       query: (newUser) => ({

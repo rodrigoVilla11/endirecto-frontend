@@ -14,6 +14,7 @@ interface UserData {
   email: string;
   role: string;
   branch: string;
+  seller_id: string;
 }
 
 interface AuthContextType {
@@ -42,8 +43,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (token) {
         try {
           const decodedToken: any = jwtDecode(token);
-          const { _id, username, email, role, branch } = decodedToken;
-          const user: UserData = { _id, username, email, role, branch };
+          const { _id, username, email, role, branch, seller_id } =
+            decodedToken;
+          const user: UserData = {
+            _id,
+            username,
+            email,
+            role,
+            branch,
+            seller_id,
+          };
           setUserData(user);
           setRole(role);
           setIsAuthenticated(true);
