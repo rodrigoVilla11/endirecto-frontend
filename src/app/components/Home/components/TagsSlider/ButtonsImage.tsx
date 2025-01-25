@@ -24,7 +24,7 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
     <img
       src={logo}
       alt={name}
-      className={`${isMobile ? "w-[70%] h-[70%]" : "w-full h-full"} object-fill cursor-pointer rounded-md`}
+      className={`${isMobile ? "w-[70%] h-[70%]" : "w-[80%] h-[80%]"} object-fill cursor-pointer rounded-md`}
       onClick={() => handleRedirect(`/catalogue`, name)}
     />
   );

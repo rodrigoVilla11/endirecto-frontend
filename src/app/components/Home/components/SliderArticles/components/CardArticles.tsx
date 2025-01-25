@@ -28,7 +28,7 @@ const CardArticles = ({ article }: any) => {
 
   return (
     <div
-      className="flex flex-col justify-between h-[400px] w-44 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
+      className="flex flex-col justify-between h-[400px] w-44 sm:w-56 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
       onClick={ isAuthenticated ? () => handleRedirect(`/catalogue`) :() => handleRedirect(`/catalogues`)}
     >
       {/* Top Icons */}

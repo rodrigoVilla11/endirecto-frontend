@@ -39,7 +39,7 @@ const BrandsCards: React.FC<BrandsCardsProps> = ({
         src={logo}
         alt={name}
         className={`object-contain object-center ${
-          isMobile ? "w-24 h-24 sm:w-32 sm:h-32" : "w-40 h-40"
+          isMobile ? "w-24 h-24 sm:w-32 sm:h-32" : "w-32 h-32"
         }`}
       />
     </div>

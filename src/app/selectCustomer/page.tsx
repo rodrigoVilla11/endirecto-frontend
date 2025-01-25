@@ -25,6 +25,7 @@ import UpdateGPS from "./UpdateGPS";
 import debounce from "../context/debounce";
 import { useInfiniteScroll } from "../context/UseInfiniteScroll";
 import { useAuth } from "../context/AuthContext";
+import { useMobile } from "../context/ResponsiveContext";
 require("dotenv").config();
 
 const ITEMS_PER_PAGE = 15;
@@ -32,6 +33,7 @@ const ITEMS_PER_PAGE = 15;
 const SelectCustomer = () => {
   const router = useRouter();
   const { role, userData } = useAuth();
+  const { isMobile } = useMobile();
 
   // Estados básicos con tipos apropiados
   const [page, setPage] = useState(1);
@@ -343,8 +345,122 @@ const SelectCustomer = () => {
     >
       <div className="gap-4">
         <h3 className="text-bold p-4">SELECT CUSTOMER</h3>
-        <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        {isMobile ? (
+          <div className="relative flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center mb-2">
+              <div className="flex flex-col gap-3 flex-1">
+                <ButtonOnOff
+                  title="Debt"
+                  onChange={handleDebtFilter}
+                  active={searchParams.hasDebt === "true"}
+                />
+                <ButtonOnOff
+                  title="Expired D."
+                  onChange={handleExpiredDebtFilter}
+                  active={searchParams.hasDebtExpired === "true"}
+                />
+              </div>
+              <div className="flex flex-col gap-3 flex-1 ">
+                <ButtonOnOff
+                  title="Articles on C."
+                  // onChange={handleExpiredDebtFilter}
+                  // active={searchParams.hasDebtExpired === "true"}
+                />
+              </div>
+            </div>
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
+              }
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <Header headerBody={headerBody} />
+        )}
+        {isMobile ? (
+          <div className="bg-white rounded-lg shadow-sm">
+            {data?.map((customer) => (
+              <div
+                key={customer.id}
+                className={`flex items-center gap-3 p-3 active:bg-gray-50 transition-colors
+             `}
+              >
+                {/* Avatar compacto */}
+                <div
+                  className="rounded-full h-9 w-9 bg-primary text-white flex justify-center items-center 
+             text-sm font-medium flex-shrink-0"
+                >
+                  {customer.name.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Contenido principal optimizado para móvil */}
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div
+                    onClick={() => handleSelectCustomer(customer.id)}
+                    className="flex items-baseline gap-2"
+                  >
+                    <span className="text-[15px] font-medium text-gray-900 truncate">
+                      {customer.name}
+                    </span>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
+                      #{customer.id}
+                    </span>
+                  </div>
+
+                  {/* Info secundaria compacta */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-300">•</span>
+                    {customer.phone && (
+                      <span className="text-xs text-gray-500">
+                        {customer.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Indicador táctil */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-gray-400 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            ))}
+
+            {/* Estado vacío mobile-friendly */}
+            {!data?.length && (
+              <div className="p-6 text-center">
+                <div className="text-gray-400 text-3xl mb-2">🧑💼</div>
+                <p className="text-sm text-gray-500">
+                  No se encontraron clientes
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Table headers={tableHeader} data={tableData} />
+        )}
 
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentCustomerId && (
