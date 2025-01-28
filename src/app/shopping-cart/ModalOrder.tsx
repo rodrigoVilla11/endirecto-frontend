@@ -153,7 +153,6 @@ export default function OrderConfirmation({
 
     try {
       await createOrder(transaction).unwrap();
-
       onCancel();
     } catch (err) {
       setError(

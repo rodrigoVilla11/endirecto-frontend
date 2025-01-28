@@ -403,7 +403,7 @@ const SideMenu = ({ isOpen }: any) => {
     <div
       className={`${
         isOpen
-          ? "fixed inset-0 w-full h-full z-50 bg-header-color px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto" // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
+          ? "fixed inset-0 w-full h-full z-50 bg-zinc-900 px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto" // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100" // Mobile: oculto | Desktop: visible sin opacidad
       } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar sm:mt-20 mt-28`}
     >
