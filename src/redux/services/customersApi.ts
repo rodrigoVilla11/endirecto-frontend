@@ -126,12 +126,10 @@ export const customerApi = createApi({
     countCustomers: builder.query<number, { seller_id?: string }>({
       query: ({ seller_id = "" }) => {
         let url = `/customers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-        console.log(seller_id);
 
         if (seller_id) {
           url += `&sellerId=${seller_id}`;
         }
-        console.log(url);
         return url;
       },
     }),

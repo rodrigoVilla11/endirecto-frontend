@@ -43,7 +43,6 @@ const ArticleSearchResults = ({
   };
 
   const handleOpenModal = (id: string) => {
-    console.log("setting article id", id);
     setModalOpen(true);
     setArticleId(id);
   };

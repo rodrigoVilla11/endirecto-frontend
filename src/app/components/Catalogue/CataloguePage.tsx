@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useArticleId } from "@/app/context/AritlceIdContext";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const CataloguePage = () => {
   const {
@@ -57,8 +58,11 @@ const CataloguePage = () => {
 
   const { selectedClientId } = useClient();
   const router = useRouter();
+  const { isMobile } = useMobile();
 
-  const [isFilterBoxVisible, setFilterBoxVisible] = useState(true);
+  const [isFilterBoxVisible, setFilterBoxVisible] = useState(
+    isMobile ? false : true
+  );
   const [showArticles, setShowArticles] = useState("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
 

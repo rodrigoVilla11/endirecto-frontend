@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { CgProfile } from "react-icons/cg";
 import { FaAddressBook, FaTimes } from "react-icons/fa";
 import { CiMenuKebab } from "react-icons/ci";
@@ -23,12 +29,20 @@ import Modal from "../components/components/Modal";
 import ResetPassword from "./ResetPassword";
 import UpdateGPS from "./UpdateGPS";
 import debounce from "../context/debounce";
-import { useInfiniteScroll } from "../context/UseInfiniteScroll";
 import { useAuth } from "../context/AuthContext";
 import { useMobile } from "../context/ResponsiveContext";
-require("dotenv").config();
 
 const ITEMS_PER_PAGE = 15;
+
+// Helper para eliminar duplicados por `id`
+const removeDuplicates = (arr: any[]) => {
+  const seen = new Set();
+  return arr.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+};
 
 const SelectCustomer = () => {
   const router = useRouter();
@@ -37,24 +51,31 @@ const SelectCustomer = () => {
 
   // Estados básicos con tipos apropiados
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { setSelectedClientId } = useClient();
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
     null
   );
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchParams, setSearchParams] = useState({
     hasDebt: "",
     hasDebtExpired: "",
     seller_id: role === "VENDEDOR" ? userData?.seller_id : "",
   });
 
-  // Queries de Redux con mejor manejo de tipos
+  // References
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
+
+  // Redux queries
+  const { data: countCustomersData } = useCountCustomersQuery(
+    role === "VENDEDOR" ? { seller_id: userData?.seller_id } : {}
+  );
   const {
     data,
     error,
@@ -70,41 +91,79 @@ const SelectCustomer = () => {
       seller_id: searchParams.seller_id,
     },
     {
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: false, // Desactivar refetch automático
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
     }
   );
   const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: documentsData } = useGetDocumentsQuery(null);
-  const { data: countCustomersData } = useCountCustomersQuery(
-    role === "VENDEDOR" ? { seller_id: userData?.seller_id } : {}
-  );
 
-  // Búsqueda optimizada con debounce
+  // Debounced search
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       setSearchQuery(query);
       setPage(1);
       setItems([]);
+      setHasMore(true);
     }, 100),
     []
   );
 
-  // Custom hook para infinite scroll
-  const { observerRef, isLoading } = useInfiniteScroll({
-    hasMore: data?.length === ITEMS_PER_PAGE,
-    isLoading: isQueryLoading,
-    onIntersect: () => setPage((prev) => prev + 1),
-  });
-
-  // Efecto para manejar la carga de artículos
+  // Effect para manejar la carga de artículos
   useEffect(() => {
-    if (!isQueryLoading && data) {
-      setItems((prev) => (page === 1 ? data : [...prev, ...data]));
+    const loadItems = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newItems = result || [];
+
+          if (page === 1) {
+            // Filtrar duplicados por si el backend envía repetidos en la primera página
+            setItems(removeDuplicates(newItems));
+          } else {
+            // Concatenar y eliminar duplicados
+            setItems((prev) => removeDuplicates([...prev, ...newItems]));
+          }
+
+          // Actualizar `hasMore` en base a cuántos items se recibieron
+          setHasMore(newItems.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading items:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadItems();
+  }, [page, searchQuery, searchParams, refetch]);
+
+  // Intersection Observer para infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5, rootMargin: "200px 0px" } // Ajusta rootMargin según necesidad
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
     }
-  }, [data, isQueryLoading, page]);
+
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
 
   // Manejadores optimizados
   const openUpdateModal = (id: string) => {
@@ -114,7 +173,8 @@ const SelectCustomer = () => {
   const closeUpdateModal = () => {
     setUpdateModalOpen(false);
     setCurrentCustomerId(null);
-    refetch();
+    // Evitar llamar a refetch para no reiniciar la lista
+    // Si necesitas actualizar los datos, considera una lógica diferente
   };
 
   const openUpdateGPSModal = (id: string) => {
@@ -124,17 +184,34 @@ const SelectCustomer = () => {
   const closeUpdateGPSModal = () => {
     setUpdateGPSModalOpen(false);
     setCurrentCustomerId(null);
-    refetch();
+    // Evitar llamar a refetch para no reiniciar la lista
   };
 
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
     setPage(1);
     setItems([]);
+    setHasMore(true);
   }, []);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  // Función para filtrar duplicados
+  const filteredItems = useMemo(() => removeDuplicates(items), [items]);
+
+  if (isQueryLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading customers. Please try again later.
+      </div>
+    );
+  }
 
   const toggleMenu = (customerId: string) => {
     setActiveMenu(activeMenu === customerId ? null : customerId);
@@ -142,10 +219,14 @@ const SelectCustomer = () => {
 
   const handleSelectCustomer = (customerId: string) => {
     setSelectedClientId(customerId);
-    router.push("/catalogue");
+    if (role === "VENDEDOR") {
+      router.push("/orders/orderSeller");
+    } else {
+      router.push("/catalogue");
+    }
   };
 
-  const tableData = items?.map((customer) => {
+  const tableData = filteredItems?.map((customer) => {
     const filteredDocuments = documentsData
       ?.filter((data) => customer.documents_balance.includes(data.id))
       .map((data) => ({
@@ -163,9 +244,9 @@ const SelectCustomer = () => {
     // Sumar montos según expiration_status
     filteredDocuments?.forEach((doc) => {
       if (doc.expiration_status === "VENCIDO") {
-        debtExpired.amount = (debtExpired.amount || 0) + doc.amount;
+        debtExpired.amount += doc.amount;
       } else {
-        debt.amount = (debt.amount || 0) + doc.amount; // Suma en debt
+        debt.amount += doc.amount; // Suma en debt
       }
     });
     const paymentCondition = paymentsConditionsData?.find(
@@ -258,7 +339,8 @@ const SelectCustomer = () => {
       hasDebt: prev.hasDebt === "true" ? "" : "true",
     }));
     setPage(1);
-    refetch();
+    setItems([]);
+    setHasMore(true);
   };
 
   const handleExpiredDebtFilter = () => {
@@ -267,7 +349,8 @@ const SelectCustomer = () => {
       hasDebtExpired: prev.hasDebtExpired === "true" ? "" : "true",
     }));
     setPage(1);
-    refetch();
+    setItems([]);
+    setHasMore(true);
   };
 
   const headerBody = {
@@ -307,7 +390,7 @@ const SelectCustomer = () => {
             />
             {searchQuery && (
               <button
-                className="right-2 top-1/2 -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
                 aria-label="Clear search"
               >
@@ -378,7 +461,7 @@ const SelectCustomer = () => {
             />
             {searchQuery && (
               <button
-                className="right-2 top-1/2 -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
                 aria-label="Clear search"
               >
@@ -391,17 +474,13 @@ const SelectCustomer = () => {
         )}
         {isMobile ? (
           <div className="bg-white rounded-lg shadow-sm">
-            {data?.map((customer) => (
+            {filteredItems?.map((customer) => (
               <div
                 key={customer.id}
-                className={`flex items-center gap-3 p-3 active:bg-gray-50 transition-colors
-             `}
+                className={`flex items-center gap-3 p-3 active:bg-gray-50 transition-colors`}
               >
                 {/* Avatar compacto */}
-                <div
-                  className="rounded-full h-9 w-9 bg-primary text-white flex justify-center items-center 
-             text-sm font-medium flex-shrink-0"
-                >
+                <div className="rounded-full h-9 w-9 bg-primary text-white flex justify-center items-center text-sm font-medium flex-shrink-0">
                   {customer.name.charAt(0).toUpperCase()}
                 </div>
 
@@ -449,7 +528,7 @@ const SelectCustomer = () => {
             ))}
 
             {/* Estado vacío mobile-friendly */}
-            {!data?.length && (
+            {!filteredItems?.length && (
               <div className="p-6 text-center">
                 <div className="text-gray-400 text-3xl mb-2">🧑💼</div>
                 <p className="text-sm text-gray-500">
@@ -462,6 +541,7 @@ const SelectCustomer = () => {
           <Table headers={tableHeader} data={tableData} />
         )}
 
+        {/* Modales */}
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentCustomerId && (
             <ResetPassword
@@ -479,6 +559,8 @@ const SelectCustomer = () => {
             />
           )}
         </Modal>
+
+        {/* Elemento observador para infinite scroll */}
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>

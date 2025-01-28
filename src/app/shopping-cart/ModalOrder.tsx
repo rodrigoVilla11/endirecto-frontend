@@ -13,6 +13,8 @@ interface OrderItem {
   id: string;
   quantity: number;
   price: number;
+  percentage: number ;
+
 }
 
 interface OrderConfirmationProps {
@@ -115,14 +117,14 @@ export default function OrderConfirmation({
     date: new Date().toISOString(),
     created_at: new Date().toISOString(),
     details: [],
-  });
+  }); 
 
   useEffect(() => {
     if (order.length > 0) {
       const mappedDetails = order.map((item) => ({
         quantity: item.quantity,
         article: { id: item.id },
-        percentage_1: 10,
+        percentage_1: item.percentage,
         netprice: item.price,
         total: item.quantity * item.price,
         branch: { id: "001" },
@@ -143,7 +145,6 @@ export default function OrderConfirmation({
     setObservations(newNotes);
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
   };
-  console.log(transaction);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

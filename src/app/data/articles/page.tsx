@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -27,10 +33,17 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [articles, setArticles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasMore, setHasMore] = useState(true);
+
   const [modalState, setModalState] = useState<{
     type: "update" | "delete" | null;
     articleId: string | null;
   }>({ type: null, articleId: null });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // References
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Queries de Redux con mejor manejo de tipos
   const { data: brandData } = useGetBrandsQuery(null);
@@ -50,9 +63,9 @@ const Page = () => {
       query: searchQuery,
     },
     {
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
     }
   );
 
@@ -91,19 +104,56 @@ const Page = () => {
     []
   );
 
-  // Custom hook para infinite scroll
-  const { observerRef, isLoading } = useInfiniteScroll({
-    hasMore: data?.length === ITEMS_PER_PAGE,
-    isLoading: isQueryLoading,
-    onIntersect: () => setPage((prev) => prev + 1),
-  });
-
-  // Efecto para manejar la carga de artículos
+  // Effect for handling initial load and searches
   useEffect(() => {
-    if (!isQueryLoading && data) {
-      setArticles((prev) => (page === 1 ? data : [...prev, ...data]));
+    const loadItems = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newItems = result || [];
+
+          if (page === 1) {
+            setArticles(newItems);
+          } else {
+            setArticles((prev) => [...prev, ...newItems]);
+          }
+
+          setHasMore(newItems.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading items:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadItems();
+  }, [page, searchQuery]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
     }
-  }, [data, isQueryLoading, page]);
+
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
 
   // Manejadores optimizados
   const handleModalOpen = useCallback(
@@ -268,7 +318,11 @@ const Page = () => {
           </div>
         ) : (
           <>
-            {isMobile ? <MobileTable data={tableData} handleModalOpen={handleModalOpen}/>:<Table headers={tableHeader} data={tableData} />}
+            {isMobile ? (
+              <MobileTable data={tableData} handleModalOpen={handleModalOpen} />
+            ) : (
+              <Table headers={tableHeader} data={tableData} />
+            )}
             {isLoading && (
               <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

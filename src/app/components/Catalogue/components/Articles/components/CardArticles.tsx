@@ -106,7 +106,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const closeModal = () => setModalOpen(false);
 
   const handleOpenModal = (id: string) => {
-    console.log("setting article id", id)
     setModalOpen(true)
     setArticleId(id);
   };

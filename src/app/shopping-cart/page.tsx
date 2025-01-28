@@ -21,6 +21,7 @@ import OrderConfirmation from "./ModalOrder";
 import { useGetArticlesBonusesQuery } from "@/redux/services/articlesBonusesApi";
 import ArticleDetails from "../components/Catalogue/components/Articles/components/ArticleDetails";
 import { useArticleId } from "../context/AritlceIdContext";
+import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 
 interface CartItem {
   id: string;
@@ -31,6 +32,7 @@ interface CartItem {
   stock: any;
   image?: string;
   supplier_code?: string;
+  percentage: number;
 }
 
 interface OrderItem extends CartItem {
@@ -53,22 +55,26 @@ const ShoppingCart = () => {
     id: selectedClientId || "",
   });
   const { data: articles } = useGetAllArticlesQuery(null);
+  const { data: paymentsConditions } = useGetPaymentConditionsQuery(null);
+
   const { data: brands } = useGetBrandsQuery(null);
   const { data: stock } = useGetStockQuery(null);
   const { data: prices } = useGetArticlesPricesQuery(null);
   const [updateCustomer] = useUpdateCustomerMutation();
 
   const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
-
   // Inicializar carrito y orden
   useEffect(() => {
-    if (!customer || !articles || !brands || !prices || !stock) return;
+    if (!customer || !articles || !brands || !prices || !stock || !paymentsConditions) return;
 
     const items = customer.shopping_cart.reduce(
       (acc: CartItem[], articleId) => {
         const article = articles.find((a) => a.id === articleId);
         const brand = brands.find((b) => b.id === article?.brand_id);
+        const paymentCondition = paymentsConditions.find((p)=> p.id === customer?.payment_condition_id) 
 
+        const percentagePaymentCondition = Math.abs(parseFloat(paymentCondition?.percentage || "0"));
+       
         // Obtener precio base
         let price =
           prices.find(
@@ -84,6 +90,11 @@ const ShoppingCart = () => {
         if (bonus?.percentage_1 && typeof price === "number") {
           const discount = (price * bonus.percentage_1) / 100;
           price -= discount;
+        }
+
+        if (percentagePaymentCondition && typeof price === "number"){
+          const recharge = (price * percentagePaymentCondition) / 100;
+          price += recharge;
         }
 
         const stockItem = stock.find((s) => s.article_id === articleId);
@@ -105,6 +116,7 @@ const ShoppingCart = () => {
               quantity: stockItem?.quantity || 0,
               status: stockItem?.status,
             },
+            percentage: bonus?.percentage_1 || 0,
             image: article.images?.[0],
             supplier_code: article.supplier_code,
           });
@@ -252,7 +264,6 @@ const ShoppingCart = () => {
     orderItems.length > 0 && orderItems.every((item) => item.selected);
 
   const handleOpenModal = (id: string) => {
-    console.log("setting article id", id);
     setModalOpen(true);
     setArticleId(id);
   };
@@ -356,7 +367,6 @@ const ShoppingCart = () => {
         onClick: () => {
           const selectedOrder = getSelectedItems();
           setOrder(selectedOrder);
-          console.log("Orden a enviar:", selectedOrder);
           setShowConfirmation(true);
           // Aquí puedes agregar la lógica para procesar la orden
         },
