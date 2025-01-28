@@ -40,7 +40,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <MdDashboard />,
       name: "Dashboard",
-      path: "/dashboard",
+      path: role === "VENDEDOR" ? "/orders/orderSeller" : "/dashboard",
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",

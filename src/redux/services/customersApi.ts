@@ -80,6 +80,7 @@ export const customerApi = createApi({
         hasDebtExpired?: string;
         seller_id?: string;
         instance?: string;
+        hasArticlesOnSC?: string;
       }
     >({
       query: ({
@@ -90,6 +91,7 @@ export const customerApi = createApi({
         hasDebtExpired = "",
         seller_id = "",
         instance = "",
+        hasArticlesOnSC = "",
       } = {}) => {
         const url = `/customers`;
         const params = new URLSearchParams({
@@ -101,6 +103,8 @@ export const customerApi = createApi({
         if (query) params.append("q", query);
         if (hasDebt) params.append("hasDebt", hasDebt);
         if (hasDebtExpired) params.append("hasDebtExpired", hasDebtExpired);
+        if (hasArticlesOnSC) params.append("hasArticlesOnSC", hasArticlesOnSC);
+
         if (seller_id) params.append("seller_id", seller_id);
         if (instance) params.append("instance", instance);
 
