@@ -50,7 +50,7 @@ const Page = () => {
       refetch;
     }
   }, [selectedClientId]);
-  const { data: countDocumentsData } = useCountCustomersQuery(null);
+  const { data: countDocumentsData } = useCountCustomersQuery({});
 
   useEffect(() => {
     if (!isFetching) {
