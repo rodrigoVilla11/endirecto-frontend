@@ -106,6 +106,7 @@ export const reclaimsApi = createApi({
         valid?: string;
         status?: string;
         customer_id?: string;
+        sort?: string;
       }
     >({
       query: ({
@@ -118,6 +119,7 @@ export const reclaimsApi = createApi({
         status,
         valid,
         customer_id,
+        sort = "",
       } = {}) => {
         const url = `/reclaims`;
         const params = new URLSearchParams({
@@ -125,7 +127,7 @@ export const reclaimsApi = createApi({
           limit: limit.toString(),
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
-
+        if(sort) params.append("sort", sort);
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);

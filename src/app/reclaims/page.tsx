@@ -1,11 +1,11 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { AiOutlineDownload } from "react-icons/ai";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import {
   Status,
@@ -23,18 +23,28 @@ import UpdateReclaimComponent from "./UpdateReclaim";
 import PrivateRoute from "../context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import { useClient } from "../context/ClientContext";
+import debounce from "../context/debounce";
+
+const ITEMS_PER_PAGE = 20;
 
 const Page = () => {
+  // Basic states
+  const [page, setPage] = useState(1);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [customer_id, setCustomer_id] = useState("");
+  const { selectedClientId } = useClient();
+
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const [searchQuery, setSearchQuery] = useState("");
-  const { selectedClientId } = useClient();
-  const [customer_id, setCustomer_id] = useState("");
-
+  // References
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
   const [searchParams, setSearchParams] = useState({
     status: "",
     valid: "",
@@ -46,9 +56,14 @@ const Page = () => {
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: customerData } = useGetCustomersQuery(null);
   const { data: userDatas } = useGetUsersQuery(null);
-  const { data, error, isLoading, refetch } = useGetReclaimsPagQuery({
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetReclaimsPagQuery({
     page,
-    limit,
+    limit: ITEMS_PER_PAGE,
     query: searchQuery,
     startDate: searchParams.startDate
       ? searchParams.startDate.toISOString()
@@ -60,8 +75,17 @@ const Page = () => {
     status: searchParams.status,
     document_type_number: searchParams.document_type_number,
     customer_id: customer_id,
+    sort: sortQuery,
   });
   const { data: countReclaimsData } = useCountReclaimsQuery(null);
+
+  // Debounced search
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setBrands([]);
+    setHasMore(true);
+  }, 100);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -73,8 +97,56 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  // Effect for handling initial load and searches
+  useEffect(() => {
+    const loadBrands = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newBrands = result || [];
+
+          if (page === 1) {
+            setBrands(newBrands);
+          } else {
+            setBrands((prev) => [...prev, ...newBrands]);
+          }
+
+          setHasMore(newBrands.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading brands:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadBrands();
+  }, [page, searchQuery, sortQuery, searchParams]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
+    }
+
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -102,7 +174,37 @@ const Page = () => {
     refetch();
   };
 
-  const tableData = data?.map((reclaim) => {
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setBrands([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
+
+  // Reset search
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setBrands([]);
+    setHasMore(true);
+  };
+
+  const tableData = brands?.map((reclaim) => {
     const branch = branchData?.find((data) => data.id == reclaim.branch_id);
     const customer = customerData?.find(
       (data) => data.id == reclaim.customer_id
@@ -155,7 +257,7 @@ const Page = () => {
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
   const headerBody = {
-    buttons:  [
+    buttons: [
       ...(selectedClientId
         ? [
             {
@@ -233,16 +335,25 @@ const Page = () => {
       // },
       {
         content: (
-          <Input
-            placeholder={"Search..."}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                refetch();
+          <div className="relative">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
               }
-            }}
-          />
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
       {
@@ -267,17 +378,22 @@ const Page = () => {
     ],
     results: `${countReclaimsData || 0} Results`,
   };
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
+  if (isQueryLoading && brands.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
 
-  const handleNextPage = () => {
-    if (page < Math.ceil((countReclaimsData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading brands. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <PrivateRoute
       requiredRoles={[
@@ -291,7 +407,29 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">RECLAIMS</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        {isLoading && brands.length === 0 ? (
+          <div ref={loadingRef} className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          </div>
+        ) : brands.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No brands found</div>
+        ) : (
+          <>
+            <Table
+              headers={tableHeader}
+              data={tableData}
+              onSort={handleSort}
+              sortField={sortQuery.split(":")[0]}
+              sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+            />
+            {isLoading && (
+              <div ref={loadingRef} className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}
+          </>
+        )}
+        <div ref={observerRef} className="h-10" />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateReclaimComponent closeModal={closeCreateModal} />
@@ -313,25 +451,6 @@ const Page = () => {
           />
         </Modal>
 
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countReclaimsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countReclaimsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
     </PrivateRoute>
   );

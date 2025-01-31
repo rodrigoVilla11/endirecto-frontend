@@ -137,7 +137,7 @@ const Page = () => {
     setHasMore(true);
   };
 
-  const tableData = data?.map((articleBonus) => {
+  const tableData = items?.map((articleBonus) => {
     const brand = brandsData?.find((data) => data.id == articleBonus.brand_id);
     const item = itemsData?.find((data) => data.id == articleBonus.item_id);
     const article = articlesData?.find(
@@ -157,7 +157,7 @@ const Page = () => {
     { name: "Brand", key: "brand" },
     { name: "Item", key: "item" },
     { name: "Article", key: "article" },
-    { name: "Discount 1", key: "discount" },
+    { name: "Discount 1", key: "percentage" },
   ];
   const headerBody = {
     buttons: [
@@ -209,8 +209,8 @@ const Page = () => {
       </div>
     );
   }
+  console.log(sortQuery);
 
-  console.log(items)
   return (
     <PrivateRoute
       requiredRoles={[
@@ -224,13 +224,31 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">BONUSES</h3>
         <Header headerBody={headerBody} />
-        <Table
-          headers={tableHeader}
-          data={tableData}
-          onSort={handleSort}
-          sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
-        />
+
+        {isLoading && items.length === 0 ? (
+          <div ref={loadingRef} className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No payment conditions found
+          </div>
+        ) : (
+          <>
+            <Table
+              headers={tableHeader}
+              data={tableData}
+              onSort={handleSort}
+              sortField={sortQuery.split(":")[0]}
+              sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+            />
+            {isLoading && (
+              <div ref={loadingRef} className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}{" "}
+          </>
+        )}
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
