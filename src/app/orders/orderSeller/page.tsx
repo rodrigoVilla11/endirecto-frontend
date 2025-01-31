@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
 import { useState } from "react";
 import VisitModal from "./VisitModal";
+import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 
 interface CustomerDashboardProps {
   customer: {
@@ -38,6 +39,31 @@ export default function CustomerDashboard() {
     refetch,
   } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
+  });
+  const {
+    data,
+    error: errorCustomerInfo,
+    isLoading: isLoadingCustomerInfo,
+  } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
+  const isClient = data && "documents_balance" in data;
+
+  const documentsBalance = isClient ? data.documents_balance : "0";
+  const documentsBalanceExpired = isClient
+    ? data.documents_balance_expired
+    : "0";
+
+  const formatedSumAmount = Number(documentsBalance)?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const formatedExpiredSumAmount = Number(
+    documentsBalanceExpired
+  )?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
 
   if (!customer) {
@@ -116,10 +142,11 @@ export default function CustomerDashboard() {
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-white">
-                $ customer.accountBalance
+                $ {formatedSumAmount}
               </p>
               <p className="text-sm text-zinc-300">
-                VENCIDO: $ customer.expiredBalance
+                VENCIDO: $ {formatedExpiredSumAmount}
+
               </p>
             </div>
           </section>

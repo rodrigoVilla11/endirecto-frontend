@@ -1,9 +1,16 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type CustomerInformation = {
-  id: string; // ID
-  documents_balance: string[]; // Documentos con saldo vencido
+  id: string;
+  documents_balance: string;
+  documents_balance_expired: string;
+  customer_id: string;
+  documents: Documents[];
 };
+export interface Documents {
+  id: string;
+  document_balance: string;
+}
 
 export const customersInformationsApi = createApi({
   reducerPath: "customersInformationsApi",
@@ -22,16 +29,21 @@ export const customersInformationsApi = createApi({
         return response;
       },
     }),
-    getCustomerInformationById: builder.query<
-      CustomerInformation,
-      { id: string }
+    getCustomerInformationByCustomerId: builder.query<
+      | CustomerInformation
+      | {
+          total_documents_balance: number;
+          total_documents_balance_expired: number;
+        },
+      { id?: string }
     >({
-      query: ({ id }) => `/customers-informations/${id}`,
+      query: ({ id }) =>
+        id ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}` : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
 
 export const {
   useGetCustomersInformationsQuery,
-  useGetCustomerInformationByIdQuery,
+  useGetCustomerInformationByCustomerIdQuery,
 } = customersInformationsApi;
