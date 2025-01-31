@@ -1,3 +1,4 @@
+"use client"
 import React from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
