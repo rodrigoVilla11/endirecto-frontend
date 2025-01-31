@@ -68,8 +68,9 @@ const SelectCustomer = () => {
     hasDebt: "",
     hasDebtExpired: "",
     seller_id: role === "VENDEDOR" ? userData?.seller_id : "",
-    hasArticlesOnSC: ""
+    hasArticlesOnSC: "",
   });
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // References
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -92,7 +93,8 @@ const SelectCustomer = () => {
       hasDebtExpired: searchParams.hasDebtExpired,
       hasDebt: searchParams.hasDebt,
       seller_id: searchParams.seller_id,
-      hasArticlesOnSC: searchParams.hasArticlesOnSC
+      hasArticlesOnSC: searchParams.hasArticlesOnSC,
+      sort: sortQuery,
     },
     {
       refetchOnMountOrArgChange: false, // Desactivar refetch automático
@@ -143,7 +145,7 @@ const SelectCustomer = () => {
     };
 
     loadItems();
-  }, [page, searchQuery, searchParams, refetch]);
+  }, [page, searchQuery, searchParams, sortQuery]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {
@@ -197,6 +199,28 @@ const SelectCustomer = () => {
     setItems([]);
     setHasMore(true);
   }, []);
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   // Función para filtrar duplicados
   const filteredItems = useMemo(() => removeDuplicates(items), [items]);
@@ -256,7 +280,7 @@ const SelectCustomer = () => {
     const paymentCondition = paymentsConditionsData?.find(
       (data) => data.id === customer.payment_condition_id
     );
-
+    
     return {
       key: customer.id,
       icon: (
@@ -287,7 +311,6 @@ const SelectCustomer = () => {
       "payment-condition": paymentCondition?.name || "NOT FOUND",
       "status-account": debt.amount,
       "expired-debt": debtExpired.amount,
-      "use-days-web": "50%", // Conectar
       "articles-on-cart": customer.shopping_cart.length, // Conectar
       gps: <FiMapPin />,
       menu: (
@@ -328,7 +351,6 @@ const SelectCustomer = () => {
     { name: "Payment Condition", key: "payment-condition" },
     { name: "Status Account", key: "status-account" },
     { name: "Expired Debt", key: "expired-debt" },
-    { name: "Use Days WEB (%)", key: "use-days-web" },
     { name: "Articles on Cart", key: "articles-on-cart" },
     { name: "GPS", key: "gps" },
     {
@@ -440,49 +462,59 @@ const SelectCustomer = () => {
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className={`gap-4 ${isMobile? "bg-primary" : ""}`}>
+      <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
         <h3 className="text-bold p-2">SELECT CUSTOMER</h3>
         {isMobile ? (
-         <div className="bg-zinc-900 p-4 rounded-lg">
-         <div className="grid grid-cols-2 gap-4 mb-4">
-           <div className="space-y-2">
-             <ButtonOnOff title="Deuda" onChange={handleDebtFilter} active={searchParams.hasDebt === "true"} />
-             <ButtonOnOff
-               title="D. Vencida"
-               onChange={handleExpiredDebtFilter}
-               active={searchParams.hasDebtExpired === "true"}
-             />
-           </div>
-           <div>
-             <ButtonOnOff title="Art. En Carrito" 
-               onChange={handleHasArticlesOnSC}
-               active={searchParams.hasArticlesOnSC === "true"}/>
-           </div>
-         </div>
-   
-         <div className="relative">
-           <input
-             type="text"
-             placeholder="Buscar..."
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900
+          <div className="bg-zinc-900 p-4 rounded-lg">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <ButtonOnOff
+                  title="Deuda"
+                  onChange={handleDebtFilter}
+                  active={searchParams.hasDebt === "true"}
+                />
+                <ButtonOnOff
+                  title="D. Vencida"
+                  onChange={handleExpiredDebtFilter}
+                  active={searchParams.hasDebtExpired === "true"}
+                />
+              </div>
+              <div>
+                <ButtonOnOff
+                  title="Art. En Carrito"
+                  onChange={handleHasArticlesOnSC}
+                  active={searchParams.hasArticlesOnSC === "true"}
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900
                placeholder:text-zinc-400 focus:outline-none focus:ring-2 
                focus:ring-red-500/50"
-           />
-           {searchQuery && (
-             <button
-               onClick={handleResetSearch}
-               className="absolute right-3 top-1/2 -translate-y-1/2
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleResetSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2
                  text-zinc-400 hover:text-zinc-600"
-             >
-               ✕
-             </button>
-           )}
-         </div>
-   
-         {searchQuery && <div className="mt-2 text-right text-sm text-zinc-400">563 Resultados</div>}
-       </div>
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {searchQuery && (
+              <div className="mt-2 text-right text-sm text-zinc-400">
+                {countCustomersData || 0} Results
+              </div>
+            )}
+          </div>
         ) : (
           <Header headerBody={headerBody} />
         )}
@@ -492,7 +524,13 @@ const SelectCustomer = () => {
             handleSelectCustomer={handleSelectCustomer}
           />
         ) : (
-          <Table headers={tableHeader} data={tableData} />
+          <Table
+            headers={tableHeader}
+            data={tableData}
+            onSort={handleSort}
+            sortField={sortQuery.split(":")[0]}
+            sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          />
         )}
 
         {/* Modales */}

@@ -34,14 +34,15 @@ export const articlesBonusesApi = createApi({
       },
     }),
     getArticleBonusById: builder.query<ArticleBonus, { id: string }>({
-      query: ({ id }) => `/articles-bonuses/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/articles-bonuses/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getArticlesBonusesPag: builder.query<
       ArticleBonus[],
-      { page?: number; limit?: number; query?: string }
+      { page?: number; limit?: number; query?: string; sort?: string }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/articles-bonuses?q=${query}&page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+        return `/articles-bonuses?q=${query}&page=${page}&limit=${limit}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: ArticleBonus[]) => {
         if (!response || response.length === 0) {
@@ -59,7 +60,8 @@ export const articlesBonusesApi = createApi({
       },
     }),
     getArticleBonusByItemId: builder.query<ArticleBonus, { id: string }>({
-      query: ({ id }) => `/articles-bonuses/item/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/articles-bonuses/item/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
@@ -69,5 +71,5 @@ export const {
   useGetArticleBonusByIdQuery,
   useGetArticlesBonusesPagQuery,
   useCountArticlesBonusesQuery,
-  useGetArticleBonusByItemIdQuery
+  useGetArticleBonusByItemIdQuery,
 } = articlesBonusesApi;

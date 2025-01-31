@@ -20,12 +20,14 @@ import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { LucideMessageSquareShare } from "lucide-react";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const SideMenu = ({ isOpen }: any) => {
   const { selectedClientId, setSelectedClientId } = useClient();
   const { setIsAuthenticated, setRole, role } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const { isMobile } = useMobile();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -403,7 +405,7 @@ const SideMenu = ({ isOpen }: any) => {
     <div
       className={`${
         isOpen
-          ? "fixed inset-0 w-full h-full z-50 bg-zinc-900 px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto" // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
+          ? `fixed inset-0 w-full h-full z-50 ${isMobile ? "bg-zinc-900" : "bg-header-color"} px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto` // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100" // Mobile: oculto | Desktop: visible sin opacidad
       } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar sm:mt-20 mt-28`}
     >

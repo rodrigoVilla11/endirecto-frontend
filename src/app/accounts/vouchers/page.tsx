@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -30,6 +30,7 @@ const Page = () => {
   const [customer_id, setCustomer_id] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
@@ -39,6 +40,7 @@ const Page = () => {
     startDate: startDate ? startDate.toISOString() : undefined,
     endDate: endDate ? endDate.toISOString() : undefined,
     customer_id,
+    sort: sortQuery,
   });
 
   useEffect(() => {
@@ -67,7 +69,7 @@ const Page = () => {
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
@@ -90,6 +92,28 @@ const Page = () => {
       }
     };
   }, [isFetching]);
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      // setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
@@ -196,7 +220,13 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">VOUCHERS</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>

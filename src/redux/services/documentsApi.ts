@@ -43,7 +43,8 @@ export const documentsApi = createApi({
         startDate?: string;
         endDate?: string;
         expirationStatus?: string;
-        customer_id?: string
+        customer_id?: string;
+        sort?: string;
       }
     >({
       query: ({
@@ -53,7 +54,8 @@ export const documentsApi = createApi({
         startDate,
         endDate,
         expirationStatus,
-        customer_id
+        customer_id,
+        sort = "",
       } = {}) => {
         const url = `/documents`;
         const params = new URLSearchParams({
@@ -65,6 +67,9 @@ export const documentsApi = createApi({
 
         if (customer_id) {
           params.append("customer_id", customer_id);
+        }
+        if (sort) {
+          params.append("sort", sort);
         }
 
         if (startDate) {
@@ -116,7 +121,7 @@ export const documentsApi = createApi({
           return parseFloat(totalExpiredAmount);
         }
 
-        return 0; 
+        return 0;
       },
     }),
 
@@ -126,16 +131,14 @@ export const documentsApi = createApi({
       },
       transformResponse: (response: { totalAmount?: string }) => {
         const totalAmount = response?.totalAmount;
-    
-        
+
         if (totalAmount && !isNaN(parseFloat(totalAmount))) {
           return parseFloat(totalAmount);
         }
-    
+
         return 0;
       },
     }),
-    
   }),
 });
 

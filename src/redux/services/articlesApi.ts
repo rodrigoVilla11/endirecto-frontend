@@ -78,21 +78,36 @@ export const articlesApi = createApi({
         tags?: string;
         stock?: string;
         vehicle_brand?: string;
-        order?: string; // Nuevo parámetro para el ordenamiento
+        sort?: string; // Nuevo parámetro para el ordenamiento
       }
     >({
       query: ({
         page = 1,
         limit = 10,
         query = "",
-        brand = "",
-        item = "",
-        tags = "",
-        stock = "",
-        vehicle_brand = "",
-        order = "", // Inicializado como cadena vacía
+        brand,
+        item,
+        tags,
+        stock,
+        vehicle_brand,
+        sort,
       } = {}) => {
-        return `/articles?page=${page}&limit=${limit}&q=${query}&brand=${brand}&item=${item}&stock=${stock}&tags=${tags}&vehicle_brand=${vehicle_brand}&sortBy=${order}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (query) params.append("q", query);
+        if (brand) params.append("brand", brand);
+        if (item) params.append("item", item);
+        if (tags) params.append("tags", tags);
+        if (stock) params.append("stock", stock);
+        if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
+        if (sort) params.append("sort", sort);
+
+        console.log(params)
+        return `/articles?${params.toString()}`;
       },
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {
@@ -102,7 +117,6 @@ export const articlesApi = createApi({
         return response;
       },
     }),
-
     getArticleById: builder.query<Article, { id: string }>({
       query: ({ id }) =>
         `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,

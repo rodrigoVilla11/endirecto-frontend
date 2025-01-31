@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -24,6 +24,8 @@ const Page = () => {
   const [notificationType, setNotificationType] = useState<
     NotificationType | undefined
   >(undefined);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+
   const { data: countNotificationsData } = useCountNotificationsQuery(null);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -46,6 +48,7 @@ const Page = () => {
     limit,
     query: searchQuery,
     type: notificationType,
+    sort: sortQuery,
   }); // Agregar type aquí
 
   useEffect(() => {
@@ -63,7 +66,7 @@ const Page = () => {
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, sortQuery, searchQuery, notificationType]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
@@ -102,6 +105,28 @@ const Page = () => {
     setCurrentNotificationId(null);
     refetch();
   };
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      // setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value as NotificationType | "all";
@@ -193,7 +218,13 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">NOTIFICATIONS</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateNotificationComponent closeModal={closeCreateModal} />

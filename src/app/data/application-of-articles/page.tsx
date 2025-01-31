@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -18,10 +18,13 @@ const ITEMS_PER_PAGE = 15;
 const Page = () => {
   // Basic states
   const [page, setPage] = useState(1);
-  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>([]);
+  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>(
+    []
+  );
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // References
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -39,6 +42,7 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
+    sort: sortQuery,
   });
 
   // Debounced search
@@ -74,7 +78,7 @@ const Page = () => {
     };
 
     loadApplications();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, sortQuery]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -107,6 +111,28 @@ const Page = () => {
     setApplicationsOfArticles([]);
     setHasMore(true);
   };
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setApplicationsOfArticles([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   // Table configuration
   const tableData = applicationsOfArticles?.map((item) => {
@@ -211,7 +237,13 @@ const Page = () => {
           </div>
         ) : (
           <>
-            <Table headers={tableHeader} data={tableData} />
+            <Table
+              headers={tableHeader}
+              data={tableData}
+              onSort={handleSort}
+              sortField={sortQuery.split(":")[0]}
+              sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+            />
             {isLoading && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

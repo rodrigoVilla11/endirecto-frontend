@@ -78,16 +78,58 @@ export const ordersApi = createApi({
     }),
     getOrdersPag: builder.query<
       Order[],
-      { page?: number; limit?: number; query?: string }
+      {
+        page?: number;
+        limit?: number;
+        startDate?: string;
+        endDate?: string;
+        status?: string;
+        customer_id?: string;
+        sort?: string;
+      }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/orders?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({
+        page = 1,
+        limit = 10,
+        startDate,
+        endDate,
+        status,
+        customer_id,
+        sort = "",
+      } = {}) => {
+        const url = `/orders`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+
+        if (sort) {
+          params.append("sort", sort);
+        }
+
+        if (customer_id) {
+          params.append("customer_id", customer_id);
+        }
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+
+        if (status) {
+          params.append("status", status);
+        }
+
+        return `${url}?${params.toString()}`;
       },
       transformResponse: (response: Order[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron ordenes en la respuesta");
+          console.error("No se recibieron pedidos en la respuesta");
           return [];
         }
+
         return response;
       },
     }),
@@ -117,10 +159,10 @@ export const ordersApi = createApi({
 });
 
 export const {
-    useCountOrderQuery,
-    useCreateOrderMutation,
-    useDeleteOrderMutation,
-    useGetOrderByIdQuery,
-    useGetOrdersPagQuery,
-    useGetOrdersQuery,
+  useCountOrderQuery,
+  useCreateOrderMutation,
+  useDeleteOrderMutation,
+  useGetOrderByIdQuery,
+  useGetOrdersPagQuery,
+  useGetOrdersQuery,
 } = ordersApi;

@@ -57,16 +57,20 @@ export const collectionsApi = createApi({
       },
     }),
 
-    getCollectionsPag: builder.query<Collections[], { 
-      page?: number; 
-      limit?: number; 
-      status?: string; 
-      query?: string; 
-      startDate?: string; 
-      endDate?: string; 
-      seller_id?: string; 
-      customer_id?: string
-    }>({
+    getCollectionsPag: builder.query<
+      Collections[],
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        query?: string;
+        startDate?: string;
+        endDate?: string;
+        seller_id?: string;
+        customer_id?: string;
+        sort?: string;
+      }
+    >({
       query: ({
         page = 1,
         limit = 10,
@@ -74,7 +78,8 @@ export const collectionsApi = createApi({
         endDate,
         status,
         seller_id,
-        customer_id
+        customer_id,
+        sort = "",
       } = {}) => {
         const url = `/collections`;
         const params = new URLSearchParams({
@@ -83,14 +88,14 @@ export const collectionsApi = createApi({
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
 
-        
-    
+        if (sort) {
+          params.append("sort", sort);
+        }
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (status) params.append("status", status);
         if (seller_id) params.append("seller_id", seller_id);
         if (customer_id) params.append("customer_id", customer_id);
-      
 
         const fullUrl = `${url}?${params.toString()}`;
         return fullUrl;
@@ -98,12 +103,12 @@ export const collectionsApi = createApi({
       transformResponse: (response: Collections[], meta, arg) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron documentos en la respuesta");
-          return []; 
+          return [];
         }
         return response;
       },
     }),
-    
+
     getCollectionById: builder.query<Collections, { id: string }>({
       query: ({ id }) =>
         `/collections/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,

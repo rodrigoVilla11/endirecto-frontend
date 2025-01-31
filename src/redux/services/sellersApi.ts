@@ -28,10 +28,10 @@ export const sellersApi = createApi({
     }),
     getSellersPag: builder.query<
       Seller[],
-      { page?: number; limit?: number; query?: string }
+      { page?: number; limit?: number; query?: string; sort?: string }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/sellers/all?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+        return `/sellers/all?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Seller[]) => {
         if (!response || response.length === 0) {

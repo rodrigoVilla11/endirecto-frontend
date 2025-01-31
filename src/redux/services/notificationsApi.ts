@@ -72,10 +72,11 @@ export const notificationsApi = createApi({
         limit?: number;
         query?: string;
         type?: NotificationType;
+        sort?: string 
       }
     >({
-      query: ({ page = 1, limit = 10, query = "", type }) => {
-        let url = `/notifications?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", type , sort = ""}) => {
+        let url = `/notifications?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
 
         if (type) {
           url += `&type=${type}`;

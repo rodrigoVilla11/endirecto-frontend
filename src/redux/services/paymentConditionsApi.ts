@@ -16,7 +16,7 @@ export const paymentConditionsApi = createApi({
   }),
   endpoints: (builder) => ({
     getPaymentConditions: builder.query<PaymentCondition[], null>({
-      query: () => `/payment-conditions?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/payment-conditions/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: PaymentCondition[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron condiciones de pago en la respuesta");
@@ -25,9 +25,9 @@ export const paymentConditionsApi = createApi({
         return response;
       },
     }),
-    getPaymentConditionsPag: builder.query<PaymentCondition[], { page?: number; limit?: number, query?: string }>({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/payment-conditions?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    getPaymentConditionsPag: builder.query<PaymentCondition[], { page?: number; limit?: number, query?: string; sort?: string }>({
+      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+        return `/payment-conditions?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: PaymentCondition[]) => {
         if (!response || response.length === 0) {

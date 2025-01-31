@@ -35,10 +35,10 @@ export const itemsApi = createApi({
     }),
     getItemsPag: builder.query<
       Items[],
-      { page?: number; limit?: number; query?: string }
+      { page?: number; limit?: number; query?: string; sort?: string }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/items?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+        return `/items?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Items[]) => {
         if (!response || response.length === 0) {

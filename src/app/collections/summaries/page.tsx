@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -15,28 +15,39 @@ import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import { useClient } from "@/app/context/ClientContext";
+import debounce from "@/app/context/debounce";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  // Estados básicos
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const status = "SUMMARIZED";
-  const { data: sellersData } = useGetSellersQuery(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [customer_id, setCustomer_id] = useState("");
   const { selectedClientId } = useClient();
 
-  const [customer_id, setCustomer_id] = useState("")
+  // Referencias
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
- 
-
+  const { data: sellersData } = useGetSellersQuery(null);
   const [searchParams, setSearchParams] = useState({
     seller_id: "",
     startDate: null as Date | null,
     endDate: null as Date | null,
   });
 
-  const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetCollectionsPagQuery({
     page,
-    limit,
-    status,
+    limit: ITEMS_PER_PAGE,
+    status: "SUMMARIZED",
     startDate: searchParams.startDate
       ? searchParams.startDate.toISOString()
       : undefined,
@@ -44,26 +55,84 @@ const Page = () => {
       ? searchParams.endDate.toISOString()
       : undefined,
     seller_id: searchParams.seller_id,
-    customer_id
+    customer_id,
+    sort: sortQuery,
   });
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch
-    } else {
-      setCustomer_id("");
-      refetch
-    }
-  }, [selectedClientId]);
+
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  // 🔥 Evitar llamadas innecesarias a `refetch` cuando cambia `selectedClientId`
+  useEffect(() => {
+    if (selectedClientId !== customer_id) {
+      setCustomer_id(selectedClientId || "");
+      refetch();
+    }
+  }, [selectedClientId]);
 
-  const tableData = data?.map((collection) => {
-    const branch = branchData?.find((data) => data.id == collection.branch_id);
-    const seller = sellersData?.find((data) => data.id == collection.seller_id);
+  // 🔥 Carga de datos con paginación y ordenamiento
+  useEffect(() => {
+    const loadItems = async () => {
+      if (isLoading) return; // Evita llamadas innecesarias
+      setIsLoading(true);
+      try {
+        const result = await refetch().unwrap();
+        const newItems = result || [];
+
+        setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
+        setHasMore(newItems.length === ITEMS_PER_PAGE);
+      } catch (error) {
+        console.error("Error loading collections:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadItems();
+  }, [page, sortQuery]);
+
+  // 🔥 Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (observerRef.current) observer.observe(observerRef.current);
+
+    return () => {
+      if (observerRef.current) observer.unobserve(observerRef.current);
+    };
+  }, [hasMore, isLoading]);
+
+  // 🔥 Manejo de ordenamiento
+  const handleSort = useCallback(
+    (field: string) => {
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+
+      const [currentField, currentDirection] = sortQuery
+        ? sortQuery.split(":")
+        : ["", ""];
+
+      setSortQuery(
+        currentField === field
+          ? `${field}:${currentDirection === "asc" ? "desc" : "asc"}`
+          : `${field}:asc`
+      );
+    },
+    [sortQuery]
+  );
+
+  // 🔥 Construcción de datos para la tabla
+  const tableData = items?.map((collection) => {
+    const branch = branchData?.find((data) => data.id === collection.branch_id);
+    const seller = sellersData?.find((data) => data.id === collection.seller_id);
 
     return {
       key: collection._id,
@@ -90,14 +159,8 @@ const Page = () => {
   });
 
   const tableHeader = [
-    {
-      component: <AiOutlineDownload className="text-center text-xl" />,
-      key: "info",
-    },
-    {
-      component: <FaRegFilePdf className="text-center text-xl" />,
-      key: "pdf",
-    },
+    { component: <AiOutlineDownload className="text-center text-xl" />, key: "info" },
+    { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
     { name: "Number", key: "number" },
     { name: "Date", key: "date" },
     { name: "Payment", key: "payment" },
@@ -106,91 +169,24 @@ const Page = () => {
     { name: "Notes", key: "notes" },
     { name: "Seller", key: "seller" },
   ];
+
   const headerBody = {
     buttons: [],
     filters: [
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.startDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, startDate: date })
-            }
-            placeholderText="Date From"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-        ),
-      },
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.endDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, endDate: date })
-            }
-            placeholderText="Date To"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-        ),
-      },
-      {
-        content: (
-          <select
-            value={searchParams.seller_id}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, seller_id: e.target.value })
-            }
-          >
-            <option value="">Seller...</option>
-            {sellersData?.map((seller) => (
-              <option key={seller.id} value={seller.id}>
-                {seller.name}
-              </option>
-            ))}
-          </select>
-        ),
-      },
+      { content: <DatePicker selected={searchParams.startDate} onChange={(date) => setSearchParams({ ...searchParams, startDate: date })} placeholderText="Date From" dateFormat="yyyy-MM-dd" className="border border-gray-300 rounded p-2" /> },
+      { content: <DatePicker selected={searchParams.endDate} onChange={(date) => setSearchParams({ ...searchParams, endDate: date })} placeholderText="Date To" dateFormat="yyyy-MM-dd" className="border border-gray-300 rounded p-2" /> },
     ],
     results: `${data?.length || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) setPage(page - 1);
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countCollectionsData || 0) / limit))
-      setPage(page + 1);
-  };
-
   return (
-    <PrivateRoute  requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">COLLECTIONS SUMMARIES</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countCollectionsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page >= Math.ceil((countCollectionsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <Table headers={tableHeader} data={tableData} onSort={handleSort} sortField={sortQuery.split(":")[0] || ""} sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""} />
       </div>
+      <div ref={observerRef} className="h-10" />
     </PrivateRoute>
   );
 };

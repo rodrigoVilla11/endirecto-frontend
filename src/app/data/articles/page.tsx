@@ -40,6 +40,7 @@ const Page = () => {
     articleId: string | null;
   }>({ type: null, articleId: null });
   const [isLoading, setIsLoading] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // References
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -61,12 +62,35 @@ const Page = () => {
       page,
       limit: ITEMS_PER_PAGE,
       query: searchQuery,
+      sort: sortQuery,
     },
     {
       refetchOnMountOrArgChange: false,
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
+  );
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setArticles([]);
+      setHasMore(true);
+    },
+    [sortQuery]
   );
 
   // Memoized brand and item maps for better performance
@@ -205,7 +229,7 @@ const Page = () => {
             )}
           </div>
         ),
-        pdf: article.pdfs,
+        // pdf: article.pdfs,
         item: itemMap?.[article.item_id] || "NO ITEM",
         id: article.id,
         supplier: article.supplier_code,
@@ -232,20 +256,30 @@ const Page = () => {
 
   const tableHeader = useMemo(
     () => [
-      { name: "Brand", key: "brand" },
-      { component: <FaImage className="text-center text-xl" />, key: "image" },
+      { name: "Brand", key: "brand", sortable: true },
       {
-        component: <FaRegFilePdf className="text-center text-xl" />,
-        key: "pdf",
+        component: <FaImage className="text-center text-xl" />,
+        key: "image",
+        sortable: false,
       },
-      { name: "Item", key: "item" },
-      { name: "Id", key: "id" },
-      { name: "Supplier Code", key: "supplier" },
-      { name: "Name", key: "name" },
-      { component: <FaPencil className="text-center text-xl" />, key: "edit" },
+      // {
+      //   component: <FaRegFilePdf className="text-center text-xl" />,
+      //   key: "pdf",
+      //   sortable: false,
+      // },
+      { name: "Item", key: "item", sortable: false },
+      { name: "Id", key: "id", sortable: true },
+      { name: "Supplier Code", key: "supplier", sortable: true },
+      { name: "Name", key: "name", sortable: true },
+      {
+        component: <FaPencil className="text-center text-xl" />,
+        key: "edit",
+        sortable: false,
+      },
       {
         component: <FaTrashCan className="text-center text-xl" />,
         key: "erase",
+        sortable: false,
       },
     ],
     []
@@ -321,7 +355,13 @@ const Page = () => {
             {isMobile ? (
               <MobileTable data={tableData} handleModalOpen={handleModalOpen} />
             ) : (
-              <Table headers={tableHeader} data={tableData} />
+              <Table
+                headers={tableHeader}
+                data={tableData}
+                onSort={handleSort}
+                sortField={sortQuery.split(":")[0]}
+                sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+              />
             )}
             {isLoading && (
               <div className="flex justify-center py-4">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -38,6 +38,7 @@ const Page = () => {
   const { selectedClientId } = useClient();
   const [items, setItems] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const [customer_id, setCustomer_id] = useState("");
@@ -67,6 +68,7 @@ const Page = () => {
       : undefined,
     status: searchParams.status,
     customer_id: customer_id,
+    sort: sortQuery,
   });
 
   useEffect(() => {
@@ -81,44 +83,66 @@ const Page = () => {
 
   const { data: countCollectionsData } = useCountCollectionQuery(null);
 
-   useEffect(() => {
-      if (!isFetching) {
-        setIsFetching(true);
-        refetch()
-          .then((result) => {
-            const newBrands = result.data || []; // Garantiza que siempre sea un array
-            setItems((prev) => [...prev, ...newBrands]);
-          })
-          .catch((error) => {
-            console.error("Error fetching articles:", error);
-          })
-          .finally(() => {
-            setIsFetching(false);
-          });
-      }
-    }, [page, isFetching, refetch]);
-  
-    // Configurar Intersection Observer para scroll infinito
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && !isFetching) {
-            setPage((prev) => prev + 1);
-          }
-        },
-        { threshold: 1.0 }
-      );
-  
-      if (observerRef.current) {
-        observer.observe(observerRef.current);
-      }
-  
-      return () => {
-        if (observerRef.current) {
-          observer.unobserve(observerRef.current);
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFetching(true);
+      refetch()
+        .then((result) => {
+          const newBrands = result.data || []; // Garantiza que siempre sea un array
+          setItems((prev) => [...prev, ...newBrands]);
+        })
+        .catch((error) => {
+          console.error("Error fetching articles:", error);
+        })
+        .finally(() => {
+          setIsFetching(false);
+        });
+    }
+  }, [page, isFetching, sortQuery]);
+
+  // Configurar Intersection Observer para scroll infinito
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetching) {
+          setPage((prev) => prev + 1);
         }
-      };
-    }, [isFetching]);
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [isFetching]);
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      // setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error fetching collections.</p>;
@@ -263,13 +287,17 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">PAYMENTS</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
-
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreatePaymentComponent closeModal={closeCreateModal} />
         </Modal>
-        <div ref={observerRef} className="h-10" />
-F
+        <div ref={observerRef} className="h-10" />F
       </div>
     </PrivateRoute>
   );

@@ -54,10 +54,11 @@ export const usersApi = createApi({
     }),
     getUsersPag: builder.query<
       User[],
-      { page?: number; limit?: number; query?: string }
+      { page?: number; limit?: number; query?: string, sort?: string }
     >({
-      query: ({ page = 1, limit = 10, query = "" } = {}) => {
-        return `/users?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+      query: ({ page = 1, limit = 10, query = "", sort = "user:asc" } = {}) => {
+        console.log(`/users?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`)
+        return `/users?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {

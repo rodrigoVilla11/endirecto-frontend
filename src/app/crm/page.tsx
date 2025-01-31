@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
@@ -17,20 +17,33 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 import PrivateRoute from "../context/PrivateRoutes";
 import DatePicker from "react-datepicker";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
+  const [items, setItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [customer_id, setCustomer_id] = useState("");
+  const [insitu, setInsitu] = useState("");
+  const [type, setType] = useState("");
+  const [status, setStatus] = useState("");
+
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [contactedStates, setContactedStates] = useState<boolean[]>([]);
+
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
-  const [contactedStates, setContactedStates] = useState<boolean[]>([]);
   const { selectedClientId } = useClient();
-
-  const [customer_id, setCustomer_id] = useState("")
+  // References
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -39,15 +52,6 @@ const Page = () => {
       setCustomer_id("");
     }
   }, [selectedClientId]);
-
-
-  const [searchParams, setSearchParams] = useState({
-    status: "",
-    type: "",
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    insitu: "",
-  });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -59,65 +63,132 @@ const Page = () => {
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: collectionData } = useGetCollectionsQuery(null);
 
-  const { data, error, isLoading, refetch } = useGetCrmPagQuery({
-    page,
-    limit,
-    startDate: searchParams.startDate
-      ? searchParams.startDate.toISOString()
-      : undefined,
-    endDate: searchParams.endDate
-      ? searchParams.endDate.toISOString()
-      : undefined,
-    type: searchParams.type,
-    status: searchParams.status,
-    insitu: searchParams.insitu,
-    customer_id: customer_id
-  });
+  function formatDate(date: any) {
+    if (!date) return undefined;
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetCrmPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      startDate: startDate ? formatDate(startDate) : undefined,
+      endDate: endDate ? formatDate(endDate) : undefined,
+      type: type,
+      status: status,
+      insitu: insitu,
+      customer_id: customer_id,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
   const [updateCrm] = useUpdateCrmMutation();
   const { data: countCrmData } = useCountCrmQuery(null);
 
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch;
+    } else {
+      setCustomer_id("");
+      refetch;
+    }
+  }, [selectedClientId]);
+
+  // Effect for handling initial load and searches
+  useEffect(() => {
+    const loadDocuments = async () => {
+      if (!isLoading) {
+        try {
+          const result = await refetch().unwrap();
+          const newDocuments = result || [];
+
+          if (page === 1) {
+            setItems(newDocuments);
+          } else {
+            setItems((prev) => [...prev, ...newDocuments]);
+          }
+
+          setHasMore(newDocuments.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error("Error loading documents:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadDocuments();
+  }, [page, startDate, endDate, customer_id, sortQuery]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
+    }
+
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
+
+  const handleResetDate = () => {
+    setEndDate(null);
+    setStartDate(null);
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+  };
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const handleContactedToggle = (index: number | undefined, crm: any) => {
-    if (index === undefined) return; // Manejar el caso en que el índice no es válido
-
-    const newStates = [...contactedStates];
-    const newState = !newStates[index]; // Alternar el estado
-
-    // Actualizar el estado local
-    newStates[index] = newState;
-    setContactedStates(newStates);
-
-    // Realizar la mutación para actualizar el CRM
-    updateCrm({
-      ...crm,
-      insitu: newState, // Suponiendo que insitu es el campo a actualizar
-    });
-  };
-
-  const handleContactedFilters = (contacted: boolean | null) => {
-    setSearchParams((prev) => {
-      let newInsitu;
-      if (contacted === null) {
-        newInsitu = "";
-      } else if (contacted) {
-        newInsitu = "true";
-      } else {
-        newInsitu = "false";
-      }
-
-      return {
-        ...prev,
-        insitu: newInsitu,
-      };
-    });
-    setPage(1);
-    refetch();
-  };
-
-  const tableData = data?.map((crm) => {
+  const tableData = items?.map((crm) => {
     const customer = customersData?.find((data) => data.id === crm.customer_id);
     const seller = sellersData?.find((data) => data.id === crm.seller_id);
     const collection = collectionData?.find(
@@ -135,16 +206,17 @@ const Page = () => {
       ),
       seller: seller?.name,
       customer: customer?.name,
-      contacted: (
-        <button
-          onClick={() => handleContactedToggle(index, crm)}
-          className={`btn ${
-            contactedStates[index] ?? false ? "btn-success" : "btn-danger"
-          }`}
-        >
-          {contactedStates[index] ?? false ? "Contacted" : "Not Contacted"}
-        </button>
-      ),
+      contacted: "VER BIEN",
+      // (
+      //   <button
+      //     onClick={() => handleContactedToggle(index, crm)}
+      //     className={`btn ${
+      //       contactedStates[index] ?? false ? "btn-success" : "btn-danger"
+      //     }`}
+      //   >
+      //     {contactedStates[index] ?? false ? "Contacted" : "Not Contacted"}
+      //   </button>
+      // ),
       type: crm.type,
       date: crm.date,
       collection: collection?.amount,
@@ -181,52 +253,59 @@ const Page = () => {
       },
     ],
     filters: [
+      // {
+      //   content: (
+      //     <ButtonOnOff
+      //       title={"Contacted"}
+      //       onChange={() =>
+      //         handleContactedFilters(
+      //           searchParams.insitu === "true" ? null : true
+      //         )
+      //       }
+      //       active={searchParams.insitu === "true"}
+      //     />
+      //   ),
+      // },
+      // {
+      //   content: (
+      //     <ButtonOnOff
+      //       title={"Not Contacted"}
+      //       onChange={() =>
+      //         handleContactedFilters(
+      //           searchParams.insitu === "false" ? null : false
+      //         )
+      //       }
+      //       active={searchParams.insitu === "false"}
+      //     />
+      //   ),
+      // },
       {
         content: (
-          <ButtonOnOff
-            title={"Contacted"}
-            onChange={() =>
-              handleContactedFilters(
-                searchParams.insitu === "true" ? null : true
-              )
-            }
-            active={searchParams.insitu === "true"}
-          />
-        ),
-      },
-      {
-        content: (
-          <ButtonOnOff
-            title={"Not Contacted"}
-            onChange={() =>
-              handleContactedFilters(
-                searchParams.insitu === "false" ? null : false
-              )
-            }
-            active={searchParams.insitu === "false"}
-          />
+          <div>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              placeholderText="Date From"
+              dateFormat="yyyy-MM-dd"
+              className="border border-gray-300 rounded p-2"
+            />
+            {startDate && (
+              <button
+                className="-translate-y-1/2"
+                onClick={handleResetDate}
+                aria-label="Clear date"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
       {
         content: (
           <DatePicker
-            selected={searchParams.startDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, startDate: date })
-            }
-            placeholderText="Date From"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-        ),
-      },
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.endDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, endDate: date })
-            }
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
             placeholderText="Date To"
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -235,12 +314,7 @@ const Page = () => {
       },
       {
         content: (
-          <select
-            value={searchParams.status}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, status: e.target.value })
-            }
-          >
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">Status...</option>
             {Object.values(StatusType).map((st) => (
               <option key={st} value={st}>
@@ -252,12 +326,7 @@ const Page = () => {
       },
       {
         content: (
-          <select
-            value={searchParams.type}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, type: e.target.value })
-            }
-          >
+          <select value={type} onChange={(e) => setType(e.target.value)}>
             <option value="">Type...</option>
             {Object.values(ActionType).map((type) => (
               <option key={type} value={type}>
@@ -271,48 +340,25 @@ const Page = () => {
     results: `${countCrmData || 0} Results`,
   };
 
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countCrmData || 0) / limit)) {
-      setPage(page + 1);
-    }
-  };
-
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">CRM</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
+        <div ref={observerRef} className="h-10" />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateCRMComponent closeModal={closeCreateModal} />
         </Modal>
-
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countCrmData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countCrmData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
     </PrivateRoute>
   );

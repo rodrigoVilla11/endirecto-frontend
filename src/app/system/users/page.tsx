@@ -27,7 +27,10 @@ const Page = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [sortField, setSortField] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "">("");
+
+
   // Estados para modales
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -41,11 +44,33 @@ const Page = () => {
   // Queries de Redux
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: countUsersData } = useCountUsersQuery(null);
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetUsersPagQuery({
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetUsersPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
+    sort: sortField && sortOrder ? `${sortField}:${sortOrder}` : "",
   });
+
+  // Función para manejar cuando se hace click en un header
+  const handleSort = (field: string) => {
+    // Si el campo es el mismo, togglear entre asc y desc
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      // Si es uno diferente, lo seteamos a asc por defecto
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    // Reiniciar la paginación, etc
+    setPage(1);
+    setUsers([]);
+    setHasMore(true);
+  };
 
   // Búsqueda con debounce
   const debouncedSearch = debounce((query: string) => {
@@ -62,48 +87,52 @@ const Page = () => {
         setIsLoading(true);
         try {
           const result = await refetch().unwrap();
-          const newUsers = result?.map((user: any) => {
-            const branch = branchData?.find((data) => data.id === user.branch);
-            return {
-              key: user._id,
-              id: user._id,
-              name: user.username,
-              email: user.email,
-              role: user.role,
-              branch: branch?.name || "No Branch",
-              zone: user.zone || "No Zone",
-              edit: (
-                <div className="flex justify-center items-center">
-                  <FaPencil
-                    className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
-                    onClick={() => handleModalOpen('update', user._id)}
-                  />
-                </div>
-              ),
-              erase: (
-                <div className="flex justify-center items-center">
-                  <FaTrashCan
-                    className="text-center text-lg hover:cursor-pointer hover:text-red-500"
-                    onClick={() => handleModalOpen('delete', user._id)}
-                  />
-                </div>
-              ),
-            };
-          }) || [];
+          const newUsers =
+            result?.map((user: any) => {
+              const branch = branchData?.find(
+                (data) => data.id === user.branch
+              );
+              return {
+                key: user._id,
+                id: user._id,
+                name: user.username,
+                email: user.email,
+                role: user.role,
+                branch: branch?.name || "No Branch",
+                zone: user.zone || "No Zone",
+                edit: (
+                  <div className="flex justify-center items-center">
+                    <FaPencil
+                      className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+                      onClick={() => handleModalOpen("update", user._id)}
+                    />
+                  </div>
+                ),
+                erase: (
+                  <div className="flex justify-center items-center">
+                    <FaTrashCan
+                      className="text-center text-lg hover:cursor-pointer hover:text-red-500"
+                      onClick={() => handleModalOpen("delete", user._id)}
+                    />
+                  </div>
+                ),
+              };
+            }) || [];
 
           if (page === 1) {
             setUsers(newUsers);
           } else {
             // Filtrar duplicados
             const uniqueUsers = newUsers.filter(
-              (newUser: any) => !users.some(existingUser => existingUser.id === newUser.id)
+              (newUser: any) =>
+                !users.some((existingUser) => existingUser.id === newUser.id)
             );
-            setUsers(prev => [...prev, ...uniqueUsers]);
+            setUsers((prev) => [...prev, ...uniqueUsers]);
           }
-          
+
           setHasMore(newUsers.length === ITEMS_PER_PAGE);
         } catch (error) {
-          console.error('Error loading users:', error);
+          console.error("Error loading users:", error);
         } finally {
           setIsLoading(false);
         }
@@ -115,31 +144,36 @@ const Page = () => {
 
   // Intersection Observer para scroll infinito
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage(prev => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
+    // Evitamos observar si estamos en la página 1,
+    // porque eso dispara la carga del page=2 innecesariamente
+    if (page === 1) return;
+  
+    const observer = new IntersectionObserver((entries) => {
+      const firstEntry = entries[0];
+      if (firstEntry.isIntersecting && hasMore && !isLoading) {
+        setPage((prev) => prev + 1);
+      }
+    }, { threshold: 0.5 });
+  
     const currentObserver = observerRef.current;
     if (currentObserver) {
       observer.observe(currentObserver);
     }
-
+  
     return () => {
       if (currentObserver) {
         observer.unobserve(currentObserver);
       }
     };
-  }, [hasMore, isLoading]);
+  }, [hasMore, isLoading, page]);
+  
 
   // Manejadores de modales
-  const handleModalOpen = (type: 'create' | 'update' | 'delete', id?: string) => {
-    if (type === 'create') {
+  const handleModalOpen = (
+    type: "create" | "update" | "delete",
+    id?: string
+  ) => {
+    if (type === "create") {
       setCreateModalOpen(true);
       return;
     }
@@ -147,7 +181,7 @@ const Page = () => {
     if (id) {
       const encodedId = encodeURIComponent(id);
       setCurrentUserId(encodedId);
-      if (type === 'update') {
+      if (type === "update") {
         setUpdateModalOpen(true);
       } else {
         setDeleteModalOpen(true);
@@ -155,10 +189,10 @@ const Page = () => {
     }
   };
 
-  const handleModalClose = (type: 'create' | 'update' | 'delete') => {
-    if (type === 'create') {
+  const handleModalClose = (type: "create" | "update" | "delete") => {
+    if (type === "create") {
       setCreateModalOpen(false);
-    } else if (type === 'update') {
+    } else if (type === "update") {
       setUpdateModalOpen(false);
     } else {
       setDeleteModalOpen(false);
@@ -169,7 +203,7 @@ const Page = () => {
 
   // Reset de búsqueda
   const handleResetSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     setPage(1);
     setUsers([]);
     setHasMore(true);
@@ -177,7 +211,7 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Id", key: "id" },
-    { name: "User", key: "user" },
+    { name: "User", key: "username" },
     { name: "Email", key: "email" },
     { name: "Role", key: "role" },
     { name: "Branch", key: "branch" },
@@ -191,7 +225,7 @@ const Page = () => {
       {
         logo: <FaPlus />,
         title: "New",
-        onClick: () => handleModalOpen('create'),
+        onClick: () => handleModalOpen("create"),
       },
     ],
     filters: [
@@ -201,7 +235,7 @@ const Page = () => {
             <Input
               placeholder="Search..."
               value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
               }
               className="pr-8"
@@ -245,18 +279,22 @@ const Page = () => {
       <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">USERS</h3>
         <Header headerBody={headerBody} />
-        
+
         {isLoading && users.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No users found
-          </div>
+          <div className="text-center py-8 text-gray-500">No users found</div>
         ) : (
           <>
-            <Table headers={tableHeader} data={users} />
+            <Table
+              headers={tableHeader}
+              data={users}
+              onSort={handleSort}
+              sortField={sortField}
+              sortOrder={sortOrder}
+            />
             {isLoading && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
@@ -267,24 +305,33 @@ const Page = () => {
 
         <div ref={observerRef} className="h-10" />
 
-        <Modal isOpen={isCreateModalOpen} onClose={() => handleModalClose('create')}>
-          <CreateUserComponent closeModal={() => handleModalClose('create')} />
+        <Modal
+          isOpen={isCreateModalOpen}
+          onClose={() => handleModalClose("create")}
+        >
+          <CreateUserComponent closeModal={() => handleModalClose("create")} />
         </Modal>
 
-        <Modal isOpen={isUpdateModalOpen} onClose={() => handleModalClose('update')}>
+        <Modal
+          isOpen={isUpdateModalOpen}
+          onClose={() => handleModalClose("update")}
+        >
           {currentUserId && (
             <UpdateUserComponent
               userId={currentUserId}
-              closeModal={() => handleModalClose('update')}
+              closeModal={() => handleModalClose("update")}
             />
           )}
         </Modal>
 
-        <Modal isOpen={isDeleteModalOpen} onClose={() => handleModalClose('delete')}>
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => handleModalClose("delete")}
+        >
           {currentUserId && (
             <DeleteUserComponent
               userId={currentUserId}
-              closeModal={() => handleModalClose('delete')}
+              closeModal={() => handleModalClose("delete")}
             />
           )}
         </Modal>

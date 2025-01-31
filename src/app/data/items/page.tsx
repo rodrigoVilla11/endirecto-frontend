@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -23,6 +23,7 @@ const Page = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // Modal states
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -43,6 +44,7 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
+    sort: sortQuery
   });
 
   // Debounced search
@@ -78,7 +80,7 @@ const Page = () => {
     };
 
     loadItems();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, sortQuery]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -124,6 +126,28 @@ const Page = () => {
     setItems([]);
     setHasMore(true);
   };
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
 
   // Table configuration
   const tableData = items?.map((item) => ({
@@ -219,12 +243,16 @@ const Page = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No items found
-          </div>
+          <div className="text-center py-8 text-gray-500">No items found</div>
         ) : (
           <>
-            <Table headers={tableHeader} data={tableData} />
+            <Table
+              headers={tableHeader}
+              data={tableData}
+              onSort={handleSort}
+              sortField={sortQuery.split(":")[0]}
+              sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+            />
             {isLoading && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

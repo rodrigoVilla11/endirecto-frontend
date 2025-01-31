@@ -81,6 +81,7 @@ export const customerApi = createApi({
         seller_id?: string;
         instance?: string;
         hasArticlesOnSC?: string;
+        sort?: string;
       }
     >({
       query: ({
@@ -92,6 +93,7 @@ export const customerApi = createApi({
         seller_id = "",
         instance = "",
         hasArticlesOnSC = "",
+        sort = "",
       } = {}) => {
         const url = `/customers`;
         const params = new URLSearchParams({
@@ -104,7 +106,7 @@ export const customerApi = createApi({
         if (hasDebt) params.append("hasDebt", hasDebt);
         if (hasDebtExpired) params.append("hasDebtExpired", hasDebtExpired);
         if (hasArticlesOnSC) params.append("hasArticlesOnSC", hasArticlesOnSC);
-
+        if (sort) params.append("sort", sort);
         if (seller_id) params.append("seller_id", seller_id);
         if (instance) params.append("instance", instance);
 

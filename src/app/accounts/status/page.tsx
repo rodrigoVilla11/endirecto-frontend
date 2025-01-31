@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
@@ -35,6 +35,7 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
@@ -67,6 +68,7 @@ const Page = () => {
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
       customer_id,
+      sort: sortQuery,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -126,7 +128,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -167,7 +169,27 @@ const Page = () => {
     setPage(1);
     setHasMore(true);
   };
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
 
+      if (currentField === field) {
+        // Alternar entre ascendente y descendente
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        // Nuevo campo de ordenamiento, por defecto ascendente
+        newSortQuery = `${field}:asc`;
+      }
+
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
@@ -197,7 +219,7 @@ const Page = () => {
         amount: document.amount,
         balance: document.amount,
         expiration: document.expiration_date,
-        logistic: document.expiration_status || "NOT FOUND",
+        logistic: document.expiration_status || "",
         seller: seller?.name || "NOT FOUND",
       };
     });
@@ -246,23 +268,23 @@ const Page = () => {
       {
         content: (
           <div>
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            placeholderText="Date From"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-          {startDate && (
-            <button
-              className="-translate-y-1/2"
-              onClick={handleResetDate}
-              aria-label="Clear date"
-            >
-              <FaTimes className="text-gray-400 hover:text-gray-600" />
-            </button>
-          )}
-        </div>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              placeholderText="Date From"
+              dateFormat="yyyy-MM-dd"
+              className="border border-gray-300 rounded p-2"
+            />
+            {startDate && (
+              <button
+                className="-translate-y-1/2"
+                onClick={handleResetDate}
+                aria-label="Clear date"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
       {
@@ -327,7 +349,13 @@ const Page = () => {
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />
         {/* <Instance selectedClientId={selectedClientId} /> */}
-        <Table headers={tableHeader} data={tableData} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
 
         <div ref={observerRef} className="h-10" />
       </div>
