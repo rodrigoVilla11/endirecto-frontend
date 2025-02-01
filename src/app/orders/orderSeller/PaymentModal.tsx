@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { DocumentsView, TableRow } from "./DocumentsView";
+import { DocumentsView } from "./DocumentsView";
+
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import ValueView from "./ValueView";
+import { CommentsView } from "./CommentsView";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -17,6 +20,64 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const { selectedClientId } = useClient();
+  const [comments, setComments] = useState("");
+  const [newPayment, setNewPayment] = useState<
+    {
+      document_id: string;
+      number: string;
+      date: string;
+      expiration_date: string;
+      amount: string;
+      document_balance: string;
+      payment_condition: string;
+      saldo_a_pagar: string;
+      days_until_expiration: number;
+      days_until_expiration_today: number;
+    }[]
+  >([]);
+
+  const [newValues, setNewValues] = useState<
+    { amount: string; selectedReason: string; currency: string }[]
+  >([]);
+
+  function sumSaldoAPagar(documents: { saldo_a_pagar: string }[]): number {
+    return documents.reduce(
+      (total, doc) => total + parseFloat(doc.saldo_a_pagar || "0"),
+      0
+    );
+  }
+  const totalSaldoAPagar = sumSaldoAPagar(newPayment);
+
+  function sumAmounts(newValues: { amount: string }[]): number {
+    return newValues.reduce(
+      (total, value) => total + parseFloat(value.amount || "0"),
+      0
+    );
+  }
+  const totalValues = sumAmounts(newValues);
+
+  const formattedTotal = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalSaldoAPagar);
+
+  const formattedTotalValues = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalValues);
+
+  const diff = totalSaldoAPagar - totalValues;
+
+  const formattedDiff = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(diff);
 
   const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     { id: selectedClientId ?? undefined }
@@ -28,35 +89,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       checked ? [...prev, id] : prev.filter((rowId) => rowId !== id)
     );
   };
-
-  const exampleData: TableRow[] = [
-    {
-      id: "FACA A0001-00035852",
-      startDate: "2024-01-15",
-      endDate: "2024-01-30",
-      amount: 240360.86,
-      details: {
-        comprobante: "FC-A",
-        condicionPago: "PROMO 15 DÍAS 15%DTO. $350 DÍA",
-        importe: 240360.86,
-        descuento: 0.0,
-        saldoAPagar: 240360.86,
-      },
-    },
-    {
-      id: "FACA A0001-00035805",
-      startDate: "2024-01-12",
-      endDate: "2024-01-25",
-      amount: 1020119.5,
-      details: {
-        comprobante: "FC-A",
-        condicionPago: "CONTADO",
-        importe: 1020119.5,
-        descuento: 0.0,
-        saldoAPagar: 1020119.5,
-      },
-    },
-  ];
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50" onClick={onClose}>
@@ -78,7 +116,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label="Fecha" value="20/01/2025" />
+            <InfoRow label="Fecha" value={formattedDate} />
             <InfoRow
               label={
                 <div className="flex items-center gap-2">
@@ -87,15 +125,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
               value={<span className="text-yellow-500">No Insitu</span>}
             />
-            <InfoRow label="Importe Bruto" value="$ 0,00" />
-            <InfoRow label="Importe Neto" value="$ 0,00" />
-            <InfoRow label="Valores" value="$ 0,00" />
+            <InfoRow label="Importe Bruto" value={formattedTotal} />
+            <InfoRow label="Importe Neto" value={formattedTotal} />
+            <InfoRow label="Valores" value={formattedTotalValues} />
             <InfoRow
               label="Diferencia"
-              value="$ 0,00"
+              value={formattedDiff}
               valueClassName="text-emerald-500"
             />
-            <InfoRow label="Días de Pago" value="0 (0)" />
+            {/* Mostrar días de pago si hay documentos en newPayment */}
+            {newPayment.length > 0 &&
+              newPayment.map((item, index) => (
+                <InfoRow
+                  key={index}
+                  label={`Días de Pago ${item.number}`}
+                  value={
+                    <>
+                      <span
+                        className={`${
+                          item.days_until_expiration_today >
+                          item.days_until_expiration
+                            ? "text-red-500"
+                            : "text-green-500"
+                        }`}
+                      >
+                        {item.days_until_expiration}
+                      </span>{" "}
+                      ({item.days_until_expiration_today ?? "N/A"})
+                    </>
+                  }
+                />
+              ))}
           </div>
 
           {/* Tabs */}
@@ -119,21 +179,27 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           <div className="p-4">
             {activeTab === "COMPROBANTES" && (
               <div className="text-white">
-                {data?.documents.map((item) => {
+                {data?.documents.map((item) => (
                   <DocumentsView
+                    key={item.id} // Agregar una key única para mejorar el rendimiento en React
                     document_id={item.id}
                     customerInformation={item}
                     onRowSelect={handleRowSelect}
                     selectedRows={selectedRows}
-                  />;
-                })}
+                    setNewPayment={setNewPayment}
+                  />
+                ))}
               </div>
             )}
             {activeTab === "VALORES" && (
-              <div className="text-white">Contenido de Valores</div>
+              <div className="text-white">
+                <ValueView setNewValues={setNewValues} newValues={newValues} />
+              </div>
             )}
             {activeTab === "COMENTARIOS" && (
-              <div className="text-white">Contenido de Comentarios</div>
+              <div className="text-white">
+                <CommentsView comments={comments} setComments={setComments} />
+              </div>
             )}
           </div>
         </div>

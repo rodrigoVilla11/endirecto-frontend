@@ -30,15 +30,13 @@ export const customersInformationsApi = createApi({
       },
     }),
     getCustomerInformationByCustomerId: builder.query<
-      | CustomerInformation
-      | {
-          total_documents_balance: number;
-          total_documents_balance_expired: number;
-        },
+      CustomerInformation,
       { id?: string }
     >({
       query: ({ id }) =>
-        id ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}` : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        id
+          ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
+          : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
   }),
 });
