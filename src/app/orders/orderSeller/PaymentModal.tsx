@@ -1,23 +1,69 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
+import { DocumentsView, TableRow } from "./DocumentsView";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 
 interface PaymentModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
-  const [activeTab, setActiveTab] = useState("COMPROBANTES")
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
-  const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("")
+  const [activeTab, setActiveTab] = useState("COMPROBANTES");
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const { selectedClientId } = useClient();
 
-  if (!isOpen) return null
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
+    { id: selectedClientId ?? undefined }
+  );
+  if (!isOpen) return null;
+
+  const handleRowSelect = (id: string, checked: boolean) => {
+    setSelectedRows((prev) =>
+      checked ? [...prev, id] : prev.filter((rowId) => rowId !== id)
+    );
+  };
+
+  const exampleData: TableRow[] = [
+    {
+      id: "FACA A0001-00035852",
+      startDate: "2024-01-15",
+      endDate: "2024-01-30",
+      amount: 240360.86,
+      details: {
+        comprobante: "FC-A",
+        condicionPago: "PROMO 15 DÍAS 15%DTO. $350 DÍA",
+        importe: 240360.86,
+        descuento: 0.0,
+        saldoAPagar: 240360.86,
+      },
+    },
+    {
+      id: "FACA A0001-00035805",
+      startDate: "2024-01-12",
+      endDate: "2024-01-25",
+      amount: 1020119.5,
+      details: {
+        comprobante: "FC-A",
+        condicionPago: "CONTADO",
+        importe: 1020119.5,
+        descuento: 0.0,
+        saldoAPagar: 1020119.5,
+      },
+    },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50" onClick={onClose}>
-      <div className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -44,7 +90,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <InfoRow label="Importe Bruto" value="$ 0,00" />
             <InfoRow label="Importe Neto" value="$ 0,00" />
             <InfoRow label="Valores" value="$ 0,00" />
-            <InfoRow label="Diferencia" value="$ 0,00" valueClassName="text-emerald-500" />
+            <InfoRow
+              label="Diferencia"
+              value="$ 0,00"
+              valueClassName="text-emerald-500"
+            />
             <InfoRow label="Días de Pago" value="0 (0)" />
           </div>
 
@@ -55,7 +105,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`p-4 text-sm font-medium ${
-                  activeTab === tab ? "bg-white text-black" : "bg-zinc-900 text-white"
+                  activeTab === tab
+                    ? "bg-white text-black"
+                    : "bg-zinc-900 text-white"
                 }`}
               >
                 {tab}
@@ -65,9 +117,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
           {/* Tab Content */}
           <div className="p-4">
-            {activeTab === "COMPROBANTES" && <div className="text-white">Contenido de Comprobantes</div>}
-            {activeTab === "VALORES" && <div className="text-white">Contenido de Valores</div>}
-            {activeTab === "COMENTARIOS" && <div className="text-white">Contenido de Comentarios</div>}
+            {activeTab === "COMPROBANTES" && (
+              <div className="text-white">
+                {data?.documents.map((item) => {
+                  <DocumentsView
+                    document_id={item.id}
+                    customerInformation={item}
+                    onRowSelect={handleRowSelect}
+                    selectedRows={selectedRows}
+                  />;
+                })}
+              </div>
+            )}
+            {activeTab === "VALORES" && (
+              <div className="text-white">Contenido de Valores</div>
+            )}
+            {activeTab === "COMENTARIOS" && (
+              <div className="text-white">Contenido de Comentarios</div>
+            )}
           </div>
         </div>
 
@@ -86,7 +153,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       {isConfirmModalOpen && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
           <div className="bg-zinc-800 p-6 rounded-lg w-full max-w-sm">
-            <h3 className="text-lg font-semibold text-white mb-4">Confirmar Pago</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Confirmar Pago
+            </h3>
             <input
               type="number"
               placeholder="Monto"
@@ -105,15 +174,18 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               <option value="transferencia">Transferencia</option>
             </select>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setIsConfirmModalOpen(false)} className="px-4 py-2 bg-zinc-600 text-white rounded">
+              <button
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="px-4 py-2 bg-zinc-600 text-white rounded"
+              >
                 Cancelar
               </button>
               <button
                 onClick={() => {
                   // Aquí iría la lógica para procesar el pago
-                  console.log("Pago confirmado:", { amount, paymentMethod })
-                  setIsConfirmModalOpen(false)
-                  onClose()
+                  console.log("Pago confirmado:", { amount, paymentMethod });
+                  setIsConfirmModalOpen(false);
+                  onClose();
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
@@ -124,20 +196,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface InfoRowProps {
-  label: React.ReactNode
-  value: React.ReactNode
-  valueClassName?: string
+  label: React.ReactNode;
+  value: React.ReactNode;
+  valueClassName?: string;
 }
 
-function InfoRow({ label, value, valueClassName = "text-white" }: InfoRowProps) {
+function InfoRow({
+  label,
+  value,
+  valueClassName = "text-white",
+}: InfoRowProps) {
   return (
     <div className="p-4 flex justify-between items-center border-b border-zinc-800">
       <span className="text-zinc-400">{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
-  )
+  );
 }

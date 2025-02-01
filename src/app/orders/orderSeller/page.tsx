@@ -74,11 +74,13 @@ export default function CustomerDashboard() {
     router.push("/catalogue");
   };
 
+  
+
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className="min-h-screen bg-zinc-900 p-4">
+      <div className="min-h-screen bg-zinc-900 p-4 mt-10">
         <div className="max-w-md mx-auto space-y-4">
           {/* Customer Header */}
           <h1 className="text-xl font-bold text-white mb-6">
