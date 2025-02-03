@@ -20,8 +20,27 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
       await updateCustomer(payload).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error updating password:', err);
+      console.error('Error updating GPS:', err);
     }
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      console.error("La geolocalización no es soportada por este navegador.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        // Formateamos el string en el formato "lat, lon"
+        const gpsStr = `${latitude}, ${longitude}`;
+        setGPS(gpsStr);
+      },
+      (error) => {
+        console.error("Error obteniendo la ubicación:", error);
+      }
+    );
   };
 
   return (
@@ -29,12 +48,19 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
       <h2 className="text-lg mb-4 font-semibold">Update GPS</h2>
       <p>MAP FOR GPS:</p>
       <input
-        type="gps"
+        type="text"
         value={gps}
         onChange={(e) => setGPS(e.target.value)}
-        placeholder="New location"
+        placeholder="New location (lat, lon)"
         className="w-full mt-4 p-2 border border-gray-300 rounded-md"
       />
+      <button
+        type="button"
+        onClick={handleGetLocation}
+        className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+      >
+        Obtener ubicación actual
+      </button>
       <div className="flex justify-end gap-4 mt-6">
         <button
           type="button"
