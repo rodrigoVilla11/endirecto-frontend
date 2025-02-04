@@ -179,16 +179,18 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           <div className="p-4">
             {activeTab === "COMPROBANTES" && (
               <div className="text-white">
-                {data?.documents.map((item) => (
-                  <DocumentsView
-                    key={item.id} // Agregar una key única para mejorar el rendimiento en React
-                    document_id={item.id}
-                    customerInformation={item}
-                    onRowSelect={handleRowSelect}
-                    selectedRows={selectedRows}
-                    setNewPayment={setNewPayment}
-                  />
-                ))}
+                {data &&
+                  "documents" in data &&
+                  data.documents.map((item) => (
+                    <DocumentsView
+                      key={item.id}
+                      document_id={item.id}
+                      customerInformation={item}
+                      onRowSelect={handleRowSelect}
+                      selectedRows={selectedRows}
+                      setNewPayment={setNewPayment}
+                    />
+                  ))}
               </div>
             )}
             {activeTab === "VALORES" && (
