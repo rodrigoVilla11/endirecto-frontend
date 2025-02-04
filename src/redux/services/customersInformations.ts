@@ -11,11 +11,18 @@ export interface Documents {
   id: string;
   document_balance: string;
 }
+type CustomerResult =
+  | CustomerInformation
+  | {
+      total_documents_balance: number;
+      total_documents_balance_expired: number;
+    };
+
 
 export const customersInformationsApi = createApi({
   reducerPath: "customersInformationsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getCustomersInformations: builder.query<CustomerInformation[], null>({
@@ -30,7 +37,7 @@ export const customersInformationsApi = createApi({
       },
     }),
     getCustomerInformationByCustomerId: builder.query<
-      CustomerInformation,
+      CustomerResult,
       { id?: string }
     >({
       query: ({ id }) =>

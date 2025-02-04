@@ -40,7 +40,7 @@ const DashboardPage = () => {
     { id: selectedClientId ?? undefined }
   );
 
-  // Verificar si `data` es un cliente o un objeto con sumas
+  // Verificar si `data` es un cliente o un objeto resumen
   const isClient = data && "documents_balance" in data;
   const isSummary = data && "total_documents_balance" in data;
 
@@ -50,6 +50,7 @@ const DashboardPage = () => {
     : isSummary
     ? data.total_documents_balance
     : "0";
+
   const documentsBalanceExpired = isClient
     ? data.documents_balance_expired
     : isSummary
@@ -80,7 +81,8 @@ const DashboardPage = () => {
     return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
   }
 
-  const finalSumAmount = parseInt(formatedExpiredSumAmount) + parseInt(formatedSumAmount)
+  const finalSumAmount =
+    parseInt(formatedExpiredSumAmount) + parseInt(formatedSumAmount);
 
   const itemsCard = [
     {
@@ -107,7 +109,9 @@ const DashboardPage = () => {
       logo: <MdTextSnippet />,
       title: "Status Account",
       subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
-      text: `Expired: ${formatPriceWithCurrency(formatedExpiredSumAmount)}`,
+      text: `Expired: ${formatPriceWithCurrency(
+        parseFloat(formatedExpiredSumAmount)
+      )}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
