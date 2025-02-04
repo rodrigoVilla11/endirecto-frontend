@@ -23,7 +23,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeMod
   // Procesar el string "lat, lon"
   const parts = gps.split(",").map((part) => part.trim());
   if (parts.length !== 2) {
-    return <div>El formato del GPS es inválido. Debe ser "lat, lon".</div>;
+    return <div>El formato del GPS es inválido. Debe ser lat, lon.</div>;
   }
   const lat = parseFloat(parts[0]);
   const lng = parseFloat(parts[1]);
