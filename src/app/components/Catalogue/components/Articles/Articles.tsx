@@ -23,7 +23,7 @@ const Articles = ({
     stock,
     tags,
     query,
-    order,
+    sort: order,
   });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
@@ -86,7 +86,7 @@ const Articles = ({
       stock,
       tags,
       query,
-      order,
+      sort: "",
     });
   }, [brand, item, vehicleBrand, stock, tags, query, order]);
 

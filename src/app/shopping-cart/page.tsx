@@ -22,6 +22,7 @@ import { useGetArticlesBonusesQuery } from "@/redux/services/articlesBonusesApi"
 import ArticleDetails from "../components/Catalogue/components/Articles/components/ArticleDetails";
 import { useArticleId } from "../context/AritlceIdContext";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
+import { useMobile } from "../context/ResponsiveContext";
 
 interface CartItem {
   id: string;
@@ -65,16 +66,28 @@ const ShoppingCart = () => {
   const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
   // Inicializar carrito y orden
   useEffect(() => {
-    if (!customer || !articles || !brands || !prices || !stock || !paymentsConditions) return;
+    if (
+      !customer ||
+      !articles ||
+      !brands ||
+      !prices ||
+      !stock ||
+      !paymentsConditions
+    )
+      return;
 
     const items = customer.shopping_cart.reduce(
       (acc: CartItem[], articleId) => {
         const article = articles.find((a) => a.id === articleId);
         const brand = brands.find((b) => b.id === article?.brand_id);
-        const paymentCondition = paymentsConditions.find((p)=> p.id === customer?.payment_condition_id) 
+        const paymentCondition = paymentsConditions.find(
+          (p) => p.id === customer?.payment_condition_id
+        );
 
-        const percentagePaymentCondition = Math.abs(parseFloat(paymentCondition?.percentage || "0"));
-       
+        const percentagePaymentCondition = Math.abs(
+          parseFloat(paymentCondition?.percentage || "0")
+        );
+
         // Obtener precio base
         let price =
           prices.find(
@@ -92,7 +105,7 @@ const ShoppingCart = () => {
           price -= discount;
         }
 
-        if (percentagePaymentCondition && typeof price === "number"){
+        if (percentagePaymentCondition && typeof price === "number") {
           const recharge = (price * percentagePaymentCondition) / 100;
           price += recharge;
         }
@@ -267,6 +280,7 @@ const ShoppingCart = () => {
     setModalOpen(true);
     setArticleId(id);
   };
+  const { isMobile } = useMobile();
 
   const tableData = filteredItems.map((item) => {
     const orderItem = orderItems.find((o) => o.id === item.id);
@@ -284,7 +298,7 @@ const ShoppingCart = () => {
         <img
           src={item.brand}
           alt={item.brand}
-          className="h-16 w-16 object-contain rounded-md"
+          className="h-12 w-12 md:h-16 md:w-16 object-contain rounded-md"
         />
       ) : (
         "Sin imagen"
@@ -293,15 +307,19 @@ const ShoppingCart = () => {
         <img
           src={item.image}
           alt={item.name}
-          className="h-16 w-16 object-contain rounded-md"
+          className="h-12 w-12 md:h-16 md:w-16 object-contain rounded-md cursor-pointer"
           onClick={() => handleOpenModal(item.id)}
         />
       ) : (
         "Sin imagen"
       ),
       name: (
-        <div className="flex" onClick={() => handleOpenModal(item.id)}>
-          <p className="font-bold">{item.supplier_code}</p>-<p>{item.name}</p>
+        <div
+          className="flex flex-col md:flex-row gap-1 md:gap-2 cursor-pointer min-w-[150px]"
+          onClick={() => handleOpenModal(item.id)}
+        >
+          <p className="font-bold text-sm md:text-base">{item.supplier_code}</p>
+          <p className="text-sm md:text-base">{item.name}</p>
         </div>
       ),
       stock: (
@@ -314,27 +332,35 @@ const ShoppingCart = () => {
               : item.stock.status === "LOW-STOCK"
               ? "bg-orange-600"
               : "bg-gray-500"
-          } font-bold text-white text-center p-1 rounded-lg text-xs`}
+          } font-bold text-white text-center p-1 rounded-lg text-xs md:text-sm whitespace-nowrap`}
         >
           <p>{item.stock.status}</p>
         </div>
       ),
-      price: `${formatPriceWithCurrency(item.price)} + taxes`,
+      price: (
+        <span className="text-sm md:text-base whitespace-nowrap">
+          {formatPriceWithCurrency(item.price)} + taxes
+        </span>
+      ),
       quantity: (
         <input
           type="number"
           value={item.quantity}
-          className="w-20 text-center border rounded-md"
+          className="w-16 md:w-20 text-center border rounded-md text-sm md:text-base p-1"
           min={1}
           onChange={(e) =>
             handleQuantityChange(item.id, parseInt(e.target.value))
           }
         />
       ),
-      total: `${formatPriceWithCurrency(item.price * item.quantity)} + taxes`,
+      total: (
+        <span className="text-sm md:text-base whitespace-nowrap">
+          {formatPriceWithCurrency(item.price * item.quantity)} + taxes
+        </span>
+      ),
       erase: (
         <FaTrashCan
-          className="text-center text-lg hover:cursor-pointer"
+          className="text-center text-base md:text-lg hover:cursor-pointer mx-auto"
           onClick={() => handleRemoveItem(item.id)}
         />
       ),
@@ -407,49 +433,39 @@ const ShoppingCart = () => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
-    >
-      <div className="gap-4">
-        <h3 className="font-bold p-4">Carrito de Compras</h3>
-        <Header headerBody={headerConfig} />
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+      <div className="gap-4 max-w-[100vw] overflow-x-hidden">
+        <h3 className="font-bold p-4 text-lg md:text-xl">Carrito de Compras</h3>
+        <div className="px-2 md:px-4">
+          <Header headerBody={headerConfig} />
+        </div>
 
-        {cartItems.length > 0 ? (
-          <Table headers={tableHeaders} data={tableData} />
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            El carrito está vacío
-          </div>
-        )}
+        <div className="overflow-x-auto px-2 md:px-4">
+          {cartItems.length > 0 ? (
+            <div className="min-w-full">
+              <Table headers={tableHeaders} data={tableData} />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">El carrito está vacío</div>
+          )}
+        </div>
 
-        <Modal
-          isOpen={isConfirmModalOpen}
-          onClose={() => setConfirmModalOpen(false)}
-        >
-          <div className="p-6">
-            <h2 className="text-lg font-semibold">
-              Confirmar vaciado del carrito
-            </h2>
-            <p className="mt-4">
-              ¿Estás seguro de que deseas vaciar el carrito? Esta acción no se
-              puede deshacer.
+        <Modal isOpen={isConfirmModalOpen} onClose={() => setConfirmModalOpen(false)}>
+          <div className="p-4 md:p-6 w-[90vw] max-w-md mx-auto">
+            <h2 className="text-base md:text-lg font-semibold">Confirmar vaciado del carrito</h2>
+            <p className="mt-4 text-sm md:text-base">
+              ¿Estás seguro de que deseas vaciar el carrito? Esta acción no se puede deshacer.
             </p>
-            <div className="flex justify-end gap-4 mt-6">
+            <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-4 mt-6">
               <button
                 onClick={() => setConfirmModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded-md"
+                className="w-full md:w-auto bg-gray-400 text-white px-4 py-2 rounded-md text-sm md:text-base"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleEmptyCart}
-                className="bg-red-500 text-white px-4 py-2 rounded-md"
+                className="w-full md:w-auto bg-red-500 text-white px-4 py-2 rounded-md text-sm md:text-base"
               >
                 Confirmar
               </button>
@@ -457,21 +473,22 @@ const ShoppingCart = () => {
           </div>
         </Modal>
 
-        <Modal
-          isOpen={showConfirmation}
-          onClose={() => setShowConfirmation(false)}
-        >
-          <OrderConfirmation
-            total={totalAmount}
-            totalFormatted={formatPriceWithCurrency(totalAmount)}
-            itemCount={totalItems}
-            onCancel={() => setShowConfirmation(false)}
-            order={order}
-          />
+        <Modal isOpen={showConfirmation} onClose={() => setShowConfirmation(false)}>
+          <div className="w-[90vw] max-w-xl mx-auto">
+            <OrderConfirmation
+              total={totalAmount}
+              totalFormatted={formatPriceWithCurrency(totalAmount)}
+              itemCount={totalItems}
+              onCancel={() => setShowConfirmation(false)}
+              order={order}
+            />
+          </div>
         </Modal>
 
         <Modal isOpen={isModalOpen} onClose={closeModal}>
-          <ArticleDetails closeModal={closeModal} />
+          <div className="w-[90vw] md:w-auto max-w-2xl mx-auto">
+            <ArticleDetails closeModal={closeModal} />
+          </div>
         </Modal>
       </div>
     </PrivateRoute>

@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
 import { useState } from "react";
 import VisitModal from "./VisitModal";
+import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 
 interface CustomerDashboardProps {
   customer: {
@@ -39,6 +40,31 @@ export default function CustomerDashboard() {
   } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
+  const {
+    data,
+    error: errorCustomerInfo,
+    isLoading: isLoadingCustomerInfo,
+  } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
+  const isClient = data && "documents_balance" in data;
+
+  const documentsBalance = isClient ? data.documents_balance : "0";
+  const documentsBalanceExpired = isClient
+    ? data.documents_balance_expired
+    : "0";
+
+  const formatedSumAmount = Number(documentsBalance)?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const formatedExpiredSumAmount = Number(
+    documentsBalanceExpired
+  )?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   if (!customer) {
     return <>NOT FOUND CUSTOMER</>;
@@ -48,11 +74,13 @@ export default function CustomerDashboard() {
     router.push("/catalogue");
   };
 
+  
+
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className="min-h-screen bg-zinc-900 p-4">
+      <div className="min-h-screen bg-zinc-900 p-4 mt-10">
         <div className="max-w-md mx-auto space-y-4">
           {/* Customer Header */}
           <h1 className="text-xl font-bold text-white mb-6">
@@ -87,13 +115,13 @@ export default function CustomerDashboard() {
             />
           </div>
 
-          {/* Full Width Action Card */}
+          {/* Full Width Action Card
           <ActionCard
             icon={<AlertCircle className="h-6 w-6 text-red-500" />}
             title="Nuevo Reclamo"
             onClick={() => {}}
             className="w-full"
-          />
+          /> */}
 
           {/* Catalog Section */}
           <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
@@ -116,10 +144,11 @@ export default function CustomerDashboard() {
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-white">
-                $ customer.accountBalance
+                $ {formatedSumAmount}
               </p>
               <p className="text-sm text-zinc-300">
-                VENCIDO: $ customer.expiredBalance
+                VENCIDO: $ {formatedExpiredSumAmount}
+
               </p>
             </div>
           </section>

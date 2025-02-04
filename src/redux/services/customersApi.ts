@@ -40,6 +40,7 @@ type Customer = {
   logo: string;
   password: string;
   profileImg: string;
+  gps: string;
 };
 
 type UpdateCustomersPayload = {
@@ -51,6 +52,7 @@ type UpdateCustomersPayload = {
   favourites?: string[];
   instance?: Instance[];
   password?: string;
+  gps?: string;
   profileImg?: string;
 };
 

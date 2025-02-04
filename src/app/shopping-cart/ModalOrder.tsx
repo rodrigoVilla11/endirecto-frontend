@@ -8,13 +8,13 @@ import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/customersTransports";
 import { useCreateOrderMutation } from "@/redux/services/ordersApi";
+import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 
 interface OrderItem {
   id: string;
   quantity: number;
   price: number;
-  percentage: number ;
-
+  percentage: number;
 }
 
 interface OrderConfirmationProps {
@@ -25,6 +25,7 @@ interface OrderConfirmationProps {
   order: OrderItem[];
 }
 
+// Si necesitas definir la estructura de Transaction, inclúyela o extiéndela
 interface TransactionDetails {
   quantity: number;
   article: {
@@ -60,6 +61,8 @@ interface Transaction {
   date: string;
   created_at: string;
   details: TransactionDetails[];
+  gps: string;
+  insitu: boolean;
 }
 
 export default function OrderConfirmation({
@@ -71,28 +74,30 @@ export default function OrderConfirmation({
 }: OrderConfirmationProps) {
   const [createOrder, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateOrderMutation();
+  const [checkInsituVisit] = useCheckInsituVisitMutation(); // Hook para verificar insitu
+  const { selectedClientId } = useClient();
 
+  // Estados para GPS e Insitu
+  const [gps, setGPS] = useState("");
+  const [insitu, setInsitu] = useState<boolean | null>(null);
+
+  // Otros estados
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { selectedClientId } = useClient();
-
+  // Consultas para obtener datos del cliente, transport y condición de pago
   const {
     data: customer,
     error: customerError,
     isLoading: isCustomerLoading,
-  } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
+  } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
 
   const {
     data: customerTransport,
     error: customerTransportError,
     isLoading: isCustomerTransportLoading,
-  } = useGetCustomerTransportByCustomerIdQuery({
-    id: selectedClientId || "",
-  });
+  } = useGetCustomerTransportByCustomerIdQuery({ id: selectedClientId || "" });
 
   const {
     data: paymentsConditionsData,
@@ -102,6 +107,7 @@ export default function OrderConfirmation({
     id: customer?.payment_condition_id || "",
   });
 
+  // Estado para la transacción (pedido)
   const [transaction, setTransaction] = useState<Transaction>({
     status: "sended",
     customer: { id: selectedClientId },
@@ -117,8 +123,11 @@ export default function OrderConfirmation({
     date: new Date().toISOString(),
     created_at: new Date().toISOString(),
     details: [],
-  }); 
+    gps: "",
+    insitu: false,
+  });
 
+  // Mapea los detalles del pedido
   useEffect(() => {
     if (order.length > 0) {
       const mappedDetails = order.map((item) => ({
@@ -138,6 +147,7 @@ export default function OrderConfirmation({
     }
   }, [order]);
 
+  // Actualiza las observaciones en la transacción cuando cambian
   const handleObservationChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -146,10 +156,59 @@ export default function OrderConfirmation({
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
   };
 
+  // Función para obtener la ubicación y verificar si está dentro del rango (insitu)
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      console.error("La geolocalización no es soportada por este navegador.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const gpsStr = `${latitude}, ${longitude}`;
+        setGPS(gpsStr);
+
+        if (!selectedClientId) {
+          console.error("No hay cliente seleccionado.");
+          return;
+        }
+
+        try {
+          // Llamada al backend para determinar si la ubicación es insitu (dentro de 500m)
+          const response = await checkInsituVisit({
+            customerId: selectedClientId,
+            currentLat: latitude,
+            currentLon: longitude,
+          }).unwrap();
+
+          console.log("Respuesta del backend:", response);
+          setInsitu(response.insitu);
+
+          // Actualiza el objeto transaction con gps e insitu
+          setTransaction((prev) => ({
+            ...prev,
+            gps: gpsStr,
+            insitu: response.insitu,
+          }));
+        } catch (error) {
+          console.error("Error verificando insitu:", error);
+        }
+      },
+      (error) => {
+        console.error("Error obteniendo la ubicación:", error);
+      }
+    );
+  };
+
+  // Función para enviar el pedido
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+
+    // Actualiza la transacción con las observaciones actuales
+    setTransaction((prev) => ({ ...prev, notes: observations }));
 
     try {
       await createOrder(transaction).unwrap();
@@ -162,22 +221,6 @@ export default function OrderConfirmation({
       setIsSubmitting(false);
     }
   };
-
-  // if (customerError || paymentError) {
-  //   return (
-  //     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-  //       <div className="bg-white rounded-lg p-4">
-  //         <p className="text-red-600">Error al cargar los datos del cliente</p>
-  //         <button
-  //           onClick={onCancel}
-  //           className="mt-4 px-4 py-2 bg-gray-200 rounded-md"
-  //         >
-  //           Cerrar
-  //         </button>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -215,16 +258,25 @@ export default function OrderConfirmation({
             cambios de precio sin previo aviso.
           </p>
 
+          {/* Sección para obtener y mostrar la ubicación e insitu */}
           <div className="space-y-2">
             <p className="font-medium text-gray-700">GPS</p>
             <div className="flex items-center space-x-2">
               <button
                 type="button"
+                onClick={handleGetLocation}
                 className="w-6 h-6 rounded-full bg-emerald-500 cursor-pointer flex justify-center items-center"
+                disabled={isSubmitting}
               >
                 <CiGps className="text-white" />
               </button>
-              <span className="text-gray-600">No insitu</span>
+              <span className="text-gray-600">
+                {insitu === null
+                  ? "No verificado"
+                  : insitu
+                  ? "Insitu ✅"
+                  : "No Insitu ❌"}
+              </span>
             </div>
           </div>
 
@@ -257,7 +309,12 @@ export default function OrderConfirmation({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isCustomerLoading || isPaymentLoading}
+              disabled={
+                isSubmitting ||
+                isCustomerLoading ||
+                isPaymentLoading ||
+                !selectedClientId
+              }
               className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
             >
               {isSubmitting ? "Procesando..." : "Aceptar"}
@@ -265,6 +322,21 @@ export default function OrderConfirmation({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+interface InfoRowProps {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  valueClassName?: string;
+}
+
+function InfoRow({ label, value, valueClassName = "text-white" }: InfoRowProps) {
+  return (
+    <div className="p-4 flex justify-between items-center border-b border-zinc-800">
+      <span className="text-zinc-400">{label}</span>
+      <span className={valueClassName}>{value}</span>
     </div>
   );
 }

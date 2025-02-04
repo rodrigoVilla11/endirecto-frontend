@@ -11,6 +11,7 @@ import VehiclesBrands from "./components/VehiclesBrands";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useGetBrandByIdQuery } from "@/redux/services/brandsApi";
 import { useGetItemByIdQuery } from "@/redux/services/itemsApi";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const FilterBox = ({ isVisible, onClose }: any) => {
   const {
@@ -33,6 +34,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     setSearch,
     search
   } = useFilters();
+  const { isMobile } = useMobile();
 
   const { data: dataBrand } = useGetBrandByIdQuery({ id: brand });
   const { data: dataItem } = useGetItemByIdQuery({ id: item });
@@ -50,7 +52,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
   return (
     <>
       {isVisible && (
-        <div className="w-112 h-auto shadow-2xl rounded-md bg-white pb-4">
+        <div className={`${isMobile ? "w-128" : "w-112"} h-auto shadow-2xl rounded-md bg-white pb-4`}>
           <div className="p-2 flex justify-end items-center text-2xl">
             <button onClick={onClose}>
               <FaXmark />

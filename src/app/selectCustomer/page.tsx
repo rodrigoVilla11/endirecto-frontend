@@ -33,6 +33,7 @@ import { useAuth } from "../context/AuthContext";
 import { useMobile } from "../context/ResponsiveContext";
 import { Phone } from "lucide-react";
 import CustomerListMobile from "./MobileSeller";
+import MapComponent from "./Map";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -57,6 +58,7 @@ const SelectCustomer = () => {
   const { setSelectedClientId } = useClient();
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
+  const [isViewGPSModalOpen, setViewGPSModalOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
@@ -64,6 +66,7 @@ const SelectCustomer = () => {
   );
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
   const [searchParams, setSearchParams] = useState({
     hasDebt: "",
     hasDebtExpired: "",
@@ -192,6 +195,15 @@ const SelectCustomer = () => {
     setCurrentCustomerId(null);
     // Evitar llamar a refetch para no reiniciar la lista
   };
+  const openViewGPSModal = (id: string) => {
+    setCurrentCustomerId(id);
+    setViewGPSModalOpen(true);
+  };
+  const closeViewGPSModal = () => {
+    setViewGPSModalOpen(false);
+    setCurrentCustomerId(null);
+    // Evitar llamar a refetch para no reiniciar la lista
+  };
 
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
@@ -245,6 +257,7 @@ const SelectCustomer = () => {
     setActiveMenu(activeMenu === customerId ? null : customerId);
   };
 
+
   const handleSelectCustomer = (customerId: string) => {
     setSelectedClientId(customerId);
     if (role === "VENDEDOR") {
@@ -280,7 +293,7 @@ const SelectCustomer = () => {
     const paymentCondition = paymentsConditionsData?.find(
       (data) => data.id === customer.payment_condition_id
     );
-    
+
     return {
       key: customer.id,
       icon: (
@@ -312,7 +325,13 @@ const SelectCustomer = () => {
       "status-account": debt.amount,
       "expired-debt": debtExpired.amount,
       "articles-on-cart": customer.shopping_cart.length, // Conectar
-      gps: <FiMapPin />,
+      gps: (
+        <FiMapPin
+          onClick={() => {
+            openViewGPSModal(customer.id);
+          }}
+        />
+      ),
       menu: (
         <div className="relative">
           <CiMenuKebab
@@ -548,6 +567,15 @@ const SelectCustomer = () => {
             <UpdateGPS
               customerId={currentCustomerId}
               closeModal={closeUpdateGPSModal}
+            />
+          )}
+        </Modal>
+
+        <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
+          {currentCustomerId && (
+            <MapComponent
+              currentCustomerId={currentCustomerId}
+              closeModal={closeViewGPSModal}
             />
           )}
         </Modal>

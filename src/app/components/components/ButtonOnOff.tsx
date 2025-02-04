@@ -15,7 +15,7 @@ const ButtonOnOff: React.FC<ButtonOnOffProps> = ({ title, active = false, onChan
   };
 
   return (
-    <div className="flex gap-2 justify-center items-center">
+    <div className="flex gap-2 justify-center items-center min-w-[44px] md:min-w-[60px]">
       <button
         onClick={handleClick}
         className={`border flex ${

@@ -27,25 +27,60 @@ import {
   useSumExpiredAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useAuth } from "@/app/context/AuthContext";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 
 const DashboardPage = () => {
   const { isOpen } = useSideMenu();
+  const { selectedClientId } = useClient();
 
   const { role } = useAuth();
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data: sumExpiredAmountsData } = useSumExpiredAmountsQuery(null);
-  const { data: sumAmountsData } = useSumAmountsQuery(null);
-  const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
+    { id: selectedClientId ?? undefined }
+  );
+
+  // Verificar si `data` es un cliente o un objeto con sumas
+  const isClient = data && "documents_balance" in data;
+  const isSummary = data && "total_documents_balance" in data;
+
+  // Definir valores dinámicos según el tipo de `data`
+  const documentsBalance = isClient
+    ? data.documents_balance
+    : isSummary
+    ? data.total_documents_balance
+    : "0";
+  const documentsBalanceExpired = isClient
+    ? data.documents_balance_expired
+    : isSummary
+    ? data.total_documents_balance_expired
+    : "0";
+
+  const formatedSumAmount = documentsBalance?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const formatedExpiredSumAmount = sumExpiredAmountsData?.toLocaleString(
+  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString(
     "es-ES",
     {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }
   );
+  function formatPriceWithCurrency(price: number): string {
+    const formattedNumber = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+      .format(price)
+      .replace("ARS", "") // Elimina "ARS" del formato.
+      .trim(); // Elimina espacios extra.
+    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+  }
+
+  const finalSumAmount = parseInt(formatedExpiredSumAmount) + parseInt(formatedSumAmount)
 
   const itemsCard = [
     {
@@ -71,8 +106,8 @@ const DashboardPage = () => {
     {
       logo: <MdTextSnippet />,
       title: "Status Account",
-      subtitle: `$ ${formatedSumAmount}`,
-      text: `Expired: $ ${formatedExpiredSumAmount}`,
+      subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
+      text: `Expired: ${formatPriceWithCurrency(formatedExpiredSumAmount)}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -82,20 +117,20 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    {
-      logo: <TbClockExclamation />,
-      title: "Pendings",
-      subtitle: "$ 9.999.999",
-      text: (
-        <>
-          Codes: 92
-          <br />
-          With Stock: $ 9.999.999
-        </>
-      ),
-      href: "",
-      allowedRoles: ["ADMINISTRADOR"],
-    },
+    // {
+    //   logo: <TbClockExclamation />,
+    //   title: "Pendings",
+    //   subtitle: "$ 9.999.999",
+    //   text: (
+    //     <>
+    //       Codes: 92
+    //       <br />
+    //       With Stock: $ 9.999.999
+    //     </>
+    //   ),
+    //   href: "",
+    //   allowedRoles: ["ADMINISTRADOR"],
+    // },
     {
       logo: <BsCash />,
       title: "Interannual Sell",
@@ -138,20 +173,20 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    {
-      logo: <CgProfile />,
-      title: "Customers Contacted",
-      subtitle: "2 %",
-      text: (
-        <>
-          Customers Contacted: 180
-          <br />
-          Total Customers: 9.999
-        </>
-      ),
-      href: "/crm",
-      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    },
+    // {
+    //   logo: <CgProfile />,
+    //   title: "Customers Contacted",
+    //   subtitle: "2 %",
+    //   text: (
+    //     <>
+    //       Customers Contacted: 180
+    //       <br />
+    //       Total Customers: 9.999
+    //     </>
+    //   ),
+    //   href: "/crm",
+    //   allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+    // },
     {
       logo: <IoIosPaper />,
       title: "Monthly Orders",
@@ -182,13 +217,13 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    {
-      logo: <GoGraph />,
-      title: "Days of WEB use Clients",
-      subtitle: "1.95 %",
-      href: "",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-    },
+    // {
+    //   logo: <GoGraph />,
+    //   title: "Days of WEB use Clients",
+    //   subtitle: "1.95 %",
+    //   href: "",
+    //   allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    // },
   ];
   const itemsShortcuts = [
     {

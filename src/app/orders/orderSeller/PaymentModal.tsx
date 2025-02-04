@@ -1,23 +1,107 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
+import { DocumentsView } from "./DocumentsView";
+
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import ValueView from "./ValueView";
+import { CommentsView } from "./CommentsView";
 
 interface PaymentModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
-  const [activeTab, setActiveTab] = useState("COMPROBANTES")
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
-  const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("")
+  const [activeTab, setActiveTab] = useState("COMPROBANTES");
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const { selectedClientId } = useClient();
+  const [comments, setComments] = useState("");
+  const [newPayment, setNewPayment] = useState<
+    {
+      document_id: string;
+      number: string;
+      date: string;
+      expiration_date: string;
+      amount: string;
+      document_balance: string;
+      payment_condition: string;
+      saldo_a_pagar: string;
+      days_until_expiration: number;
+      days_until_expiration_today: number;
+    }[]
+  >([]);
 
-  if (!isOpen) return null
+  const [newValues, setNewValues] = useState<
+    { amount: string; selectedReason: string; currency: string }[]
+  >([]);
+
+  function sumSaldoAPagar(documents: { saldo_a_pagar: string }[]): number {
+    return documents.reduce(
+      (total, doc) => total + parseFloat(doc.saldo_a_pagar || "0"),
+      0
+    );
+  }
+  const totalSaldoAPagar = sumSaldoAPagar(newPayment);
+
+  function sumAmounts(newValues: { amount: string }[]): number {
+    return newValues.reduce(
+      (total, value) => total + parseFloat(value.amount || "0"),
+      0
+    );
+  }
+  const totalValues = sumAmounts(newValues);
+
+  const formattedTotal = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalSaldoAPagar);
+
+  const formattedTotalValues = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalValues);
+
+  const diff = totalSaldoAPagar - totalValues;
+
+  const formattedDiff = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(diff);
+
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
+    { id: selectedClientId ?? undefined }
+  );
+  if (!isOpen) return null;
+
+  const handleRowSelect = (id: string, checked: boolean) => {
+    setSelectedRows((prev) =>
+      checked ? [...prev, id] : prev.filter((rowId) => rowId !== id)
+    );
+  };
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50" onClick={onClose}>
-      <div className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -32,7 +116,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label="Fecha" value="20/01/2025" />
+            <InfoRow label="Fecha" value={formattedDate} />
             <InfoRow
               label={
                 <div className="flex items-center gap-2">
@@ -41,11 +125,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
               value={<span className="text-yellow-500">No Insitu</span>}
             />
-            <InfoRow label="Importe Bruto" value="$ 0,00" />
-            <InfoRow label="Importe Neto" value="$ 0,00" />
-            <InfoRow label="Valores" value="$ 0,00" />
-            <InfoRow label="Diferencia" value="$ 0,00" valueClassName="text-emerald-500" />
-            <InfoRow label="Días de Pago" value="0 (0)" />
+            <InfoRow label="Importe Bruto" value={formattedTotal} />
+            <InfoRow label="Importe Neto" value={formattedTotal} />
+            <InfoRow label="Valores" value={formattedTotalValues} />
+            <InfoRow
+              label="Diferencia"
+              value={formattedDiff}
+              valueClassName="text-emerald-500"
+            />
+            {/* Mostrar días de pago si hay documentos en newPayment */}
+            {newPayment.length > 0 &&
+              newPayment.map((item, index) => (
+                <InfoRow
+                  key={index}
+                  label={`Días de Pago ${item.number}`}
+                  value={
+                    <>
+                      <span
+                        className={`${
+                          item.days_until_expiration_today >
+                          item.days_until_expiration
+                            ? "text-red-500"
+                            : "text-green-500"
+                        }`}
+                      >
+                        {item.days_until_expiration}
+                      </span>{" "}
+                      ({item.days_until_expiration_today ?? "N/A"})
+                    </>
+                  }
+                />
+              ))}
           </div>
 
           {/* Tabs */}
@@ -55,7 +165,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`p-4 text-sm font-medium ${
-                  activeTab === tab ? "bg-white text-black" : "bg-zinc-900 text-white"
+                  activeTab === tab
+                    ? "bg-white text-black"
+                    : "bg-zinc-900 text-white"
                 }`}
               >
                 {tab}
@@ -65,9 +177,30 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
           {/* Tab Content */}
           <div className="p-4">
-            {activeTab === "COMPROBANTES" && <div className="text-white">Contenido de Comprobantes</div>}
-            {activeTab === "VALORES" && <div className="text-white">Contenido de Valores</div>}
-            {activeTab === "COMENTARIOS" && <div className="text-white">Contenido de Comentarios</div>}
+            {activeTab === "COMPROBANTES" && (
+              <div className="text-white">
+                {data?.documents.map((item) => (
+                  <DocumentsView
+                    key={item.id} // Agregar una key única para mejorar el rendimiento en React
+                    document_id={item.id}
+                    customerInformation={item}
+                    onRowSelect={handleRowSelect}
+                    selectedRows={selectedRows}
+                    setNewPayment={setNewPayment}
+                  />
+                ))}
+              </div>
+            )}
+            {activeTab === "VALORES" && (
+              <div className="text-white">
+                <ValueView setNewValues={setNewValues} newValues={newValues} />
+              </div>
+            )}
+            {activeTab === "COMENTARIOS" && (
+              <div className="text-white">
+                <CommentsView comments={comments} setComments={setComments} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -86,7 +219,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       {isConfirmModalOpen && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
           <div className="bg-zinc-800 p-6 rounded-lg w-full max-w-sm">
-            <h3 className="text-lg font-semibold text-white mb-4">Confirmar Pago</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Confirmar Pago
+            </h3>
             <input
               type="number"
               placeholder="Monto"
@@ -105,15 +240,18 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               <option value="transferencia">Transferencia</option>
             </select>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setIsConfirmModalOpen(false)} className="px-4 py-2 bg-zinc-600 text-white rounded">
+              <button
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="px-4 py-2 bg-zinc-600 text-white rounded"
+              >
                 Cancelar
               </button>
               <button
                 onClick={() => {
                   // Aquí iría la lógica para procesar el pago
-                  console.log("Pago confirmado:", { amount, paymentMethod })
-                  setIsConfirmModalOpen(false)
-                  onClose()
+                  console.log("Pago confirmado:", { amount, paymentMethod });
+                  setIsConfirmModalOpen(false);
+                  onClose();
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
@@ -124,20 +262,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface InfoRowProps {
-  label: React.ReactNode
-  value: React.ReactNode
-  valueClassName?: string
+  label: React.ReactNode;
+  value: React.ReactNode;
+  valueClassName?: string;
 }
 
-function InfoRow({ label, value, valueClassName = "text-white" }: InfoRowProps) {
+function InfoRow({
+  label,
+  value,
+  valueClassName = "text-white",
+}: InfoRowProps) {
   return (
     <div className="p-4 flex justify-between items-center border-b border-zinc-800">
       <span className="text-zinc-400">{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
-  )
+  );
 }

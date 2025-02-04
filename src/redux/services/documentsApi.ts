@@ -108,7 +108,7 @@ export const documentsApi = createApi({
     }),
 
     getDocumentById: builder.query<Document, { id: string }>({
-      query: ({ id }) => `/documents/findOne/${id}`,
+      query: ({ id }) => `/documents/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     sumExpiredAmounts: builder.query<number, null>({
       query: () => {
