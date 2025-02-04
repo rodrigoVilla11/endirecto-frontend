@@ -115,13 +115,13 @@ export default function CustomerDashboard() {
             />
           </div>
 
-          {/* Full Width Action Card */}
+          {/* Full Width Action Card
           <ActionCard
             icon={<AlertCircle className="h-6 w-6 text-red-500" />}
             title="Nuevo Reclamo"
             onClick={() => {}}
             className="w-full"
-          />
+          /> */}
 
           {/* Catalog Section */}
           <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">

@@ -205,13 +205,13 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
         "CUSTOMER",
       ],
     },
-    {
-      logo: <GoGraph />,
-      title: "Days of WEB use Clients",
-      subtitle: "1.95 %",
-      href: "",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-    },
+    // {
+    //   logo: <GoGraph />,
+    //   title: "Days of WEB use Clients",
+    //   subtitle: "1.95 %",
+    //   href: "",
+    //   allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    // },
   ];
   const itemsShortcuts = [
     {

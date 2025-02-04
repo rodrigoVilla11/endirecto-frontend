@@ -23,7 +23,7 @@ const NavBarAndSideMenu = () => {
         isAuthenticated && (
           <>
             <NavBar setIsOpen={setIsOpen} isOpen={isOpen} />
-            <SideMenu isOpen={isOpen} />
+            <SideMenu isOpen={isOpen} setIsOpen={setIsOpen} />
           </>
         )
       )}

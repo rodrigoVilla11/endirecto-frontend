@@ -96,7 +96,7 @@ const Page = () => {
 
   const [updateCrm] = useUpdateCrmMutation();
   const { data: countCrmData } = useCountCrmQuery(null);
-
+ console.log(data)
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
@@ -224,6 +224,7 @@ const Page = () => {
       amount: collection?.amount,
       status: crm.status,
       gps: crm.gps,
+      insitu: crm.insitu.toString()
     };
   });
 
@@ -242,6 +243,7 @@ const Page = () => {
     { name: "Amount", key: "amount" },
     { name: "Status", key: "status" },
     { name: "GPS", key: "gps" },
+    { name: "Insitu", key: "insitu" },
   ];
 
   const headerBody = {

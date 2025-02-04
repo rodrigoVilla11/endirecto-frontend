@@ -21,17 +21,17 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { LucideMessageSquareShare } from "lucide-react";
 import { useMobile } from "@/app/context/ResponsiveContext";
+import { useSideMenu } from "@/app/context/SideMenuContext";
 
-const SideMenu = ({ isOpen }: any) => {
+const SideMenu = ({ isOpen, setIsOpen }: any) => {
   const { selectedClientId, setSelectedClientId } = useClient();
   const { setIsAuthenticated, setRole, role } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const { isMobile } = useMobile();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setIsMenuOpen(false);
+    setIsOpen(false)
     router.push("/login");
     setIsAuthenticated(false);
     setSelectedClientId("");
@@ -42,7 +42,7 @@ const SideMenu = ({ isOpen }: any) => {
     {
       icon: <MdDashboard />,
       name: "Dashboard",
-      path: role === "VENDEDOR" ? "/orders/orderSeller" : "/dashboard",
+      path: role === "VENDEDOR" && selectedClientId ? "/orders/orderSeller" : "/dashboard",
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",

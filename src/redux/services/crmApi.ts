@@ -155,6 +155,16 @@ export const crmApi = createApi({
         method: "DELETE",
       }),
     }),
+    checkInsituVisit: builder.mutation<
+      { insitu: boolean }, // Tipo de respuesta esperada
+      { customerId: string; currentLat: number; currentLon: number } // Parámetros requeridos
+    >({
+      query: ({ customerId, currentLat, currentLon }) => ({
+        url: `/crm/visit/${customerId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: { currentLat, currentLon },
+      }),
+    }),
   }),
 });
 
@@ -166,4 +176,5 @@ export const {
   useCreateCrmMutation,
   useDeleteCrmMutation,
   useUpdateCrmMutation,
+  useCheckInsituVisitMutation
 } = crmApi;
