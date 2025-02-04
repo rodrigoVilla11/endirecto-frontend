@@ -56,17 +56,31 @@ const DashboardPage = () => {
     ? data.total_documents_balance_expired
     : "0";
 
-    const formatedSumAmount = documentsBalance?.toLocaleString("es-ES", {
+  const formatedSumAmount = documentsBalance?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString(
+    "es-ES",
+    {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    });
-    const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString(
-      "es-ES",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    );
+    }
+  );
+  function formatPriceWithCurrency(price: number): string {
+    const formattedNumber = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+      .format(price)
+      .replace("ARS", "") // Elimina "ARS" del formato.
+      .trim(); // Elimina espacios extra.
+    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+  }
+
+  const finalSumAmount = parseInt(formatedExpiredSumAmount) + parseInt(formatedSumAmount)
 
   const itemsCard = [
     {
@@ -92,8 +106,8 @@ const DashboardPage = () => {
     {
       logo: <MdTextSnippet />,
       title: "Status Account",
-      subtitle: `$ ${formatedSumAmount}`,
-      text: `Expired: $ ${formatedExpiredSumAmount}`,
+      subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
+      text: `Expired: ${formatPriceWithCurrency(formatedExpiredSumAmount)}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
