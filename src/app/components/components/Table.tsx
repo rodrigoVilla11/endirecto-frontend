@@ -35,13 +35,13 @@ export default function Table({
     const isExpanded = expandedRow === index;
 
     return (
-      <div key={row.key || index} className="border-b border-gray-200">
+      <div key={row.key || index} className="border-b border-gray-200 ">
         {/* Fila principal con datos importantes */}
         <div
           className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
           onClick={() => setExpandedRow(isExpanded ? null : index)}
         >
-          <div className="flex gap-4">
+          <div className="flex gap-4 z-10">
             {importantHeaders.map((header, i) => (
               <div key={header.key} className="text-[11px] text-gray-600">
                 {row[header.key]}

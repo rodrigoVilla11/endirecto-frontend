@@ -235,7 +235,7 @@ const Page = () => {
             }
             placeholderText="Date From"
             dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
+            className="border border-gray-300 rounded p-2 z-20"
           />
         ),
       },
@@ -248,7 +248,7 @@ const Page = () => {
             }
             placeholderText="Date To"
             dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
+            className="border border-gray-300 rounded p-2 z-20"
           />
         ),
       },

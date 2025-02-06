@@ -36,38 +36,39 @@ const DashboardPage = () => {
 
   const { role } = useAuth();
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
-    { id: selectedClientId ?? undefined }
-  );
+  const { data: totalDebt, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
+  
 
   // Verificar si `data` es un cliente o un objeto resumen
-  const isClient = data && "documents_balance" in data;
-  const isSummary = data && "total_documents_balance" in data;
+  const isClient = totalDebt && "documents_balance" in totalDebt;
+  const isSummary = totalDebt && "total_documents_balance" in totalDebt;
 
   // Definir valores dinámicos según el tipo de `data`
-  const documentsBalance = isClient
-    ? data.documents_balance
+  // Primero, extraemos los valores sin formatear y los convertimos a número
+  const rawDocumentsBalance = isClient
+    ? parseFloat(totalDebt.documents_balance)
     : isSummary
-    ? data.total_documents_balance
-    : "0";
+    ? parseFloat(totalDebt.total_documents_balance)
+    : 0;
 
-  const documentsBalanceExpired = isClient
-    ? data.documents_balance_expired
+  const rawDocumentsBalanceExpired = isClient
+    ? parseFloat(totalDebt.documents_balance_expired)
     : isSummary
-    ? data.total_documents_balance_expired
-    : "0";
+    ? parseFloat(totalDebt.total_documents_balance_expired)
+    : 0;
 
-  const formatedSumAmount = documentsBalance?.toLocaleString("es-ES", {
+  // Suma los valores numéricos directamente
+  const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
+
+  // Ahora formatea el resultado final para mostrarlo
+  const formattedFinalSumAmount = finalSumAmount.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString(
-    "es-ES",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  );
+
+
   function formatPriceWithCurrency(price: number): string {
     const formattedNumber = new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -80,9 +81,6 @@ const DashboardPage = () => {
       .trim(); // Elimina espacios extra.
     return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
   }
-
-  const finalSumAmount =
-    parseInt(formatedExpiredSumAmount) + parseInt(formatedSumAmount);
 
   const itemsCard = [
     {
@@ -109,9 +107,7 @@ const DashboardPage = () => {
       logo: <MdTextSnippet />,
       title: "Status Account",
       subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
-      text: `Expired: ${formatPriceWithCurrency(
-        parseFloat(formatedExpiredSumAmount)
-      )}`,
+      text: `Expired: ${formatPriceWithCurrency(rawDocumentsBalance)}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
