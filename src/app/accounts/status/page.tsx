@@ -22,11 +22,15 @@ import CreateInstanceComponent from "./CreateInstance";
 import Instance from "./Instance";
 import CRM from "./CRM";
 import debounce from "@/app/context/debounce";
+import {
+  useGetCustomerInformationByCustomerIdQuery,
+  useGetLookupDocumentsQuery,
+} from "@/redux/services/customersInformations";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Basic states
+  // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -35,17 +39,23 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  // sortQuery en el formato "campo:asc" o "campo:desc"
+  const [sortQuery, setSortQuery] = useState<string>("");
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { selectedClientId } = useClient();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-
-  // References
+  // Endpoint para obtener información del cliente (por customer_id)
+  const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
+  
+  // Referencias para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
+  // Función para formatear fechas (YYYY-MM-DD)
   function formatDate(date: any) {
     if (!date) return undefined;
     const year = date.getFullYear();
@@ -54,21 +64,31 @@ const Page = () => {
     return `${year}-${month}-${day}`;
   }
 
-  // Redux queries
+  // Extraer sortField y sortOrder de sortQuery
+  const [rawSortField, rawSortOrder] = sortQuery
+    ? sortQuery.split(":")
+    : [undefined, undefined];
+
+  // Validamos que rawSortOrder sea "asc" o "desc"
+  const sortField = rawSortField;
+  const sortOrder =
+    rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : undefined;
+
+  // Endpoint RTK Query: se pasan los parámetros de paginación, filtrado y ordenación
   const {
     data,
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetDocumentsPagQuery(
+  } = useGetLookupDocumentsQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
-      query: searchQuery,
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
-      customer_id,
-      sort: sortQuery,
+      customerId: selectedClientId || "",
+      sortField: sortField,
+      sortOrder: sortOrder,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -77,40 +97,43 @@ const Page = () => {
     }
   );
 
+  // Otros endpoints (si los necesitas)
   const { data: countDocumentsData } = useCountDocumentsQuery(null);
-  const { data: sumAmountsData } = useSumAmountsQuery(null);
 
-  // Modal states
+  // Estados para el Modal
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
     refetch();
   };
 
-  // Debounced search
+  // Función debounced para búsqueda (si decides implementarla)
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setItems([]);
     setHasMore(true);
   }, 100);
 
+  // Actualiza el customer_id según el selectedClientId y refetch
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch;
+      refetch();
     } else {
       setCustomer_id("");
-      refetch;
+      refetch();
     }
   }, [selectedClientId]);
 
-  // Effect for handling initial load and searches
+  // Efecto para cargar documentos (incluye paginación, orden y filtrado)
   useEffect(() => {
     const loadDocuments = async () => {
       if (!isLoading) {
+        setIsLoading(true);
         try {
           const result = await refetch().unwrap();
-          const newDocuments = result || [];
+          // La respuesta tiene la forma: { totalData, data }
+          const newDocuments = result?.data || [];
 
           if (page === 1) {
             setItems(newDocuments);
@@ -130,7 +153,7 @@ const Page = () => {
     loadDocuments();
   }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -154,7 +177,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Reset search
+  // Funciones para resetear búsqueda y filtros de fecha
   const handleResetSearch = () => {
     setSearchQuery("");
     setItems([]);
@@ -163,23 +186,25 @@ const Page = () => {
   };
 
   const handleResetDate = () => {
-    setEndDate(null);
     setStartDate(null);
+    setEndDate(null);
     setItems([]);
     setPage(1);
     setHasMore(true);
   };
+
+  // Función para manejar la ordenación: alterna ascendente/descendente para un campo
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
 
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
+        // Alterna entre asc y desc
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
+        // Nuevo campo de ordenación, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
 
@@ -190,18 +215,23 @@ const Page = () => {
     },
     [sortQuery]
   );
-  if (isLoading) return <p>Loading...</p>;
+
+  if (isQueryLoading && page === 1) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
+  // Mapea los documentos para la tabla
   const tableData = items
     ?.filter((document) => {
+      // Filtra por customer_id localmente (si se desea)
       return !customer_id || document.customer_id === customer_id;
     })
     ?.map((document) => {
       const customer = customersData?.find(
-        (data) => data.id == document.customer_id
+        (data) => data.id === document.customer_id
       );
-      const seller = sellersData?.find((data) => data.id == document.seller_id);
+      const seller = sellersData?.find(
+        (data) => data.id === document.seller_id
+      );
 
       return {
         key: document.id,
@@ -211,7 +241,7 @@ const Page = () => {
           </div>
         ),
         customer: customer
-          ? `${customer?.id} - ${customer?.name}`
+          ? `${customer.id} - ${customer.name}`
           : "NOT FOUND",
         type: document.type,
         number: document.number,
@@ -224,38 +254,43 @@ const Page = () => {
       };
     });
 
-  const tableHeader = [
-    {
-      component: <IoInformationCircleOutline className="text-center text-xl" />,
-      key: "info",
-    },
-    { name: "Customer", key: "customer", important: true },
-    { name: "Type", key: "type" },
-    { name: "Number", key: "number" },
-    { name: "Date", key: "date" },
-    { name: "Amount", key: "amount" },
-    { name: "Balance", key: "balance" },
-    { name: "Expiration", key: "expiration" },
-    { name: "Logistic", key: "logistic" },
-    { name: "Seller", key: "seller" },
-  ];
 
-  const sumAmountsDataFilter = tableData?.reduce((acc, document) => {
-    const amount = parseFloat(document.amount);
-    return acc + amount;
-  }, 0);
-  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString(
-    "es-ES",
-    {
+
+
+  // Determinar si se recibió el cliente o un resumen
+  const isClient = totalDebt && "documents_balance" in totalDebt;
+  const isSummary = totalDebt && "total_documents_balance" in totalDebt;
+
+  const rawDocumentsBalance = isClient
+    ? parseFloat(totalDebt.documents_balance)
+    : isSummary
+    ? totalDebt.total_documents_balance
+    : 0;
+
+  const rawDocumentsBalanceExpired = isClient
+    ? parseFloat(totalDebt.documents_balance_expired)
+    : isSummary
+    ? totalDebt.total_documents_balance_expired
+    : 0;
+
+  // Suma de los valores numéricos
+  const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
+
+  // Función para formatear el precio con la moneda (se espera un número)
+  function formatPriceWithCurrency(price: number): string {
+    const formattedNumber = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }
-  );
-  const formatedSumAmount = sumAmountsData?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+    })
+      .format(price)
+      .replace("ARS", "")
+      .trim();
+    return `${formattedNumber}`;
+  }
 
+  // Configuración del header
   const headerBody = {
     buttons: [
       {
@@ -276,11 +311,7 @@ const Page = () => {
               className="border border-gray-300 rounded p-2"
             />
             {startDate && (
-              <button
-                className="-translate-y-1/2"
-                onClick={handleResetDate}
-                aria-label="Clear date"
-              >
+              <button onClick={handleResetDate} aria-label="Clear date">
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
             )}
@@ -298,41 +329,13 @@ const Page = () => {
           />
         ),
       },
-      // {
-      //   content: (
-      //     <div>
-      //       <Input
-      //         placeholder={"Search..."}
-      //         value={searchQuery}
-      //         onChange={(e: any) => debouncedSearch(e.target.value)}
-      //         onKeyDown={(e: any) => {
-      //           if (e.key === "Enter") {
-      //             refetch();
-      //           }
-      //         }}
-      //       />
-      //       {searchQuery && (
-      //         <button
-      //           className="-translate-y-1/2"
-      //           onClick={handleResetSearch}
-      //           aria-label="Clear search"
-      //         >
-      //           <FaTimes className="text-gray-400 hover:text-gray-600" />
-      //         </button>
-      //       )}
-      //     </div>
-      //   ),
-      // },
     ],
     secondSection: {
       title: "Total Owed",
-      amount: selectedClientId
-        ? `$ ${formatedSumAmountFilter}`
-        : `$ ${formatedSumAmount}`,
+      // Se pasa directamente el número a la función de formateo
+      amount: `${formatPriceWithCurrency(finalSumAmount)}`,
     },
-    results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countDocumentsData || 0} Results`,
+    results: `${data?.totalData || 0} Results`,
   };
 
   return (
@@ -348,22 +351,34 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">STATUS</h3>
         <Header headerBody={headerBody} />
-        {/* <Instance selectedClientId={selectedClientId} /> */}
         <Table
-          headers={tableHeader}
+          headers={[
+            {
+              component: (
+                <IoInformationCircleOutline className="text-center text-xl" />
+              ),
+              key: "info",
+            },
+            { name: "Customer", key: "customer_id", important: true },
+            { name: "Type", key: "type" },
+            { name: "Number", key: "number" },
+            { name: "Date", key: "date" },
+            { name: "Amount", key: "amount" },
+            { name: "Balance", key: "balance" },
+            { name: "Expiration", key: "expiration_date" },
+            { name: "Logistic", key: "expiration_status" },
+            { name: "Seller", key: "seller_id" },
+          ]}
           data={tableData}
           onSort={handleSort}
           sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
 
         <div ref={observerRef} className="h-10" />
       </div>
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CRM
-          closeModal={closeCreateModal}
-          selectedClientId={selectedClientId}
-        />
+        <CRM closeModal={closeCreateModal} selectedClientId={selectedClientId} />
       </Modal>
     </PrivateRoute>
   );
