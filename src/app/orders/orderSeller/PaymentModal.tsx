@@ -181,7 +181,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               <div className="text-white">
                 {data &&
                   "documents" in data &&
-                  data.documents.map((item) => (
+                  data.documents.map((item: any) => (
                     <DocumentsView
                       key={item.id}
                       document_id={item.id}
