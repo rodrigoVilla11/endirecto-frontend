@@ -57,7 +57,6 @@ export const usersApi = createApi({
       { page?: number; limit?: number; query?: string, sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "user:asc" } = {}) => {
-        console.log(`/users?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`)
         return `/users?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: User[]) => {

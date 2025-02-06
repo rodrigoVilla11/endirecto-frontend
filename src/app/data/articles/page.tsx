@@ -12,14 +12,12 @@ import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil, FaTrashCan, FaRegFilePdf } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
 import {
-  useCountArticlesQuery,
   useGetArticlesQuery,
 } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
-import DeleteArticleComponent from "./DeleteArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useInfiniteScroll } from "@/app/context/UseInfiniteScroll";
@@ -46,12 +44,6 @@ const Page = () => {
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Queries de Redux con mejor manejo de tipos
-  const { data: brandData } = useGetBrandsQuery(null);
-  const { data: itemData } = useGetItemsQuery(null);
-  const { data: countArticlesData } = useCountArticlesQuery({
-    query: searchQuery,
-  });
   const {
     data,
     error,
@@ -63,6 +55,7 @@ const Page = () => {
       limit: ITEMS_PER_PAGE,
       query: searchQuery,
       sort: sortQuery,
+      priceListId: "3",
     },
     {
       refetchOnMountOrArgChange: false,
@@ -93,31 +86,6 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Memoized brand and item maps for better performance
-  const brandMap = useMemo(
-    () =>
-      brandData?.reduce(
-        (acc, brand) => ({
-          ...acc,
-          [brand.id]: brand.name,
-        }),
-        {} as Record<string, string>
-      ),
-    [brandData]
-  );
-
-  const itemMap = useMemo(
-    () =>
-      itemData?.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.id]: item.name,
-        }),
-        {} as Record<string, string>
-      ),
-    [itemData]
-  );
-
   // Búsqueda optimizada con debounce
   const debouncedSearch = useCallback(
     debounce((query: string) => {
@@ -131,32 +99,35 @@ const Page = () => {
   // Effect for handling initial load and searches
   useEffect(() => {
     const loadItems = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newItems = result || [];
+      if (isLoading) return;
 
-          if (page === 1) {
-            setArticles(newItems);
-          } else {
-            setArticles((prev) => [...prev, ...newItems]);
-          }
+      setIsLoading(true);
+      try {
+        const result = await refetch().unwrap();
+        const newItems = result?.articles || [];
 
-          setHasMore(newItems.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading items:", error);
-        } finally {
-          setIsLoading(false);
+        if (page === 1) {
+          setArticles(newItems);
+        } else {
+          setArticles((prev) => [...prev, ...newItems]);
         }
+
+        // Si el total de artículos devueltos es menor que el `ITEMS_PER_PAGE`, ya no hay más
+        setHasMore(newItems.length === ITEMS_PER_PAGE);
+      } catch (error) {
+        console.error("Error cargando artículos:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadItems();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, sortQuery]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
+    if (!observerRef.current) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
@@ -164,17 +135,14 @@ const Page = () => {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.5 }
+      { threshold: 1 } // Asegura que solo se active cuando el elemento está completamente visible
     );
 
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
+    observer.observe(observerRef.current);
 
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
       }
     };
   }, [hasMore, isLoading]);
@@ -182,7 +150,7 @@ const Page = () => {
   // Manejadores optimizados
   const handleModalOpen = useCallback(
     (type: "update" | "delete", id: string) => {
-      setModalState({ type, articleId: encodeURIComponent(id) });
+      setModalState({ type, articleId: id });
     },
     []
   );
@@ -214,7 +182,7 @@ const Page = () => {
     () =>
       articles.map((article) => ({
         key: article.id,
-        brand: brandMap?.[article.brand_id] || "NO BRAND",
+        brand: article.brand.name || "NO BRAND",
         image: (
           <div className="flex justify-center items-center">
             {article.images?.[0] ? (
@@ -230,7 +198,7 @@ const Page = () => {
           </div>
         ),
         // pdf: article.pdfs,
-        item: itemMap?.[article.item_id] || "NO ITEM",
+        item: article.item.name || "NO ITEM",
         id: article.id,
         supplier: article.supplier_code,
         name: article.name,
@@ -242,16 +210,8 @@ const Page = () => {
             />
           </div>
         ),
-        erase: (
-          <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer hover:text-red-500"
-              onClick={() => handleModalOpen("delete", article.id)}
-            />
-          </div>
-        ),
       })),
-    [articles, brandMap, itemMap, handleModalOpen]
+    [articles, handleModalOpen]
   );
 
   const tableHeader = useMemo(
@@ -274,11 +234,6 @@ const Page = () => {
       {
         component: <FaPencil className="text-center text-xl" />,
         key: "edit",
-        sortable: false,
-      },
-      {
-        component: <FaTrashCan className="text-center text-xl" />,
-        key: "erase",
         sortable: false,
       },
     ],
@@ -318,9 +273,9 @@ const Page = () => {
           ),
         },
       ],
-      results: `${countArticlesData || 0} Results`,
+      results: ` ${data?.totalItems || 0} Articles`,
     }),
-    [searchQuery, countArticlesData, debouncedSearch, handleResetSearch]
+    [searchQuery, data, debouncedSearch, handleResetSearch]
   );
 
   if (isQueryLoading && articles.length === 0) {
@@ -345,7 +300,6 @@ const Page = () => {
       <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">ARTICLES</h3>
         <Header headerBody={headerBody} />
-
         {articles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No articles found
@@ -383,18 +337,6 @@ const Page = () => {
                 handleModalClose("update");
               }}
               closeModal={() => handleModalClose("update")}
-            />
-          )}
-        </Modal>
-
-        <Modal
-          isOpen={modalState.type === "delete"}
-          onClose={() => handleModalClose("delete")}
-        >
-          {modalState.articleId && (
-            <DeleteArticleComponent
-              articleId={modalState.articleId}
-              closeModal={() => handleModalClose("delete")}
             />
           )}
         </Modal>

@@ -14,7 +14,7 @@ import {
   useUpdateCustomerMutation,
 } from "@/redux/services/customersApi";
 import { useArticleId } from "@/app/context/AritlceIdContext";
-import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 
 interface FormState {
   id: string;
@@ -23,14 +23,10 @@ interface FormState {
 }
 
 const ArticleDetails = ({ closeModal }: any) => {
-  const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
   const { articleId } = useArticleId();
-  const encodedId = encodeURIComponent(articleId || "");
-
-  const { data: article, isLoading: isArticleLoading, error: articleError } = 
-    useGetArticleByIdQuery({ id: encodedId || "" }, { skip: !encodedId });
-
+  
+  const { selectedClientId } = useClient();
   const {
     data: customer,
     error: customerError,
@@ -40,7 +36,16 @@ const ArticleDetails = ({ closeModal }: any) => {
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
+  const { data: articles, isLoading: isArticleLoading, error: articleError } = 
+  useGetArticlesQuery({
+    page: 1,
+    limit: 1, 
+    articleId: articleId || "", 
+    priceListId: customer?.price_list_id
+  });
 
+  const article = articles?.articles[0]
+  
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
 

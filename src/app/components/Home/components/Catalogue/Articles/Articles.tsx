@@ -6,6 +6,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import CardArticles from "@/app/components/Catalogue/components/Articles/components/CardArticles";
 import ListArticle from "@/app/components/Catalogue/components/Articles/components/ListArticle";
 import ListArticles from "./components/ListArticles";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useClient } from "@/app/context/ClientContext";
 
 const Articles = ({
   brand,
@@ -25,13 +27,20 @@ const Articles = ({
     vehicleBrand,
     stock,
     tags,
+    sort: order,
   });
 
+  const { selectedClientId } = useClient();
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
-    limit: 10,
+    limit: 20,
+    priceListId: customer?.price_list_id,
     ...filters,
   });
+
   const { isAuthenticated } = useAuth();
 
   const { isOpen } = useSideMenu();
@@ -41,22 +50,21 @@ const Articles = ({
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || [];
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [page, filters]);
+   useEffect(() => {
+      if (!isFetching && data) { // 🔹 Verifica que data esté disponible
+        setIsFetching(true);
+        
+        const newArticles = data.articles || []; // 🔹 Usa `data.articles` en lugar de `result.data.articles`
+    
+        if (page === 1) {
+          setItems(newArticles); // 🔹 Si es la primera página, reemplaza
+        } else {
+          setItems((prev) => [...prev, ...newArticles]); // 🔹 Si es paginación, agrega más
+        }
+    
+        setIsFetching(false);
+      }
+    }, [data, page, filters]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
@@ -80,18 +88,19 @@ const Articles = ({
     };
   }, [isFetching]);
 
-   useEffect(() => {
-      setPage(1); // Reinicia la paginación
-      setItems([]); // Limpia los datos anteriores
-      setFilters({
-        brand,
-        item,
-        vehicleBrand,
-        stock,
-        tags,
-      });
-    }, [brand, item, vehicleBrand, stock, tags]);
-    
+  useEffect(() => {
+    setPage(1); // Reinicia la paginación
+    setItems([]); // Limpia los datos anteriores
+    setFilters({
+      brand,
+      item,
+      vehicleBrand,
+      stock,
+      tags,
+      sort: "",
+    });
+  }, [brand, item, vehicleBrand, stock, tags, order]);
+
   return (
     <div className="h-screen m-4 flex flex-col text-sm">
       {showArticles === "catalogue" ? (

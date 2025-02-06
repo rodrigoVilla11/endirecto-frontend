@@ -11,7 +11,6 @@ interface Article {
   supplier: string;
   name: string;
   edit: React.ReactNode;
-  erase: React.ReactNode;
 }
 
 interface MobileTableProps {

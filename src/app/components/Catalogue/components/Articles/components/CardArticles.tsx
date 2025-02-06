@@ -109,7 +109,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
     setModalOpen(true)
     setArticleId(id);
   };
-  
   return (
     <div>
       <div className="relative flex flex-col justify-between shadow-lg bg-white w-60 cursor-pointer">
@@ -118,8 +117,8 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           isFavourite={isFavourite}
           article={article}
         />
-        <div onClick={() => handleOpenModal(article.id)}>
-          <div className="absolute w-full h-3/6 flex justify-end items-end pb-8"><Tag articleId={article.id}/></div>
+        <div onClick={() => handleOpenModal(article.id)} className="z-20">
+          <div className="absolute w-full h-3/6 flex justify-end items-end pb-8"><Tag tag={article.tag}/></div>
           <ArticleImage img={article.images} />
           <StripeStock articleId={article.id} />
           <div className="bg-gray-200">

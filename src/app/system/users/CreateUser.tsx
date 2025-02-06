@@ -1,4 +1,5 @@
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { Roles, useCreateUserMutation } from "@/redux/services/usersApi";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
@@ -8,6 +9,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
     useGetBranchesQuery(null);
   const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateUserMutation();
+  const { data: sellersData } = useGetSellersQuery(null);
 
   const [form, setForm] = useState({
     username: "",
@@ -16,7 +18,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
     email: "",
     role: Roles.ADMINISTRADOR,
     branch: "",
-    seller_id: ""
+    seller_id: "",
   });
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -163,15 +165,18 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
           {form.role === "VENDEDOR" && (
             <label className="flex flex-col">
               Seller ID:
-              <input
-                name="seller_id"
-                type="text"
+              <select
                 value={form.seller_id}
-                placeholder="Seller ID"
                 onChange={handleChange}
-                className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
-                required
-              />
+                className="border border-gray-300 rounded p-2"
+              >
+                <option value="">Seller...</option>
+                {sellersData?.map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.name}
+                  </option>
+                ))}
+              </select>
             </label>
           )}
 

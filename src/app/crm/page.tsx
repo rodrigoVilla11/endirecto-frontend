@@ -96,7 +96,6 @@ const Page = () => {
 
   const [updateCrm] = useUpdateCrmMutation();
   const { data: countCrmData } = useCountCrmQuery(null);
- console.log(data)
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);

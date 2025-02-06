@@ -1,5 +1,7 @@
 import { useClient } from "@/app/context/ClientContext";
-import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
+import {
+  useGetArticlesQuery,
+} from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
@@ -10,15 +12,25 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
   const { selectedClientId } = useClient();
-
-  const { data: article } = useGetArticleByIdQuery({ id: encodedId });
-
-  const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item_id || "",
-  });
-
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
+  });
+
+  const {
+    data: articles,
+    isLoading: isArticleLoading,
+    error: articleError,
+  } = useGetArticlesQuery({
+    page: 1,
+    limit: 1,
+    articleId: articleId || "",
+    priceListId: customer?.price_list_id,
+  });
+
+  const article = articles?.articles[0];
+
+  const { data: bonus } = useGetArticleBonusByItemIdQuery({
+    id: article?.item.id || "",
   });
 
   const priceEntry = data?.find(
@@ -66,9 +78,7 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
           <span className="line-through text-red-500 text-sm flex">
             <p className="text-gray-800">$ {integerPart || "0"}</p>
             {decimalPart && (
-              <p className="font-semibold text-gray-800">
-                ,{decimalPart}
-              </p>
+              <p className="font-semibold text-gray-800">,{decimalPart}</p>
             )}
           </span>
           {/* Precio actual */}

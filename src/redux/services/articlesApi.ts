@@ -42,6 +42,16 @@ type Article = {
   brand_id: string; // MARCA ID
   item_id: string; // RUBRO ID
   deleted_at: string; // FECHA DE ELIMINACIÓN
+  item: {
+    id: string;
+    name: string;
+    image: string;
+  };
+  brand: {
+    id: string;
+    name: string;
+    images: string;
+  };
 };
 
 type UpdateArticlesPayload = {
@@ -68,7 +78,13 @@ export const articlesApi = createApi({
       },
     }),
     getArticles: builder.query<
-      Article[],
+      {
+        totalItems: number;
+        totalPages: number;
+        currentPage: number;
+        perPage: number;
+        articles: Article[];
+      },
       {
         page?: number;
         limit?: number;
@@ -78,7 +94,9 @@ export const articlesApi = createApi({
         tags?: string;
         stock?: string;
         vehicle_brand?: string;
-        sort?: string; // Nuevo parámetro para el ordenamiento
+        sort?: string;
+        priceListId?: string; // 🔹 Ahora es obligatorio porque el backend lo requiere
+        articleId?: string; // 🔹 Permite filtrar por uno o varios IDs
       }
     >({
       query: ({
@@ -91,77 +109,51 @@ export const articlesApi = createApi({
         stock,
         vehicle_brand,
         sort,
+        priceListId,
+        articleId,
       } = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
-
+        if (priceListId) params.append("priceListId", priceListId);
         if (query) params.append("q", query);
         if (brand) params.append("brand", brand);
         if (item) params.append("item", item);
-        if (tags) params.append("tags", tags);
-        if (stock) params.append("stock", stock);
+        if (tags) params.append("tag", tags);
+        if (stock) params.append("sort", stock);
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
         if (sort) params.append("sort", sort);
+        if (articleId) params.append("articleId", articleId); // 🔹 Ahora acepta varios IDs separados por comas
 
-        console.log(params)
-        return `/articles?${params.toString()}`;
+        return `/articles/?${params.toString()}`;
       },
-      transformResponse: (response: Article[]) => {
-        if (!response || response.length === 0) {
+      transformResponse: (response: {
+        totalItems: number;
+        totalPages: number;
+        currentPage: number;
+        perPage: number;
+        articles: Article[];
+      }) => {
+        if (!response || !response.articles || response.articles.length === 0) {
           console.error("No se recibieron artículos en la respuesta");
-          return [];
+          return {
+            totalItems: 0,
+            totalPages: 0,
+            currentPage: 1,
+            perPage: 10,
+            articles: [],
+          };
         }
         return response;
       },
     }),
-    getArticleById: builder.query<Article, { id: string }>({
-      query: ({ id }) =>
-        `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-    }),
-    countArticles: builder.query<
-      number,
-      {
-        query?: string;
-        brand?: string;
-        item?: string;
-        tags?: string;
-        stock?: string;
-        vehicle_brand?: string;
-      }
-    >({
-      query: ({ query, brand, item, tags, stock, vehicle_brand }) => {
-        // Construcción dinámica de parámetros
-        const params = new URLSearchParams();
-
-        if (query) params.append("q", query);
-        if (brand) params.append("brand", brand);
-        if (item) params.append("item", item);
-        if (tags) params.append("tags", tags);
-        if (stock) params.append("stock", stock);
-        if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
-
-        // Agregar el token
-        params.append("token", process.env.NEXT_PUBLIC_TOKEN || "");
-
-        // Construir y devolver la URL completa
-        return `/articles/count-all?${params.toString()}`;
-      },
-    }),
-
     updateArticle: builder.mutation<Article, UpdateArticlesPayload>({
       query: ({ id, ...updatedArticle }) => ({
         url: `/articles/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PUT",
         body: updatedArticle,
-      }),
-    }),
-    deleteArticle: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/articles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-        method: "DELETE",
       }),
     }),
     uploadImage: builder.mutation({
@@ -181,9 +173,6 @@ export const articlesApi = createApi({
 
 export const {
   useGetArticlesQuery,
-  useGetArticleByIdQuery,
   useGetAllArticlesQuery,
-  useCountArticlesQuery,
-  useDeleteArticleMutation,
   useUpdateArticleMutation,
 } = articlesApi;
