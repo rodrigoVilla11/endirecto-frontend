@@ -47,7 +47,6 @@ const TablePrices = ({ article }: any) => {
     id: article?.brand.id || "",
     customer: selectedClientId || "",
   });
-  console.log(brandMargin)
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
     id: article?.item.id || "",
     customer: selectedClientId || "",

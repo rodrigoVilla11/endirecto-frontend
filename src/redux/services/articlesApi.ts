@@ -128,7 +128,6 @@ export const articlesApi = createApi({
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId); // 🔹 Ahora acepta varios IDs separados por comas
 
-        console.log(params.toString())
         return `/articles/?${params.toString()}`;
       },
       transformResponse: (response: {
