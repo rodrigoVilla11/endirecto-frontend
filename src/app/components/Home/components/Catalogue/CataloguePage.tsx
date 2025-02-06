@@ -33,6 +33,7 @@ const CataloguePage = () => {
     }
   };
 
+
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };

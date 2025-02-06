@@ -84,18 +84,20 @@ const { selectedClientId } = useClient();
   }, [isFetching]);
 
   useEffect(() => {
-    setPage(1); // Reinicia la paginación
-    setItems([]); // Limpia los datos anteriores
-    setFilters({
+    setPage(1); 
+    setItems([]); 
+    setFilters((prevFilters) => ({
+      ...prevFilters,
       brand,
       item,
       vehicleBrand,
       stock,
       tags,
       query,
-      sort: "",
-    });
+      sort: order, 
+    }));
   }, [brand, item, vehicleBrand, stock, tags, query, order]);
+  
 
   return (
     <div className="h-full m-4 flex flex-col text-sm ">
