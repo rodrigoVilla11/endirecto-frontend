@@ -42,6 +42,7 @@ const CataloguePage = () => {
     stock: stock,
     vehicle_brand: vehicleBrand,
     query: search,
+    sort: order,
   });
 
   const filterBy = "popups";

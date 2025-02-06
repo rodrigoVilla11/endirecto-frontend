@@ -54,7 +54,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
   const handleStockChange = (value: string) => {
     setStock(value);
   };
-    
+  
   return (
     <>
       {isVisible && (
@@ -139,7 +139,6 @@ const FilterBox = ({ isVisible, onClose }: any) => {
               </div>
             </div>
           )}
-
           <Order onChange={setOrder} />
           {/* <Cart onChange={setCart} /> */}
           <PurchasePrice onToggle={setShowPurchasePrice} />

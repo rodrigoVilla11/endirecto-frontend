@@ -6,11 +6,11 @@ const Order = ({onChange} : any) => {
   const [selectedOrder, setSelectedOrder] = useState(1);
   const order = [
     { id: "best-seller", name: 'Best Sellers' },
-    { id: "brand", name: 'By Brands' },
-    { id: "code", name: 'By Code' },
-    { id: "lowerPrice", name: 'Lower Price' },
-    { id: "higherPrice", name: 'Higher Price' },
-    { id: "stock", name: 'Stock' },
+    { id: "brand:asc", name: 'By Brands' },
+    { id: "code:asc", name: 'By Code' },
+    { id: "price:asc", name: 'Lower Price' },
+    { id: "price:desc", name: 'Higher Price' },
+    { id: "stock:desc", name: 'Stock' },
   ];
 
   const handleOrderChange = (event : any) => {

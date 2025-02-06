@@ -15,11 +15,11 @@ const Articles = ({
   vehicleBrand,
   stock,
   tags,
-  cart,
   order,
   showPurchasePrice,
   showArticles,
 }: any) => {
+
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     brand,
