@@ -101,13 +101,15 @@ const Articles = ({
     <div className="h-full m-4 flex flex-col text-sm relative">
       {/* Spinner centrado mientras se cargan los datos */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
-          {/* Puedes usar una imagen personalizada o un ícono */}
+        <div className="absolute inset-0 flex items-start justify-center bg-opacity-80 z-50 p-20">
           <img
-            src="/loading-spinner.gif" // O usa un ícono: <FaSpinner className="text-4xl text-gray-500 animate-spin" />
+            src="dma.png" // Asegúrate de que la imagen esté en la carpeta "public" o ajusta la ruta
             alt="Loading..."
-            className="h-16 w-16"
+            className="h-40 w-60"
           />
+          <div className="absolute top-64 w-1/2 h-1 bg-gray-300 overflow-hidden">
+            <div className="h-full bg-blue-500 loading-bar"></div>
+          </div>
         </div>
       )}
 

@@ -60,3 +60,20 @@ body {
 .animate-pulse {
   animation: pulse 1s ease-in-out infinite;
 }
+
+@keyframes loadingAnimation {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.loading-bar {
+  width: 100%;
+  animation: loadingAnimation 2s infinite;
+}
