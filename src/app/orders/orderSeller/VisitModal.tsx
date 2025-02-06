@@ -44,7 +44,6 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
     gps: "",
     insitu: false,
   });
-  console.log(form)
 
   // Función para obtener la ubicación y llamar al backend para verificar si está insitu
   const handleGetLocation = () => {
@@ -73,7 +72,6 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             currentLon: longitude,
           }).unwrap();
 
-          console.log("Respuesta del backend:", response);
           setInsitu(response.insitu);
 
           // Actualizamos el formulario para incluir la ubicación y el flag insitu
@@ -102,7 +100,6 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
     try {
       const newCrm = await createCrm(form).unwrap();
-      console.log("Visita enviada exitosamente:", newCrm);
       onClose(); // Cerramos el modal al enviar
     } catch (error) {
       console.error("Error al enviar la visita:", error);

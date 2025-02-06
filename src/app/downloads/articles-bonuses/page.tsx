@@ -12,7 +12,6 @@ import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import {
   useGetAllArticlesQuery,
-  useGetArticlesQuery,
 } from "@/redux/services/articlesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
@@ -209,7 +208,6 @@ const Page = () => {
       </div>
     );
   }
-  console.log(sortQuery);
 
   return (
     <PrivateRoute

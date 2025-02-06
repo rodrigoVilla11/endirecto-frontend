@@ -5,7 +5,6 @@ import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import Articles from "./components/Articles/Articles";
 import {
-  useCountArticlesQuery,
   useGetArticlesQuery,
 } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
@@ -14,9 +13,8 @@ import { useClient } from "@/app/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
-import { useArticleId } from "@/app/context/AritlceIdContext";
 import { useMobile } from "@/app/context/ResponsiveContext";
-
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 const CataloguePage = () => {
   const {
     order,
@@ -29,18 +27,15 @@ const CataloguePage = () => {
     vehicleBrand,
     search,
   } = useFilters();
-
-  const { data: countArticlesData } = useCountArticlesQuery({
-    stock,
-    brand,
-    item,
-    vehicle_brand: vehicleBrand,
-    query: search,
+  const { selectedClientId } = useClient();
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
   });
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page: 1,
-    limit: 16,
+    limit: 20,
+    priceListId: customer?.price_list_id,
     brand: brand,
     item: item,
     tags: tags[0],
@@ -56,7 +51,6 @@ const CataloguePage = () => {
     isLoading: marketingIsLoading,
   } = useGetMarketingByFilterQuery({ filterBy });
 
-  const { selectedClientId } = useClient();
   const router = useRouter();
   const { isMobile } = useMobile();
 
@@ -111,7 +105,14 @@ const CataloguePage = () => {
 
   return (
     <div className="gap-4 p-2">
-      <h3 className="text-bold p-4">CATALOGUE</h3>
+      {/* 🔹 Sección del título y conteo de artículos */}
+      <div className="flex justify-between items-center p-4">
+        <h3 className="text-bold">CATALOGUE</h3>
+        <p className="absolute text-xs text-gray-600 font-semibold pt-24 right-10">
+          {data?.totalItems || 0} Articles
+        </p>
+      </div>
+
       <div className="flex gap-2 ">
         <FilterBox
           isVisible={isFilterBoxVisible}
@@ -164,8 +165,8 @@ const CataloguePage = () => {
                 />
               </button>
             </div>
-            <p className="text-xs pr-4">{countArticlesData || 0}</p>
           </div>
+
           <Articles
             brand={brand}
             item={item}
@@ -178,6 +179,7 @@ const CataloguePage = () => {
             showArticles={showArticles}
             query={search}
           />
+
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal
               closeModal={closeModal}

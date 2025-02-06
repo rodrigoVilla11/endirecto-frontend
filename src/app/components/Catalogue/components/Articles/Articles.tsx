@@ -3,6 +3,8 @@ import CardArticles from "./components/CardArticles";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import ListArticle from "./components/ListArticle";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 const Articles = ({
   brand,
   item,
@@ -25,12 +27,17 @@ const Articles = ({
     query,
     sort: order,
   });
-
+const { selectedClientId } = useClient();
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
   const { data, error, isLoading, refetch } = useGetArticlesQuery({
     page,
-    limit: 10,
+    limit: 20,
+    priceListId: customer?.price_list_id,
     ...filters,
   });
+
 
   const { isOpen } = useSideMenu();
   const [items, setItems] = useState<any[]>([]);
@@ -39,22 +46,22 @@ const Articles = ({
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isFetching) {
+    if (!isFetching && data) { // 🔹 Verifica que data esté disponible
       setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || [];
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
+      
+      const newArticles = data.articles || []; // 🔹 Usa `data.articles` en lugar de `result.data.articles`
+  
+      if (page === 1) {
+        setItems(newArticles); // 🔹 Si es la primera página, reemplaza
+      } else {
+        setItems((prev) => [...prev, ...newArticles]); // 🔹 Si es paginación, agrega más
+      }
+  
+      setIsFetching(false);
     }
-  }, [page, filters]);
-
+  }, [data, page, filters]);
+  
+  
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {

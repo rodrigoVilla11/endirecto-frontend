@@ -36,19 +36,25 @@ const FilterBox = ({ isVisible, onClose }: any) => {
   } = useFilters();
   const { isMobile } = useMobile();
 
+  
   const { data: dataBrand } = useGetBrandByIdQuery({ id: brand });
   const { data: dataItem } = useGetItemByIdQuery({ id: item });
   const formatStock = (stock: any) => {
-    if (Array.isArray(stock)) {
-      return stock.join(" - ");
+    if (stock === "stock:desc") {
+      return "STOCK";
     }
-    if (typeof stock === "string") {
-      return stock;
+    if (stock !== "stock:desc") {
+      return "NO-STOCK";
     }
     return "N/A";
   };
 
   const formattedStock = formatStock(stock);
+
+  const handleStockChange = (value: string) => {
+    setStock(value);
+  };
+    
   return (
     <>
       {isVisible && (
@@ -138,7 +144,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           {/* <Cart onChange={setCart} /> */}
           <PurchasePrice onToggle={setShowPurchasePrice} />
           <Tag onSelectTags={setTags} />
-          <Stock onChange={setStock} />
+          <Stock onChange={handleStockChange} />
           <Brands onChange={setBrand} brand={brand} />
           <Items onChange={setItem} item={item} />
           <VehiclesBrands

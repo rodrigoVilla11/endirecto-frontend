@@ -3,30 +3,44 @@ import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPri
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
-import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
+import {
+  useGetArticlesQuery,
+} from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
 
 const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { selectedClientId } = useClient();
-
-  const { data, error, isLoading, refetch } =
-  useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
-  // Consultas de datos
-  const { data: article } = useGetArticleByIdQuery({ id: encodedId });
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
+
+  const { data, error, isLoading, refetch } =
+    useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
+  // Consultas de datos
+  const {
+    data: articles,
+    isLoading: isArticleLoading,
+    error: articleError,
+  } = useGetArticlesQuery({
+    page: 1,
+    limit: 1,
+    articleId: articleId || "",
+    priceListId: customer?.price_list_id,
+  });
+
+  const article = articles?.articles[0];
+
   const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item_id || "",
+    id: article?.item.id || "",
   });
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
-    id: article?.brand_id || "",
+    id: article?.brand.id || "",
     customer: selectedClientId || "",
   });
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
-    id: article?.item_id || "",
+    id: article?.item.id || "",
     customer: selectedClientId || "",
   });
 
@@ -79,7 +93,11 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   };
 
   // Calculamos el precio con el margen total y luego con IVA
-  const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(price, totalMargin, 21);
+  const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(
+    price,
+    totalMargin,
+    21
+  );
 
   // Función para formatear el precio con separadores de miles
   const formatPrice = (price: any) => {

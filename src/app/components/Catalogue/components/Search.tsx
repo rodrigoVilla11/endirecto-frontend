@@ -6,6 +6,8 @@ import { useFilters } from "@/app/context/FiltersContext";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 import Modal from "../../components/Modal";
 import ArticleDetails from "./Articles/components/ArticleDetails";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
 const ArticleSearchResults = ({
   query,
@@ -16,6 +18,10 @@ const ArticleSearchResults = ({
   setSearchQuery: any;
   router: any;
 }) => {
+  const { selectedClientId } = useClient();
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
   const limit = 6;
   const {
     data: articles,
@@ -25,6 +31,7 @@ const ArticleSearchResults = ({
   } = useGetArticlesQuery({
     limit,
     query,
+    priceListId: selectedClientId ? customer?.price_list_id : "3",
   });
   const { setSearch } = useFilters();
   const { articleId, setArticleId } = useArticleId();
@@ -65,7 +72,7 @@ const ArticleSearchResults = ({
         </p>
       )}
 
-      {articles && articles.length === 0 && (
+      {articles && articles.totalItems === 0 && (
         <p className="text-gray-300">
           No se encontraron resultados para tu búsqueda.
         </p>
@@ -73,8 +80,8 @@ const ArticleSearchResults = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full px-2 overflow-auto">
         {articles &&
-          articles.length > 0 &&
-          articles.map((article) => (
+          articles.totalItems > 0 &&
+          articles.articles.map((article) => (
             <div key={article.id} className="w-full">
               <CardSearch
                 article={article}
@@ -85,7 +92,7 @@ const ArticleSearchResults = ({
           ))}
       </div>
 
-      {articles && articles.length > 0 && (
+      {articles && articles.totalItems > 0 && (
         <button
           onClick={() => handleRedirect(`/catalogue`)}
           className="mt-6 bg-white text-black px-8 py-3 rounded-lg hover:bg-blue-700 hover:text-white transition duration-300 transform hover:scale-105 focus:outline-none shadow-lg"

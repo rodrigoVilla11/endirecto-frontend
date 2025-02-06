@@ -1,8 +1,10 @@
+import { useClient } from "@/app/context/ClientContext";
 import {
-  useGetArticleByIdQuery,
+  useGetArticlesQuery,
   useUpdateArticleMutation,
 } from "@/redux/services/articlesApi";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
@@ -18,17 +20,35 @@ const UpdateArticleComponent = ({
   closeModal,
   onUpdateSuccess,
 }: UpdateArticleComponentProps) => {
+  const { selectedClientId } = useClient();
   const {
-    data: article,
-    error,
-    isLoading,
+    data: customer,
+    error: customerError,
+    isLoading: isCustomerLoading,
     refetch,
-  } = useGetArticleByIdQuery(
-    { id: articleId },
+  } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
+  const {
+    data: articlesData,
+    isLoading: isArticleLoading,
+    error: articleError,
+    refetch: refetchArticles,
+  } = useGetArticlesQuery(
     {
-      refetchOnMountOrArgChange: true,
+      page: 1,
+      limit: 1,
+      articleId: articleId?.trim(), // ✅ Asegurar que no sea `undefined`
+      priceListId: customer?.price_list_id ?? "3", // ✅ Si `undefined`, usa un valor por defecto
+    },
+    {
+      skip: !articleId, // ✅ Evita ejecutar la consulta si `articleId` no está definido
     }
   );
+
+  const article = articlesData?.articles?.[0];
+
 
   const [updateArticle, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateArticleMutation();
@@ -78,28 +98,31 @@ const UpdateArticleComponent = ({
     supplier_code: "",
     description: "",
     images: [] as string[],
-    pdfs: [] as string[],
   });
 
   useEffect(() => {
+    if (!articleId) return;
+  
+    refetchArticles();
+  
     if (article) {
-      refetch();
       setForm({
         id: article.id ?? "",
         supplier_code: article.supplier_code ?? "",
         description: article.description ?? "",
         images: article.images ?? [],
-        pdfs: Array.isArray(article.pdfs) ? article.pdfs : [],
       });
     }
-  }, [article]);
+  }, [articleId, article]); // ✅ Ahora se ejecuta cuando cambia `articleId`
+  
+  
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
 
-    if (name === "images" || name === "pdfs") {
+    if (name === "images") {
       setForm((prevForm) => ({
         ...prevForm,
         [name]: value.split(",").map((item) => item.trim()),
@@ -118,24 +141,23 @@ const UpdateArticleComponent = ({
       const updatedForm = {
         ...form,
         images: [...form.images, ...uploadResponses],
-        id: articleId
+        id: articleId,
       };
-      
+
       await updateArticle(updatedForm).unwrap();
-      
+
       // Refetch después de actualizar
       await refetch();
-      
+
       // Notificar al componente padre del éxito
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
-      
+
       // Esperar un momento antes de cerrar para asegurar que los datos se actualizaron
       setTimeout(() => {
         closeModal();
       }, 100);
-      
     } catch (err) {
       console.error("Error updating the article:", err);
     }
@@ -147,9 +169,6 @@ const UpdateArticleComponent = ({
       images: prevForm.images.filter((_, i) => i !== index),
     }));
   };
-
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the article.</p>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -267,17 +286,6 @@ const UpdateArticleComponent = ({
                 </tbody>
               </table>
             </div>
-          </label>
-
-          <label className="flex flex-col">
-            PDFs:
-            <input
-              name="pdfs"
-              value={form.pdfs.join(", ")}
-              placeholder="PDFs (comma separated)"
-              onChange={handleChange}
-              className="border border-black rounded-md p-2"
-            />
           </label>
 
           <div className="flex justify-end gap-4 mt-4">

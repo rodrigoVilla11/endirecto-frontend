@@ -182,7 +182,6 @@ export default function OrderConfirmation({
             currentLon: longitude,
           }).unwrap();
 
-          console.log("Respuesta del backend:", response);
           setInsitu(response.insitu);
 
           // Actualiza el objeto transaction con gps e insitu

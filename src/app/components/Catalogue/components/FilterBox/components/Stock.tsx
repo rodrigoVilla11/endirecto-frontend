@@ -7,7 +7,7 @@ const Stock = ({ onChange }: any) => {
   const handleButtonClick = (value: string) => {
     if (selectedButton !== value) {
       setSelectedButton(value);
-      onChange(value === "STOCK" ? ["STOCK", "LOW-STOCK"] : ["NO-STOCK"]);
+      onChange(value); 
     } else {
       setSelectedButton("");
       onChange("");
@@ -25,20 +25,18 @@ const Stock = ({ onChange }: any) => {
         </label>
         <div className="flex justify-between items-center gap-1">
           <button
-            onClick={() => handleButtonClick("STOCK")}
+            onClick={() => handleButtonClick("stock:desc")}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              selectedButton === "STOCK" ? "bg-primary text-white" : ""
+              selectedButton === "stock:desc" ? "bg-primary text-white" : ""
             }`}
-            value={"STOCK"}
           >
             Stock
           </button>
           <button
-            onClick={() => handleButtonClick("NO-STOCK")}
+            onClick={() => handleButtonClick("stock:asc")}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              selectedButton === "NO-STOCK" ? "bg-primary text-white" : ""
+              selectedButton === "stock:asc" ? "bg-primary text-white" : ""
             }`}
-            value={"NO-STOCK"}
           >
             Out of Stock
           </button>

@@ -1,4 +1,5 @@
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
   Roles,
   useGetUserByIdQuery,
@@ -17,6 +18,7 @@ const UpdateUserComponent = ({
   closeModal,
 }: UpdateUserComponentProps) => {
   const { data: user, error, isLoading } = useGetUserByIdQuery({ id: userId });
+  const { data: sellersData } = useGetSellersQuery(null);
 
   const [updateUser, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateUserMutation();
@@ -32,6 +34,7 @@ const UpdateUserComponent = ({
     email: "",
     role: Roles.ADMINISTRADOR,
     branch: "",
+    seller_id: ""
   });
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -46,6 +49,7 @@ const UpdateUserComponent = ({
         email: user.email ?? "",
         role: user.role ?? "",
         branch: user.branch ?? "",
+        seller_id: user.seller_id ?? ""
       });
     }
   }, [user]);
@@ -188,6 +192,24 @@ const UpdateUserComponent = ({
             </select>
           </label>
 
+          {form.role === "VENDEDOR" && (
+            <label className="flex flex-col">
+              Seller ID:
+              <select
+                value={form.seller_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded p-2"
+              >
+                <option value="">Seller...</option>
+                {sellersData?.map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          
           <div className="col-span-2 flex justify-end gap-4">
             <button
               type="button"

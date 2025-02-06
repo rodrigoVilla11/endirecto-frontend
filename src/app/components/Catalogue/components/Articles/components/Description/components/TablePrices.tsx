@@ -1,7 +1,6 @@
 import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
-import { useGetArticleByIdQuery } from "@/redux/services/articlesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
@@ -14,7 +13,7 @@ const TablePrices = ({ article }: any) => {
   const { selectedClientId } = useClient();
 
   const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item_id || "",
+    id: article?.item.id || "",
   });
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -45,11 +44,11 @@ const TablePrices = ({ article }: any) => {
   const [integerPartNoIva, decimalPartNoIva] = formatPrice(priceNoIva);
 
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
-    id: article?.brand_id || "",
+    id: article?.brand.id || "",
     customer: selectedClientId || "",
   });
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
-    id: article?.item_id || "",
+    id: article?.item.id || "",
     customer: selectedClientId || "",
   });
 

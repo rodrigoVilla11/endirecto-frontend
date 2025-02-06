@@ -73,7 +73,6 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  console.log(items)
   // Effect for handling initial load and searches
   useEffect(() => {
     const loadDocuments = async () => {

@@ -1,13 +1,18 @@
 "use client";
 import { useMobile } from "@/app/context/ResponsiveContext";
-import { useCountArticlesQuery } from "@/redux/services/articlesApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
 import React from "react";
 
 const BannerInfo = () => {
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data: countArticlesData } = useCountArticlesQuery({});
+   const { data, error, isLoading, refetch } = useGetArticlesQuery({
+      page: 1,
+      limit: 1,
+      priceListId: "3",
+    });
+  
   const { data: brands } = useGetBrandsQuery(null);
   const { isMobile } = useMobile();
 
@@ -23,7 +28,7 @@ const BannerInfo = () => {
         <p className="text-secondary">Brands</p>
       </div>
       <div className="h-32 w-90 bg-white rounded-lg flex flex-col justify-center items-center">
-        <p className="text-5xl">{countArticlesData}</p>
+        <p className="text-5xl">{data?.totalItems}</p>
         <p className="text-secondary">Articles</p>
       </div>
     </div>
