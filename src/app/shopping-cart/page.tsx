@@ -318,8 +318,8 @@ const ShoppingCart = () => {
           className="flex flex-col md:flex-row gap-1 md:gap-2 cursor-pointer min-w-[150px]"
           onClick={() => handleOpenModal(item.id)}
         >
-          <p className="font-bold text-sm md:text-base">{item.supplier_code}</p>
-          <p className="text-sm md:text-base">{item.name}</p>
+          <p className="font-bold text-xs">{item.supplier_code}</p>
+          <p className="text-xs md:text-xs">{item.name}</p>
         </div>
       ),
       stock: (
@@ -332,13 +332,13 @@ const ShoppingCart = () => {
               : item.stock.status === "LOW-STOCK"
               ? "bg-orange-600"
               : "bg-gray-500"
-          } font-bold text-white text-center p-1 rounded-lg text-xs md:text-sm whitespace-nowrap`}
+          } font-bold text-white text-center p-1 rounded-lg text-xs whitespace-nowrap`}
         >
           <p>{item.stock.status}</p>
         </div>
       ),
       price: (
-        <span className="text-sm md:text-base whitespace-nowrap">
+        <span className="text-xs whitespace-nowrap">
           {formatPriceWithCurrency(item.price)} + taxes
         </span>
       ),
@@ -346,7 +346,7 @@ const ShoppingCart = () => {
         <input
           type="number"
           value={item.quantity}
-          className="w-16 md:w-20 text-center border rounded-md text-sm md:text-base p-1"
+          className="w-16 md:w-20 text-center border rounded-md text-xs p-1"
           min={1}
           onChange={(e) =>
             handleQuantityChange(item.id, parseInt(e.target.value))
@@ -354,7 +354,7 @@ const ShoppingCart = () => {
         />
       ),
       total: (
-        <span className="text-sm md:text-base whitespace-nowrap">
+        <span className="text-xs whitespace-nowrap">
           {formatPriceWithCurrency(item.price * item.quantity)} + taxes
         </span>
       ),

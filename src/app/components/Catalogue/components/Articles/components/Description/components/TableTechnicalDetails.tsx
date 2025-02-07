@@ -12,9 +12,9 @@ const TableTechnicalDetails = ({ articleId }: any) => {
 
   
   return (
-    <table className="min-w-full bg-white">
+    <table className="min-w-full bg-white text-xs">
       <thead>
-        <tr>
+        <tr className='font-medium'>
           <th className="py-2 px-4 bg-gray-200 text-left">Technical Characteristics</th>
           <th className="py-2 px-4 bg-gray-200 text-left">Value</th>
         </tr>

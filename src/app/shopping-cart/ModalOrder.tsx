@@ -225,7 +225,7 @@ export default function OrderConfirmation({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-medium text-gray-800">
+          <h2 className="text-lg font-bold text-gray-800">
             Cierre de PEDIDO
           </h2>
           <button
@@ -246,21 +246,21 @@ export default function OrderConfirmation({
 
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-gray-600">Total Sin Impuestos</p>
+              <p className="text-gray-600 text-sm">Total Sin Impuestos</p>
               <p className="text-2xl font-semibold">{totalFormatted}</p>
             </div>
-            <p className="text-gray-600">{itemCount} Artículos</p>
+            <p className="text-gray-600 text-sm">{itemCount} Artículos</p>
           </div>
 
-          <p className="text-sm text-gray-500 italic">
+          <p className="text-xs text-gray-500 italic">
             Atención: El pedido está sujeto a disponibilidad de stock y/o
             cambios de precio sin previo aviso.
           </p>
 
           {/* Sección para obtener y mostrar la ubicación e insitu */}
           <div className="space-y-2">
-            <p className="font-medium text-gray-700">GPS</p>
-            <div className="flex items-center space-x-2">
+            <p className="font-medium text-gray-700 text-sm">GPS</p>
+            <div className="flex items-center space-x-2 text-sm">
               <button
                 type="button"
                 onClick={handleGetLocation}
@@ -282,14 +282,14 @@ export default function OrderConfirmation({
           <div className="space-y-2">
             <label
               htmlFor="observations"
-              className="block font-medium text-gray-700"
+              className="block text-gray-700 text-base font-bold"
             >
               Observaciones
             </label>
             <textarea
               id="observations"
               rows={3}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-base"
               placeholder="Ingrese un comentario"
               value={observations}
               onChange={handleObservationChange}
@@ -302,7 +302,7 @@ export default function OrderConfirmation({
               type="button"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 font-bold"
             >
               Cancelar
             </button>
@@ -314,7 +314,7 @@ export default function OrderConfirmation({
                 isPaymentLoading ||
                 !selectedClientId
               }
-              className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 font-bold"
             >
               {isSubmitting ? "Procesando..." : "Aceptar"}
             </button>

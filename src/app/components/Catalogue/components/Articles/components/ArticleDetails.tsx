@@ -117,7 +117,7 @@ const ArticleDetails = ({ closeModal }: any) => {
   return (
     <div className="z-50">
       <div className="flex justify-between">
-        <h2 className="text-lg mb-2">Article Details</h2>
+        <h2 className="text-base font-bold mb-2">Article Details</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"

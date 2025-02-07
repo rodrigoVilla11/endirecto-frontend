@@ -4,7 +4,7 @@ import React from "react";
 
 const TableInfo = ({article} : any) => {
   return (
-    <div className="">
+    <div className="text-xs">
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">Code</p>
         <p className="font-light">{article.id}</p>
