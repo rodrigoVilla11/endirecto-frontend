@@ -2,7 +2,7 @@ import Buttons from "./Buttons"
 
 const Header = ({ headerBody }: any) => {
   return (
-    <div className="h-auto m-2 bg-white p-3 flex flex-col gap-3 mx-4 shadow-md rounded-lg text-sm">
+    <div className="h-auto mb-2 bg-white p-3 flex flex-col gap-3 mx-4 shadow-md rounded-lg text-xs font-semibold">
       {/* Sección de Botones */}
       <div className="flex flex-wrap justify-end items-center w-full border-b border-gray-200 pb-3 gap-2">
         {headerBody.buttons.map((button: any, index: any) => (
@@ -26,7 +26,7 @@ const Header = ({ headerBody }: any) => {
       )}
 
       {/* Filtros */}
-      <div className="flex flex-wrap justify-start items-center w-full gap-2 p-2 bg-gray-50 rounded">
+      <div className="flex flex-wrap justify-start items-center w-full gap-2 p-2 rounded">
         {headerBody.filters.map((filter: any, index: any) => (
           <div key={index} className="w-full sm:w-auto">
             {filter.content}

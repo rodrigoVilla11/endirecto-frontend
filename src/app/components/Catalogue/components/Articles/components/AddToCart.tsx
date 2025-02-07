@@ -30,30 +30,25 @@ const AddToCart: React.FC<AddToCartProps> = ({
     data?.quantity && data.quantity !== "0" ? "text-green-600" : "text-red-500";
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-4 py-2 bg-gray-200 shadow-md w-full max-w-sm">
-      {role !== "CUSTOMER" && (
-        <div className="flex items-center gap-2">
-          <p className={`text-sm font-semibold ${stockColor}`}>
-            {stockMessage}
-          </p>
-        </div>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value) || 1)}
-          className="border rounded w-16 p-1 text-center text-sm"
-          min={1}
-        />
-        <button
-          className="bg-black text-white p-2 rounded flex items-center hover:bg-gray-800 transition"
-          onClick={() => onAddToCart(quantity)}
-        >
-          <FaShoppingCart />
-        </button>
-      </div>
+    <div className="flex flex-col items-center gap-2 w-full">
+    {role !== "CUSTOMER" && <p className={`text-xs font-semibold ${stockColor}`}>{stockMessage}</p>}
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        value={quantity}
+        onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+        className="border rounded w-12 p-1 text-center text-sm"
+        min={1}
+      />
+      <button
+        className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors text-white"
+        onClick={() => onAddToCart(quantity)}
+        aria-label="Add to cart"
+      >
+        <FaShoppingCart className="w-4 h-4" />
+      </button>
     </div>
+  </div>
   );
 };
 

@@ -58,7 +58,7 @@ const CataloguePage = () => {
   const [isFilterBoxVisible, setFilterBoxVisible] = useState(
     isMobile ? false : true
   );
-  const [showArticles, setShowArticles] = useState("catalogue");
+  const [showArticles, setShowArticles] = useState<"catalogue" | "list">("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
@@ -108,7 +108,6 @@ const CataloguePage = () => {
     <div className="gap-4 p-2">
       {/* 🔹 Sección del título y conteo de artículos */}
       <div className="flex justify-between items-center p-4">
-        <h3 className="text-bold">CATALOGUE</h3>
         <p className="absolute text-xs text-gray-600 font-semibold pt-24 right-10">
           {data?.totalItems || 0} Articles
         </p>
@@ -124,7 +123,7 @@ const CataloguePage = () => {
             <div className="flex justify-center gap-2 px-2">
               <button
                 onClick={toggleFilterBox}
-                className={`p-2 flex items-center justify-center text-sm gap-2 h-8 ${
+                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
                   isFilterBoxVisible
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"
@@ -139,7 +138,7 @@ const CataloguePage = () => {
               </button>
               <button
                 onClick={() => toggleShowArticles("catalogue")}
-                className={`p-2 flex items-center justify-center text-sm gap-2 h-8 ${
+                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
                   showArticles === "catalogue"
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"
@@ -153,7 +152,7 @@ const CataloguePage = () => {
               </button>
               <button
                 onClick={() => toggleShowArticles("list")}
-                className={`p-2 flex items-center justify-center text-sm gap-2 h-8 ${
+                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
                   showArticles === "list"
                     ? "bg-primary text-white"
                     : "bg-white text-primary border border-primary"

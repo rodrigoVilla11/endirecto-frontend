@@ -25,7 +25,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   // Si no hay imágenes en el array, mostrar solo la imagen predeterminada
   if (!img || img.length === 0) {
     return (
-      <div className="flex justify-center items-center bg-white">
+      <div className="flex justify-center items-center bg-white pt-2 px-4">
         <img
           className="w-full h-48 object-contain"
           src={defaultImage}
@@ -36,7 +36,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   }
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
+    <div className="relative w-full max-w-md mx-auto pt-2 px-4">
       {/* Imagen actual */}
       <div className="flex justify-center h-48 items-center bg-white">
         <img

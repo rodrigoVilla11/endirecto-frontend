@@ -25,7 +25,7 @@ interface FormState {
 const ArticleDetails = ({ closeModal }: any) => {
   const [quantity, setQuantity] = useState(1);
   const { articleId } = useArticleId();
-  
+
   const { selectedClientId } = useClient();
   const {
     data: customer,
@@ -36,16 +36,19 @@ const ArticleDetails = ({ closeModal }: any) => {
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
-  const { data: articles, isLoading: isArticleLoading, error: articleError } = 
-  useGetArticlesQuery({
+  const {
+    data: articles,
+    isLoading: isArticleLoading,
+    error: articleError,
+  } = useGetArticlesQuery({
     page: 1,
-    limit: 1, 
-    articleId: articleId || "", 
-    priceListId: customer?.price_list_id
+    limit: 1,
+    articleId: articleId || "",
+    priceListId: customer?.price_list_id,
   });
 
-  const article = articles?.articles[0]
-  
+  const article = articles?.articles[0];
+
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
 
@@ -73,8 +76,8 @@ const ArticleDetails = ({ closeModal }: any) => {
         ? prev.favourites.filter((id) => id !== article.id)
         : [...prev.favourites, article.id];
 
-      updateCustomer({ id: form.id, favourites: updatedFavourites }).then(
-        () => refetch()
+      updateCustomer({ id: form.id, favourites: updatedFavourites }).then(() =>
+        refetch()
       );
 
       return { ...prev, favourites: updatedFavourites };
@@ -89,8 +92,8 @@ const ArticleDetails = ({ closeModal }: any) => {
         newShoppingCart.push(article.id);
       }
 
-      updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(
-        () => refetch()
+      updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(() =>
+        refetch()
       );
 
       return { ...prev, shopping_cart: newShoppingCart };
@@ -102,11 +105,7 @@ const ArticleDetails = ({ closeModal }: any) => {
   }
 
   if (customerError || articleError) {
-    return (
-      <div>
-        Error loading data
-      </div>
-    );
+    return <div>Error loading data</div>;
   }
 
   if (!article) {
@@ -127,7 +126,7 @@ const ArticleDetails = ({ closeModal }: any) => {
         </button>
       </div>
       <div className="flex gap-4 flex-col sm:justify-center sm:items-start items-center sm:flex-row">
-        <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
+        <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between pb-2">
           <ArticleMenu
             onAddToFavourites={toggleFavourite}
             isFavourite={isFavourite}
@@ -135,18 +134,20 @@ const ArticleDetails = ({ closeModal }: any) => {
           />
           <ArticleImage img={article.images || [""]} />
           <StripeStock articleId={article.id} />
-          <ArticleName
-            name={article.name}
-            id={article.id}
-            code={article.supplier_code}
-          />
-          <div className="pb-3">
-            <CostPrice
-              articleId={article.id}
-              selectedClientId={selectedClientId}
+          <div className="p-3 bg-gray-50">
+            <ArticleName
+              name={article.name}
+              id={article.id}
+              code={article.supplier_code}
             />
-            <hr className="my-3" />
-            <SuggestedPrice articleId={article.id} />
+            <div className="pb-3">
+              <CostPrice
+                articleId={article.id}
+                selectedClientId={selectedClientId}
+              />
+              <hr className="my-3" />
+              <SuggestedPrice articleId={article.id} />
+            </div>
           </div>
           <AddToCart
             articleId={article.id}
