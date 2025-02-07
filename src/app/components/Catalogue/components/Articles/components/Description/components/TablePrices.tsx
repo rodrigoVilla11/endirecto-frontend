@@ -110,7 +110,7 @@ const TablePrices = ({ article }: any) => {
   const [integerPartMargin, decimalPartMargin] = formatPrice(finalMargin);
 
   return (
-    <div className="">
+    <div className="text-xs">
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">IVA</p>

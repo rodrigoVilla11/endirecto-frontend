@@ -7,7 +7,7 @@ const TableEquivalences = ({articleId} : any) => {
   return (
     <table className="min-w-full bg-white">
       <thead>
-        <tr>
+        <tr className="text-xs">
           <th className="py-2 px-4 bg-gray-200 text-left">Brand</th>
           <th className="py-2 px-4 bg-gray-200 text-left">Equivalence Code</th>
         </tr>
