@@ -6,11 +6,6 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import {
-  useCountDocumentsQuery,
-  useGetDocumentsPagQuery,
-  useSumAmountsQuery,
-} from "@/redux/services/documentsApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
@@ -18,8 +13,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useClient } from "@/app/context/ClientContext";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
-import CreateInstanceComponent from "./CreateInstance";
-import Instance from "./Instance";
 import CRM from "./CRM";
 import debounce from "@/app/context/debounce";
 import {
@@ -97,8 +90,6 @@ const Page = () => {
     }
   );
 
-  // Otros endpoints (si los necesitas)
-  const { data: countDocumentsData } = useCountDocumentsQuery(null);
 
   // Estados para el Modal
   const openCreateModal = () => setCreateModalOpen(true);
@@ -217,7 +208,6 @@ const Page = () => {
   );
 
   if (isQueryLoading && page === 1) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
 
   // Mapea los documentos para la tabla
   const tableData = items

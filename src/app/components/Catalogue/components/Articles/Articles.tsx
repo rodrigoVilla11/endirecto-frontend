@@ -188,7 +188,7 @@ const Articles: React.FC<ArticlesProps> = ({
           {/* Elemento observador colocado al final del contenedor scrollable */}
           <div ref={observerRef} className="h-20 flex items-center justify-center">
             {isFetching && !showLoading && (
-              <div className="text-center py-4 text-xs font-semibold text-center">Cargando más artículos...</div>
+              <div className="text-center py-4 text-xs font-semibold">Cargando más artículos...</div>
             )}
           </div>
         </div>
