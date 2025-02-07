@@ -2,9 +2,15 @@ import React from "react";
 
 const ArticleName = ({name, id, noName, code} : any) => {
   return (
-    <div className={`p-4 ${noName ? "h-12  rounded-lg" : "h-20"} `}>
-      <p className="text-xs font-semibold mb-1">{code}</p>
-      {!noName && <p className="text-xs text-gray-500 mb-1">{name}</p>}
+    <div className={`flex flex-col ${noName ? "h-8" : "h-14"}`}>
+      <p className="text-xs font-semibold text-gray-700 truncate" title={code}>
+        {code}
+      </p>
+      {!noName && (
+        <p className="text-xs text-gray-500 mt-1 line-clamp-2" title={name}>
+          {name}
+        </p>
+      )}
     </div>
   );
 };

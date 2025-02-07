@@ -1,34 +1,32 @@
-import React, { useEffect, useState } from "react";
-import StripeStock from "./StripeStock";
-import ArticleName from "./ArticleName";
-import ArticleImage from "./ArticleImage";
-import ArticleMenu from "./ArticleMenu";
-import CostPrice from "./CostPrice";
-import SuggestedPrice from "./SuggestedPrice";
-import AddToCart from "./AddToCart";
-import Modal from "@/app/components/components/Modal";
-import Description from "./Description/Description";
-import { IoMdClose } from "react-icons/io";
-import { useClient } from "@/app/context/ClientContext";
-import {
-  useGetCustomerByIdQuery,
-  useUpdateCustomerMutation,
-} from "@/redux/services/customersApi";
-import ArticleDetails from "./ArticleDetails";
-import { useArticleId } from "@/app/context/AritlceIdContext";
-import Tag from "@/app/components/Home/components/Catalogue/Articles/components/Tag";
+"use client"
+
+import { useEffect, useState } from "react"
+import StripeStock from "./StripeStock"
+import ArticleName from "./ArticleName"
+import ArticleImage from "./ArticleImage"
+import ArticleMenu from "./ArticleMenu"
+import CostPrice from "./CostPrice"
+import SuggestedPrice from "./SuggestedPrice"
+import AddToCart from "./AddToCart"
+import Modal from "@/app/components/components/Modal"
+import { useClient } from "@/app/context/ClientContext"
+import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi"
+import ArticleDetails from "./ArticleDetails"
+import { useArticleId } from "@/app/context/AritlceIdContext"
+import Tag from "@/app/components/Home/components/Catalogue/Articles/components/Tag"
 
 interface FormState {
-  id: string;
-  favourites: string[];
-  shopping_cart: string[];
+  id: string
+  favourites: string[]
+  shopping_cart: string[]
 }
 
 const CardArticles = ({ article, showPurchasePrice }: any) => {
-  const [isModalOpen, setModalOpen] = useState(false);
-  const { selectedClientId } = useClient();
-  const [quantity, setQuantity] = useState(1);
-  const { articleId, setArticleId} = useArticleId(); 
+  // Keeping all the existing state and hooks
+  const [isModalOpen, setModalOpen] = useState(false)
+  const { selectedClientId } = useClient()
+  const [quantity, setQuantity] = useState(1)
+  const { articleId, setArticleId } = useArticleId()
 
   const {
     data: customer,
@@ -37,111 +35,121 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
     refetch,
   } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
-  });
-  if (error) {
-    console.error("Error fetching customer:", error);
-  }
+  })
 
-  const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
-    useUpdateCustomerMutation();
-
+  const [updateCustomer] = useUpdateCustomerMutation()
   const [form, setForm] = useState<FormState>({
     id: "",
     favourites: [],
     shopping_cart: [],
-  });
+  })
 
+  // Keeping all the existing useEffects and functions
   useEffect(() => {
     if (customer) {
       setForm({
         id: customer.id || "",
         favourites: customer.favourites || [],
         shopping_cart: customer.shopping_cart || [],
-      });
+      })
     }
-  }, [customer]);
+  }, [customer])
 
   const toggleFavourite = () => {
     setForm((prev) => {
-      const isFavourite = prev.favourites.includes(article.id);
+      const isFavourite = prev.favourites.includes(article.id)
       const updatedFavourites = isFavourite
         ? prev.favourites.filter((id) => id !== article.id)
-        : [...prev.favourites, article.id];
+        : [...prev.favourites, article.id]
 
-      updateCustomer({ id: form.id, favourites: updatedFavourites }).then(
-        () => {
-          refetch();
-        }
-      );
+      updateCustomer({ id: form.id, favourites: updatedFavourites }).then(() => {
+        refetch()
+      })
 
       return {
         ...prev,
         favourites: updatedFavourites,
-      };
-    });
-  };
+      }
+    })
+  }
 
   const toggleShoppingCart = () => {
     setForm((prev) => {
-      const newShoppingCart = [...prev.shopping_cart];
+      const newShoppingCart = [...prev.shopping_cart]
       for (let i = 0; i < quantity; i++) {
-        newShoppingCart.push(article.id);
+        newShoppingCart.push(article.id)
       }
 
-      updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(
-        () => {
-          refetch();
-        }
-      );
+      updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(() => {
+        refetch()
+      })
 
       return {
         ...prev,
         shopping_cart: newShoppingCart,
-      };
-    });
-  };
+      }
+    })
+  }
 
-  const isFavourite = form.favourites.includes(article.id);
-
-  const closeModal = () => setModalOpen(false);
-
+  const isFavourite = form.favourites.includes(article.id)
+  const closeModal = () => setModalOpen(false)
   const handleOpenModal = (id: string) => {
     setModalOpen(true)
-    setArticleId(id);
-  };
+    setArticleId(id)
+  }
+
   return (
     <div>
-      <div className="relative flex flex-col justify-between shadow-lg bg-white w-60 cursor-pointer">
-        <ArticleMenu
-          onAddToFavourites={toggleFavourite}
-          isFavourite={isFavourite}
-          article={article}
-        />
-        <div onClick={() => handleOpenModal(article.id)} className="z-20">
-          <div className="absolute w-full h-3/6 flex justify-end items-end pb-8"><Tag tag={article.tag}/></div>
-          <ArticleImage img={article.images} />
-          <StripeStock articleId={article.id} />
-          <div className="bg-gray-200">
-            <ArticleName name={article.name} id={article.id} code={article.supplier_code}/>
-            {showPurchasePrice && <CostPrice articleId={article.id} selectedClientId={selectedClientId} />}
-            {showPurchasePrice && <hr className="bg-white border-white m-4" />}
+      <div className="relative flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 w-52">
+        {/* Menu Icons */}
+        <div className="absolute top-2 right-2 z-30">
+          <ArticleMenu onAddToFavourites={toggleFavourite} isFavourite={isFavourite} article={article} />
+        </div>
+
+        {/* Main Content */}
+        <div onClick={() => handleOpenModal(article.id)} className="cursor-pointer">
+          {/* Tag and Image Section */}
+          <div className="relative">
+            <div className="absolute w-full h-full flex justify-end items-end p-2 z-20">
+              <Tag tag={article.tag} />
+            </div>
+            <div className="aspect-square w-full">
+              <ArticleImage img={article.images} />
+            </div>
+            <StripeStock articleId={article.id} />
+          </div>
+
+          {/* Product Info Section */}
+          <div className="p-3 bg-gray-50">
+            <ArticleName name={article.name} id={article.id} code={article.supplier_code} />
+            {showPurchasePrice && (
+              <>
+                <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
+                <div className="my-2 border-t border-gray-200" />
+              </>
+            )}
             <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} />
           </div>
         </div>
-        <AddToCart
-          articleId={article.id}
-          onAddToCart={toggleShoppingCart}
-          quantity={quantity}
-          setQuantity={setQuantity}
-        />
+
+        {/* Add to Cart Section */}
+        <div className="p-3 border-t border-gray-100">
+          <AddToCart
+            articleId={article.id}
+            onAddToCart={toggleShoppingCart}
+            quantity={quantity}
+            setQuantity={setQuantity}
+          />
+        </div>
       </div>
+
+      {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails
-          closeModal={closeModal}
-        />
+        <ArticleDetails closeModal={closeModal} />
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default CardArticles;
+export default CardArticles
+

@@ -19,7 +19,7 @@ const Search = () => {
           type="text"
           value={searchQuery}
           onChange={handleSearch}
-          className="h-10 rounded-3xl pl-8 border-none focus:ring-0 outline-none"
+          className="h-10 rounded-3xl pl-8 border-none focus:ring-0 outline-none text-xs font-semibold"
           placeholder="Buscá lo que estás necesitando..."
         />
         <ArticleSearchResults

@@ -115,24 +115,13 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
 
   return (
-    <div
-      className={`flex ${
-        onlyPrice ? "justify-center" : "justify-between"
-      } items-center ${
-        showPurchasePrice ? "text-xs" : "text-xs"
-      } px-4 pb-2 h-4 `}
-    >
-      <p>Suggested Price</p>
-      <p>
-        $
-        <span className="font-semibold text-gray-600 text-lg">
-          {integerPart || "0"}
-        </span>
-        {decimalPart && (
-          <span className="font-semibold text-gray-600">,{decimalPart}</span>
-        )}
-      </p>
-    </div>
+    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
+    {!onlyPrice && <p className="text-gray-500">Sug. Price</p>}
+    <p className="font-semibold text-gray-700">
+      ${integerPart || "0"}
+      {decimalPart && <span className="text-sm">,{decimalPart}</span>}
+    </p>
+  </div>
   );
 };
 

@@ -65,47 +65,29 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
   const [integerPartOffer, decimalPartOffer] = formatPrice(offer);
 
   return (
-    <div
-      className={`flex ${
-        onlyPrice ? "justify-center" : "justify-between"
-      } text-xs px-4 h-4 items-center`}
-    >
-      {!onlyPrice && <p>P. Costo s/IVA</p>}
+    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
+    {!onlyPrice && <p className="text-gray-500">P. Costo s/IVA</p>}
 
+    <div className="flex flex-col items-end">
       {offer !== null ? (
-        <div className="flex flex-col items-end">
-          {/* Precio original tachado */}
-          <span className="line-through text-red-500 text-sm flex">
-            <p className="text-gray-800">$ {integerPart || "0"}</p>
-            {decimalPart && (
-              <p className="font-semibold text-gray-800">,{decimalPart}</p>
-            )}
+        <>
+          <span className="line-through text-red-500 text-xs">
+            ${integerPart || "0"}
+            {decimalPart && <span className="text-red-500">,{decimalPart}</span>}
           </span>
-          {/* Precio actual */}
-          <p>
-            $
-            <span className="font-semibold text-gray-800 text-lg">
-              {integerPartOffer}
-            </span>
-            {decimalPartOffer && (
-              <span className="font-semibold text-gray-800">
-                ,{decimalPartOffer}
-              </span>
-            )}
-          </p>
-        </div>
+          <span className="font-semibold text-gray-800">
+            ${integerPartOffer}
+            {decimalPartOffer && <span className="text-sm">,{decimalPartOffer}</span>}
+          </span>
+        </>
       ) : (
-        <p>
-          $
-          <span className="font-semibold text-gray-800 text-lg">
-            {integerPart || "0"}
-          </span>
-          {decimalPart && (
-            <span className="font-semibold text-gray-800">,{decimalPart}</span>
-          )}
-        </p>
+        <span className="font-semibold text-gray-800">
+          ${integerPart || "0"}
+          {decimalPart && <span className="text-sm">,{decimalPart}</span>}
+        </span>
       )}
     </div>
+  </div>
   );
 };
 

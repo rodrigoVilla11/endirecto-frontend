@@ -83,14 +83,14 @@ const Profile = ({ isMobile }: any) => {
           )}
         </div>
         {!isMobile && (
-          <div className="flex justify-center items-center text-white">
+          <div className="flex justify-center items-center text-white text-sm font-semibold">
             <p>{selectedClientId ? data?.name : userData?.username}</p>
             <IoIosArrowDown />
           </div>
         )}
       </button>
       {isMenuOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg  text-sm">
           <ul>
             <li
               onClick={() => handleRedirect("/profile/my-profile")}

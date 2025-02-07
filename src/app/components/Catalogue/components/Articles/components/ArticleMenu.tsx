@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CiMenuKebab } from "react-icons/ci";
 import { TbSquares } from "react-icons/tb";
 import { GoTag } from "react-icons/go";
@@ -14,6 +14,27 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
   const [isInformErrorModalOpen, setInformErrorModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+    const handleToggleMenu = () => {
+      setIsMenuOpen(!isMenuOpen)
+    }
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // 3. Verificamos que menuRef.current exista y forzamos el tipo de event.target a Node.
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
 
   const toggleMenu = (articleId: string) => {
     setActiveMenu(activeMenu === articleId ? null : articleId);
@@ -44,55 +65,73 @@ const ArticleMenu = ({ article, onAddToFavourites, isFavourite }: { onAddToFavou
   
 
   return (
-    <div className="flex justify-end items-center px-4 py-2">
-      <div className="flex items-center space-x-4">
-        <button className="flex items-center justify-center" onClick={onAddToFavourites}>
-          <FaHeart className={`transition-colors duration-300 ${isFavourite ? 'text-red-500' : 'text-gray-600'} cursor-pointer text-xl`} />
+    <div className="relative" ref={menuRef}>
+    <button
+      className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+      onClick={handleToggleMenu}
+      title="Opciones"
+    >
+      <CiMenuKebab className="w-5 h-5 text-gray-400" />
+    </button>
+
+    {isMenuOpen && (
+      <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+        <button
+          className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            onAddToFavourites()
+            setIsMenuOpen(false)
+          }}
+          title="Añadir a favoritos"
+        >
+          <FaHeart className={`w-4 h-4 mr-2 ${isFavourite ? "text-red-500" : "text-gray-400"}`} />
+          Favoritos
         </button>
-        <button className="flex items-center justify-center">
-          <TbSquares className='text-gray-500 cursor-pointer text-xl' onClick={() => addArticleId(article)} />
+
+        <button
+          className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            addArticleId(article)
+            setIsMenuOpen(false)
+          }}
+          title="Ver detalles"
+        >
+          <TbSquares className="w-4 h-4 mr-2 text-gray-400" />
+          Detalles
         </button>
-        <button className="flex items-center justify-center">
-          <GoTag className='text-gray-500 cursor-pointer text-xl' onClick={() => openEquivalencesModal(article.id)}/>
+
+        <button
+          className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            openEquivalencesModal(article.id)
+            setIsMenuOpen(false)
+          }}
+          title="Ver equivalencias"
+        >
+          <GoTag className="w-4 h-4 mr-2 text-gray-400" />
+          Equivalencias
         </button>
-        <button className="flex items-center justify-center">
-          <div className="relative">
-            <CiMenuKebab
-              className="text-center text-xl cursor-pointer"
-              onClick={() => toggleMenu(article.id)}
-            />
-            {activeMenu === article.id && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
-                <button
-                  onClick={() => openInformErrorModal(article.id)}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                >
-                  Informar Error
-                </button>
-              </div>
-            )}
-          </div>
+
+        <button
+          className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            openInformErrorModal(article.id)
+            setIsMenuOpen(false)
+          }}
+        >
+          Informar Error
         </button>
       </div>
+    )}
 
-      <Modal isOpen={isInformErrorModalOpen} onClose={closeInformErrorModal}>
-        {currentArticleId && (
-          <InformError
-            articleId={currentArticleId}
-            closeModal={closeInformErrorModal}
-          />
-        )}
-      </Modal>
+    <Modal isOpen={isInformErrorModalOpen} onClose={closeInformErrorModal}>
+      {currentArticleId && <InformError articleId={currentArticleId} closeModal={closeInformErrorModal} />}
+    </Modal>
 
-      <Modal isOpen={isEquivalencesModalOpen} onClose={closeEquivalencesModal}>
-        {currentArticleId && (
-          <ArticleEquivalence
-            articleId={currentArticleId}
-            closeModal={closeEquivalencesModal}
-          />
-        )}
-      </Modal>
-    </div>
+    <Modal isOpen={isEquivalencesModalOpen} onClose={closeEquivalencesModal}>
+      {currentArticleId && <ArticleEquivalence articleId={currentArticleId} closeModal={closeEquivalencesModal} />}
+    </Modal>
+  </div>
   );
 };
 

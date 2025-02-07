@@ -1,12 +1,25 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import CardArticles from "./components/CardArticles";
+import ListArticle from "./components/ListArticle";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
-import ListArticle from "./components/ListArticle";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
-const Articles = ({
+interface ArticlesProps {
+  brand?: string;
+  item?: string;
+  vehicleBrand?: string;
+  stock?: string;
+  tags?: any;
+  cart?: any;
+  order?: string;
+  showPurchasePrice?: boolean;
+  showArticles?: "catalogue" | "list";
+  query?: string;
+}
+
+const Articles: React.FC<ArticlesProps> = ({
   brand,
   item,
   vehicleBrand,
@@ -14,140 +27,172 @@ const Articles = ({
   tags,
   cart,
   order,
-  showPurchasePrice,
-  showArticles,
+  showPurchasePrice = false,
+  showArticles = "catalogue",
   query,
-}: any) => {
-  // Estado de paginación
+}) => {
   const [page, setPage] = useState(1);
-  // Estado de filtros (incluye el orden en "sort")
-  const [filters, setFilters] = useState({
-    brand,
-    item,
-    vehicleBrand,
-    stock,
-    tags,
-    query,
-    sort: order,
-  });
-  // Estado para almacenar los artículos cargados
   const [items, setItems] = useState<any[]>([]);
-
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const { selectedClientId } = useClient();
-  const { data: customer } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
+  const { isOpen } = useSideMenu();
+  
+  // Referencia para el contenedor scrollable y para el elemento observador
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const prevFiltersRef = useRef<string>("");
 
-  // Usamos el estado "isLoading" del query para saber si está cargando
-  const { data, error, isLoading, refetch } = useGetArticlesQuery({
+  const filters = useMemo(
+    () => ({
+      brand,
+      item,
+      vehicle_brand: vehicleBrand,
+      stock,
+      tags,
+      query,
+      sort: order,
+    }),
+    [brand, item, vehicleBrand, stock, tags, query, order]
+  );
+
+  // Convertir los filtros a string para comparar cambios
+  const filtersString = JSON.stringify(filters);
+
+  const { data: customer } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
+
+  const { data, isLoading, isFetching } = useGetArticlesQuery({
     page,
     limit: 20,
     priceListId: customer?.price_list_id,
     ...filters,
   });
 
-  const { isOpen } = useSideMenu();
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  // Efecto para actualizar los artículos cuando llegan nuevos datos
+  // Reinicia los items cuando cambien los filtros
   useEffect(() => {
-    if (data && data.articles) {
+    if (prevFiltersRef.current !== filtersString) {
+      setItems([]); // Limpiar items inmediatamente
+      setPage(1);
+      setIsLoadingMore(false);
+      prevFiltersRef.current = filtersString;
+    }
+  }, [filtersString]);
+
+  // Actualiza los items cuando llegan nuevos datos
+  useEffect(() => {
+    if (data?.articles) {
       if (page === 1) {
         setItems(data.articles);
       } else {
         setItems((prev) => [...prev, ...data.articles]);
       }
     }
-  }, [data, page]);
+  }, [data?.articles, page]);
 
-  // Efecto para reiniciar la paginación y los artículos cuando cambian los filtros
+  // Efecto para el infinite scroll
   useEffect(() => {
-    setPage(1);
-    setItems([]); // Borra los artículos anteriores
-    setFilters({
-      brand,
-      item,
-      vehicleBrand,
-      stock,
-      tags,
-      query,
-      sort: order, // Actualiza el orden recibido
-    });
-  }, [brand, item, vehicleBrand, stock, tags, query, order]);
+    // Si no hay contenedor o elemento observador, salimos
+    if (!containerRef.current || !observerRef.current) return;
 
-  // Efecto para la paginación infinita mediante IntersectionObserver
-  useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Si el elemento es visible y no estamos cargando, incrementamos la página
-        if (entry.isIntersecting && !isLoading) {
+        // Puedes agregar un log para ver cuándo se dispara el callback
+        // console.log("Observer entry:", entry);
+        if (
+          entry.isIntersecting &&
+          !isLoading &&
+          !isFetching &&
+          !isLoadingMore &&
+          Array.isArray(data?.articles) &&
+          data.articles.length > 0
+        ) {
+          setIsLoadingMore(true);
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      {
+        // Establece el contenedor scrollable como root
+        root: containerRef.current,
+        threshold: 0.5,
+      }
     );
 
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
+    const currentObserverElem = observerRef.current;
+    observer.observe(currentObserverElem);
+
     return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
+      observer.unobserve(currentObserverElem);
     };
-  }, [isLoading]);
+  }, [isLoading, isFetching, isLoadingMore, data?.articles]);
+
+  // Resetea isLoadingMore cuando termina la carga
+  useEffect(() => {
+    if (!isFetching && isLoadingMore) {
+      setIsLoadingMore(false);
+    }
+  }, [isFetching, isLoadingMore]);
+
+  const showLoading = isLoading || (isFetching && page === 1);
 
   return (
-    <div className="h-full m-4 flex flex-col text-sm relative">
-      {/* Spinner centrado mientras se cargan los datos */}
-      {isLoading && (
+    <div className="m-4 flex flex-col text-sm relative">
+      {showLoading && (
         <div className="absolute inset-0 flex items-start justify-center bg-opacity-80 z-50 p-20">
-          <img
-            src="dma.png" // Asegúrate de que la imagen esté en la carpeta "public" o ajusta la ruta
-            alt="Loading..."
-            className="h-40 w-60"
-          />
+          <img src="/dma.png" alt="Loading..." className="h-40 w-60" />
           <div className="absolute top-64 w-1/2 h-1 bg-gray-300 overflow-hidden">
-            <div className="h-full bg-blue-500 loading-bar"></div>
+            <div className="h-full bg-blue-500 loading-bar" />
           </div>
         </div>
       )}
 
-      {/* Solo se muestran los artículos si no se está cargando */}
-      {!isLoading && items.length > 0 && (
-        <>
-          {showArticles === "catalogue" ? (
-            <div
-              className={`overflow-auto no-scrollbar h-[calc(100vh-10px)] grid gap-6 justify-items-center ${
-                isOpen
-                  ? "grid-cols-[repeat(auto-fit,_minmax(250px,_1fr))]"
-                  : "grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))]"
-              }`}
-            >
-              {items.map((article: any, index: number) => (
-                <CardArticles
-                  key={index}
-                  article={article}
-                  showPurchasePrice={showPurchasePrice}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-auto no-scrollbar h-[calc(100vh-10px)]">
-              {items.map((article: any, index: number) => (
-                <ListArticle
-                  key={index}
-                  article={article}
-                  showPurchasePrice={showPurchasePrice}
-                />
-              ))}
-            </div>
-          )}
-        </>
+      {!showLoading && items.length === 0 && (
+        <div className="flex justify-center items-center h-full">
+          No se encontraron artículos
+        </div>
       )}
 
-      {/* Detector para Infinite Scroll */}
-      <div ref={observerRef} className="h-100" />
+      {items.length > 0 && (
+        <div
+          // Este contenedor es el que tiene scroll
+          ref={containerRef}
+          className={`overflow-auto no-scrollbar h-[900px] ${
+            showArticles === "catalogue"
+              ? isOpen
+                ? "grid gap-6 justify-items-center grid-cols-[repeat(auto-fit,_minmax(180px,_1fr))]"
+                : "grid gap-6 justify-items-center grid-cols-[repeat(auto-fit,_minmax(185px,_1fr))]"
+              : ""
+          }`}
+        >
+          {showArticles === "catalogue" ? (
+            items.map((article, index) => (
+              <CardArticles
+                key={article.id || index}
+                article={article}
+                showPurchasePrice={showPurchasePrice}
+              />
+            ))
+          ) : (
+            <>
+              {items.map((article, index) => (
+                <ListArticle
+                  key={article.id || index}
+                  article={article}
+                  showPurchasePrice={showPurchasePrice}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Elemento observador colocado al final del contenedor scrollable */}
+          <div ref={observerRef} className="h-20 flex items-center justify-center">
+            {isFetching && !showLoading && (
+              <div className="text-center py-4 text-xs font-semibold text-center">Cargando más artículos...</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

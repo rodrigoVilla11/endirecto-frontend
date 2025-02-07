@@ -63,7 +63,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
 
   return (
     <div
-      className="relative flex items-center text-xl text-white group"
+      className="relative flex items-center text-sm font-extralight text-white group"
       onClick={handleClick}
     >
       {!isOpen ? (

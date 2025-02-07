@@ -18,30 +18,29 @@ const Tag = ({ onSelectTags }: any) => {
   };
 
   return (
-    <div className="px-4 text-sm">
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="cart"
-        >
-          Tag
-        </label>
-        <div className="flex justify-between items-center gap-2">
-          {tags.map((tag) => (
-            <button
-              key={tag}
-              className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-2 font-semibold text-white`}
-              onClick={() => handleButtonClick(tag)}
-              style={{
-                backgroundColor: tagColors[tag],
-              }}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+    <div className="text-xs font-semibold">
+    <div className="mb-4">
+      <label
+        className="block text-gray-700 font-bold mb-2"
+        htmlFor="cart"
+      >
+        Tag
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {tags.map((tag) => (
+          <button
+            key={tag}
+            className="flex gap-1 items-center justify-center rounded-md py-2 font-semibold text-white"
+            onClick={() => handleButtonClick(tag)}
+            style={{ backgroundColor: tagColors[tag] }}
+          >
+            {tag}
+          </button>
+        ))}
       </div>
     </div>
+  </div>
+  
   );
 };
 
