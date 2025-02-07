@@ -22,10 +22,6 @@ import CardShortcuts from "./components/CardShortcuts";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
-import {
-  useSumAmountsQuery,
-  useSumExpiredAmountsQuery,
-} from "@/redux/services/documentsApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";

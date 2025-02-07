@@ -267,6 +267,20 @@ const SelectCustomer = () => {
     }
   };
 
+  
+  function formatPriceWithCurrency(price: number): string {
+    const formattedNumber = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+      .format(price)
+      .replace("ARS", "") // Elimina "ARS" del formato.
+      .trim(); // Elimina espacios extra.
+    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+  }
+
   const tableData = filteredItems?.map((customer) => {
     const filteredDocuments = documentsData
       ?.filter((data) => customer.documents_balance.includes(data.id))
@@ -322,8 +336,8 @@ const SelectCustomer = () => {
         </div>
       ),
       "payment-condition": paymentCondition?.name || "NOT FOUND",
-      "status-account": debt.amount,
-      "expired-debt": debtExpired.amount,
+      "status-account": formatPriceWithCurrency(customer.totalAmount),
+      "expired-debt": formatPriceWithCurrency(customer.totalAmountExpired),
       "articles-on-cart": customer.shopping_cart.length, // Conectar
       gps: (
         <FiMapPin

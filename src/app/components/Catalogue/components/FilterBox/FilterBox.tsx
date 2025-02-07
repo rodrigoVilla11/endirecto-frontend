@@ -58,7 +58,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
   return (
     <>
     {isVisible && (
-      <div className={`${isMobile ? "w-112" : "w-64"} bg-white rounded-lg shadow-lg h-[600px]`}>
+      <div className={`${isMobile ? "w-112" : "w-64"} bg-white rounded-lg shadow-lg h-[655px]`}>
         {/* Header with close button */}
         <div className="p-2 flex justify-end items-center border-b">
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
