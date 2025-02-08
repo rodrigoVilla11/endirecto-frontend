@@ -5,20 +5,25 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import Modal from "@/app/components/components/Modal";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import { AiFillFileExcel } from "react-icons/ai";
+import { IoSync } from "react-icons/io5";
 import { useGetArticlesTechnicalDetailsQuery } from "@/redux/services/articlesTechnicalDetailsApi";
+import {
+  useGetAllArticlesQuery,
+  useSyncEquivalencesMutation,
+} from "@/redux/services/articlesApi";
 import CreateArticlesTechnicalDetailsModal from "./CreateArticleTD";
-import ExportArticlesTDModal from "./ExportExcel";
 import ImportArticlesTDModal from "./ImportExcel";
+import ExportArticlesTDModal from "./ExportExcel";
 
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<any[]>([]);
+  const [totalEquivalences, setTotalEquivalences] = useState<number>(0);
   const [isFetching, setIsFetching] = useState(false);
-
 
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isImportModalOpen, setImportModalOpen] = useState(false);
@@ -26,30 +31,41 @@ const Page = () => {
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
+  const { data: articlesData } = useGetAllArticlesQuery(null);
+  // Se espera que useGetArticlesTechnicalDetailsQuery retorne { technicalDetails, total }
   const { data, error, isLoading, refetch } = useGetArticlesTechnicalDetailsQuery({
     page,
     limit,
     query: searchQuery,
   });
+  const [syncEquivalences, { isLoading: isLoadingSync }] = useSyncEquivalencesMutation();
 
+  // Efecto para cargar la data y actualizar items y total
   useEffect(() => {
     if (!isFetching) {
       setIsFetching(true);
       refetch()
         .then((result) => {
-          const newItems = result.data || []; // Garantiza que siempre sea un array
-          setItems((prev) => [...prev, ...newItems]);
+          // result.data debería tener la forma:
+          // { technicalDetails: ArticlesTechnicalDetails[], total: number }
+          const fetchedData = result.data || { technical_details: [], total: 0 };
+          const newItems = Array.isArray(fetchedData.technical_details)
+            ? fetchedData.technical_details
+            : [];
+          setTotalEquivalences(fetchedData.total || 0);
+          // Si es la primera página, reemplazamos; si no, concatenamos
+          setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         })
         .catch((error) => {
-          console.error("Error fetching articles:", error);
+          console.error("Error fetching technical details:", error);
         })
         .finally(() => {
           setIsFetching(false);
         });
     }
-  }, [page]);
+  }, [page, searchQuery, refetch, isFetching]);
 
-  // Configurar Intersection Observer para scroll infinito
+  // Intersection Observer para infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -71,33 +87,51 @@ const Page = () => {
     };
   }, [isFetching]);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  // Handler para resetear la búsqueda
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setItems([]);
+  };
 
+  // Handlers de modales
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
+    setPage(1);
+    setItems([]);
     refetch();
   };
 
   const openImportModal = () => setImportModalOpen(true);
   const closeImportModal = () => {
     setImportModalOpen(false);
+    setPage(1);
+    setItems([]);
     refetch();
   };
 
   const openExportModal = () => setExportModalOpen(true);
   const closeExportModal = () => {
     setExportModalOpen(false);
+    setPage(1);
+    setItems([]);
     refetch();
   };
 
+  const handleSyncEquivalences = async () => {
+    try {
+      await syncEquivalences().unwrap();
+    } catch (error) {
+      console.error("Error al sincronizar equivalences:", error);
+    }
+  };
 
+  // Configuración de la tabla: mapeamos cada technical detail a un objeto para la tabla.
   const tableData = items?.map((item) => {
-
     return {
       article: item?.article_id || "NOT FOUND",
-      brand: item?.technical_detail.name,
+      technical_detail_name: item?.technical_detail?.name || "NOT FOUND",
       value: item?.value,
     };
   });
@@ -107,29 +141,28 @@ const Page = () => {
     { name: "Technical Detail", key: "technical_detail_name" },
     { name: "Value", key: "value" },
   ];
+
+  // Configuración del header: botones, filtros y resultados (usando el total devuelto por el servicio)
   const headerBody = {
     buttons: [
       { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      {
-        logo: <AiFillFileExcel />,
-        title: "Import Excel",
-        onClick: openImportModal,
-      },
-      {
-        logo: <AiFillFileExcel />,
-        title: "Export Excel",
-        onClick: openExportModal,
-      },
+      { logo: <AiFillFileExcel />, title: "Import Excel", onClick: openImportModal },
+      { logo: <AiFillFileExcel />, title: "Export Excel", onClick: openExportModal },
+      { logo: <IoSync />, title: "Sync Equivalences", onClick: handleSyncEquivalences },
     ],
     filters: [
       {
         content: (
           <Input
-            placeholder={"Search..."}
+            placeholder="Search..."
             value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.target.value)
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
+                setPage(1);
+                setItems([]);
                 refetch();
               }
             }}
@@ -137,8 +170,23 @@ const Page = () => {
         ),
       },
     ],
-    results: `${items?.length || 0} Results`,
+    results: `${totalEquivalences || 0} Results`,
   };
+
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading technical details. Please try again later.
+      </div>
+    );
+  }
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
@@ -147,7 +195,6 @@ const Page = () => {
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={observerRef} className="h-10" />
-
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateArticlesTechnicalDetailsModal closeModal={closeCreateModal} />
         </Modal>

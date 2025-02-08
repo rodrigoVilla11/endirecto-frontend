@@ -8,7 +8,10 @@ type ArticleTechnicalDetail = {
   technical_detail_id: string; // Característica técnica ID
   deleted_at: Date; // Fecha de eliminación
 };
-
+type ArticleTechnicalDetailPagResponse = {
+  technical_details: ArticleTechnicalDetail;
+  total: number;
+};
 type CreateArticleTechnicalDetailPayload = {
   id: string; // ID
   value: string; // Valor de la característica
@@ -23,17 +26,17 @@ export const articlesTechnicalDetailsApi = createApi({
   }),
   endpoints: (builder) => ({
     getArticlesTechnicalDetails: builder.query<
-      ArticleTechnicalDetail[],
+      ArticleTechnicalDetailPagResponse,
       { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) =>
         `/articles-technical-details?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: ArticleTechnicalDetail[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
-          return [];
-        }
-        return response;
+      transformResponse: (response: any): ArticleTechnicalDetailPagResponse => {
+        // Asumiendo que el backend retorna la estructura correcta
+        return {
+          technical_details: response.technicalDetails,
+          total: response.total,
+        };
       },
     }),
     getArticleTechnicalDetailById: builder.query<

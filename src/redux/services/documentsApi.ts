@@ -25,7 +25,7 @@ export const documentsApi = createApi({
   }),
   endpoints: (builder) => ({
     getDocuments: builder.query<Document[], null>({
-      query: () => `/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/documents/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Document[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron documentos en la respuesta");
@@ -35,72 +35,68 @@ export const documentsApi = createApi({
       },
     }),
     getDocumentsPag: builder.query<
-      Document[],
-      {
-        page?: number;
-        limit?: number;
-        query?: string;
-        startDate?: string;
-        endDate?: string;
-        expirationStatus?: string;
-        customer_id?: string;
-        sort?: string;
+    { documents: Document[]; total: number },
+    {
+      page?: number;
+      limit?: number;
+      query?: string;
+      startDate?: string;
+      endDate?: string;
+      expirationStatus?: string;
+      customer_id?: string;
+      sort?: string;
+    }
+  >({
+    query: ({
+      page = 1,
+      limit = 10,
+      query = "",
+      startDate,
+      endDate,
+      expirationStatus,
+      customer_id,
+      sort = "",
+    } = {}) => {
+      const url = `/documents`;
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        q: query,
+        token: process.env.NEXT_PUBLIC_TOKEN || "",
+      });
+  
+      if (customer_id) {
+        params.append("customer_id", customer_id);
       }
-    >({
-      query: ({
-        page = 1,
-        limit = 10,
-        query = "",
-        startDate,
-        endDate,
-        expirationStatus,
-        customer_id,
-        sort = "",
-      } = {}) => {
-        const url = `/documents`;
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-          q: query,
-          token: process.env.NEXT_PUBLIC_TOKEN || "",
-        });
-
-        if (customer_id) {
-          params.append("customer_id", customer_id);
-        }
-        if (sort) {
-          params.append("sort", sort);
-        }
-
-        if (startDate) {
-          params.append("startDate", startDate);
-        }
-        if (endDate) {
-          params.append("endDate", endDate);
-        }
-
-        if (expirationStatus) {
-          params.append("status", expirationStatus);
-        }
-
-        return `${url}?${params.toString()}`;
-      },
-      transformResponse: (response: Document[], meta, arg) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron documentos en la respuesta");
-          return [];
-        }
-
-        if (arg?.expirationStatus) {
-          return response.filter(
-            (doc) => doc.expiration_status === arg.expirationStatus
-          );
-        }
-
-        return response;
-      },
-    }),
-
+      if (sort) {
+        params.append("sort", sort);
+      }
+      if (startDate) {
+        params.append("startDate", startDate);
+      }
+      if (endDate) {
+        params.append("endDate", endDate);
+      }
+      if (expirationStatus) {
+        params.append("status", expirationStatus);
+      }
+  
+      return `${url}?${params.toString()}`;
+    },
+    transformResponse: (response: any, meta, arg): { documents: Document[]; total: number } => {
+      if (!response || !response.documents) {
+        console.error("No se recibieron documentos en la respuesta");
+        return { documents: [], total: 0 };
+      }
+      // Si se pasa expirationStatus como filtro y deseas filtrar localmente (opcional)
+      let docs = response.documents;
+      if (arg?.expirationStatus) {
+        docs = docs.filter((doc: Document) => doc.expiration_status === arg.expirationStatus);
+      }
+      return { documents: docs, total: response.total || 0 };
+    },
+  }),
+  
     countDocuments: builder.query<number, null>({
       query: () => {
         return `/documents/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;

@@ -34,20 +34,24 @@ export const stockApi = createApi({
         `/stocks/by-article/${articleId}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getStockPag: builder.query<
-    Stock[],
-      { page?: number; limit?: number; query?: string; sort?: string}
-    >({
-      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
-        return `/stocks?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
-      transformResponse: (response: Stock[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron stocks en la respuesta");
-          return [];
-        }
-        return response;
-      },
-    }),
+    { stocks: Stock[]; total: number },
+    { page?: number; limit?: number; query?: string; sort?: string }
+  >({
+    query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+      return `/stocks?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    },
+    transformResponse: (response: any): { stocks: Stock[]; total: number } => {
+      if (!response) {
+        console.error("No se recibió respuesta del servidor");
+        return { stocks: [], total: 0 };
+      }
+      // Se asume que la respuesta tiene la forma: { stocks: Stock[], total: number }
+      return {
+        stocks: response.stocks || [],
+        total: response.total || 0,
+      };
+    },
+  }), 
 
     countStock: builder.query<number, null>({
       query: () => {

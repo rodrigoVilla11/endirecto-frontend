@@ -25,17 +25,26 @@ export const paymentConditionsApi = createApi({
         return response;
       },
     }),
-    getPaymentConditionsPag: builder.query<PaymentCondition[], { page?: number; limit?: number, query?: string; sort?: string }>({
-      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
-        return `/payment-conditions?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
-      transformResponse: (response: PaymentCondition[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron condiciones de pago en la respuesta");
-          return [];
-        }
-        return response;
-      },
+    getPaymentConditionsPag: builder.query<
+    { paymentConditions: PaymentCondition[]; total: number },
+    { page?: number; limit?: number; query?: string; sort?: string }
+  >({
+    query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+      return `/payment-conditions?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    },
+    transformResponse: (response: any): { paymentConditions: PaymentCondition[]; total: number } => {
+      if (!response) {
+        console.error("No se recibió respuesta del servidor");
+        return { paymentConditions: [], total: 0 };
+      }
+      if (!response.paymentConditions || response.paymentConditions.length === 0) {
+        console.error("No se recibieron condiciones de pago en la respuesta");
+      }
+      return {
+        paymentConditions: response.paymentConditions || [],
+        total: response.total || 0,
+      };
+    },  
     }),
     getPaymentConditionById: builder.query<PaymentCondition, { id: string }>({
       query: ({ id }) => `/payment-conditions/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,

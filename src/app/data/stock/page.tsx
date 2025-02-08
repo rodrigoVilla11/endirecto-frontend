@@ -1,15 +1,13 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaTimes } from "react-icons/fa";
-import {
-  useCountStockQuery,
-  useGetStockPagQuery,
-} from "@/redux/services/stockApi";
-import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import Modal from "@/app/components/components/Modal";
+import { FaTimes } from "react-icons/fa";
+import { useGetStockPagQuery } from "@/redux/services/stockApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import debounce from "@/app/context/debounce";
 
 const ITEMS_PER_PAGE = 15;
@@ -18,31 +16,27 @@ const Page = () => {
   // Estados básicos
   const [page, setPage] = useState(1);
   const [stock, setStock] = useState<any[]>([]);
+  const [totalStock, setTotalStock] = useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Referencias
+  // Referencias para Observer y Loading
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Queries de Redux
   const { data: branchData } = useGetBranchesQuery(null);
-  const { data: countStockData } = useCountStockQuery(null);
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-  } = useGetStockPagQuery({
+  // Se espera que useGetStockPagQuery retorne { stocks, total }
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetStockPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
     sort: sortQuery,
   });
 
-  // Búsqueda con debounce
+  // Debounced search para optimizar la búsqueda
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -50,21 +44,21 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para manejar la carga inicial y las búsquedas
+  // Efecto para cargar la data (infinite scroll y búsquedas)
   useEffect(() => {
     const loadStock = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // Se espera que el resultado tenga la forma: { stocks, total }
           const result = await refetch().unwrap();
-          const newStock = result || [];
-
+          const newStock = Array.isArray(result.stocks) ? result.stocks : [];
+          setTotalStock(result.total || 0);
           if (page === 1) {
             setStock(newStock);
           } else {
             setStock((prev) => [...prev, ...newStock]);
           }
-
           setHasMore(newStock.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading stock:", error);
@@ -75,9 +69,9 @@ const Page = () => {
     };
 
     loadStock();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, refetch, isLoading]);
 
-  // Intersection Observer para scroll infinito
+  // Intersection Observer para el infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -109,20 +103,16 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setStock([]);
@@ -154,6 +144,7 @@ const Page = () => {
     { name: "Date Next Entry", key: "quantity_next_date" },
   ];
 
+  // Configuración del header
   const headerBody = {
     buttons: [],
     filters: [
@@ -181,9 +172,7 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${stock.length} Results`
-      : `${countStockData || 0} Results`,
+    results: `${totalStock} Results`,
   };
 
   if (isQueryLoading && stock.length === 0) {
@@ -193,7 +182,6 @@ const Page = () => {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 text-red-500">
@@ -207,7 +195,6 @@ const Page = () => {
       <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">STOCK</h3>
         <Header headerBody={headerBody} />
-
         {isLoading && stock.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

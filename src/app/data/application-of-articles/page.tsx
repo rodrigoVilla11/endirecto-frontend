@@ -6,8 +6,8 @@ import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa6";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import {
-  useCountArticleVehicleQuery,
   useGetArticlesVehiclesPagQuery,
+  useCountArticleVehicleQuery,
 } from "@/redux/services/articlesVehicles";
 import {
   useGetAllArticlesQuery,
@@ -25,11 +25,9 @@ import { IoSync } from "react-icons/io5";
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Basic states
+  // Estados básicos
   const [page, setPage] = useState(1);
-  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>(
-    []
-  );
+  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,13 +36,13 @@ const Page = () => {
   const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
 
-  // References
+  // Referencias para infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Redux queries
+  // Queries de Redux
   const { data: articlesData } = useGetAllArticlesQuery(null);
-  const { data: countArticleVehicleData } = useCountArticleVehicleQuery(null);
+  // Se espera que useGetArticlesVehiclesPagQuery retorne un objeto con { vehicles, totalVehicles }
   const {
     data,
     error,
@@ -63,35 +61,37 @@ const Page = () => {
 
   const handleSyncEquivalences = async () => {
     try {
-      const response = await syncArticleVehicles().unwrap();
+      await syncArticleVehicles().unwrap();
     } catch (error) {
       console.error("Error al sincronizar equivalencias:", error);
     }
   };
 
-  // Debounced search
-  const debouncedSearch = debounce((query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-    setApplicationsOfArticles([]);
-    setHasMore(true);
-  }, 100);
+  // Debounced search para optimizar cambios en la búsqueda
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setSearchQuery(query);
+      setPage(1);
+      setApplicationsOfArticles([]);
+      setHasMore(true);
+    }, 100),
+    []
+  );
 
-  // Effect for handling initial load and searches
+  // Efecto para cargar los artículos (infinite scroll y búsquedas)
   useEffect(() => {
     const loadApplications = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // Se espera que el resultado tenga la forma { vehicles, totalVehicles }
           const result = await refetch().unwrap();
-          const newApplications = result || [];
-
+          const newApplications = result.vehicles || [];
           if (page === 1) {
             setApplicationsOfArticles(newApplications);
           } else {
             setApplicationsOfArticles((prev) => [...prev, ...newApplications]);
           }
-
           setHasMore(newApplications.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading applications:", error);
@@ -102,9 +102,9 @@ const Page = () => {
     };
 
     loadApplications();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, refetch, isLoading]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para el infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -128,7 +128,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Reset search
+  // Reset de búsqueda
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
@@ -136,6 +136,7 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Handlers de modales
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
@@ -154,20 +155,16 @@ const Page = () => {
     refetch();
   };
 
+  // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setApplicationsOfArticles([]);
@@ -176,10 +173,9 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Table configuration
+  // Configuración de la tabla
   const tableData = applicationsOfArticles?.map((item) => {
     const article = articlesData?.find((data) => data.id === item.article_id);
-
     return {
       key: `${item.article_id}-${item.brand}-${item.model}-${item.year}`,
       image: (
@@ -215,24 +211,13 @@ const Page = () => {
     { name: "Year", key: "year" },
   ];
 
+  // Configuración del header (botones, filtros y resultados)
   const headerBody = {
     buttons: [
       { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      {
-        logo: <AiFillFileExcel />,
-        title: "Import Excel",
-        onClick: openImportModal,
-      },
-      {
-        logo: <AiFillFileExcel />,
-        title: "Export Excel",
-        onClick: openExportModal,
-      },
-      {
-        logo: <IoSync />,
-        title: "Sync Application of Articles",
-        onClick: handleSyncEquivalences,
-      },
+      { logo: <AiFillFileExcel />, title: "Import Excel", onClick: openImportModal },
+      { logo: <AiFillFileExcel />, title: "Export Excel", onClick: openExportModal },
+      { logo: <IoSync />, title: "Sync Application of Articles", onClick: handleSyncEquivalences },
     ],
     filters: [
       {
@@ -259,10 +244,9 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${applicationsOfArticles.length} Results`
-      : `${countArticleVehicleData || 0} Results`,
+    results: `${data?.total || 0} Results`,
   };
+  console.log(data)
 
   if (isQueryLoading && applicationsOfArticles.length === 0) {
     return (
@@ -310,8 +294,11 @@ const Page = () => {
             )}
           </>
         )}
+
+        {/* Elemento observador para infinite scroll */}
         <div ref={observerRef} className="h-10" />
 
+        {/* Modales */}
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateArticleVehicleComponent closeModal={closeCreateModal} />
         </Modal>

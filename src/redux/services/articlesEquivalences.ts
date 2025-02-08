@@ -1,5 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+type ArticlesEquivalencesPagResponse = {
+  equivalences: ArticleEquivalence,
+  total: number
+}
 type ArticleEquivalence = {
   id: string;
   code: string;
@@ -21,19 +25,17 @@ export const articlesEquivalencesApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
-    getArticlesEquivalences: builder.query<ArticleEquivalence[],  { page?: number; limit?: number; query?: string; sort?: string }
+    getArticlesEquivalences: builder.query<ArticlesEquivalencesPagResponse,  { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
         return `/articles-equivalences?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: ArticleEquivalence[]) => {
-        if (!response || response.length === 0) {
-          console.error(
-            "No se recibieron aplicaciones de articulos en la respuesta"
-          );
-          return [];
-        }
-        return response;
+      transformResponse: (response: any): ArticlesEquivalencesPagResponse => {
+        // Asumiendo que el backend retorna la estructura correcta
+        return {
+          equivalences: response.equivalences,
+          total: response.total,
+        };
       },
     }),
     getArticleEquivalenceById: builder.query<

@@ -1,5 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+interface ArticlesVehiclesPagResponse {
+  vehicles: ArticleVehicle[];
+  total: number;
+}
+
 type ArticleVehicle = {
   id: string; // ID
   brand: string; // Marca vehículo
@@ -39,20 +44,18 @@ export const articlesVehiclesApi = createApi({
       },
     }),
     getArticlesVehiclesPag: builder.query<
-      ArticleVehicle[],
+    ArticlesVehiclesPagResponse,
       { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
         return `/articles-vehicles?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: ArticleVehicle[]) => {
-        if (!response || response.length === 0) {
-          console.error(
-            "No se recibieron aplicaciones de articulos en la respuesta"
-          );
-          return [];
-        }
-        return response;
+      transformResponse: (response: any): ArticlesVehiclesPagResponse => {
+        // Asumiendo que el backend retorna la estructura correcta
+        return {
+          vehicles: response.vehicles,
+          total: response.total,
+        };
       },
     }),
     getArticleVehicleById: builder.query<ArticleVehicle, { id: string }>({

@@ -16,12 +16,10 @@ import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import ButtonOnOff from "./ButtonOnOff";
 import {
-  useCountCustomersQuery,
   useGetCustomersPagQuery,
 } from "@/redux/services/customersApi";
 import PrivateRoute from "../context/PrivateRoutes";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetDocumentsQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useClient } from "../context/ClientContext";
 import { useRouter } from "next/navigation";
@@ -31,7 +29,6 @@ import UpdateGPS from "./UpdateGPS";
 import debounce from "../context/debounce";
 import { useAuth } from "../context/AuthContext";
 import { useMobile } from "../context/ResponsiveContext";
-import { Phone } from "lucide-react";
 import CustomerListMobile from "./MobileSeller";
 import MapComponent from "./Map";
 
@@ -52,7 +49,7 @@ const SelectCustomer = () => {
   const { role, userData } = useAuth();
   const { isMobile } = useMobile();
 
-  // Estados básicos con tipos apropiados
+  // Estados
   const [page, setPage] = useState(1);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { setSelectedClientId } = useClient();
@@ -67,6 +64,7 @@ const SelectCustomer = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
+  
   const [searchParams, setSearchParams] = useState({
     hasDebt: "",
     hasDebtExpired: "",
@@ -75,14 +73,10 @@ const SelectCustomer = () => {
   });
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // References
+  // Referencias
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Redux queries
-  const { data: countCustomersData } = useCountCustomersQuery(
-    role === "VENDEDOR" ? { seller_id: userData?.seller_id } : {}
-  );
+  // Query: se espera que retorne { customers: [...], totalCustomers: number }
   const {
     data,
     error,
@@ -100,16 +94,16 @@ const SelectCustomer = () => {
       sort: sortQuery,
     },
     {
-      refetchOnMountOrArgChange: false, // Desactivar refetch automático
+      refetchOnMountOrArgChange: false,
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
   );
+
   const { data: paymentsConditionsData } = useGetPaymentConditionsQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const { data: documentsData } = useGetDocumentsQuery(null);
 
-  // Debounced search
+  // Búsqueda con debounce
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       setSearchQuery(query);
@@ -120,24 +114,20 @@ const SelectCustomer = () => {
     []
   );
 
-  // Effect para manejar la carga de artículos
+  // Efecto para cargar clientes (infinite scroll)
   useEffect(() => {
     const loadItems = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // refetch devuelve { customers, totalCustomers }
           const result = await refetch().unwrap();
-          const newItems = result || [];
-
+          const newItems = result.customers || [];
           if (page === 1) {
-            // Filtrar duplicados por si el backend envía repetidos en la primera página
             setItems(removeDuplicates(newItems));
           } else {
-            // Concatenar y eliminar duplicados
             setItems((prev) => removeDuplicates([...prev, ...newItems]));
           }
-
-          // Actualizar `hasMore` en base a cuántos items se recibieron
           setHasMore(newItems.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading items:", error);
@@ -159,7 +149,7 @@ const SelectCustomer = () => {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.5, rootMargin: "200px 0px" } // Ajusta rootMargin según necesidad
+      { threshold: 0.5, rootMargin: "200px 0px" }
     );
 
     const currentObserver = observerRef.current;
@@ -174,7 +164,7 @@ const SelectCustomer = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Manejadores optimizados
+  // Handlers para modales y redirección
   const openUpdateModal = (id: string) => {
     setCurrentCustomerId(id);
     setUpdateModalOpen(true);
@@ -182,8 +172,6 @@ const SelectCustomer = () => {
   const closeUpdateModal = () => {
     setUpdateModalOpen(false);
     setCurrentCustomerId(null);
-    // Evitar llamar a refetch para no reiniciar la lista
-    // Si necesitas actualizar los datos, considera una lógica diferente
   };
 
   const openUpdateGPSModal = (id: string) => {
@@ -193,7 +181,6 @@ const SelectCustomer = () => {
   const closeUpdateGPSModal = () => {
     setUpdateGPSModalOpen(false);
     setCurrentCustomerId(null);
-    // Evitar llamar a refetch para no reiniciar la lista
   };
   const openViewGPSModal = (id: string) => {
     setCurrentCustomerId(id);
@@ -202,7 +189,6 @@ const SelectCustomer = () => {
   const closeViewGPSModal = () => {
     setViewGPSModalOpen(false);
     setCurrentCustomerId(null);
-    // Evitar llamar a refetch para no reiniciar la lista
   };
 
   const handleResetSearch = useCallback(() => {
@@ -216,16 +202,11 @@ const SelectCustomer = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
@@ -234,7 +215,6 @@ const SelectCustomer = () => {
     [sortQuery]
   );
 
-  // Función para filtrar duplicados
   const filteredItems = useMemo(() => removeDuplicates(items), [items]);
 
   if (isQueryLoading && items.length === 0) {
@@ -257,7 +237,6 @@ const SelectCustomer = () => {
     setActiveMenu(activeMenu === customerId ? null : customerId);
   };
 
-
   const handleSelectCustomer = (customerId: string) => {
     setSelectedClientId(customerId);
     if (role === "VENDEDOR") {
@@ -267,7 +246,6 @@ const SelectCustomer = () => {
     }
   };
 
-  
   function formatPriceWithCurrency(price: number): string {
     const formattedNumber = new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -276,34 +254,13 @@ const SelectCustomer = () => {
       maximumFractionDigits: 2,
     })
       .format(price)
-      .replace("ARS", "") // Elimina "ARS" del formato.
-      .trim(); // Elimina espacios extra.
-    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+      .replace("ARS", "")
+      .trim();
+    return `${formattedNumber}`;
   }
 
   const tableData = filteredItems?.map((customer) => {
-    const filteredDocuments = documentsData
-      ?.filter((data) => customer.documents_balance.includes(data.id))
-      .map((data) => ({
-        amount: parseFloat(data.amount) || 0, // Asegúrate de convertir a número
-        expiration_status: data.expiration_status || "unknown",
-      }));
 
-    const debt = {
-      amount: 0,
-    };
-    const debtExpired = {
-      amount: 0,
-    };
-
-    // Sumar montos según expiration_status
-    filteredDocuments?.forEach((doc) => {
-      if (doc.expiration_status === "VENCIDO") {
-        debtExpired.amount += doc.amount;
-      } else {
-        debt.amount += doc.amount; // Suma en debt
-      }
-    });
     const paymentCondition = paymentsConditionsData?.find(
       (data) => data.id === customer.payment_condition_id
     );
@@ -312,15 +269,12 @@ const SelectCustomer = () => {
       key: customer.id,
       icon: (
         <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
-          <p>{customer.name.charAt(0).toUpperCase()}</p>{" "}
+          <p>{customer.name.charAt(0).toUpperCase()}</p>
         </div>
       ),
       "customer-id": customer.id,
       customer: (
-        <span
-          onClick={() => handleSelectCustomer(customer.id)}
-          className="hover:cursor-pointer"
-        >
+        <span onClick={() => handleSelectCustomer(customer.id)} className="hover:cursor-pointer">
           {customer.name}
         </span>
       ),
@@ -338,13 +292,9 @@ const SelectCustomer = () => {
       "payment-condition": paymentCondition?.name || "NOT FOUND",
       "status-account": formatPriceWithCurrency(customer.totalAmount),
       "expired-debt": formatPriceWithCurrency(customer.totalAmountExpired),
-      "articles-on-cart": customer.shopping_cart.length, // Conectar
+      "articles-on-cart": customer.shopping_cart.length,
       gps: (
-        <FiMapPin
-          onClick={() => {
-            openViewGPSModal(customer.id);
-          }}
-        />
+        <FiMapPin onClick={() => openViewGPSModal(customer.id)} />
       ),
       menu: (
         <div className="relative">
@@ -488,7 +438,7 @@ const SelectCustomer = () => {
         ),
       },
     ],
-    results: `${countCustomersData || 0} Results`,
+    results: `${data?.totalCustomers || 0} Results`,
   };
 
   return (
@@ -527,15 +477,12 @@ const SelectCustomer = () => {
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900
-               placeholder:text-zinc-400 focus:outline-none focus:ring-2 
-               focus:ring-red-500/50"
+                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
               />
               {searchQuery && (
                 <button
                   onClick={handleResetSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2
-                 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
                 >
                   ✕
                 </button>
@@ -544,7 +491,7 @@ const SelectCustomer = () => {
 
             {searchQuery && (
               <div className="mt-2 text-right text-sm text-zinc-400">
-                {countCustomersData || 0} Results
+                {data?.totalCustomers || 0} Results
               </div>
             )}
           </div>

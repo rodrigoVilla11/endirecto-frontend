@@ -66,16 +66,16 @@ export const notificationsApi = createApi({
       }),
     }),
     getNotificationsPag: builder.query<
-      Notifications[],
+    { notifications: Notifications[]; total: number },
       {
         page?: number;
         limit?: number;
         query?: string;
         type?: NotificationType;
-        sort?: string 
+        sort?: string;
       }
     >({
-      query: ({ page = 1, limit = 10, query = "", type , sort = ""}) => {
+      query: ({ page = 1, limit = 10, query = "", type, sort = "" }) => {
         let url = `/notifications?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
 
         if (type) {
@@ -83,15 +83,23 @@ export const notificationsApi = createApi({
         }
         return url;
       },
-      transformResponse: (response: Notifications[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron notificaciones en la respuesta");
-          return [];
+      transformResponse: (
+        response: any
+      ): { notifications: Notifications[]; total: number } => {
+        if (
+          !response ||
+          !response.notifications ||
+          response.notifications.length === 0
+        ) {
+          console.error("No se recibieron notifications en la respuesta");
+          return { notifications: [], total: 0 };
         }
-        return response;
+        return {
+          notifications: response.notifications,
+          total: response.total,
+        };
       },
     }),
-
     countNotifications: builder.query<number, null>({
       query: () => {
         return `/notifications/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;

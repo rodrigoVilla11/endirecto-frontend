@@ -27,21 +27,24 @@ export const sellersApi = createApi({
       query: ({ id }) => `/sellers/${id}`,
     }),
     getSellersPag: builder.query<
-      Seller[],
-      { page?: number; limit?: number; query?: string; sort?: string }
-    >({
-      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
-        return `/sellers/all?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
-      transformResponse: (response: Seller[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron vendedores en la respuesta");
-          return [];
-        }
-        return response;
-      },
-    }),
-
+    { sellers: Seller[]; total: number },
+    { page?: number; limit?: number; query?: string; sort?: string }
+  >({
+    query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
+      return `/sellers/all?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
+    },
+    transformResponse: (response: any): { sellers: Seller[]; total: number } => {
+      if (!response || !response.sellers) {
+        console.error("No se recibieron vendedores en la respuesta");
+        return { sellers: [], total: 0 };
+      }
+      return {
+        sellers: response.sellers,
+        total: response.total,
+      };
+    },
+  }),
+  
     countSellers: builder.query<number, null>({
       query: () => {
         return `/sellers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
