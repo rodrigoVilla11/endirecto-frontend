@@ -11,21 +11,29 @@ import {
 import {
   useGetAllArticlesQuery,
   useGetArticlesQuery,
+  useSyncEquivalencesMutation,
 } from "@/redux/services/articlesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { useGetArticlesEquivalencesQuery } from "@/redux/services/articlesEquivalences";
+import Modal from "@/app/components/components/Modal";
+import { FaPlus } from "react-icons/fa";
+import { AiFillFileExcel } from "react-icons/ai";
+import { IoSync } from "react-icons/io5";
+import { useGetTechnicalDetailsQuery } from "@/redux/services/technicalDetails";
+import CreateTechnicalDetailsModal from "./CreateTechincalDetail";
 
 const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: countArticleVehicleData } = useCountArticleVehicleQuery(null);
-  const [equivalences, setEquivalences] = useState<any[]>([]);
+  const [technicalDetails, setTechnicalDetails] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: articlesData } = useGetAllArticlesQuery(null);
-  const { data, error, isLoading, refetch } = useGetArticlesVehiclesPagQuery({
+  const { data, error, isLoading, refetch } = useGetTechnicalDetailsQuery({
     page,
     limit,
     query: searchQuery,
@@ -37,7 +45,7 @@ const Page = () => {
       refetch()
         .then((result) => {
           const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setEquivalences((prev) => [...prev, ...newBrands]);
+          setTechnicalDetails((prev) => [...prev, ...newBrands]);
         })
         .catch((error) => {
           console.error("Error fetching articles:", error);
@@ -73,32 +81,29 @@ const Page = () => {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const tableData = equivalences?.map((item) => {
-    const article = articlesData?.find((data) => data.id == item.article_id);
+  const openCreateModal = () => setCreateModalOpen(true);
+  const closeCreateModal = () => {
+    setCreateModalOpen(false);
+    refetch();
+  };
 
+
+
+  const tableData = technicalDetails?.map((item) => {
     return {
-      image: article?.images || "NOT FOUND",
-      article: article?.name || "NOT FOUND",
-      brand: item?.brand,
-      model: item?.model,
-      engine: item?.engine,
-      year: item?.year,
+      id: item.id,
+      name: item.name
     };
   });
 
   const tableHeader = [
-    {
-      component: <FaImage className="text-center text-xl" />,
-      key: "image",
-    },
-    { name: "Article", key: "article" },
-    { name: "Brand", key: "brand" },
-    { name: "Model", key: "model" },
-    { name: "Engine", key: "engine" },
-    { name: "Year", key: "year" },
+    { name: "Id", key: "id" },
+    { name: "Name", key: "name" },
   ];
   const headerBody = {
-    buttons: [],
+    buttons: [
+      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
+    ],
     filters: [
       {
         content: (
@@ -115,18 +120,20 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countArticleVehicleData || 0} Results`,
+    results:  `${technicalDetails?.length || 0} Results`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">ARTICLES EQUIVALENCES</h3>
+        <h3 className="font-bold p-4">Technical Details</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={observerRef} className="h-10" />
+
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreateTechnicalDetailsModal closeModal={closeCreateModal} />
+        </Modal>
       </div>
     </PrivateRoute>
   );

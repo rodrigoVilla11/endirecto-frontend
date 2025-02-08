@@ -13,6 +13,15 @@ type ArticleVehicle = {
   deleted_at: Date; // Fecha de eliminación
 };
 
+type CreateArticleVehiclePayload = {
+  id: string;
+  article_id: string;
+  brand: string;
+  engine: string;
+  model: string;
+  year: string;
+};
+
 export const articlesVehiclesApi = createApi({
   reducerPath: "articlesVehiclesApi",
   baseQuery: fetchBaseQuery({
@@ -54,8 +63,45 @@ export const articlesVehiclesApi = createApi({
         return `/articles-vehicles/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
     }),
+    createArticleVehicle: builder.mutation<
+      ArticleVehicle,
+      CreateArticleVehiclePayload
+    >({
+      query: (newArticleVehicle) => ({
+        url: `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: newArticleVehicle,
+      }),
+    }),
+    importArticleVehiclesExcel: builder.mutation<
+      { totalProcessed: number; successful: number; errors: any[] },
+      FormData
+    >({
+      query: (formData) => ({
+        url: `/articles-vehicles/import?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    exportArticleVehiclesExcel: builder.query<Blob, void>({
+      query: () => ({
+        url: `/articles-vehicles/export?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: 'GET',
+      }),
+      transformResponse: async (response: Response) => {
+        return await response.blob();
+      },
+    }),
   }),
 });
 
-export const { useGetArticlesVehiclesQuery, useGetArticleVehicleByIdQuery, useCountArticleVehicleQuery, useGetArticlesVehiclesPagQuery } =
-  articlesVehiclesApi;
+export const {
+  useGetArticlesVehiclesQuery,
+  useGetArticleVehicleByIdQuery,
+  useCountArticleVehicleQuery,
+  useGetArticlesVehiclesPagQuery,
+  useCreateArticleVehicleMutation,
+  useImportArticleVehiclesExcelMutation,
+  useExportArticleVehiclesExcelQuery,
+  useLazyExportArticleVehiclesExcelQuery
+} = articlesVehiclesApi;

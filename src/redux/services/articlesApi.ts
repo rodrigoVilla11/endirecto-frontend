@@ -112,7 +112,6 @@ export const articlesApi = createApi({
         priceListId,
         articleId,
       } = {}) => {
-
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -169,6 +168,18 @@ export const articlesApi = createApi({
         };
       },
     }),
+    syncEquivalences: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: `/articles/sync-equivalences?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+      }),
+    }),
+    syncArticleVehicles: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: `/articles/sync-article-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+      }),
+    }),
   }),
 });
 
@@ -176,4 +187,6 @@ export const {
   useGetArticlesQuery,
   useGetAllArticlesQuery,
   useUpdateArticleMutation,
+  useSyncEquivalencesMutation,
+  useSyncArticleVehiclesMutation
 } = articlesApi;

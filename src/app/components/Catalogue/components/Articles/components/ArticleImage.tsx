@@ -52,7 +52,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
           {/* Botón anterior */}
           <button
             onClick={handlePrev}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full p-2 shadow-md hover:scale-110 transition z-40"
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full p-2 shadow-md hover:scale-110 transition z-20"
           >
             ❮
           </button>
@@ -60,7 +60,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
           {/* Botón siguiente */}
           <button
             onClick={handleNext}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full p-2 shadow-md hover:scale-110 transition z-40"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white text-black rounded-full p-2 shadow-md hover:scale-110 transition z-20"
           >
             ❯
           </button>

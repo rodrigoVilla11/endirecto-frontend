@@ -4,14 +4,23 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage } from "react-icons/fa6";
-import { FaTimes } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import {
   useCountArticleVehicleQuery,
   useGetArticlesVehiclesPagQuery,
 } from "@/redux/services/articlesVehicles";
-import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
+import {
+  useGetAllArticlesQuery,
+  useSyncArticleVehiclesMutation,
+} from "@/redux/services/articlesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
+import { AiFillFileExcel } from "react-icons/ai";
+import Modal from "@/app/components/components/Modal";
+import CreateArticleVehicleComponent from "./CreateAoA";
+import ImportExcelModal from "./ImportExcel";
+import ExportExcelButton from "./ExportExcelButton";
+import { IoSync } from "react-icons/io5";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -25,6 +34,9 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
 
   // References
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -44,6 +56,18 @@ const Page = () => {
     query: searchQuery,
     sort: sortQuery,
   });
+  const [
+    syncArticleVehicles,
+    { isLoading: isLoadingSync, isSuccess, isError },
+  ] = useSyncArticleVehiclesMutation();
+
+  const handleSyncEquivalences = async () => {
+    try {
+      const response = await syncArticleVehicles().unwrap();
+    } catch (error) {
+      console.error("Error al sincronizar equivalencias:", error);
+    }
+  };
 
   // Debounced search
   const debouncedSearch = debounce((query: string) => {
@@ -112,6 +136,24 @@ const Page = () => {
     setHasMore(true);
   };
 
+  const openCreateModal = () => setCreateModalOpen(true);
+  const closeCreateModal = () => {
+    setCreateModalOpen(false);
+    refetch();
+  };
+
+  const openImportModal = () => setImportModalOpen(true);
+  const closeImportModal = () => {
+    setImportModalOpen(false);
+    refetch();
+  };
+
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+    refetch();
+  };
+
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
@@ -174,7 +216,24 @@ const Page = () => {
   ];
 
   const headerBody = {
-    buttons: [],
+    buttons: [
+      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
+      {
+        logo: <AiFillFileExcel />,
+        title: "Import Excel",
+        onClick: openImportModal,
+      },
+      {
+        logo: <AiFillFileExcel />,
+        title: "Export Excel",
+        onClick: openExportModal,
+      },
+      {
+        logo: <IoSync />,
+        title: "Sync Application of Articles",
+        onClick: handleSyncEquivalences,
+      },
+    ],
     filters: [
       {
         content: (
@@ -252,6 +311,16 @@ const Page = () => {
           </>
         )}
         <div ref={observerRef} className="h-10" />
+
+        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+          <CreateArticleVehicleComponent closeModal={closeCreateModal} />
+        </Modal>
+        <Modal isOpen={isImportModalOpen} onClose={closeImportModal}>
+          <ImportExcelModal closeModal={closeImportModal} />
+        </Modal>
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportExcelButton closeModal={closeExportModal} />
+        </Modal>
       </div>
     </PrivateRoute>
   );

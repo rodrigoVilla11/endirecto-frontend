@@ -1,10 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
-import { IoIosArrowDown } from "react-icons/io";
-import { useSideMenu } from "@/app/context/SideMenuContext";
-import { GoDotFill } from "react-icons/go";
 import { AiFillCaretDown } from "react-icons/ai";
+import { useSideMenu } from "@/app/context/SideMenuContext";
 
 interface Icon {
   icon: React.ReactNode;
@@ -30,6 +28,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const { setIsOpen } = useSideMenu();
   const router = useRouter();
 
+  // Alterna la visibilidad de las subcategorías y abre el sideMenu.
   const toggleSubCategories = () => {
     setIsOpen(true);
     if (openSubCategory === icon.name) {
@@ -39,15 +38,16 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
     }
   };
 
+  // Maneja la redirección y cierra el dropdown.
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
-      // setIsOpen(false);
       setOpenSubCategory(null);
       router.push(path);
     }
   };
 
+  // Ejecuta onClick personalizado o alterna las subcategorías/redirige.
   const handleClick = (event: React.MouseEvent) => {
     if (icon.onClick) {
       event.stopPropagation();
@@ -59,56 +59,44 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
     }
   };
 
+  // Indica si las subcategorías están abiertas para este ítem.
   const showSubCategories = openSubCategory === icon.name;
 
   return (
-    <div
-      className="relative flex items-center text-sm font-extralight text-white group"
-      onClick={handleClick}
-    >
-      {!isOpen ? (
-        <div className="flex items-center text-center flex-col cursor-pointer">
-          <div className="relative z-10">{icon.icon}</div>
-          <div className="relative z-10 text-xs">{icon.name}</div>
-          {icon.subCategories && (
-            <AiFillCaretDown 
-              className="text-sm cursor-pointer"
-              onClick={() => setIsOpen(true)}
-            />
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="text-left hover:cursor-pointer">{icon.icon}</div>
-            <div className="text-sm hover:cursor-pointer">{icon.name}</div>
-            {icon.subCategories && (
-              <AiFillCaretDown className="text-sm cursor-pointer" />
-            )}
-          </div>
-          {isOpen && icon.subCategories && (
-            <div
-              className={`bg-header-color rounded-md px-2 w-48 text-start transition-all duration-300 ${
-                showSubCategories
-                  ? "max-h-60 opacity-100"
-                  : "max-h-0 opacity-0 overflow-hidden"
-              }`}
-            >
-              <ul>
-                {icon.subCategories.map((subcategory, index) => (
-                  <li
-                    key={index}
-                    className="text-sm p-1 hover:cursor-pointer text-center"
-                    onClick={(event) => handleRedirect(subcategory.path, event)}
-                  >
-                    <div className="flex gap-1 text-center text-xs">
-                     {subcategory.name}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <div className="flex flex-col gap-2 text-white">
+      <div
+        className="flex items-center gap-2 cursor-pointer"
+        onClick={handleClick}
+      >
+        <div className="text-left hover:cursor-pointer">{icon.icon}</div>
+        {isOpen && (
+          <div className="text-xs hover:cursor-pointer">{icon.name}</div>
+        )}
+        {/* Mostrar el caret solo si existen subcategorías y el sideMenu está abierto.
+            Se rota el caret si las subcategorías están abiertas */}
+        {icon.subCategories && isOpen && (
+          <AiFillCaretDown
+            className={`text-xs cursor-pointer transition-transform duration-300 ${
+              showSubCategories ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </div>
+      {icon.subCategories && showSubCategories && (
+        <div className="bg-header-color rounded-md px-2 w-48 transition-all duration-300 max-h-60 overflow-y-auto">
+          <ul>
+            {icon.subCategories.map((subcategory, index) => (
+              <li
+                key={index}
+                className="text-sm p-1 hover:cursor-pointer text-center"
+                onClick={(event) => handleRedirect(subcategory.path, event)}
+              >
+                <div className="flex gap-1 text-center text-xs">
+                  {subcategory.name}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
