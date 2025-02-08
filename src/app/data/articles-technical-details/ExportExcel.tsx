@@ -41,7 +41,7 @@ const ExportArticlesTDModal: React.FC<ExportArticlesTDModalProps> = ({ closeModa
         </div>
         <div className="space-y-4">
           <p className="text-sm">
-            Click "Export" to download the Excel file with the Article Technical Details.
+            Click Export to download the Excel file with the Article Technical Details.
           </p>
           <div className="flex justify-end gap-2 mt-4">
             <button type="button" onClick={closeModal} className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm">
