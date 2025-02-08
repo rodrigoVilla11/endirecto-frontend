@@ -43,7 +43,7 @@ const ExportExcelModal: React.FC<ExportExcelModalProps> = ({ closeModal }) => {
         </div>
         <div className="space-y-4">
           <p className="text-sm">
-            Haz clic en "Export" para descargar el archivo Excel con la información de los Article Vehicles.
+            Haz clic en Export para descargar el archivo Excel con la información de los Article Vehicles.
           </p>
           <div className="flex justify-end gap-2 mt-4">
             <button
