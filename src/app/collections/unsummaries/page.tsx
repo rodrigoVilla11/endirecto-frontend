@@ -15,7 +15,7 @@ import { useClient } from "@/app/context/ClientContext";
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Basic states
+  // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -24,7 +24,7 @@ const Page = () => {
   const [customer_id, setCustomer_id] = useState("");
   const { selectedClientId } = useClient();
 
-  // References
+  // Referencia para el IntersectionObserver
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const { data: sellersData } = useGetSellersQuery(null);
@@ -43,12 +43,8 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     status: "SUMMARIZED",
-    startDate: searchParams.startDate
-      ? searchParams.startDate.toISOString()
-      : undefined,
-    endDate: searchParams.endDate
-      ? searchParams.endDate.toISOString()
-      : undefined,
+    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
+    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
     seller_id: searchParams.seller_id,
     customer_id,
     sort: sortQuery,
@@ -57,7 +53,7 @@ const Page = () => {
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
 
-  // 🔥 Evita dobles llamadas a refetch cuando cambia `selectedClientId`
+  // Actualización de customer_id cuando cambia selectedClientId
   useEffect(() => {
     if (selectedClientId !== customer_id) {
       setCustomer_id(selectedClientId || "");
@@ -65,15 +61,15 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  // 🔥 Carga de datos con paginación y ordenamiento
+  // Carga de datos con paginación y ordenamiento
   useEffect(() => {
     const loadItems = async () => {
-      if (isLoading) return; // Evita llamadas innecesarias
+      if (isLoading) return;
       setIsLoading(true);
       try {
         const result = await refetch().unwrap();
-        const newItems = result || [];
-
+        // Extraemos las collections de la respuesta
+        const newItems = result.collections || [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         setHasMore(newItems.length === ITEMS_PER_PAGE);
       } catch (error) {
@@ -86,7 +82,7 @@ const Page = () => {
     loadItems();
   }, [page, sortQuery]);
 
-  // 🔥 Intersection Observer para scroll infinito
+  // Intersection Observer para scroll infinito
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -104,7 +100,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // 🔥 Manejo de ordenamiento
+  // Manejo de ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       setPage(1);
@@ -124,13 +120,14 @@ const Page = () => {
     [sortQuery]
   );
 
-  // 🔥 Construcción de datos para la tabla
+  // Construcción de datos para la tabla usando el nuevo modelo
   const tableData = items?.map((collection) => {
-    const branch = branchData?.find((data) => data.id === collection.branch_id);
-    const seller = sellersData?.find((data) => data.id === collection.seller_id);
+    // Se asume que el nuevo modelo usa: id, branchId, sellerId, date y amount
+    const branch = branchData?.find((data) => data.id === collection.branchId);
+    const seller = sellersData?.find((data) => data.id === collection.sellerId);
 
     return {
-      key: collection._id,
+      key: collection.id,
       branch: branch?.name || "NOT FOUND",
       seller: seller?.name || "NOT FOUND",
       date: collection.date
@@ -141,7 +138,7 @@ const Page = () => {
     };
   });
 
-  // 🔥 Cálculo del total
+  // Cálculo del total
   const sumAmountsDataFilter = tableData?.reduce((acc, doc) => acc + doc.amount, 0);
   const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
@@ -181,7 +178,8 @@ const Page = () => {
       title: "Total",
       amount: formatedSumAmountFilter || "N/A",
     },
-    results: `${data?.length || 0} Results`,
+    // Se utiliza data.total para mostrar la cantidad total de registros
+    results: `${data?.total || 0} Results`,
   };
 
   return (
@@ -194,7 +192,9 @@ const Page = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : error ? (
-          <div className="p-4 text-red-500">Error loading items. Please try again later.</div>
+          <div className="p-4 text-red-500">
+            Error loading items. Please try again later.
+          </div>
         ) : (
           <>
             <Table

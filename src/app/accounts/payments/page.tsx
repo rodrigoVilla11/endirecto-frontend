@@ -1,303 +1,222 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AiOutlineDownload } from "react-icons/ai";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { IoInformationCircleOutline } from "react-icons/io5";
-import { MdOutlineEmail } from "react-icons/md";
-import { FaRegFilePdf } from "react-icons/fa6";
-import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import {
-  useCountCollectionQuery,
-  useGetCollectionsPagQuery,
-  useUpdateCollectionMutation,
-} from "@/redux/services/collectionsApi";
-import { FaPlus } from "react-icons/fa";
-import Modal from "@/app/components/components/Modal";
-import CreatePaymentComponent from "./CreatePayment";
-import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import DatePicker from "react-datepicker";
-import { useClient } from "@/app/context/ClientContext";
+import Modal from "@/app/components/components/Modal";
+import { FaPlus, FaTimes } from "react-icons/fa";
+import { useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
+import debounce from "@/app/context/debounce";
+import CreatePaymentComponent from "./CreatePayment";
 
-enum CollectionStatus {
-  PENDING = "PENDING",
-  SENDED = "SENDED",
-  SUMMARIZED = "SUMMARIZED",
-  CHARGED = "CHARGED",
-  CANCELED = "CANCELED",
-}
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  // Estados para paginación, búsqueda, ordenamiento y modales
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [updateCollection, { isLoading: isUpdating }] =
-    useUpdateCollectionMutation();
-  const { selectedClientId } = useClient();
-  const [items, setItems] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  // "items" contendrá el listado de collections concatenado
+  const [items, setItems] = useState<any[]>([]);
+  // Total global obtenido del endpoint
+  const [totalCollections, setTotalCollections] = useState<number>(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  // Estado para abrir el modal de creación
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
+  // Referencia para Intersection Observer (infinite scroll)
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const [customer_id, setCustomer_id] = useState("");
 
-  const [searchParams, setSearchParams] = useState({
-    status: "",
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-  });
-
-  const openCreateModal = () => setCreateModalOpen(true);
-  const closeCreateModal = () => {
-    setCreateModalOpen(false);
-    refetch();
-  };
-
-  const { data: customersData } = useGetCustomersQuery(null);
-  const { data: sellersData } = useGetSellersQuery(null);
+  // Consulta del endpoint: se espera que retorne { collections, total }
   const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
     page,
-    limit,
-    startDate: searchParams.startDate
-      ? searchParams.startDate.toISOString()
-      : undefined,
-    endDate: searchParams.endDate
-      ? searchParams.endDate.toISOString()
-      : undefined,
-    status: searchParams.status,
-    customer_id: customer_id,
+    limit: ITEMS_PER_PAGE,
+    query: searchQuery,
     sort: sortQuery,
+    // Puedes agregar otros filtros aquí si el endpoint lo soporta:
+    // status, startDate, endDate, seller_id, customer_id, etc.
   });
 
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch;
-    } else {
-      setCustomer_id("");
-      refetch;
-    }
-  }, [selectedClientId, refetch]);
+  // Debounce para la búsqueda
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  }, 100);
 
-  const { data: countCollectionsData } = useCountCollectionQuery(null);
-
+  // Efecto para cargar data (paginación, búsqueda, infinite scroll)
   useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const newBrands = result.data || []; // Garantiza que siempre sea un array
-          setItems((prev) => [...prev, ...newBrands]);
-        })
-        .catch((error) => {
-          console.error("Error fetching articles:", error);
-        })
-        .finally(() => {
+    const loadCollections = async () => {
+      if (!isFetching) {
+        setIsFetching(true);
+        try {
+          // Se espera que refetch retorne un objeto con { collections, total }
+          const result = await refetch().unwrap();
+          const fetched = result || { collections: [], total: 0 };
+          const newItems = Array.isArray(fetched.collections)
+            ? fetched.collections
+            : [];
+          setTotalCollections(fetched.total || 0);
+          if (page === 1) {
+            setItems(newItems);
+          } else {
+            setItems((prev) => [...prev, ...newItems]);
+          }
+          setHasMore(newItems.length === ITEMS_PER_PAGE);
+        } catch (err) {
+          console.error("Error loading collections:", err);
+        } finally {
           setIsFetching(false);
-        });
-    }
-  }, [page, isFetching, sortQuery]);
+        }
+      }
+    };
 
-  // Configurar Intersection Observer para scroll infinito
+    loadCollections();
+  }, [page, searchQuery, sortQuery, refetch, isFetching]);
+
+  // Intersection Observer para el infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
+        if (entry.isIntersecting && hasMore && !isFetching) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 0.5 }
     );
-
     if (observerRef.current) {
       observer.observe(observerRef.current);
     }
-
     return () => {
       if (observerRef.current) {
         observer.unobserve(observerRef.current);
       }
     };
-  }, [isFetching]);
+  }, [hasMore, isFetching]);
 
+  // Reset de búsqueda
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  };
+
+  // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
-      // setHasMore(true);
+      setHasMore(true);
     },
     [sortQuery]
   );
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching collections.</p>;
-
-  const handleChangeStatus = async (
-    collectionId: string,
-    newStatus: CollectionStatus
-  ) => {
-    try {
-      await updateCollection({ _id: collectionId, status: newStatus }).unwrap();
-      refetch();
-    } catch (error) {
-      console.error("Error updating collection status:", error);
-    }
-  };
-
-  const tableData = items?.map((collection) => {
-    const customer = customersData?.find(
-      (data) => data.id === collection.customer_id
-    );
-    const seller = sellersData?.find(
-      (data) => data.id === collection.seller_id
-    );
-
-    return {
-      key: collection._id,
-      detail: <IoInformationCircleOutline className="text-center text-xl" />,
-      email: <MdOutlineEmail className="text-center text-xl" />,
-      pdf: <FaRegFilePdf className="text-center text-xl" />,
-      customer: customer ? `${customer.id} - ${customer.name}` : "NOT FOUND",
-      number: collection.number,
-      date: collection.date
-        ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
-        : "N/A",
-      amount: collection.amount,
-      status: collection.status,
-      changeStatus: (
-        <select
-          value={collection.status}
-          onChange={(e) =>
-            handleChangeStatus(
-              collection._id,
-              e.target.value as CollectionStatus
-            )
-          }
-        >
-          <option value="">Change Status</option>
-          {Object.values(CollectionStatus).map((st) => (
-            <option key={st} value={st}>
-              {st}
-            </option>
-          ))}
-        </select>
-      ),
-      seller: seller?.name || "NOT FOUND",
-    };
-  });
+  // Configuración de la tabla: mapea cada collection a un objeto para la tabla
+  const tableData = items.map((collection) => ({
+    key: collection._id,
+    id: collection._id,
+    // Ajusta los campos según la estructura de tus collections
+    customer: collection.customer_id,
+    date: collection.date, // Si es necesario, formatea la fecha
+    amount: collection.amount,
+    status: collection.status,
+    seller: collection.seller_id,
+  }));
 
   const tableHeader = [
-    {
-      component: <IoInformationCircleOutline className="text-center text-xl" />,
-      key: "info",
-    },
-    {
-      component: <MdOutlineEmail className="text-center text-xl" />,
-      key: "mail",
-    },
-    { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
+    { name: "Id", key: "id" },
     { name: "Customer", key: "customer" },
-    { name: "Number", key: "number" },
     { name: "Date", key: "date" },
     { name: "Amount", key: "amount" },
     { name: "Status", key: "status" },
-    { name: "Change Status", key: "change-status" },
     { name: "Seller", key: "seller" },
   ];
 
+  // Configuración del header: si hay búsqueda, muestra la cantidad local; de lo contrario, muestra el total global
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      { logo: <AiOutlineDownload />, title: "Download" },
+      { logo: <FaPlus />, title: "New", onClick: () => setCreateModalOpen(true) },
     ],
     filters: [
       {
         content: (
-          <DatePicker
-            selected={searchParams.startDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, startDate: date })
-            }
-            placeholderText="Date From"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2 z-20"
-          />
+          <div className="relative">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
+              }
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  setPage(1);
+                  setItems([]);
+                  refetch();
+                }
+              }}
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.endDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, endDate: date })
-            }
-            placeholderText="Date To"
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2 z-20"
-          />
-        ),
-      },
-      {
-        content: (
-          <select
-            value={searchParams.status}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, status: e.target.value })
-            }
-          >
-            <option value="">Status...</option>
-            {Object.values(CollectionStatus).map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-      ,
+      // Aquí se pueden agregar otros filtros (status, fechas, etc.) si lo deseas
     ],
-    results: `${data?.length || 0} Results`,
+    results: `${totalCollections} Results`,
   };
 
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error loading collections. Please try again later.
+      </div>
+    );
+  }
+
   return (
-    <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">PAYMENTS</h3>
+        <h3 className="font-bold p-4">COLLECTIONS</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
           data={tableData}
           onSort={handleSort}
           sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
-        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreatePaymentComponent closeModal={closeCreateModal} />
+        <div ref={observerRef} className="h-10" />
+        <Modal isOpen={isCreateModalOpen} onClose={() => { setCreateModalOpen(false); setPage(1); setItems([]); refetch(); }}>
+          <CreatePaymentComponent closeModal={() => { setCreateModalOpen(false); setPage(1); setItems([]); refetch(); }} />
         </Modal>
-        <div ref={observerRef} className="h-10" />F
       </div>
     </PrivateRoute>
   );

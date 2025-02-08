@@ -145,17 +145,13 @@ const Page = () => {
 
     return {
       key: articleBonus.id,
-      brand: brand?.name,
       item: item?.name,
-      article: article?.name,
       discount: `${articleBonus.percentage_1}%`,
     };
   });
 
   const tableHeader = [
-    { name: "Brand", key: "brand" },
     { name: "Item", key: "item" },
-    { name: "Article", key: "article" },
     { name: "Discount 1", key: "percentage" },
   ];
   const headerBody = {

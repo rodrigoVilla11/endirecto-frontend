@@ -18,6 +18,10 @@ export enum PriorityInstance {
   MEDIUM = "MEDIUM",
   LOW = "LOW",
 }
+interface CustomersPagResponse {
+  customers: Customer[];
+  totalCustomers: number;
+}
 
 type Customer = {
   id: string;
@@ -73,7 +77,7 @@ export const customerApi = createApi({
       },
     }),
     getCustomersPag: builder.query<
-      Customer[],
+      CustomersPagResponse,
       {
         page?: number;
         limit?: number;
@@ -115,12 +119,12 @@ export const customerApi = createApi({
         const fullUrl = `${url}?${params.toString()}`;
         return fullUrl;
       },
-      transformResponse: (response: Customer[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron cllientes en la respuesta");
-          return [];
-        }
-        return response;
+      transformResponse: (response: any): CustomersPagResponse => {
+        // Asumiendo que el backend retorna la estructura correcta
+        return {
+          customers: response.customers,
+          totalCustomers: response.totalCustomers,
+        };
       },
     }),
 

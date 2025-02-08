@@ -1,16 +1,13 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import {
-  useCountSellersQuery,
-  useGetSellersPagQuery,
-} from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { FaTimes } from "react-icons/fa";
+import { useGetSellersPagQuery } from "@/redux/services/sellersApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import debounce from "@/app/context/debounce";
-import { FaTimes } from "react-icons/fa";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -18,18 +15,19 @@ const Page = () => {
   // Estados básicos
   const [page, setPage] = useState(1);
   const [sellers, setSellers] = useState<any[]>([]);
+  const [totalSellers, setTotalSellers] = useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Referencias
+  // Referencias para observer y loading
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Queries de Redux (mantenidas como estaban)
+  // Queries de Redux
   const { data: branchsData } = useGetBranchesQuery(null);
-  const { data: countSellersData } = useCountSellersQuery(null);
+  // Se espera que useGetSellersPagQuery retorne { sellers, total }
   const {
     data,
     error,
@@ -42,7 +40,7 @@ const Page = () => {
     sort: sortQuery,
   });
 
-  // Búsqueda con debounce
+  // Debounced search
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -50,21 +48,23 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para manejar la carga inicial y las búsquedas
+  // Efecto para cargar los Sellers (paginación, búsqueda, infinite scroll)
   useEffect(() => {
     const loadSellers = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // Se espera que el resultado tenga la forma: { sellers: Seller[], total: number }
           const result = await refetch().unwrap();
-          const newSellers = result || [];
-
+          const newSellers = Array.isArray(result.sellers)
+            ? result.sellers
+            : [];
+          setTotalSellers(result.total || 0);
           if (page === 1) {
             setSellers(newSellers);
           } else {
             setSellers((prev) => [...prev, ...newSellers]);
           }
-
           setHasMore(newSellers.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading sellers:", error);
@@ -73,11 +73,10 @@ const Page = () => {
         }
       }
     };
-
     loadSellers();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, refetch, isLoading]);
 
-  // Intersection Observer para scroll infinito
+  // Intersection Observer para infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -88,15 +87,12 @@ const Page = () => {
       },
       { threshold: 0.5 }
     );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
     }
-
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
       }
     };
   }, [hasMore, isLoading]);
@@ -109,20 +105,17 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setSellers([]);
@@ -131,19 +124,25 @@ const Page = () => {
     [sortQuery]
   );
 
-  const tableData = sellers?.map((seller) => ({
-    key: seller.id,
-    id: seller.id,
-    name: seller.name,
-    branch_id:
-      branchsData?.find((b) => b.id === seller.branch_id)?.name || "NO BRANCH",
-  }));
+  // Configuración de la tabla
+  const tableData = sellers.map((seller) => {
+    const branch = branchsData?.find((b) => b.id === seller.branch_id);
+    return {
+      key: seller.id,
+      id: seller.id,
+      name: seller.name,
+      branch: branch?.name || "NO BRANCH",
+    };
+  });
 
   const tableHeader = [
     { name: "Id", key: "id" },
     { name: "Name", key: "name" },
     { name: "Branch", key: "branch" },
   ];
+
+  // Configuración del header: cuando hay búsqueda se usa la longitud local,
+  // de lo contrario se muestra el total global retornado por el endpoint.
   const headerBody = {
     buttons: [],
     filters: [
@@ -171,9 +170,7 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countSellersData || 0} Results`,
+    results: `${totalSellers} Results`,
   };
 
   if (isQueryLoading && sellers.length === 0) {
@@ -183,7 +180,6 @@ const Page = () => {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 text-red-500">

@@ -97,6 +97,9 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           name: "Applications of Articles",
           path: "/data/application-of-articles",
         },
+        { name: "Articles Equivalences", path: "/data/articles-equivalences" },
+        { name: "Articles Technical Details", path: "/data/articles-technical-details" },
+
         // { name: "Bank Accounts", path: "/data/bank-accounts" },
         // { name: "Bonifications", path: "/data/bonifications"},
         {
@@ -116,6 +119,9 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           name: "Sellers",
           path: "/data/sellers",
         },
+        { name: "Technical Details", path: "/data/technical-details" },
+
+
       ],
     },
     {

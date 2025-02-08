@@ -56,59 +56,60 @@ export const collectionsApi = createApi({
         return response;
       },
     }),
-
     getCollectionsPag: builder.query<
-      Collections[],
-      {
-        page?: number;
-        limit?: number;
-        status?: string;
-        query?: string;
-        startDate?: string;
-        endDate?: string;
-        seller_id?: string;
-        customer_id?: string;
-        sort?: string;
+    { collections: Collections[]; total: number },
+    { 
+      page?: number; 
+      limit?: number; 
+      status?: string; 
+      query?: string; 
+      startDate?: string; 
+      endDate?: string; 
+      seller_id?: string; 
+      customer_id?: string; 
+      sort?: string; 
+    }
+  >({
+    query: ({
+      page = 1,
+      limit = 10,
+      startDate,
+      endDate,
+      status,
+      seller_id,
+      customer_id,
+      sort = "",
+    } = {}) => {
+      const url = `/collections`;
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        token: process.env.NEXT_PUBLIC_TOKEN || "",
+      });
+  
+      if (sort) {
+        params.append("sort", sort);
       }
-    >({
-      query: ({
-        page = 1,
-        limit = 10,
-        startDate,
-        endDate,
-        status,
-        seller_id,
-        customer_id,
-        sort = "",
-      } = {}) => {
-        const url = `/collections`;
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-          token: process.env.NEXT_PUBLIC_TOKEN || "",
-        });
-
-        if (sort) {
-          params.append("sort", sort);
-        }
-        if (startDate) params.append("startDate", startDate);
-        if (endDate) params.append("endDate", endDate);
-        if (status) params.append("status", status);
-        if (seller_id) params.append("seller_id", seller_id);
-        if (customer_id) params.append("customer_id", customer_id);
-
-        const fullUrl = `${url}?${params.toString()}`;
-        return fullUrl;
-      },
-      transformResponse: (response: Collections[], meta, arg) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron documentos en la respuesta");
-          return [];
-        }
-        return response;
-      },
-    }),
-
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      if (status) params.append("status", status);
+      if (seller_id) params.append("seller_id", seller_id);
+      if (customer_id) params.append("customer_id", customer_id);
+  
+      return `${url}?${params.toString()}`;
+    },
+    transformResponse: (response: any): { collections: Collections[]; total: number } => {
+      if (!response || !response.collections) {
+        console.error("No se recibieron documentos en la respuesta");
+        return { collections: [], total: 0 };
+      }
+      return {
+        collections: response.collections,
+        total: response.total,
+      };
+    },
+  }),
+  
     getCollectionById: builder.query<Collections, { id: string }>({
       query: ({ id }) =>
         `/collections/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,

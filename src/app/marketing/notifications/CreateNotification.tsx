@@ -1,17 +1,18 @@
+"use client";
+import React, { useState } from "react";
+import { IoMdClose } from "react-icons/io";
+import { format } from "date-fns";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import {
   NotificationType,
   useCreateNotificationMutation,
 } from "@/redux/services/notificationsApi";
-import React, { useState } from "react";
-import { IoMdClose } from "react-icons/io";
-import { format } from "date-fns";
 
-const CreateNotificationComponent = ({
-  closeModal,
-}: {
+interface CreateNotificationComponentProps {
   closeModal: () => void;
-}) => {
+}
+
+const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = ({ closeModal }) => {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -25,18 +26,13 @@ const CreateNotificationComponent = ({
   });
 
   const { data: brandsData, isLoading: isLoadingBrands } = useGetBrandsQuery(null);
-  const [
-    createNotification,
-    { isLoading: isLoadingCreate, isSuccess, isError },
-  ] = useCreateNotificationMutation();
+  const [createNotification, { isLoading: isLoadingCreate, isSuccess, isError }] = useCreateNotificationMutation();
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setForm((prevForm) => ({
-      ...prevForm,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
     }));
   };
@@ -44,9 +40,11 @@ const CreateNotificationComponent = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Construir las fechas concatenando la parte de fecha y la parte de hora
       const schedule_from = `${form.schedule_from_date} ${form.schedule_from_time}`;
       const schedule_to = `${form.schedule_to_date} ${form.schedule_to_time}`;
 
+      // Formatear las fechas a "yyyy-MM-dd HH:mm:ss"
       const formattedData = {
         ...form,
         schedule_from: format(new Date(schedule_from), "yyyy-MM-dd HH:mm:ss"),
@@ -67,6 +65,7 @@ const CreateNotificationComponent = ({
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
+          aria-label="Close modal"
         >
           <IoMdClose />
         </button>
@@ -82,6 +81,7 @@ const CreateNotificationComponent = ({
             placeholder="Notification Title"
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -108,6 +108,7 @@ const CreateNotificationComponent = ({
             value={form.brand_id}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           >
             <option value="">Select brand</option>
             {!isLoadingBrands &&
@@ -128,6 +129,7 @@ const CreateNotificationComponent = ({
             value={form.schedule_from_date}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -140,6 +142,7 @@ const CreateNotificationComponent = ({
             value={form.schedule_from_time}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -152,6 +155,7 @@ const CreateNotificationComponent = ({
             value={form.schedule_to_date}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -164,6 +168,7 @@ const CreateNotificationComponent = ({
             value={form.schedule_to_time}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -173,9 +178,10 @@ const CreateNotificationComponent = ({
           <textarea
             name="description"
             value={form.description}
-            placeholder="New description"
+            placeholder="Notification Description"
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
+            required
           />
         </label>
 
@@ -185,7 +191,7 @@ const CreateNotificationComponent = ({
           <textarea
             name="link"
             value={form.link}
-            placeholder="New link"
+            placeholder="Notification Link"
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
           />
@@ -196,28 +202,28 @@ const CreateNotificationComponent = ({
           <button
             type="button"
             onClick={closeModal}
-            className="bg-gray-400 text-white rounded-md p-2 text-sm"
+            className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className={`bg-green-500 text-white rounded-md p-2 text-sm ${
-              isLoadingCreate ? "opacity-50 cursor-not-allowed" : ""
-            }`}
             disabled={isLoadingCreate}
+            className={`rounded-md px-3 py-1 text-sm text-white ${
+              isLoadingCreate ? "bg-gray-500" : "bg-green-500"
+            }`}
           >
             {isLoadingCreate ? "Saving..." : "Save"}
           </button>
         </div>
 
         {isSuccess && (
-          <p className="text-green-500 col-span-3 text-sm">
+          <p className="col-span-3 text-sm text-green-500">
             Notification created successfully!
           </p>
         )}
         {isError && (
-          <p className="text-red-500 col-span-3 text-sm">
+          <p className="col-span-3 text-sm text-red-500">
             Error creating notification
           </p>
         )}

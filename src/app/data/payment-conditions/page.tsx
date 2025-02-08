@@ -1,14 +1,12 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaTimes } from "react-icons/fa";
-import {
-  useCountPaymentConditionsQuery,
-  useGetPaymentConditionsPagQuery,
-} from "@/redux/services/paymentConditionsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import Modal from "@/app/components/components/Modal";
+import { FaTimes } from "react-icons/fa";
+import { useGetPaymentConditionsPagQuery } from "@/redux/services/paymentConditionsApi";
 import debounce from "@/app/context/debounce";
 
 const ITEMS_PER_PAGE = 15;
@@ -17,18 +15,19 @@ const Page = () => {
   // Estados básicos
   const [page, setPage] = useState(1);
   const [paymentConditions, setPaymentConditions] = useState<any[]>([]);
+  const [totalPaymentConditions, setTotalPaymentConditions] =
+    useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Referencias
+  // Referencias para Observer y Loading
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Queries de Redux
-  const { data: countPaymentConditionsData } =
-    useCountPaymentConditionsQuery(null);
+  // Query de Redux
+  // Se asume que useGetPaymentConditionsPagQuery retorna un objeto { paymentConditions, total }
   const {
     data,
     error,
@@ -41,7 +40,7 @@ const Page = () => {
     sort: sortQuery,
   });
 
-  // Búsqueda con debounce
+  // Debounced search para evitar disparar la búsqueda con cada tecla
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -49,21 +48,26 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para manejar la carga inicial y las búsquedas
+  // Efecto para cargar la data e ir actualizando los estados: tanto la lista paginada como el total global
   useEffect(() => {
     const loadPaymentConditions = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // Se espera que el resultado tenga la forma { paymentConditions, total }
           const result = await refetch().unwrap();
-          const newPaymentConditions = result || [];
-
+          const fetchedData = result || { paymentConditions: [], total: 0 };
+          const newPaymentConditions = Array.isArray(
+            fetchedData.paymentConditions
+          )
+            ? fetchedData.paymentConditions
+            : [];
+          setTotalPaymentConditions(fetchedData.total || 0);
           if (page === 1) {
             setPaymentConditions(newPaymentConditions);
           } else {
             setPaymentConditions((prev) => [...prev, ...newPaymentConditions]);
           }
-
           setHasMore(newPaymentConditions.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading payment conditions:", error);
@@ -72,11 +76,10 @@ const Page = () => {
         }
       }
     };
-
     loadPaymentConditions();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, refetch, isLoading]);
 
-  // Intersection Observer para scroll infinito
+  // Intersection Observer para infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -87,15 +90,12 @@ const Page = () => {
       },
       { threshold: 0.5 }
     );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
     }
-
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
       }
     };
   }, [hasMore, isLoading]);
@@ -108,20 +108,17 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setPaymentConditions([]);
@@ -131,7 +128,7 @@ const Page = () => {
   );
 
   // Configuración de la tabla
-  const tableData = paymentConditions?.map((payment_condition) => ({
+  const tableData = paymentConditions.map((payment_condition) => ({
     key: payment_condition.id,
     id: payment_condition.id,
     name: payment_condition.name,
@@ -146,6 +143,9 @@ const Page = () => {
     { name: "Default", key: "default" },
   ];
 
+  // Configuración del header:
+  // Si se está buscando, se muestra el total de la página actual (paymentConditions.length);
+  // en caso contrario se muestra el total global obtenido de la query.
   const headerBody = {
     buttons: [],
     filters: [
@@ -173,9 +173,7 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${paymentConditions.length} Results`
-      : `${countPaymentConditionsData || 0} Results`,
+    results: `${totalPaymentConditions} Results`,
   };
 
   if (isQueryLoading && paymentConditions.length === 0) {
@@ -185,7 +183,6 @@ const Page = () => {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 text-red-500">
@@ -199,7 +196,6 @@ const Page = () => {
       <div className="flex flex-col gap-4">
         <h3 className="font-bold p-4">PAYMENT CONDITIONS</h3>
         <Header headerBody={headerBody} />
-
         {isLoading && paymentConditions.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />

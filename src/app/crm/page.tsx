@@ -21,6 +21,8 @@ import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
+import { format } from "date-fns";
+
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
@@ -34,14 +36,13 @@ const Page = () => {
   const [insitu, setInsitu] = useState("");
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
-
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
   const [contactedStates, setContactedStates] = useState<boolean[]>([]);
-
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const { selectedClientId } = useClient();
-  // References
+
+  // Referencias para el Intersection Observer
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
@@ -63,14 +64,14 @@ const Page = () => {
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: collectionData } = useGetCollectionsQuery(null);
 
-  function formatDate(date: any) {
-    if (!date) return undefined;
+  function formatDate(date: Date) {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
 
+  // Query que retorna { crms: Crm[], total: number }
   const {
     data,
     error,
@@ -82,10 +83,10 @@ const Page = () => {
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
-      type: type,
-      status: status,
-      insitu: insitu,
-      customer_id: customer_id,
+      type,
+      status,
+      insitu,
+      customer_id,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -95,31 +96,34 @@ const Page = () => {
   );
 
   const [updateCrm] = useUpdateCrmMutation();
-  const { data: countCrmData } = useCountCrmQuery(null);
+  // Si bien cuentas con countCrmData, ahora usaremos data.total para mostrar el total
+
+  // Actualizar customer_id al cambiar selectedClientId
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch;
+      refetch();
     } else {
       setCustomer_id("");
-      refetch;
+      refetch();
     }
   }, [selectedClientId]);
 
-  // Effect for handling initial load and searches
+  // Efecto para cargar documentos (CRM) y manejar la paginación
   useEffect(() => {
     const loadDocuments = async () => {
       if (!isLoading) {
+        setIsLoading(true);
         try {
+          // Se espera que refetch().unwrap() retorne un objeto con { crms, total }
           const result = await refetch().unwrap();
-          const newDocuments = result || [];
-
+          // Extraemos el array de documentos
+          const newDocuments = result.crms || [];
           if (page === 1) {
             setItems(newDocuments);
           } else {
             setItems((prev) => [...prev, ...newDocuments]);
           }
-
           setHasMore(newDocuments.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading documents:", error);
@@ -132,7 +136,7 @@ const Page = () => {
     loadDocuments();
   }, [page, startDate, endDate, customer_id, sortQuery]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para scroll infinito
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -163,11 +167,11 @@ const Page = () => {
     setPage(1);
     setHasMore(true);
   };
+
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
         // Alternar entre ascendente y descendente
         newSortQuery =
@@ -176,7 +180,6 @@ const Page = () => {
         // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
@@ -184,6 +187,7 @@ const Page = () => {
     },
     [sortQuery]
   );
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
@@ -194,10 +198,8 @@ const Page = () => {
       (data) => data._id === crm.seller_id
     );
 
-    const index = data?.indexOf(crm);
-
     return {
-      key: crm._id,
+      key: crm._id, // Se asume que el modelo usa _id o id según corresponda
       info: (
         <div className="flex justify-center items-center">
           <IoInformationCircleOutline className="text-center text-xl" />
@@ -206,24 +208,14 @@ const Page = () => {
       seller: seller?.name,
       customer: customer?.name,
       contacted: "VER BIEN",
-      // (
-      //   <button
-      //     onClick={() => handleContactedToggle(index, crm)}
-      //     className={`btn ${
-      //       contactedStates[index] ?? false ? "btn-success" : "btn-danger"
-      //     }`}
-      //   >
-      //     {contactedStates[index] ?? false ? "Contacted" : "Not Contacted"}
-      //   </button>
-      // ),
       type: crm.type,
-      date: crm.date,
+      date: crm.date ? format(new Date(crm.date), "yyyy-MM-dd") : "N/A",
       collection: collection?.amount,
       order_id: "FALTA AGREGAR",
       amount: collection?.amount,
       status: crm.status,
       gps: crm.gps,
-      insitu: crm.insitu.toString()
+      insitu: crm.insitu.toString(),
     };
   });
 
@@ -254,32 +246,6 @@ const Page = () => {
       },
     ],
     filters: [
-      // {
-      //   content: (
-      //     <ButtonOnOff
-      //       title={"Contacted"}
-      //       onChange={() =>
-      //         handleContactedFilters(
-      //           searchParams.insitu === "true" ? null : true
-      //         )
-      //       }
-      //       active={searchParams.insitu === "true"}
-      //     />
-      //   ),
-      // },
-      // {
-      //   content: (
-      //     <ButtonOnOff
-      //       title={"Not Contacted"}
-      //       onChange={() =>
-      //         handleContactedFilters(
-      //           searchParams.insitu === "false" ? null : false
-      //         )
-      //       }
-      //       active={searchParams.insitu === "false"}
-      //     />
-      //   ),
-      // },
       {
         content: (
           <div>
@@ -338,7 +304,8 @@ const Page = () => {
         ),
       },
     ],
-    results: `${countCrmData || 0} Results`,
+    // Se usa data.total, que proviene del query, para mostrar el total de resultados
+    results: `${data?.total || 0} Results`,
   };
 
   return (
