@@ -76,7 +76,7 @@ export const crmApi = createApi({
       },
     }),
     getCrmPag: builder.query<
-      Crm[],
+      { crms: Crm[]; total: number },
       {
         page?: number;
         limit?: number;
@@ -116,17 +116,20 @@ export const crmApi = createApi({
         if (insitu) params.append("insitu", insitu);
         if (customer_id) params.append("customer_id", customer_id);
 
-        const fullUrl = `${url}?${params.toString()}`;
-        return fullUrl;
+        return `${url}?${params.toString()}`;
       },
-      transformResponse: (response: Crm[]) => {
-        if (!response || response.length === 0) {
+      transformResponse: (response: {
+        crms: Crm[];
+        total: number;
+      }): { crms: Crm[]; total: number } => {
+        if (!response || !response.crms || response.crms.length === 0) {
           console.error("No se recibieron rubros en la respuesta");
-          return [];
+          return { crms: [], total: 0 };
         }
         return response;
       },
     }),
+
     countCrm: builder.query<number, null>({
       query: () => {
         return `/crm/count-all?token=${process.env.NEXT_PUBLIC_TOKEN}`;
@@ -176,5 +179,5 @@ export const {
   useCreateCrmMutation,
   useDeleteCrmMutation,
   useUpdateCrmMutation,
-  useCheckInsituVisitMutation
+  useCheckInsituVisitMutation,
 } = crmApi;

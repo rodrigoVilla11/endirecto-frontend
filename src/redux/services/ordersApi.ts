@@ -77,7 +77,7 @@ export const ordersApi = createApi({
       },
     }),
     getOrdersPag: builder.query<
-      Order[],
+      { orders: Order[]; total: number },
       {
         page?: number;
         limit?: number;
@@ -107,7 +107,6 @@ export const ordersApi = createApi({
         if (sort) {
           params.append("sort", sort);
         }
-
         if (customer_id) {
           params.append("customer_id", customer_id);
         }
@@ -117,19 +116,16 @@ export const ordersApi = createApi({
         if (endDate) {
           params.append("endDate", endDate);
         }
-
         if (status) {
           params.append("status", status);
         }
-
         return `${url}?${params.toString()}`;
       },
-      transformResponse: (response: Order[]) => {
-        if (!response || response.length === 0) {
+      transformResponse: (response: { orders: Order[]; total: number }) => {
+        if (!response || !response.orders) {
           console.error("No se recibieron pedidos en la respuesta");
-          return [];
+          return { orders: [], total: 0 };
         }
-
         return response;
       },
     }),

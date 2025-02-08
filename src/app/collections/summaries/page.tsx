@@ -48,12 +48,8 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     status: "SUMMARIZED",
-    startDate: searchParams.startDate
-      ? searchParams.startDate.toISOString()
-      : undefined,
-    endDate: searchParams.endDate
-      ? searchParams.endDate.toISOString()
-      : undefined,
+    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
+    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
     seller_id: searchParams.seller_id,
     customer_id,
     sort: sortQuery,
@@ -62,7 +58,7 @@ const Page = () => {
   const { data: countCollectionsData } = useCountCollectionQuery(null);
   const { data: branchData } = useGetBranchesQuery(null);
 
-  // 🔥 Evitar llamadas innecesarias a `refetch` cuando cambia `selectedClientId`
+  // Evitar llamadas innecesarias a `refetch` cuando cambia selectedClientId
   useEffect(() => {
     if (selectedClientId !== customer_id) {
       setCustomer_id(selectedClientId || "");
@@ -70,15 +66,15 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  // 🔥 Carga de datos con paginación y ordenamiento
+  // Carga de datos con paginación y ordenamiento
   useEffect(() => {
     const loadItems = async () => {
       if (isLoading) return; // Evita llamadas innecesarias
       setIsLoading(true);
       try {
         const result = await refetch().unwrap();
-        const newItems = result || [];
-
+        // Extraemos las collections de la respuesta
+        const newItems = result.collections || [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         setHasMore(newItems.length === ITEMS_PER_PAGE);
       } catch (error) {
@@ -91,7 +87,7 @@ const Page = () => {
     loadItems();
   }, [page, sortQuery]);
 
-  // 🔥 Intersection Observer para scroll infinito
+  // Intersection Observer para scroll infinito
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -109,7 +105,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // 🔥 Manejo de ordenamiento
+  // Manejo de ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       setPage(1);
@@ -129,13 +125,14 @@ const Page = () => {
     [sortQuery]
   );
 
-  // 🔥 Construcción de datos para la tabla
+  // Construcción de datos para la tabla
   const tableData = items?.map((collection) => {
-    const branch = branchData?.find((data) => data.id === collection.branch_id);
-    const seller = sellersData?.find((data) => data.id === collection.seller_id);
+    // Se usa el nuevo modelo: id, branchId, sellerId, etc.
+    const branch = branchData?.find((data) => data.id === collection.branchId);
+    const seller = sellersData?.find((data) => data.id === collection.sellerId);
 
     return {
-      key: collection._id,
+      key: collection.id,
       info: (
         <div className="flex justify-center items-center">
           <AiOutlineDownload className="text-center text-xl" />
@@ -173,10 +170,35 @@ const Page = () => {
   const headerBody = {
     buttons: [],
     filters: [
-      { content: <DatePicker selected={searchParams.startDate} onChange={(date) => setSearchParams({ ...searchParams, startDate: date })} placeholderText="Date From" dateFormat="yyyy-MM-dd" className="border border-gray-300 rounded p-2" /> },
-      { content: <DatePicker selected={searchParams.endDate} onChange={(date) => setSearchParams({ ...searchParams, endDate: date })} placeholderText="Date To" dateFormat="yyyy-MM-dd" className="border border-gray-300 rounded p-2" /> },
+      {
+        content: (
+          <DatePicker
+            selected={searchParams.startDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, startDate: date })
+            }
+            placeholderText="Date From"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <DatePicker
+            selected={searchParams.endDate}
+            onChange={(date) =>
+              setSearchParams({ ...searchParams, endDate: date })
+            }
+            placeholderText="Date To"
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
     ],
-    results: `${data?.length || 0} Results`,
+    // Se utiliza data.total para mostrar la cantidad total de registros
+    results: `${data?.total || 0} Results`,
   };
 
   return (
@@ -184,7 +206,13 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">COLLECTIONS SUMMARIES</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} onSort={handleSort} sortField={sortQuery.split(":")[0] || ""} sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0] || ""}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
       </div>
       <div ref={observerRef} className="h-10" />
     </PrivateRoute>
