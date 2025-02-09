@@ -11,6 +11,7 @@ import {
   Archive,
   FileText,
   AlertTriangle,
+  Link,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
@@ -54,13 +55,14 @@ export default function CustomerDashboard() {
     ? data.documents_balance_expired
     : "0";
 
-  const formatedSumAmount = Number(documentsBalance)?.toLocaleString("es-ES", {
+  const sum = Number(documentsBalanceExpired) + Number(documentsBalance)
+  const formatedSumAmount = Number(sum)?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
   const formatedExpiredSumAmount = Number(
-    documentsBalanceExpired
+    documentsBalance 
   )?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -124,7 +126,7 @@ export default function CustomerDashboard() {
           /> */}
 
           {/* Catalog Section */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
+          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/catalogue")}>
             <div className="flex items-center gap-3 mb-2">
               <Archive className="h-6 w-6 text-zinc-400" />
               <h2 className="text-lg font-semibold text-white">Catálogo</h2>
@@ -135,7 +137,7 @@ export default function CustomerDashboard() {
           </section>
 
           {/* Account Status */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
+          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/account/status")}>
             <div className="flex items-center gap-3 mb-2">
               <FileText className="h-6 w-6 text-emerald-500" />
               <h2 className="text-lg font-semibold text-white">
@@ -154,7 +156,7 @@ export default function CustomerDashboard() {
           </section>
 
           {/* Pending Claims */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
+          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/reclaims")}>
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-zinc-400" />
               <h2 className="text-lg font-semibold text-white">

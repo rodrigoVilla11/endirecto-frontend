@@ -33,18 +33,31 @@ export const faqsApi = createApi({
       },
     }),
     getFaqsPag: builder.query<
-      Faqs[],
+      { faqs: Faqs[]; total: number },
       { page?: number; limit?: number; query?: string }
     >({
       query: ({ page = 1, limit = 10, query = "" } = {}) => {
         return `/faqs?page=${page}&limit=${limit}&q=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: Faqs[]) => {
-        if (!response || response.length === 0) {
+      transformResponse: (
+        response: Faqs[] | { faqs: Faqs[]; total: number }
+      ): { faqs: Faqs[]; total: number } => {
+        // Si la respuesta es un arreglo, se asume que total es la longitud del mismo
+        if (Array.isArray(response)) {
+          if (!response || response.length === 0) {
+            console.error(
+              "No se recibieron preguntas frecuentes en la respuesta"
+            );
+            return { faqs: [], total: 0 };
+          }
+          return { faqs: response, total: response.length };
+        }
+        // Si la respuesta ya viene envuelta en un objeto con 'faqs' y 'total', se retorna tal cual
+        if (!response.faqs || response.faqs.length === 0) {
           console.error(
             "No se recibieron preguntas frecuentes en la respuesta"
           );
-          return [];
+          return { faqs: [], total: 0 };
         }
         return response;
       },

@@ -10,6 +10,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGetCrmPrenotesQuery } from "@/redux/services/crmPrenotes";
 
 interface VisitModalProps {
   isOpen: boolean;
@@ -20,7 +21,8 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
   // Mutaciones para crear CRM y verificar insitu
   const [createCrm] = useCreateCrmMutation();
   const [insituVisit] = useCheckInsituVisitMutation();
-  
+  const { data, error, isLoading, refetch } = useGetCrmPrenotesQuery(null);
+
   // Fecha actual en formato "yyyy-MM-dd"
   const currentDate = format(new Date(), "yyyy-MM-dd");
   const { selectedClientId } = useClient();
@@ -132,7 +134,10 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             <InfoRow label="Fecha" value={currentDate} />
             <InfoRow
               label={
-                <div className="flex items-center gap-2" onClick={handleGetLocation}>
+                <div
+                  className="flex items-center gap-2"
+                  onClick={handleGetLocation}
+                >
                   GPS
                   <span className="text-emerald-500">📍</span>
                   <span className="text-white">🌐</span>
@@ -160,9 +165,14 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
               <span>{showPredefinedComments ? "▼" : "▶"}</span>
             </button>
             {showPredefinedComments && (
-              <div className="p-4 bg-zinc-800">
-                <p className="text-zinc-400">No hay comentarios predefinidos</p>
-              </div>
+              <>
+                {data &&
+                  data.map((item) => (
+                    <div className="p-4 bg-zinc-800" key={item.id} onClick={() => setObservations(item.name)}>
+                      <p className="text-zinc-400">{item.name}</p>
+                    </div>
+                  ))}
+              </>
             )}
           </div>
 
@@ -199,7 +209,11 @@ interface InfoRowProps {
   valueClassName?: string;
 }
 
-function InfoRow({ label, value, valueClassName = "text-white" }: InfoRowProps) {
+function InfoRow({
+  label,
+  value,
+  valueClassName = "text-white",
+}: InfoRowProps) {
   return (
     <div className="p-4 flex justify-between items-center border-b border-zinc-800">
       <span className="text-zinc-400">{label}</span>
