@@ -1,11 +1,11 @@
 "use client";
-import { useGetArticlesVehiclesQuery } from "@/redux/services/articlesVehicles";
+import { useGetArticlesVehiclesQuery, useGetArticleVehicleBrandsQuery } from "@/redux/services/articlesVehicles";
 import React, { useState, useEffect } from "react";
 import { FaAngleDown } from "react-icons/fa6";
 
 const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
   const [selectedVehiclesBrand, setSelectedVehiclesBrand] = useState("");
-  const { data: vehiclesBrands } = useGetArticlesVehiclesQuery(null);
+  const { data: vehiclesBrands } = useGetArticleVehicleBrandsQuery(null);
 
   // Sincronizar el estado con la prop 'vehicleBrand'
   useEffect(() => {
@@ -39,9 +39,9 @@ const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="">Select a Vehicle&#39;s Brands</option>
-            {vehiclesBrands?.map((item) => (
-              <option key={item.id} value={item.brand}>
-                {item.brand}
+            {vehiclesBrands?.brands.map((item : any) => (
+              <option key={item} value={item}>
+                {item}
               </option>
             ))}
           </select>

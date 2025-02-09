@@ -5,7 +5,7 @@ interface ArticlesVehiclesPagResponse {
   total: number;
 }
 
-type ArticleVehicle = {
+export type ArticleVehicle = {
   id: string; // ID
   brand: string; // Marca vehículo
   model: string; // Modelo vehículo
@@ -18,7 +18,7 @@ type ArticleVehicle = {
   deleted_at: Date; // Fecha de eliminación
 };
 
-type CreateArticleVehiclePayload = {
+export type CreateArticleVehiclePayload = {
   id: string;
   article_id: string;
   brand: string;
@@ -30,11 +30,13 @@ type CreateArticleVehiclePayload = {
 export const articlesVehiclesApi = createApi({
   reducerPath: "articlesVehiclesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl:
+      process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
     getArticlesVehicles: builder.query<ArticleVehicle[], null>({
-      query: () => `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () =>
+        `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticleVehicle[]) => {
         if (!response || response.length === 0) {
           console.error("No se recibieron articulos en la respuesta");
@@ -44,7 +46,7 @@ export const articlesVehiclesApi = createApi({
       },
     }),
     getArticlesVehiclesPag: builder.query<
-    ArticlesVehiclesPagResponse,
+      ArticlesVehiclesPagResponse,
       { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
@@ -61,19 +63,33 @@ export const articlesVehiclesApi = createApi({
     getArticleVehicleById: builder.query<ArticleVehicle, { id: string }>({
       query: ({ id }) => `/articles-vehicles/${id}`,
     }),
-    countArticleVehicle: builder.query<number, null>({
-      query: () => {
-        return `/articles-vehicles/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
+    getArticleVehicleBrands: builder.query<any, null>({
+      query: () => `/articles-vehicles/unique-brands?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    createArticleVehicle: builder.mutation<
-      ArticleVehicle,
-      CreateArticleVehiclePayload
-    >({
+    countArticleVehicle: builder.query<number, null>({
+      query: () => `/articles-vehicles/count?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
+    createArticleVehicle: builder.mutation<ArticleVehicle, CreateArticleVehiclePayload>({
       query: (newArticleVehicle) => ({
         url: `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "POST",
         body: newArticleVehicle,
+      }),
+    }),
+    updateArticleVehicle: builder.mutation<
+      ArticleVehicle,
+      { id: string } & Partial<CreateArticleVehiclePayload>
+    >({
+      query: ({ id, ...patch }) => ({
+        url: `/articles-vehicles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: patch,
+      }),
+    }),
+    deleteArticleVehicle: builder.mutation<{ success: boolean }, { id: string }>({
+      query: ({ id }) => ({
+        url: `/articles-vehicles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
       }),
     }),
     importArticleVehiclesExcel: builder.mutation<
@@ -89,7 +105,7 @@ export const articlesVehiclesApi = createApi({
     exportArticleVehiclesExcel: builder.query<Blob, void>({
       query: () => ({
         url: `/articles-vehicles/export?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-        method: 'GET',
+        method: "GET",
       }),
       transformResponse: async (response: Response) => {
         return await response.blob();
@@ -104,7 +120,10 @@ export const {
   useCountArticleVehicleQuery,
   useGetArticlesVehiclesPagQuery,
   useCreateArticleVehicleMutation,
+  useUpdateArticleVehicleMutation,
+  useDeleteArticleVehicleMutation,
   useImportArticleVehiclesExcelMutation,
   useExportArticleVehiclesExcelQuery,
-  useLazyExportArticleVehiclesExcelQuery
+  useLazyExportArticleVehiclesExcelQuery,
+  useGetArticleVehicleBrandsQuery
 } = articlesVehiclesApi;

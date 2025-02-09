@@ -3,11 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import {
-  useCountFaqsQuery,
-  useGetFaqsPagQuery,
-  useGetFaqsQuery,
-} from "@/redux/services/faqsApi";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
@@ -16,6 +11,7 @@ import UpdateFaqComponent from "./UpdateFaq";
 import DeleteFaq from "./DeleteFaq";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
+import { useGetFaqsPagQuery } from "@/redux/services/faqsApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -37,13 +33,8 @@ const Page = () => {
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Queries de Redux (mantenidas como estaban)
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-  } = useGetFaqsPagQuery({
+  // Query de Redux que ahora retorna { faqs: Faqs[]; total: number }
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetFaqsPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
@@ -59,19 +50,18 @@ const Page = () => {
 
   // Efecto para manejar la carga inicial y las búsquedas
   useEffect(() => {
-    const loadArticles = async () => {
+    const loadFaqs = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
+          // Se espera que la respuesta tenga la forma { faqs, total }
           const result = await refetch().unwrap();
-          const newFaqs = result || [];
-
+          const newFaqs = result.faqs || [];
           if (page === 1) {
             setFaqs(newFaqs);
           } else {
             setFaqs((prev) => [...prev, ...newFaqs]);
           }
-
           setHasMore(newFaqs.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading faqs:", error);
@@ -81,7 +71,7 @@ const Page = () => {
       }
     };
 
-    loadArticles();
+    loadFaqs();
   }, [page, searchQuery]);
 
   // Intersection Observer para scroll infinito
@@ -144,7 +134,7 @@ const Page = () => {
   };
 
   const tableData =
-    faqs?.map((faq) => ({
+    faqs.map((faq) => ({
       key: faq._id,
       question: faq.question,
       answer: faq.answer,
@@ -173,6 +163,7 @@ const Page = () => {
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
+  // Aquí usamos data.total para mostrar el total de FAQs
   const headerBody = {
     buttons: [
       {
@@ -206,7 +197,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${faqs?.length || 0} Results`,
+    results: `${data?.total || 0} Results`,
   };
 
   if (isQueryLoading && faqs.length === 0) {
@@ -230,52 +221,24 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">FAQS</h3>
         <Header headerBody={headerBody} />
-
-        {isLoading && faqs.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          </div>
-        ) : faqs.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No faqs found</div>
-        ) : (
-          <>
-            <Table headers={tableHeader} data={tableData} />
-            {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-              </div>
-            )}
-          </>
-        )}
-        <div ref={observerRef} className="h-10" />
-
-        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreateFaqComponent closeModal={closeCreateModal} />
-        </Modal>
-
-        <Modal
-          isOpen={isUpdateModalOpen}
-          onClose={closeUpdateModal}
-        >
-          {currentFaqId && (
-            <UpdateFaqComponent
-              faqId={currentFaqId}
-              closeModal={closeUpdateModal}
-            />
-          )}
-        </Modal>
-
-        <Modal
-          isOpen={isDeleteModalOpen}
-          onClose={closeDeleteModal}
-        >
-          <DeleteFaq
-            faqId={currentFaqId || ""}
-            closeModal={closeDeleteModal}
-          />
-        </Modal>
+        <Table headers={tableHeader} data={tableData} />
+        {/* Elemento para el Infinite Scroll */}
         <div ref={observerRef} className="h-10" />
       </div>
+
+      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+        <CreateFaqComponent closeModal={closeCreateModal} />
+      </Modal>
+
+      <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
+        {currentFaqId && (
+          <UpdateFaqComponent faqId={currentFaqId} closeModal={closeUpdateModal} />
+        )}
+      </Modal>
+
+      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+        <DeleteFaq faqId={currentFaqId || ""} closeModal={closeDeleteModal} />
+      </Modal>
     </PrivateRoute>
   );
 };

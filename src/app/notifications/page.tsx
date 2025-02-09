@@ -1,14 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaDownload } from "react-icons/fa";
-import {
-  useCountNotificationsQuery,
-  useGetNotificationsPagQuery,
-  useGetNotificationsQuery,
-} from "@/redux/services/notificationsApi";
+import { FaDownload, FaTimes } from "react-icons/fa";
+import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from "date-fns";
 import PrivateRoute from "../context/PrivateRoutes";
@@ -18,19 +14,76 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: countNotificationsData } = useCountNotificationsQuery(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({
+  // Usamos el query que retorna { notifications: Notification[], total: number }
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetNotificationsPagQuery({
     page,
     limit,
     query: searchQuery,
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  // Referencia para el Intersection Observer (infinite scroll)
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  // Efecto para cargar notificaciones y acumular resultados
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          // Se espera que la respuesta tenga la forma { notifications, total }
+          const result = await refetch().unwrap();
+          const newNotifications = result.notifications || [];
+          if (page === 1) {
+            setItems(newNotifications);
+          } else {
+            setItems((prev) => [...prev, ...newNotifications]);
+          }
+          // Si se recibieron tantos elementos como el límite, puede haber más
+          setHasMore(newNotifications.length === limit);
+        } catch (error) {
+          console.error("Error loading notifications:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadNotifications();
+  }, [page, searchQuery]);
+
+  // Efecto para el infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
+    }
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
+
+  if (isQueryLoading) return <p>Loading...</p>;
   if (error) return <p>Error</p>;
 
-  const tableData = data?.map((notification) => {
-    const brand = brandsData?.find((data) => data.id == notification.brand_id);
+  // Mapeo de los datos usando el estado acumulado "items"
+  const tableData = items.map((notification) => {
+    const brand = brandsData?.find((b) => b.id === notification.brand_id);
     return {
       key: notification._id,
       brand: brand?.name,
@@ -38,7 +91,10 @@ const Page = () => {
       title: notification.title,
       description: notification.description,
       validity: notification.schedule_to,
-      date: notification.schedule_from,
+      // Se formatea la fecha para que se muestre como "yyyy-MM-dd"
+      date: notification.schedule_from
+        ? format(new Date(notification.schedule_from), "yyyy-MM-dd")
+        : "",
       download: (
         <div className="flex justify-center items-center">
           <FaDownload className="text-center text-xl" />
@@ -46,6 +102,7 @@ const Page = () => {
       ),
     };
   });
+
   const tableHeader = [
     { name: "Brand", key: "brand" },
     { name: "Type", key: "type" },
@@ -53,11 +110,9 @@ const Page = () => {
     { name: "Description", key: "description" },
     { name: "Validity", key: "validity" },
     { name: "Date", key: "date" },
-    {
-      component: <FaDownload className="text-center text-xl" />,
-      key: "download",
-    },
+    { component: <FaDownload className="text-center text-xl" />, key: "download" },
   ];
+
   const headerBody = {
     buttons: [],
     filters: [
@@ -76,6 +131,7 @@ const Page = () => {
             onChange={(e: any) => setSearchQuery(e.target.value)}
             onKeyDown={(e: any) => {
               if (e.key === "Enter") {
+                setPage(1);
                 refetch();
               }
             }}
@@ -83,56 +139,21 @@ const Page = () => {
         ),
       },
     ],
+    // Si hay búsqueda se muestra la cantidad de elementos cargados,
+    // de lo contrario se muestra el total según la respuesta
     results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countNotificationsData || 0} Results`,
-  };
-
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < Math.ceil((countNotificationsData || 0) / limit)) {
-      setPage(page + 1);
-    }
+      ? `${items.length} Results`
+      : `${data?.total || 0} Results`,
   };
 
   return (
-    <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">NOTIFICATIONS</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        <div className="flex justify-between items-center p-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={page === 1}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <p>
-            Page {page} of {Math.ceil((countNotificationsData || 0) / limit)}
-          </p>
-          <button
-            onClick={handleNextPage}
-            disabled={page === Math.ceil((countNotificationsData || 0) / limit)}
-            className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        {/* Elemento para el Infinite Scroll */}
+        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );
