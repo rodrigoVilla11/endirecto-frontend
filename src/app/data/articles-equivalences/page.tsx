@@ -128,7 +128,6 @@ const Page = () => {
       console.error("Error al sincronizar equivalences:", error);
     }
   };
-  console.log(data)
 
   // Configuración de la tabla: mapeamos cada equivalence a un objeto para la tabla
   const tableData = equivalences?.map((item) => {

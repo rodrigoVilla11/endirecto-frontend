@@ -19,7 +19,6 @@ const CreateArticlesTechnicalDetailsModal: React.FC<CreateArticlesTechnicalDetai
   const { data: technicalDetails, isLoading: isLoadingTechnicalDetails, isError: isErrorTechnicalDetails } = useGetAllTechnicalDetailQuery(null);
   const [createArticlesTechnicalDetail, { isLoading, isSuccess, isError }] = useCreateArticleTechnicalDetailMutation();
 
-  console.log(technicalDetails)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prevForm) => ({
       ...prevForm,
