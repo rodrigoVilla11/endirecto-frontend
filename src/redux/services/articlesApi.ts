@@ -64,7 +64,7 @@ type UpdateArticlesPayload = {
 export const articlesApi = createApi({
   reducerPath: "articlesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getAllArticles: builder.query<Article[], null>({
@@ -95,8 +95,8 @@ export const articlesApi = createApi({
         stock?: string;
         vehicle_brand?: string;
         sort?: string;
-        priceListId?: string; // 🔹 Ahora es obligatorio porque el backend lo requiere
-        articleId?: string; // 🔹 Permite filtrar por uno o varios IDs
+        priceListId?: string; // Ahora es obligatorio porque el backend lo requiere
+        articleId?: string; // Permite filtrar por uno o varios IDs
       }
     >({
       query: ({
@@ -125,7 +125,7 @@ export const articlesApi = createApi({
         if (stock) params.append("sort", stock);
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
         if (sort) params.append("sort", sort);
-        if (articleId) params.append("articleId", articleId); // 🔹 Ahora acepta varios IDs separados por comas
+        if (articleId) params.append("articleId", articleId);
 
         return `/articles/?${params.toString()}`;
       },
@@ -180,6 +180,21 @@ export const articlesApi = createApi({
         method: "POST",
       }),
     }),
+    // Nuevo endpoint para buscar artículos por query y obtener solo id e images
+    searchArticles: builder.query<
+      Pick<Article, "id" | "images">[],
+      { query: string, page: number, limit: number }
+    >({
+      query: ({ query, page, limit }) =>
+        `/articles/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      transformResponse: (response:  Pick<Article, "id" | "images">[] ) => {
+        if (!response) {
+          console.error("No se recibieron datos en la respuesta de searchArticles");
+          return [];
+        }
+        return response;
+      },
+    }),
   }),
 });
 
@@ -188,5 +203,6 @@ export const {
   useGetAllArticlesQuery,
   useUpdateArticleMutation,
   useSyncEquivalencesMutation,
-  useSyncArticleVehiclesMutation
+  useSyncArticleVehiclesMutation,
+  useSearchArticlesQuery,
 } = articlesApi;
