@@ -1,6 +1,6 @@
 import React from "react";
 
-const ArticleName = ({name, id, noName, code} : any) => {
+const ArticleName = ({name, noName, code} : any) => {
   return (
     <div className={`flex flex-col ${noName ? "h-8" : "h-14"}`}>
       <p className="text-xs font-semibold text-gray-700 truncate" title={code}>

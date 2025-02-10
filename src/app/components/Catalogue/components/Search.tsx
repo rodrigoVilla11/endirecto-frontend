@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import { useSearchArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useArticleId } from "@/app/context/AritlceIdContext";
@@ -9,36 +9,36 @@ import ArticleDetails from "./Articles/components/ArticleDetails";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
+interface ArticleSearchResultsProps {
+  query: string;
+  setSearchQuery: (value: string) => void;
+  router: any;
+}
+
 const ArticleSearchResults = ({
   query,
   setSearchQuery,
   router,
-}: {
-  query: string;
-  setSearchQuery: any;
-  router: any;
-}) => {
+}: ArticleSearchResultsProps) => {
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  const limit = 6;
+
+  // Ahora utilizamos el endpoint optimizado para buscar artículos por query.
   const {
-    data: articles,
+    data: searchResults,
     error,
     isLoading,
     refetch,
-  } = useGetArticlesQuery({
-    limit,
-    query,
-    priceListId: selectedClientId ? customer?.price_list_id : "3",
-  });
+  } = useSearchArticlesQuery({ query, page: 1, limit: 6 });
+
   const { setSearch } = useFilters();
-  const { articleId, setArticleId } = useArticleId();
+  const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
 
   if (!query) {
-    return null; // Si no hay texto en la barra de búsqueda, no mostramos nada
+    return null; // Si no hay texto en la búsqueda, no mostramos nada
   }
 
   const handleRedirect = (path: string) => {
@@ -66,7 +66,7 @@ const ArticleSearchResults = ({
 
       {isLoading && (
         <div className="flex justify-center items-center w-full h-40">
-          {/* Spinner con animación de giro */}
+          {/* Spinner de carga */}
           <svg
             className="animate-spin h-10 w-10 text-white"
             xmlns="http://www.w3.org/2000/svg"
@@ -96,16 +96,16 @@ const ArticleSearchResults = ({
         </p>
       )}
 
-      {articles && articles.totalItems === 0 && (
+      {searchResults && searchResults.length === 0 && (
         <p className="text-gray-300">
           No se encontraron resultados para tu búsqueda.
         </p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full px-2 overflow-auto">
-        {articles &&
-          articles.totalItems > 0 &&
-          articles.articles.map((article) => (
+        {searchResults &&
+          searchResults.length > 0 &&
+          searchResults.map((article) => (
             <div key={article.id} className="w-full">
               <CardSearch
                 article={article}
@@ -116,7 +116,7 @@ const ArticleSearchResults = ({
           ))}
       </div>
 
-      {articles && articles.totalItems > 0 && (
+      {searchResults && searchResults.length > 0 && (
         <button
           onClick={() => handleRedirect(`/catalogue`)}
           className="mt-6 bg-white text-black px-8 py-3 rounded-lg hover:bg-blue-700 hover:text-white transition duration-300 transform hover:scale-105 focus:outline-none shadow-lg"
@@ -124,6 +124,7 @@ const ArticleSearchResults = ({
           Ver más...
         </button>
       )}
+
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ArticleDetails closeModal={closeModal} />
       </Modal>
