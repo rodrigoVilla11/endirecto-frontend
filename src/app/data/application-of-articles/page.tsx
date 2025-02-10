@@ -246,7 +246,6 @@ const Page = () => {
     ],
     results: `${data?.total || 0} Results`,
   };
-  console.log(data)
 
   if (isQueryLoading && applicationsOfArticles.length === 0) {
     return (
