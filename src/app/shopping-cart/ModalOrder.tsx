@@ -121,7 +121,7 @@ export default function OrderConfirmation({
     total: total,
     notes: observations,
     date: new Date().toISOString(),
-    created_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
     details: [],
     gps: "",
     insitu: false,
@@ -207,10 +207,16 @@ export default function OrderConfirmation({
     setError(null);
 
     // Actualiza la transacción con las observaciones actuales
-    setTransaction((prev) => ({ ...prev, notes: observations }));
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      date: getLocalISOStringWithOffset(),
+      created_at: getLocalISOStringWithOffset(),
+      notes: observations,
+    };
+  
 
     try {
-      await createOrder(transaction).unwrap();
+      await createOrder(updatedTransaction).unwrap();
       onCancel();
     } catch (err) {
       setError(
@@ -221,6 +227,31 @@ export default function OrderConfirmation({
     }
   };
 
+  function getLocalISOStringWithOffset(): string {
+    const date = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+    const ms = date.getMilliseconds().toString().padStart(3, '0');
+    
+    // El offset en minutos (por ejemplo, para UTC-3 obtendrás 180)
+    const offset = -date.getTimezoneOffset();
+    const sign = offset >= 0 ? '+' : '-';
+    const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
+    const offsetMinutes = pad(Math.abs(offset) % 60);
+  
+    // Devuelve la cadena en formato ISO local con el offset, por ejemplo:
+    // "2025-02-10T18:05:53.362-03:00"
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offsetHours}:${offsetMinutes}`;
+  }
+  
+  
+
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-md">
