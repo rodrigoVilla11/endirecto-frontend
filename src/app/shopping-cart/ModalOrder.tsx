@@ -1,14 +1,15 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CiGps } from "react-icons/ci";
 import { useClient } from "../context/ClientContext";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/customersTransports";
 import { useCreateOrderMutation } from "@/redux/services/ordersApi";
 import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
+import { useRouter } from "next/navigation";
 
 interface OrderItem {
   id: string;
@@ -72,14 +73,15 @@ export default function OrderConfirmation({
   order,
   totalFormatted,
 }: OrderConfirmationProps) {
-  const [createOrder, { isLoading: isLoadingCreate, isSuccess, isError }] =
-    useCreateOrderMutation();
+  const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
   const [checkInsituVisit] = useCheckInsituVisitMutation(); // Hook para verificar insitu
   const { selectedClientId } = useClient();
+  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
-  // Estados para GPS e Insitu
+  // Estados para GPS, Insitu y el tick de éxito
   const [gps, setGPS] = useState("");
   const [insitu, setInsitu] = useState<boolean | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Otros estados
   const [observations, setObservations] = useState("");
@@ -121,7 +123,7 @@ export default function OrderConfirmation({
     total: total,
     notes: observations,
     date: new Date().toISOString(),
-  created_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
     details: [],
     gps: "",
     insitu: false,
@@ -200,6 +202,8 @@ export default function OrderConfirmation({
     );
   };
 
+  const router = useRouter();
+
   // Función para enviar el pedido
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,11 +217,28 @@ export default function OrderConfirmation({
       created_at: getLocalISOStringWithOffset(),
       notes: observations,
     };
-  
 
     try {
       await createOrder(updatedTransaction).unwrap();
-      onCancel();
+
+      // Actualiza el shopping_cart del cliente eliminando solo los artículos incluidos en la transacción
+      if (customer && customer.shopping_cart) {
+        const transactionArticleIds = updatedTransaction.details.map(
+          (detail) => detail.article.id
+        );
+        const updatedShoppingCart = customer.shopping_cart.filter(
+          (item: string) => !transactionArticleIds.includes(item)
+        );
+        await updateCustomer({ id: customer.id, shopping_cart: updatedShoppingCart }).unwrap();
+      }
+
+      // Mostrar tick verde en el centro de la pantalla y luego cerrar el modal
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onCancel();
+      }, 2000);
+      router.push("/dashboard")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al procesar el pedido"
@@ -244,115 +265,121 @@ export default function OrderConfirmation({
     const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
     const offsetMinutes = pad(Math.abs(offset) % 60);
   
-    // Devuelve la cadena en formato ISO local con el offset, por ejemplo:
-    // "2025-02-10T18:05:53.362-03:00"
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offsetHours}:${offsetMinutes}`;
   }
   
-  
-
-  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-800">
-            Cierre de PEDIDO
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-            disabled={isSubmitting}
-          >
-            <X className="h-6 w-6" />
-          </button>
+    <>
+      {/* Superposición del tick verde */}
+      {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-full">
+            <CheckCircle className="w-20 h-20 text-green-500" />
+          </div>
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-6">
-          {error && (
-            <div className="p-2 bg-red-100 text-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-gray-600 text-sm">Total Sin Impuestos</p>
-              <p className="text-2xl font-semibold">{totalFormatted}</p>
-            </div>
-            <p className="text-gray-600 text-sm">{itemCount} Artículos</p>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-bold text-gray-800">
+              Cierre de PEDIDO
+            </h2>
+            <button
+              onClick={onCancel}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              disabled={isSubmitting}
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
 
-          <p className="text-xs text-gray-500 italic">
-            Atención: El pedido está sujeto a disponibilidad de stock y/o
-            cambios de precio sin previo aviso.
-          </p>
+          <form onSubmit={handleSubmit} className="p-4 space-y-6">
+            {error && (
+              <div className="p-2 bg-red-100 text-red-700 rounded-md">
+                {error}
+              </div>
+            )}
 
-          {/* Sección para obtener y mostrar la ubicación e insitu */}
-          <div className="space-y-2">
-            <p className="font-medium text-gray-700 text-sm">GPS</p>
-            <div className="flex items-center space-x-2 text-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-gray-600 text-sm">Total Sin Impuestos</p>
+                <p className="text-2xl font-semibold">{totalFormatted}</p>
+              </div>
+              <p className="text-gray-600 text-sm">{itemCount} Artículos</p>
+            </div>
+
+            <p className="text-xs text-gray-500 italic">
+              Atención: El pedido está sujeto a disponibilidad de stock y/o
+              cambios de precio sin previo aviso.
+            </p>
+
+            {/* Sección para obtener y mostrar la ubicación e insitu */}
+            <div className="space-y-2">
+              <p className="font-medium text-gray-700 text-sm">GPS</p>
+              <div className="flex items-center space-x-2 text-sm">
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  className="w-6 h-6 rounded-full bg-emerald-500 cursor-pointer flex justify-center items-center"
+                  disabled={isSubmitting}
+                >
+                  <CiGps className="text-white" />
+                </button>
+                <span className="text-gray-600">
+                  {insitu === null
+                    ? "No verificado"
+                    : insitu
+                    ? "Insitu ✅"
+                    : "No Insitu ❌"}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="observations"
+                className="block text-gray-700 text-base font-bold"
+              >
+                Observaciones
+              </label>
+              <textarea
+                id="observations"
+                rows={3}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-base"
+                placeholder="Ingrese un comentario"
+                value={observations}
+                onChange={handleObservationChange}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
-                onClick={handleGetLocation}
-                className="w-6 h-6 rounded-full bg-emerald-500 cursor-pointer flex justify-center items-center"
+                onClick={onCancel}
                 disabled={isSubmitting}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 font-bold"
               >
-                <CiGps className="text-white" />
+                Cancelar
               </button>
-              <span className="text-gray-600">
-                {insitu === null
-                  ? "No verificado"
-                  : insitu
-                  ? "Insitu ✅"
-                  : "No Insitu ❌"}
-              </span>
+              <button
+                type="submit"
+                disabled={
+                  isSubmitting ||
+                  isCustomerLoading ||
+                  isPaymentLoading ||
+                  !selectedClientId
+                }
+                className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 font-bold"
+              >
+                {isSubmitting ? "Procesando..." : "Aceptar"}
+              </button>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="observations"
-              className="block text-gray-700 text-base font-bold"
-            >
-              Observaciones
-            </label>
-            <textarea
-              id="observations"
-              rows={3}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-base"
-              placeholder="Ingrese un comentario"
-              value={observations}
-              onChange={handleObservationChange}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 font-bold"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={
-                isSubmitting ||
-                isCustomerLoading ||
-                isPaymentLoading ||
-                !selectedClientId
-              }
-              className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 font-bold"
-            >
-              {isSubmitting ? "Procesando..." : "Aceptar"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

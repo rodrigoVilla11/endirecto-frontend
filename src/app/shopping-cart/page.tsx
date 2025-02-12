@@ -89,13 +89,15 @@ const ShoppingCart = () => {
         );
 
         // Obtener precio base
-        let price =
-          prices.find(
-            (p) =>
-              p.article_id === articleId &&
-              p.price_list_id === customer?.price_list_id
-          )?.price || 0;
+        const priceObj = prices.find(
+          (p) =>
+            p.article_id === articleId &&
+            p.price_list_id === customer?.price_list_id
+        );
+        let price = priceObj ? (priceObj.offer !== null ? priceObj.offer : priceObj.price) : 0;
+        
 
+          console.log(price)
         // Aplicar bonus si existe
         const bonus = articlesBonuses?.find(
           (b) => b.item_id === article?.item_id
@@ -368,13 +370,13 @@ const ShoppingCart = () => {
   });
 
   const tableHeaders = [
-    { name: "Incluir", key: "included" },
+    { name: "Incluir", key: "included", important: true },
     { name: "Marca", key: "brand" },
-    { component: <FaImage className="text-center text-xl" />, key: "image" },
-    { name: "Artículo", key: "name" },
+    { component: <FaImage className="text-center text-xl" />, key: "image"},
+    { name: "Artículo", key: "name", important: true },
     { name: "Stock", key: "stock" },
     { name: "Precio", key: "price" },
-    { name: "Cantidad", key: "quantity" },
+    { name: "Cantidad", key: "quantity", important: true },
     { name: "Total", key: "total" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];

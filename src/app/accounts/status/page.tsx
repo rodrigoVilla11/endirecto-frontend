@@ -382,18 +382,18 @@ const Page = () => {
         <Header headerBody={headerBody} />
         <Table
           headers={[
-            { name: "Acción", key: "action" },
+            { name: "Acción", key: "action", important: true },
             {
               component: (
                 <IoInformationCircleOutline className="text-center text-xl"  />
               ),
-              key: "info",
+              key: "info", important: true
             },
             { name: "Customer", key: "customer_id", important: true },
             { name: "Type", key: "type" },
-            { name: "Number", key: "number" },
+            { name: "Number", key: "number", important: true },
             { name: "Date", key: "date" },
-            { name: "Amount", key: "amount" },
+            { name: "Amount", key: "amount", important: true },
             { name: "Balance", key: "balance" },
             { name: "Expiration", key: "expiration_date" },
             { name: "Logistic", key: "expiration_status" },
