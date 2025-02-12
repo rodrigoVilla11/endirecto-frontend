@@ -19,6 +19,7 @@ import {
   useGetCustomerInformationByCustomerIdQuery,
   useGetLookupDocumentsQuery,
 } from "@/redux/services/customersInformations";
+import DocumentDetails from "./DocumentDetails";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -34,16 +35,20 @@ const Page = () => {
   const [customer_id, setCustomer_id] = useState("");
   // sortQuery en el formato "campo:asc" o "campo:desc"
   const [sortQuery, setSortQuery] = useState<string>("");
+  const [selectedDocs, setSelectedDocs] = useState<any[]>([]);
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { selectedClientId } = useClient();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+
   // Endpoint para obtener información del cliente (por customer_id)
   const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
   });
-  
+
   // Referencias para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
@@ -57,6 +62,21 @@ const Page = () => {
     return `${year}-${month}-${day}`;
   }
 
+  const handleToggleSelectDocument = (document: any) => {
+    // Usamos el campo 'id' o 'key' para identificar el documento
+    const exists = selectedDocs.some((doc) => doc.key === document.id);
+    if (exists) {
+      // Quitar documento
+      setSelectedDocs((prev) => prev.filter((doc) => doc.key !== document.id));
+    } else {
+      // Agregar documento; puedes almacenar solo lo que necesites, por ejemplo, id y amount
+      setSelectedDocs((prev) => [
+        ...prev,
+        { key: document.id, amount: document.amount },
+      ]);
+    }
+  };
+
   // Extraer sortField y sortOrder de sortQuery
   const [rawSortField, rawSortOrder] = sortQuery
     ? sortQuery.split(":")
@@ -65,7 +85,9 @@ const Page = () => {
   // Validamos que rawSortOrder sea "asc" o "desc"
   const sortField = rawSortField;
   const sortOrder =
-    rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : undefined;
+    rawSortOrder === "asc" || rawSortOrder === "desc"
+      ? rawSortOrder
+      : undefined;
 
   // Endpoint RTK Query: se pasan los parámetros de paginación, filtrado y ordenación
   const {
@@ -89,7 +111,6 @@ const Page = () => {
       refetchOnReconnect: true,
     }
   );
-
 
   // Estados para el Modal
   const openCreateModal = () => setCreateModalOpen(true);
@@ -209,6 +230,20 @@ const Page = () => {
 
   if (isQueryLoading && page === 1) return <p>Loading...</p>;
 
+  const selectedSum = selectedDocs.reduce(
+    (acc, doc) => acc + Number(doc.amount),
+    0
+  );
+  const handleOpenDocumentModal = (documentId: string) => {
+    setSelectedDocumentId(documentId);
+    setDocumentModalOpen(true);
+  };
+
+  const closeDocumentModal = () => {
+    setDocumentModalOpen(false);
+    setSelectedDocumentId(null);
+  };
+
   // Mapea los documentos para la tabla
   const tableData = items
     ?.filter((document) => {
@@ -222,17 +257,21 @@ const Page = () => {
       const seller = sellersData?.find(
         (data) => data.id === document.seller_id
       );
-
+      const isSelected = selectedDocs.some((doc) => doc.key === document.id);
       return {
         key: document.id,
+        action: (
+          <ToggleSwitch
+            selected={isSelected}
+            onToggle={() => handleToggleSelectDocument(document)}
+          />
+        ),
         id: (
           <div className="flex justify-center items-center">
-            <IoInformationCircleOutline className="text-center text-xl" />
+            <IoInformationCircleOutline className="text-center text-xl"  onClick={() => handleOpenDocumentModal(document.id)}/>
           </div>
         ),
-        customer: customer
-          ? `${customer.id} - ${customer.name}`
-          : "NOT FOUND",
+        customer: customer ? `${customer.id} - ${customer.name}` : "NOT FOUND",
         type: document.type,
         number: document.number,
         date: document.date,
@@ -243,9 +282,6 @@ const Page = () => {
         seller: seller?.name || "NOT FOUND",
       };
     });
-
-
-
 
   // Determinar si se recibió el cliente o un resumen
   const isClient = totalDebt && "documents_balance" in totalDebt;
@@ -323,7 +359,10 @@ const Page = () => {
     secondSection: {
       title: "Total Owed",
       // Se pasa directamente el número a la función de formateo
-      amount: `${formatPriceWithCurrency(finalSumAmount)}`,
+      amount:
+        selectedDocs.length > 0
+          ? `${formatPriceWithCurrency(selectedSum)}`
+          : `${formatPriceWithCurrency(finalSumAmount)}`,
     },
     results: `${data?.totalData || 0} Results`,
   };
@@ -343,17 +382,18 @@ const Page = () => {
         <Header headerBody={headerBody} />
         <Table
           headers={[
+            { name: "Acción", key: "action", important: true },
             {
               component: (
-                <IoInformationCircleOutline className="text-center text-xl" />
+                <IoInformationCircleOutline className="text-center text-xl"  />
               ),
-              key: "info",
+              key: "info", important: true
             },
             { name: "Customer", key: "customer_id", important: true },
             { name: "Type", key: "type" },
-            { name: "Number", key: "number" },
+            { name: "Number", key: "number", important: true },
             { name: "Date", key: "date" },
-            { name: "Amount", key: "amount" },
+            { name: "Amount", key: "amount", important: true },
             { name: "Balance", key: "balance" },
             { name: "Expiration", key: "expiration_date" },
             { name: "Logistic", key: "expiration_status" },
@@ -368,10 +408,42 @@ const Page = () => {
         <div ref={observerRef} className="h-10" />
       </div>
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CRM closeModal={closeCreateModal} selectedClientId={selectedClientId} />
+        <CRM
+          closeModal={closeCreateModal}
+          selectedClientId={selectedClientId}
+        />
       </Modal>
+        <Modal isOpen={isDocumentModalOpen} onClose={closeDocumentModal}>
+          <DocumentDetails
+            documentId={selectedDocumentId || ""}
+            onClose={closeDocumentModal}
+          />
+        </Modal>
     </PrivateRoute>
   );
 };
 
 export default Page;
+
+const ToggleSwitch = ({
+  selected,
+  onToggle,
+}: {
+  selected: boolean;
+  onToggle: () => void;
+}) => {
+  return (
+    <div
+      onClick={onToggle}
+      className={`relative inline-block w-8 h-4 cursor-pointer rounded-full transition-colors duration-300 ${
+        selected ? "bg-green-500" : "bg-gray-300"
+      }`}
+    >
+      <div
+        className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transform transition-transform duration-300 ${
+          selected ? "translate-x-4" : ""
+        }`}
+      ></div>
+    </div>
+  );
+};
