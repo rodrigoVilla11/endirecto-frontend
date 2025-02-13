@@ -73,7 +73,8 @@ const ShoppingCart = () => {
       !brands ||
       !prices ||
       !stock ||
-      !paymentsConditions
+      !paymentsConditions ||
+      !articlesBonuses
     )
       return;
 
@@ -89,25 +90,29 @@ const ShoppingCart = () => {
           parseFloat(paymentCondition?.percentage || "0")
         );
 
-        // Obtener precio base
+        // 🔹 Obtener el precio base
         const priceObj = prices.find(
           (p) =>
-            p.article_id === articleId &&
-            p.price_list_id === customer?.price_list_id
+            p.article_id === articleId && p.price_list_id === customer?.price_list_id
         );
-        let price = priceObj ? (priceObj.offer !== null ? priceObj.offer : priceObj.price) : 0;
-        
 
-          console.log(price)
-        // Aplicar bonus si existe
-        const bonus = articlesBonuses?.find(
-          (b) => b.item_id === article?.item_id
-        );
-        if (bonus?.percentage_1 && typeof price === "number") {
-          const discount = (price * bonus.percentage_1) / 100;
-          price -= discount;
+        // 🔹 Verificar si hay una oferta activa y usarla directamente si existe
+        let price = priceObj?.offer !== null && priceObj?.offer !== undefined
+          ? priceObj.offer
+          : priceObj?.price || 0;
+
+        // 🔹 Aplicar bonus solo si NO es una oferta
+        let discount = 0;
+        const bonus = articlesBonuses.find((b) => b.item_id === article?.item_id);
+
+        if (priceObj?.offer === null || priceObj?.offer === undefined) {
+          if (bonus?.percentage_1 && typeof price === "number") {
+            discount = (price * bonus.percentage_1) / 100;
+            price -= discount;
+          }
         }
 
+        // 🔹 Aplicar recargo de la condición de pago (siempre, independiente de oferta o no)
         if (percentagePaymentCondition && typeof price === "number") {
           const recharge = (price * percentagePaymentCondition) / 100;
           price += recharge;
@@ -116,11 +121,13 @@ const ShoppingCart = () => {
         const stockItem = stock.find((s) => s.article_id === articleId);
         const existingItem = acc.find((item) => item.id === articleId);
 
+        // 🔹 Si el artículo ya está en el carrito, incrementar cantidad
         if (existingItem) {
           existingItem.quantity += 1;
           return acc;
         }
 
+        // 🔹 Agregar artículo al carrito si existe
         if (article) {
           acc.push({
             id: articleId,
@@ -145,7 +152,8 @@ const ShoppingCart = () => {
 
     setCartItems(items);
     setOrderItems(items.map((item) => ({ ...item, selected: true })));
-  }, [customer, articles, brands, prices, stock, articlesBonuses]);
+  }, [customer, articles, brands, prices, stock, articlesBonuses, paymentsConditions]);
+
 
   const handleQuantityChange = async (
     articleId: string,
