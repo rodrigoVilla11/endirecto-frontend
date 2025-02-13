@@ -158,11 +158,11 @@ const Page = () => {
   const tableHeader = [
     { component: <AiOutlineDownload className="text-center text-xl" />, key: "info" },
     { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
-    { name: "Number", key: "number" },
+    { name: "Number", key: "number", important: true },
     { name: "Date", key: "date" },
     { name: "Payment", key: "payment" },
-    { name: "Amount", key: "amount" },
-    { name: "Status", key: "status" },
+    { name: "Amount", key: "amount",important: true },
+    { name: "Status", key: "status",important: true },
     { name: "Notes", key: "notes" },
     { name: "Seller", key: "seller" },
   ];

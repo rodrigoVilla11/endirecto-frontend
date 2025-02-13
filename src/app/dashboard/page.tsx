@@ -4,9 +4,12 @@ import DashboardPage from "../components/Dashboard/DashboardPage";
 import PrivateRoute from "../context/PrivateRoutes";
 import { useAuth } from "../context/AuthContext";
 import DashboardSeller from "../components/Dashboard/DashboardSeller";
+import { useMobile } from "../context/ResponsiveContext";
 
 const Dashboard = () => {
   const { role } = useAuth();
+
+  const { isMobile } = useMobile();
 
   return (
     <div className="w-full">
@@ -19,7 +22,7 @@ const Dashboard = () => {
           "CUSTOMER",
         ]}
       >
-        {role !== "VENDEDOR" ? <DashboardPage /> : <DashboardSeller />}
+        {role === "VENDEDOR" && isMobile ? <DashboardSeller /> : <DashboardPage />}
       </PrivateRoute>
     </div>
   );

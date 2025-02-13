@@ -137,9 +137,9 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Article", key: "article" },
-    { name: "Technical Detail", key: "technical_detail_name" },
-    { name: "Value", key: "value" },
+    { name: "Article", key: "article",  important:true },
+    { name: "Technical Detail", key: "technical_detail_name", important:true },
+    { name: "Value", key: "value", important:true },
   ];
 
   // Configuración del header: botones, filtros y resultados (usando el total devuelto por el servicio)

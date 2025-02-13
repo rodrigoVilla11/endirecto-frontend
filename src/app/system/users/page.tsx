@@ -211,9 +211,9 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Id", key: "id" },
-    { name: "User", key: "username" },
+    { name: "User", key: "username", important: true },
     { name: "Email", key: "email" },
-    { name: "Role", key: "role" },
+    { name: "Role", key: "role", important: true },
     { name: "Branch", key: "branch" },
     { name: "Zone", key: "zone" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },

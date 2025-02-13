@@ -18,6 +18,7 @@ import PaymentModal from "./PaymentModal";
 import { useState } from "react";
 import VisitModal from "./VisitModal";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 interface CustomerDashboardProps {
   customer: {
@@ -33,6 +34,8 @@ export default function CustomerDashboard() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const { selectedClientId } = useClient();
+  const { isMobile } = useMobile();
+
   const {
     data: customer,
     error,
@@ -55,18 +58,19 @@ export default function CustomerDashboard() {
     ? data.documents_balance_expired
     : "0";
 
-  const sum = Number(documentsBalanceExpired) + Number(documentsBalance)
+  const sum = Number(documentsBalanceExpired) + Number(documentsBalance);
   const formatedSumAmount = Number(sum)?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  const formatedExpiredSumAmount = Number(
-    documentsBalance 
-  )?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatedExpiredSumAmount = Number(documentsBalance)?.toLocaleString(
+    "es-ES",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  );
 
   if (!customer) {
     return <>NOT FOUND CUSTOMER</>;
@@ -76,16 +80,14 @@ export default function CustomerDashboard() {
     router.push("/catalogue");
   };
 
-  
-
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className="min-h-screen bg-zinc-900 p-4 mt-10">
+      <div className={`min-h-screen ${isMobile ? "bg-zinc-900" : ""} p-4 mt-10`}>
         <div className="max-w-md mx-auto space-y-4">
           {/* Customer Header */}
-          <h1 className="text-xl font-bold text-white mb-6">
+          <h1 className={`text-xl font-bold  ${isMobile ? "text-white" : ""}  mb-6`}>
             {customer.id} - {customer.name}
           </h1>
 
@@ -126,7 +128,10 @@ export default function CustomerDashboard() {
           /> */}
 
           {/* Catalog Section */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/catalogue")}>
+          <section
+            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
+            onClick={() => router.push("/catalogue")}
+          >
             <div className="flex items-center gap-3 mb-2">
               <Archive className="h-6 w-6 text-zinc-400" />
               <h2 className="text-lg font-semibold text-white">Catálogo</h2>
@@ -137,7 +142,10 @@ export default function CustomerDashboard() {
           </section>
 
           {/* Account Status */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/account/status")}>
+          <section
+            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
+            onClick={() => router.push("/account/status")}
+          >
             <div className="flex items-center gap-3 mb-2">
               <FileText className="h-6 w-6 text-emerald-500" />
               <h2 className="text-lg font-semibold text-white">
@@ -150,13 +158,15 @@ export default function CustomerDashboard() {
               </p>
               <p className="text-sm text-zinc-300">
                 VENCIDO: $ {formatedExpiredSumAmount}
-
               </p>
             </div>
           </section>
 
           {/* Pending Claims */}
-          <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4" onClick={() => router.push("/reclaims")}>
+          <section
+            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
+            onClick={() => router.push("/reclaims")}
+          >
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-zinc-400" />
               <h2 className="text-lg font-semibold text-white">
@@ -178,6 +188,7 @@ interface ActionCardProps {
 }
 
 function ActionCard({ icon, title, onClick, className = "" }: ActionCardProps) {
+  
   return (
     <button
       onClick={onClick}

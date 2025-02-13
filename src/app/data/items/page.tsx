@@ -178,9 +178,9 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Id", key: "id" },
-    { name: "Name", key: "name" },
-    { component: <FaImage className="text-center text-xl" />, key: "image" },
+    { name: "Id", key: "id", important:true },
+    { name: "Name", key: "name" , important:true},
+    { component: <FaImage className="text-center text-xl" />, key: "image", important:true },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
   ];
 

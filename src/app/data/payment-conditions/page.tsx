@@ -137,10 +137,10 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Id", key: "id" },
-    { name: "Name", key: "name" },
-    { name: "Percentage", key: "percentage" },
-    { name: "Default", key: "default" },
+    { name: "Id", key: "id", important:true },
+    { name: "Name", key: "name", important:true },
+    { name: "Percentage", key: "percentage", important:true },
+    { name: "Default", key: "default"},
   ];
 
   // Configuración del header:

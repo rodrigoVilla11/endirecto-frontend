@@ -36,8 +36,8 @@ const Articles: React.FC<ArticlesProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const { selectedClientId } = useClient();
   const { isOpen } = useSideMenu();
-  
-  // Referencia para el contenedor scrollable y para el elemento observador
+
+  // Referencias para el scroll infinito
   const containerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<HTMLDivElement | null>(null);
   const prevFiltersRef = useRef<string>("");
@@ -55,7 +55,6 @@ const Articles: React.FC<ArticlesProps> = ({
     [brand, item, vehicleBrand, stock, tags, query, order]
   );
 
-  // Convertir los filtros a string para comparar cambios
   const filtersString = JSON.stringify(filters);
 
   const { data: customer } = useGetCustomerByIdQuery(
@@ -70,36 +69,31 @@ const Articles: React.FC<ArticlesProps> = ({
     ...filters,
   });
 
-  // Reinicia los items cuando cambien los filtros
+  // Reinicia los artículos cuando cambian los filtros
   useEffect(() => {
     if (prevFiltersRef.current !== filtersString) {
-      setItems([]); // Limpiar items inmediatamente
+      setItems([]);
       setPage(1);
       setIsLoadingMore(false);
       prevFiltersRef.current = filtersString;
     }
   }, [filtersString]);
 
-  // Actualiza los items cuando llegan nuevos datos
+  // Agrega nuevos artículos cuando se obtienen datos
   useEffect(() => {
     if (data?.articles) {
-      if (page === 1) {
-        setItems(data.articles);
-      } else {
-        setItems((prev) => [...prev, ...data.articles]);
-      }
+      setItems((prev) =>
+        page === 1 ? data.articles : [...prev, ...data.articles]
+      );
     }
   }, [data?.articles, page]);
 
-  // Efecto para el infinite scroll
+  // Implementación de Scroll Infinito
   useEffect(() => {
-    // Si no hay contenedor o elemento observador, salimos
     if (!containerRef.current || !observerRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Puedes agregar un log para ver cuándo se dispara el callback
-        // console.log("Observer entry:", entry);
         if (
           entry.isIntersecting &&
           !isLoading &&
@@ -113,7 +107,6 @@ const Articles: React.FC<ArticlesProps> = ({
         }
       },
       {
-        // Establece el contenedor scrollable como root
         root: containerRef.current,
         threshold: 0.5,
       }
@@ -127,7 +120,6 @@ const Articles: React.FC<ArticlesProps> = ({
     };
   }, [isLoading, isFetching, isLoadingMore, data?.articles]);
 
-  // Resetea isLoadingMore cuando termina la carga
   useEffect(() => {
     if (!isFetching && isLoadingMore) {
       setIsLoadingMore(false);
@@ -137,58 +129,73 @@ const Articles: React.FC<ArticlesProps> = ({
   const showLoading = isLoading || (isFetching && page === 1);
 
   return (
-    <div className="m-4 flex flex-col text-sm relative">
+    <div className="m-4 flex flex-col text-sm w-full max-w-[100vw] overflow-x-hidden">
+      {/* Pantalla de carga */}
       {showLoading && (
-        <div className="absolute inset-0 flex items-start justify-center bg-opacity-80 z-50 p-20">
-          <img src="/dma.png" alt="Loading..." className="h-40 w-60" />
-          <div className="absolute top-64 w-1/2 h-1 bg-gray-300 overflow-hidden">
-            <div className="h-full bg-blue-500 loading-bar" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-opacity-80 z-50 p-10">
+          <img
+            src="/dma.png"
+            alt="Loading..."
+            className="h-24 w-40 sm:h-32 sm:w-48"
+          />
+          <div className="mt-4 w-2/3 sm:w-1/2 h-2 bg-gray-300 overflow-hidden rounded-md">
+            <div className="h-full bg-blue-500 loading-bar"></div>
           </div>
         </div>
       )}
 
+      {/* Mensaje si no hay artículos */}
       {!showLoading && items.length === 0 && (
-        <div className="flex justify-center items-center h-full">
+        <div className="flex justify-center items-center h-40 text-gray-600">
           No se encontraron artículos
         </div>
       )}
 
+      {/* Contenedor de artículos con scroll */}
       {items.length > 0 && (
         <div
-          // Este contenedor es el que tiene scroll
           ref={containerRef}
-          className={`overflow-auto no-scrollbar h-[900px] ${
+          className={`overflow-auto no-scrollbar max-h-screen p-2 w-full flex justify-center ${
             showArticles === "catalogue"
-              ? isOpen
-                ? "grid gap-6 justify-items-center grid-cols-[repeat(auto-fit,_minmax(180px,_1fr))]"
-                : "grid gap-6 justify-items-center grid-cols-[repeat(auto-fit,_minmax(185px,_1fr))]"
-              : ""
+              ? "grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 place-items-center"
+              : "flex flex-col justify-center items-center"
           }`}
         >
-          {showArticles === "catalogue" ? (
-            items.map((article, index) => (
-              <CardArticles
-                key={article.id || index}
-                article={article}
-                showPurchasePrice={showPurchasePrice}
-              />
-            ))
-          ) : (
-            <>
-              {items.map((article, index) => (
-                <ListArticle
+          {/* Vista de catálogo */}
+          {showArticles === "catalogue"
+            ? items.map((article, index) => (
+                <div
                   key={article.id || index}
-                  article={article}
-                  showPurchasePrice={showPurchasePrice}
-                />
+                  className="w-full max-w-sm flex justify-center"
+                >
+                  <CardArticles
+                    article={article}
+                    showPurchasePrice={showPurchasePrice}
+                  />
+                </div>
+              ))
+            : /* Vista de lista */
+              items.map((article, index) => (
+                <div
+                  key={article.id || index}
+                  className="w-full max-w-sm flex justify-center"
+                >
+                  <ListArticle
+                    article={article}
+                    showPurchasePrice={showPurchasePrice}
+                  />
+                </div>
               ))}
-            </>
-          )}
 
-          {/* Elemento observador colocado al final del contenedor scrollable */}
-          <div ref={observerRef} className="h-20 flex items-center justify-center">
+          {/* Carga de más artículos */}
+          <div
+            ref={observerRef}
+            className="h-20 flex items-center justify-center w-full"
+          >
             {isFetching && !showLoading && (
-              <div className="text-center py-4 text-xs font-semibold">Cargando más artículos...</div>
+              <div className="text-center py-4 text-xs font-semibold">
+                Cargando más artículos...
+              </div>
             )}
           </div>
         </div>

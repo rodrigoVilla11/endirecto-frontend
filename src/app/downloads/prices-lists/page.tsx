@@ -36,7 +36,7 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Brand", key: "brand" },
+    { name: "Brand", key: "brand", important: true },
     { name: "File EXCEL", key: "excel" },
     { name: "File TXT", key: "txt" },
   ];

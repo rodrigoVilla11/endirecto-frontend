@@ -273,6 +273,11 @@ const SelectCustomer = () => {
         </div>
       ),
       "customer-id": customer.id,
+      id: (
+        <span onClick={() => handleSelectCustomer(customer.id)} className="hover:cursor-pointer">
+          {customer.id}
+        </span>
+      ),
       customer: (
         <span onClick={() => handleSelectCustomer(customer.id)} className="hover:cursor-pointer">
           {customer.name}
@@ -328,17 +333,18 @@ const SelectCustomer = () => {
       component: <CgProfile className="text-center text-xl" />,
       key: "profile",
     },
-    { name: "Customer", key: "customer" },
+    { name: "Id", key: "id",important: true },
+    { name: "Customer", key: "customer",important: true },
     { name: "Name", key: "name" },
     { name: "Address", key: "address" },
     { name: "Payment Condition", key: "payment-condition" },
     { name: "Status Account", key: "status-account" },
     { name: "Expired Debt", key: "expired-debt" },
     { name: "Articles on Cart", key: "articles-on-cart" },
-    { name: "GPS", key: "gps" },
+    { name: "GPS", key: "gps",important: true },
     {
       component: <CiMenuKebab className="text-center text-xl" />,
-      key: "menu",
+      key: "menu", important: true
     },
   ];
 

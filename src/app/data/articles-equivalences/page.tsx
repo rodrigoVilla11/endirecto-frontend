@@ -163,9 +163,9 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Article", key: "article" },
-    { name: "Brand", key: "brand" },
-    { name: "Code", key: "code" },
+    { name: "Article", key: "article",  important:true },
+    { name: "Brand", key: "brand",  important:true },
+    { name: "Code", key: "code", important:true },
   ];
 
   // Configuración del header con botones, filtros y resultados

@@ -4,7 +4,7 @@ const CardShortcuts = ({ title, logo }: any) => {
   return (
     <button
     className={`
-      h-24 w-90 sm:w-72
+      h-24 w-[350px] sm:w-72
       flex items-center justify-between
       bg-white rounded-lg shadow-md
       p-4 hover:bg-gray-50 transition-colors

@@ -56,8 +56,8 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Brand", key: "brand" },
-    { name: "Margin", key: "margin" },
+    { name: "Brand", key: "brand", important: true },
+    { name: "Margin", key: "margin", important: true },
   ];
 
   const headerBody = {

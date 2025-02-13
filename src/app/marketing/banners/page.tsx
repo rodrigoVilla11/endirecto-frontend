@@ -97,7 +97,7 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name" },
+    { name: "Name", key: "name", important: true },
     { name: "Sequence", key: "sequence" },
     { name: "Enable", key: "enable" },
     { name: "Home Web", key: "homeWeb" },

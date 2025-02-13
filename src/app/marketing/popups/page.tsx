@@ -104,11 +104,11 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name" },
+    { name: "Name", key: "name", important: true },
     { name: "Sequence", key: "sequence" },
-    { name: "Location", key: "location" },
-    { name: "Enable", key: "enable" },
-    { name: "Web", key: "web" },
+    { name: "Location", key: "location", important: true },
+    { name: "Enable", key: "enable", important: true },
+    { name: "Web", key: "web", important: true },
     { name: "URL", key: "url" },
     { name: "Visualizations", key: "visualizations" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },

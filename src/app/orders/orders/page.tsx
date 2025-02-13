@@ -212,11 +212,11 @@ const Page = () => {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
       key: "info",
     },
-    { name: "Seller", key: "seller" },
-    { name: "Customer", key: "customer" },
-    { name: "Number", key: "number" },
+    { name: "Seller", key: "seller" ,important: true},
+    { name: "Customer", key: "customer" ,important: true},
+    { name: "Number", key: "number"},
     { name: "Date", key: "date" },
-    { name: "Total Without Taxes", key: "total-without-taxes" },
+    { name: "Total Without Taxes", key: "total-without-taxes" ,important: true},
     { name: "Status", key: "status" },
   ];
 
