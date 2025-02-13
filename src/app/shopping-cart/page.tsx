@@ -23,6 +23,7 @@ import ArticleDetails from "../components/Catalogue/components/Articles/componen
 import { useArticleId } from "../context/AritlceIdContext";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useMobile } from "../context/ResponsiveContext";
+import MobileTable from "../components/components/MobileTable";
 
 interface CartItem {
   id: string;
@@ -444,9 +445,16 @@ const ShoppingCart = () => {
 
         <div className="overflow-x-auto px-2 md:px-4">
           {cartItems.length > 0 ? (
-            <div className="min-w-full">
-              <Table headers={tableHeaders} data={tableData} />
-            </div>
+            isMobile ? (
+              <MobileTable data={tableData} handleModalOpen={handleOpenModal} 
+              handleQuantityChange={handleQuantityChange} // 🔹 Permite cambiar la cantidad
+              handleRemoveItem={handleRemoveItem} />
+            ) : (
+              <Table
+                headers={tableHeaders}
+                data={tableData}
+              />
+            )
           ) : (
             <div className="text-center py-8 text-gray-500">El carrito está vacío</div>
           )}

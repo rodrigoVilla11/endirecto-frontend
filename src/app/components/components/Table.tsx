@@ -16,6 +16,7 @@ interface TableProps {
   sortField?: string;
   sortOrder?: "asc" | "desc" | "";
 }
+
 export default function Table({
   headers,
   data: rawData,
@@ -30,28 +31,39 @@ export default function Table({
     const isExpanded = expandedRow === index;
 
     return (
-      <div key={row.key || index} className="border-b border-gray-200">
-        <div
-          className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
-          onClick={() => setExpandedRow(isExpanded ? null : index)}
-        >
-          <div className="flex gap-4 z-10 text-sm md:text-[13px]">
-            {headers.filter((h) => h.important).map((header) => (
-              <div key={header.key} className="text-gray-600">
-                {row[header.key]}
-              </div>
-            ))}
-          </div>
-          <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+      <div key={row.key || index} className="border-b border-gray-200 bg-white p-3 rounded-lg shadow-sm">
+        {/* 📌 Key destacada arriba */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-primary font-bold bg-gray-100 px-2 py-1 rounded-md border-l-4 border-primary text-xs">
+            {row.key}
+          </span>
         </div>
 
+        {/* 📌 Fila principal en móviles (Nombre: Valor) */}
+        <div
+          className="p-2 cursor-pointer hover:bg-gray-100 rounded-md"
+          onClick={() => setExpandedRow(isExpanded ? null : index)}
+        >
+          <div className="grid grid-cols-2 gap-2 w-full">
+            {headers
+              .filter((h) => h.important)
+              .map((header) => (
+                <div key={header.key} className="flex flex-col">
+                  <span className="text-xs font-semibold text-gray-600">{header.name}:</span>
+                  <span className="text-sm text-gray-800">{row[header.key] || "N/A"}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* 📌 Contenido expandible en móviles */}
         {isExpanded && (
-          <div className="p-3 bg-gray-50">
-            <div className="grid gap-2">
+          <div className="p-3 bg-gray-50 rounded-b-md mt-2">
+            <div className="grid grid-cols-2 gap-4">
               {headers.map((header) => (
-                <div key={header.key} className="flex justify-between text-sm">
+                <div key={header.key} className="flex justify-between items-center text-sm">
                   <span className="font-medium text-gray-700">{header.name}:</span>
-                  <span className="text-gray-600">{row[header.key]}</span>
+                  <span className="text-gray-600">{row[header.key] || "N/A"}</span>
                 </div>
               ))}
             </div>
@@ -111,11 +123,11 @@ export default function Table({
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 mx-2 md:mx-4">
       <div className="w-full">
-        {/* Muestra la tabla expandible en móviles y `md` */}
-        <div className="md:block lg:hidden">{validData.map((row, index) => renderMobileRow(row, index))}</div>
+        {/* 📌 Tabla en móviles con formato "Nombre: Valor" */}
+        <div className="md:hidden">{validData.map((row, index) => renderMobileRow(row, index))}</div>
 
-        {/* Muestra la tabla normal solo en `lg` */}
-        <div className="hidden lg:block overflow-x-auto">{renderDesktopTable()}</div>
+        {/* 📌 Tabla en desktop */}
+        <div className="hidden md:block overflow-x-auto">{renderDesktopTable()}</div>
       </div>
     </div>
   );
