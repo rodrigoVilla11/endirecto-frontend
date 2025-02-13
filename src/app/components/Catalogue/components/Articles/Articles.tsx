@@ -157,7 +157,7 @@ const Articles: React.FC<ArticlesProps> = ({
           ref={containerRef}
           className={`overflow-auto no-scrollbar max-h-screen p-2 w-full flex justify-center ${
             showArticles === "catalogue"
-              ? "grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 place-items-center"
+              ? "grid gap-4 grid-cols-[repeat(auto-fit,_minmax(190px,_1fr))] place-items-center"
               : "flex flex-col justify-center items-center"
           }`}
         >
