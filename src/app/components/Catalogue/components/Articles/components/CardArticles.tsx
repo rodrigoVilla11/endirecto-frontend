@@ -100,7 +100,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
   return (
     <div>
-      <div className="relative flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 w-52">
+      <div className="relative flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 w-36 sm:w-52">
         {/* Menu Icons */}
         <div className="absolute top-2 right-2 z-30">
           <ArticleMenu onAddToFavourites={toggleFavourite} isFavourite={isFavourite} article={article} />

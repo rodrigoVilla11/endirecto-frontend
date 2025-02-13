@@ -381,14 +381,14 @@ const Page = () => {
         <Header headerBody={headerBody} />
         <Table
           headers={[
-            { name: "Acción", key: "action", important: true },
+            { name: "Acción", key: "action"},
             {
               component: (
                 <IoInformationCircleOutline className="text-center text-xl"  />
               ),
-              key: "info", important: true
+              key: "info"
             },
-            { name: "Customer", key: "customer_id", important: true },
+            { name: "Customer", key: "customer_id" },
             { name: "Type", key: "type" },
             { name: "Number", key: "number", important: true },
             { name: "Date", key: "date" },

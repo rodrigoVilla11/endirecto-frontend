@@ -20,7 +20,10 @@ const ButtonsIcons = ({ isMobile }: any) => {
     error: customerError,
     isLoading: isCustomerLoading,
     refetch: refetchCustomer,
-  } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
+  } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { refetchOnMountOrArgChange: true }
+  );
 
   const router = useRouter();
 
@@ -57,9 +60,11 @@ const ButtonsIcons = ({ isMobile }: any) => {
 
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
-     {!isMobile && <MdNotificationsOff className="cursor-pointer text-red-600" />}
-     {!isMobile &&<GiUsaFlag className="cursor-pointer" />}
-     {!isMobile &&<MdFullscreen className="cursor-pointer" />}
+      {!isMobile && (
+        <MdNotificationsOff className="cursor-pointer text-red-600" />
+      )}
+      {!isMobile && <GiUsaFlag className="cursor-pointer" />}
+      {!isMobile && <MdFullscreen className="cursor-pointer" />}
       {selectedClientId && (
         <div className="relative">
           <MdShoppingCart

@@ -27,7 +27,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
     return (
       <div className="flex justify-center items-center bg-white pt-2 px-4">
         <img
-          className="w-full h-48 object-contain"
+          className="w-full h-44 object-contain"
           src={defaultImage}
           alt="No disponible"
         />

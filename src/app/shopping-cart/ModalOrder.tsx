@@ -237,8 +237,8 @@ export default function OrderConfirmation({
       setTimeout(() => {
         setShowSuccess(false);
         onCancel();
+        window.location.href = "/dashboard";
       }, 2000);
-      router.push("/dashboard")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al procesar el pedido"

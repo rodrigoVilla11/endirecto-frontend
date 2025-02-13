@@ -129,7 +129,7 @@ const Articles: React.FC<ArticlesProps> = ({
   const showLoading = isLoading || (isFetching && page === 1);
 
   return (
-    <div className="m-4 flex flex-col text-sm w-full max-w-[100vw] overflow-x-hidden">
+    <div className="relative m-4 flex flex-col text-sm w-full max-w-[100vw] overflow-x-hidden">
       {/* Pantalla de carga */}
       {showLoading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-opacity-80 z-50 p-10">
@@ -153,29 +153,50 @@ const Articles: React.FC<ArticlesProps> = ({
 
       {/* Contenedor de artículos con scroll */}
       {items.length > 0 && (
-        <div
-          ref={containerRef}
-          className={`overflow-auto no-scrollbar max-h-screen p-2 w-full flex justify-center ${
-            showArticles === "catalogue"
-              ? "grid gap-4 grid-cols-[repeat(auto-fit,_minmax(190px,_1fr))] place-items-center"
-              : "flex flex-col justify-center items-center"
-          }`}
-        >
-          {/* Vista de catálogo */}
-          {showArticles === "catalogue"
-            ? items.map((article, index) => (
-                <div
-                  key={article.id || index}
-                  className="w-full max-w-sm flex justify-center"
-                >
+        <>
+          {/** 
+           * Si es "catalogue", usamos una grid para que cada artículo se coloque 
+           * en una tarjeta y se centre con place-items-center.
+           */}
+          {showArticles === "catalogue" ? (
+            <div
+              ref={containerRef}
+              className="overflow-auto no-scrollbar max-h-screen p-2 w-full
+                         grid gap-4
+                         grid-cols-[repeat(auto-fit,_minmax(120px,_1fr))]
+                         sm:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))]
+                         place-items-center"
+            >
+              {items.map((article, index) => (
+                <div key={article.id || index} className="max-w-xs w-full">
                   <CardArticles
                     article={article}
                     showPurchasePrice={showPurchasePrice}
                   />
                 </div>
-              ))
-            : /* Vista de lista */
-              items.map((article, index) => (
+              ))}
+
+              <div
+                ref={observerRef}
+                className="h-20 flex items-center justify-center w-full"
+              >
+                {isFetching && !showLoading && (
+                  <div className="text-center py-4 text-xs font-semibold">
+                    Cargando más artículos...
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /** 
+             * Si es "list", usamos flex-col y centramos cada artículo.
+             */
+            <div
+              ref={containerRef}
+              className="overflow-auto no-scrollbar max-h-screen p-2 w-full
+                         flex flex-col items-center"
+            >
+              {items.map((article, index) => (
                 <div
                   key={article.id || index}
                   className="w-full max-w-sm flex justify-center"
@@ -187,18 +208,19 @@ const Articles: React.FC<ArticlesProps> = ({
                 </div>
               ))}
 
-          {/* Carga de más artículos */}
-          <div
-            ref={observerRef}
-            className="h-20 flex items-center justify-center w-full"
-          >
-            {isFetching && !showLoading && (
-              <div className="text-center py-4 text-xs font-semibold">
-                Cargando más artículos...
+              <div
+                ref={observerRef}
+                className="h-20 flex items-center justify-center w-full"
+              >
+                {isFetching && !showLoading && (
+                  <div className="text-center py-4 text-xs font-semibold">
+                    Cargando más artículos...
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
