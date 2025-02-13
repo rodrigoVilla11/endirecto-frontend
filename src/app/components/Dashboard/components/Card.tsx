@@ -2,7 +2,7 @@ import React from "react";
 
 const Card = ({ logo, title, subtitle, text }: any) => {
   return (
-    <div className="w-90 sm:w-72 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer">
+    <div className="w-[350px] sm:w-72 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer">
       <div className="space-y-4">
         <div className="flex space-x-4 items-center">
           <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">

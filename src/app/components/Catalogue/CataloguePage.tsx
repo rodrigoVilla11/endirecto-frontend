@@ -4,9 +4,7 @@ import FilterBox from "./components/FilterBox/FilterBox";
 import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import Articles from "./components/Articles/Articles";
-import {
-  useGetArticlesQuery,
-} from "@/redux/services/articlesApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
 import PopUpModal from "./components/PopUpModal";
 import { useClient } from "@/app/context/ClientContext";
@@ -15,6 +13,7 @@ import { useFilters } from "@/app/context/FiltersContext";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+
 const CataloguePage = () => {
   const {
     order,
@@ -36,28 +35,22 @@ const CataloguePage = () => {
     page: 1,
     limit: 20,
     priceListId: customer?.price_list_id,
-    brand: brand,
-    item: item,
+    brand,
+    item,
     tags: tags[0],
-    stock: stock,
+    stock,
     vehicle_brand: vehicleBrand,
     query: search,
     sort: order,
   });
 
   const filterBy = "popups";
-  const {
-    data: marketing,
-    error: marketingError,
-    isLoading: marketingIsLoading,
-  } = useGetMarketingByFilterQuery({ filterBy });
+  const { data: marketing } = useGetMarketingByFilterQuery({ filterBy });
 
   const router = useRouter();
   const { isMobile } = useMobile();
 
-  const [isFilterBoxVisible, setFilterBoxVisible] = useState(
-    isMobile ? false : true
-  );
+  const [isFilterBoxVisible, setFilterBoxVisible] = useState(!isMobile);
   const [showArticles, setShowArticles] = useState<"catalogue" | "list">("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
 
@@ -66,17 +59,11 @@ const CataloguePage = () => {
       router.push("/selectCustomer");
     } else {
       const visualizationLimit = marketing?.[0]?.popups?.visualization || 0;
-      const currentVisualizationCount = parseInt(
-        sessionStorage.getItem("popupVisualizationCount") || "0",
-        10
-      );
+      const currentVisualizationCount = parseInt(sessionStorage.getItem("popupVisualizationCount") || "0", 10);
 
       if (currentVisualizationCount < visualizationLimit) {
         setModalVisible(true);
-        sessionStorage.setItem(
-          "popupVisualizationCount",
-          (currentVisualizationCount + 1).toString()
-        );
+        sessionStorage.setItem("popupVisualizationCount", (currentVisualizationCount + 1).toString());
       }
     }
   }, [selectedClientId, router, marketing]);
@@ -93,7 +80,7 @@ const CataloguePage = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
 
-  const toggleShowArticles = (type: any) => {
+  const toggleShowArticles = (type: "catalogue" | "list") => {
     setShowArticles(type);
   };
 
@@ -101,71 +88,83 @@ const CataloguePage = () => {
     setModalVisible(false);
   };
 
-  const isFiltered =
-    brand || tags?.length || stock || item || vehicleBrand || search;
-
   return (
-    <div className="gap-4 p-2">
+    <div className="gap-4 p-2 w-full overflow-x-hidden">
       {/* 🔹 Sección del título y conteo de artículos */}
-      <div className="flex justify-between items-center p-4">
-        <p className="absolute text-xs text-gray-600 font-semibold pt-24 right-10">
+      <div className="flex justify-end items-end p-4">
+        <p className="text-xs text-gray-600 font-semibold pt-8 sm:pt-0">
           {data?.totalItems || 0} Articles
         </p>
       </div>
 
-      <div className="flex gap-2 ">
-        <FilterBox
-          isVisible={isFilterBoxVisible}
-          onClose={() => setFilterBoxVisible(false)}
-        />
+      {/* 🔹 Contenedor para móviles: los botones arriba en mobile */}
+      {isMobile && (
+        <div className="flex justify-start items-center w-full mb-2 p-2 bg-gray-100 rounded-md gap-4">
+          <button
+            onClick={toggleFilterBox}
+            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+              isFilterBoxVisible ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+            } rounded`}
+          >
+            <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
+            Filters
+          </button>
+          <button
+            onClick={() => toggleShowArticles("catalogue")}
+            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+              showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+            } text-white rounded`}
+          >
+            <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
+          </button>
+          <button
+            onClick={() => toggleShowArticles("list")}
+            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+              showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+            } text-white rounded`}
+          >
+            <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
+          </button>
+        </div>
+      )}
+
+      {/* 🔹 Ajuste de ancho para evitar scroll horizontal */}
+      <div className="flex gap-2 w-full sm:w-auto">
+        <FilterBox isVisible={isFilterBoxVisible} onClose={() => setFilterBoxVisible(false)} />
+        
         <div className="w-full flex flex-col">
-          <div className="flex justify-between items-end w-full">
-            <div className="flex justify-center gap-2 px-2">
-              <button
-                onClick={toggleFilterBox}
-                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                  isFilterBoxVisible
-                    ? "bg-primary text-white"
-                    : "bg-white text-primary border border-primary"
-                } rounded`}
-              >
-                <FaFilter
-                  className={`${
-                    isFilterBoxVisible ? "text-white" : "text-primary"
-                  }`}
-                />
-                Filters
-              </button>
-              <button
-                onClick={() => toggleShowArticles("catalogue")}
-                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                  showArticles === "catalogue"
-                    ? "bg-primary text-white"
-                    : "bg-white text-primary border border-primary"
-                } text-white rounded`}
-              >
-                <RxDashboard
-                  className={`${
-                    showArticles === "catalogue" ? "text-white" : "text-primary"
-                  }`}
-                />
-              </button>
-              <button
-                onClick={() => toggleShowArticles("list")}
-                className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                  showArticles === "list"
-                    ? "bg-primary text-white"
-                    : "bg-white text-primary border border-primary"
-                } text-white rounded`}
-              >
-                <FaList
-                  className={`${
-                    showArticles === "list" ? "text-white" : "text-primary"
-                  }`}
-                />
-              </button>
+          {/* 🔹 Contenedor para pantallas grandes: botones en su lugar */}
+          {!isMobile && (
+            <div className="flex justify-between items-end w-full">
+              <div className="flex justify-center gap-2 px-2">
+                <button
+                  onClick={toggleFilterBox}
+                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+                    isFilterBoxVisible ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+                  } rounded`}
+                >
+                  <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
+                  Filters
+                </button>
+                <button
+                  onClick={() => toggleShowArticles("catalogue")}
+                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+                    showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+                  } text-white rounded`}
+                >
+                  <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
+                </button>
+                <button
+                  onClick={() => toggleShowArticles("list")}
+                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
+                    showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
+                  } text-white rounded`}
+                >
+                  <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <Articles
             brand={brand}
@@ -181,10 +180,7 @@ const CataloguePage = () => {
           />
 
           <Modal isOpen={isModalVisible} onClose={closeModal}>
-            <PopUpModal
-              closeModal={closeModal}
-              handleRedirect={handleRedirect}
-            />
+            <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect} />
           </Modal>
         </div>
       </div>

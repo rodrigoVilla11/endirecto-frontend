@@ -136,9 +136,9 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Id", key: "id" },
-    { name: "Name", key: "name" },
-    { name: "Branch", key: "branch" },
+    { name: "Id", key: "id",  important:true },
+    { name: "Name", key: "name", important:true },
+    { name: "Branch", key: "branch", important:true },
   ];
 
   // Configuración del header: cuando hay búsqueda se usa la longitud local,

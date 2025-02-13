@@ -216,19 +216,19 @@ const Page = () => {
 
   const tableHeader = useMemo(
     () => [
-      { name: "Brand", key: "brand", sortable: true },
+      { name: "Brand", key: "brand", sortable: true, important:true },
       {
         component: <FaImage className="text-center text-xl" />,
         key: "image",
-        sortable: false,
+        sortable: false, important:true
       },
       // {
       //   component: <FaRegFilePdf className="text-center text-xl" />,
       //   key: "pdf",
       //   sortable: false,
       // },
-      { name: "Item", key: "item", sortable: false },
-      { name: "Id", key: "id", sortable: true },
+      { name: "Item", key: "item", sortable: false},
+      { name: "Id", key: "id", sortable: true , important:true},
       { name: "Supplier Code", key: "supplier", sortable: true },
       { name: "Name", key: "name", sortable: true },
       {
