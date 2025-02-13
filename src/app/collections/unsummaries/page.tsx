@@ -147,10 +147,10 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Branch", key: "branch" },
-    { name: "Seller", key: "seller" },
+    { name: "Seller", key: "seller",important: true },
     { name: "Date", key: "date" },
-    { name: "Value", key: "value" },
-    { name: "Amount", key: "amount" },
+    { name: "Value", key: "value",important: true },
+    { name: "Amount", key: "amount" ,important: true},
   ];
 
   const headerBody = {

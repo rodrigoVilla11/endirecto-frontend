@@ -48,8 +48,8 @@ const Page = () => {
   const [editedMargins, setEditedMargins] = useState<{ [key: string]: number }>({});
 
   const tableHeader = [
-    { name: "Item", key: "item" },
-    { name: "Margin", key: "margin" },
+    { name: "Item", key: "item", important: true },
+    { name: "Margin", key: "margin", important: true },
   ];
 
   const headerBody = {

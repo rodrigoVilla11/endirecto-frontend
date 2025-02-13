@@ -87,7 +87,7 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Question", key: "question" },
+    { name: "Question", key: "question", important: true },
     { name: "Answer", key: "answer" },
   ];
 

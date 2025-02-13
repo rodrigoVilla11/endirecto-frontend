@@ -151,8 +151,8 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Item", key: "item" },
-    { name: "Discount 1", key: "percentage" },
+    { name: "Item", key: "item", important: true },
+    { name: "Discount 1", key: "percentage", important: true },
   ];
   const headerBody = {
     buttons: [

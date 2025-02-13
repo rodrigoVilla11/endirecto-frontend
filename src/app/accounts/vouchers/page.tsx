@@ -166,9 +166,9 @@ const Page = () => {
 
   const tableHeader = [
     { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
-    { name: "Customer", key: "customer" },
+    { name: "Customer", key: "customer", important: true },
     { name: "Type", key: "type" },
-    { name: "Number", key: "number" },
+    { name: "Number", key: "number", important: true },
     { name: "Date", key: "date" },
     { name: "Amount", key: "amount" },
     { name: "Balance", key: "balance" },

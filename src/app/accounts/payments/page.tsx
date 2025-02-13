@@ -138,9 +138,9 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Id", key: "id" },
-    { name: "Customer", key: "customer" },
+    { name: "Customer", key: "customer" ,important: true},
     { name: "Date", key: "date" },
-    { name: "Amount", key: "amount" },
+    { name: "Amount", key: "amount",important: true },
     { name: "Status", key: "status" },
     { name: "Seller", key: "seller" },
   ];

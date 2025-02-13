@@ -95,9 +95,9 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name" },
-    { name: "Enable", key: "enable" },
-    { name: "Image", key: "image" },
+    { name: "Name", key: "name", important: true },
+    { name: "Enable", key: "enable", important: true },
+    { name: "Image", key: "image", important: true },
     { name: "URL", key: "url" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },

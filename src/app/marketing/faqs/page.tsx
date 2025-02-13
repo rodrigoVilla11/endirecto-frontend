@@ -157,7 +157,7 @@ const Page = () => {
     })) || [];
 
   const tableHeader = [
-    { name: "Question", key: "question" },
+    { name: "Question", key: "question",  important: true },
     { name: "Answer", key: "answer" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
