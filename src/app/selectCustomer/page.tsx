@@ -15,9 +15,7 @@ import { FiMapPin } from "react-icons/fi";
 import { AiOutlineDownload } from "react-icons/ai";
 import Input from "../components/components/Input";
 import ButtonOnOff from "./ButtonOnOff";
-import {
-  useGetCustomersPagQuery,
-} from "@/redux/services/customersApi";
+import { useGetCustomersPagQuery } from "@/redux/services/customersApi";
 import PrivateRoute from "../context/PrivateRoutes";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
@@ -31,6 +29,7 @@ import { useAuth } from "../context/AuthContext";
 import { useMobile } from "../context/ResponsiveContext";
 import CustomerListMobile from "./MobileSeller";
 import MapComponent from "./Map";
+import MapModal from "./MapModal";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -63,8 +62,8 @@ const SelectCustomer = () => {
   );
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isViewAllMapModalOpen, setViewAllMapModalOpen] = useState(false);
 
-  
   const [searchParams, setSearchParams] = useState({
     hasDebt: "",
     hasDebtExpired: "",
@@ -203,7 +202,8 @@ const SelectCustomer = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -216,6 +216,33 @@ const SelectCustomer = () => {
   );
 
   const filteredItems = useMemo(() => removeDuplicates(items), [items]);
+
+  const areFiltersApplied = !!(
+    searchQuery ||
+    searchParams.hasDebt ||
+    searchParams.hasDebtExpired ||
+    searchParams.hasArticlesOnSC ||
+    searchParams.seller_id ||
+    sortQuery
+  );
+  const { data: allCustomersData } = useGetCustomersPagQuery(
+    {
+      page: 1,
+      limit: 100, // o el valor que estimes apropiado
+      query: "",
+      hasDebtExpired: "",
+      hasDebt: "",
+      seller_id: "",
+      hasArticlesOnSC: "",
+      sort: "",
+    },
+    {
+      skip: areFiltersApplied, // Solo se ejecuta si NO hay filtros
+    }
+  );
+  const markersCustomers = areFiltersApplied
+    ? filteredItems
+    : allCustomersData?.customers || [];
 
   if (isQueryLoading && items.length === 0) {
     return (
@@ -260,7 +287,6 @@ const SelectCustomer = () => {
   }
 
   const tableData = filteredItems?.map((customer) => {
-
     const paymentCondition = paymentsConditionsData?.find(
       (data) => data.id === customer.payment_condition_id
     );
@@ -274,12 +300,18 @@ const SelectCustomer = () => {
       ),
       "customer-id": customer.id,
       id: (
-        <span onClick={() => handleSelectCustomer(customer.id)} className="hover:cursor-pointer">
+        <span
+          onClick={() => handleSelectCustomer(customer.id)}
+          className="hover:cursor-pointer"
+        >
           {customer.id}
         </span>
       ),
       customer: (
-        <span onClick={() => handleSelectCustomer(customer.id)} className="hover:cursor-pointer">
+        <span
+          onClick={() => handleSelectCustomer(customer.id)}
+          className="hover:cursor-pointer"
+        >
           {customer.name}
         </span>
       ),
@@ -298,9 +330,7 @@ const SelectCustomer = () => {
       "status-account": formatPriceWithCurrency(customer.totalAmount),
       "expired-debt": formatPriceWithCurrency(customer.totalAmountExpired),
       "articles-on-cart": customer.shopping_cart.length,
-      gps: (
-        <FiMapPin onClick={() => openViewGPSModal(customer.id)} />
-      ),
+      gps: <FiMapPin onClick={() => openViewGPSModal(customer.id)} />,
       menu: (
         <div className="relative">
           <CiMenuKebab
@@ -333,18 +363,19 @@ const SelectCustomer = () => {
       component: <CgProfile className="text-center text-xl" />,
       key: "profile",
     },
-    { name: "Id", key: "id",important: true },
-    { name: "Customer", key: "customer",important: true },
+    { name: "Id", key: "id", important: true },
+    { name: "Customer", key: "customer", important: true },
     { name: "Name", key: "name" },
     { name: "Address", key: "address" },
     { name: "Payment Condition", key: "payment-condition" },
     { name: "Status Account", key: "status-account" },
     { name: "Expired Debt", key: "expired-debt" },
     { name: "Articles on Cart", key: "articles-on-cart" },
-    { name: "GPS", key: "gps",important: true },
+    { name: "GPS", key: "gps", important: true },
     {
       component: <CiMenuKebab className="text-center text-xl" />,
-      key: "menu", important: true
+      key: "menu",
+      important: true,
     },
   ];
 
@@ -380,7 +411,11 @@ const SelectCustomer = () => {
 
   const headerBody = {
     buttons: [
-      { logo: <FiMapPin />, title: "View On Map", onClick: () => {} },
+      {
+        logo: <FiMapPin />,
+        title: "View On Map",
+        onClick: () => setViewAllMapModalOpen(true),
+      },
       { logo: <AiOutlineDownload />, title: "Download" },
     ],
     filters: [
@@ -538,14 +573,24 @@ const SelectCustomer = () => {
           )}
         </Modal>
 
-        <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
-          {currentCustomerId && (
+        {isViewGPSModalOpen && currentCustomerId && (
+          <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
             <MapComponent
+              key={`${currentCustomerId}-${Date.now()}`}
               currentCustomerId={currentCustomerId}
               closeModal={closeViewGPSModal}
             />
-          )}
-        </Modal>
+          </Modal>
+        )}
+
+        {isViewAllMapModalOpen && (
+          <Modal
+            isOpen={isViewAllMapModalOpen}
+            onClose={() => setViewAllMapModalOpen(false)}
+          >
+            <MapModal customers={markersCustomers} onClose={() => setViewAllMapModalOpen(false)}/>
+          </Modal>
+        )}
 
         {/* Elemento observador para infinite scroll */}
         <div ref={observerRef} className="h-10" />
