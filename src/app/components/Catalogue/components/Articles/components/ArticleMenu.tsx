@@ -96,7 +96,7 @@ const ArticleMenu = ({
         <GoTag className="w-4 h-4 text-gray-400" />
       </button>
 
-      {article.article_vehicles && (
+      {article.article_vehicles && article.article_vehicles.length > 0 && (
         <button
           className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           onClick={() => {
