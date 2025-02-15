@@ -50,7 +50,7 @@ export default function Table({
               .map((header) => (
                 <div key={header.key} className="flex flex-col">
                   <span className="text-xs font-semibold text-gray-600">{header.name}:</span>
-                  <span className="text-sm text-gray-800">{row[header.key] || "N/A"}</span>
+                  <span className="text-xs text-gray-800">{row[header.key] || "N/A"}</span>
                 </div>
               ))}
           </div>
@@ -61,7 +61,7 @@ export default function Table({
           <div className="p-3 bg-gray-50 rounded-b-md mt-2">
             <div className="grid grid-cols-2 gap-4">
               {headers.map((header) => (
-                <div key={header.key} className="flex justify-between items-center text-sm">
+                <div key={header.key} className="flex justify-between items-center text-xs">
                   <span className="font-medium text-gray-700">{header.name}:</span>
                   <span className="text-gray-600">{row[header.key] || "N/A"}</span>
                 </div>
@@ -84,7 +84,7 @@ export default function Table({
             return (
               <th
                 key={header.key}
-                className="px-3 py-2 text-xs md:text-[13px] font-medium text-white uppercase tracking-wider text-center"
+                className="px-3 py-2 text-xs font-medium text-white uppercase tracking-wider text-center"
               >
                 <div
                   className="flex justify-center items-center cursor-pointer select-none"
@@ -101,7 +101,7 @@ export default function Table({
       <tbody className="bg-white divide-y divide-gray-200">
         {validData.length === 0 ? (
           <tr>
-            <td colSpan={headers.length} className="px-3 py-2 text-center text-gray-500 text-sm">
+            <td colSpan={headers.length} className="px-3 py-2 text-center text-gray-500 text-xs">
               No se encontraron datos
             </td>
           </tr>
@@ -109,7 +109,7 @@ export default function Table({
           validData.map((row: any, index: number) => (
             <tr key={row.key || index} className="hover:bg-gray-50">
               {headers.map((header, i) => (
-                <td key={i} className="px-3 py-1.5 text-xs md:text-[13px] text-gray-600 border-x border-gray-100 text-center">
+                <td key={i} className="px-3 py-1.5 text-xs text-gray-600 border-x border-gray-100 text-center">
                   {row[header.key]}
                 </td>
               ))}

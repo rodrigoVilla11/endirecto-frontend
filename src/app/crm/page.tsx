@@ -207,16 +207,14 @@ const Page = () => {
       ),
       seller: seller?.name,
       customer: customer?.name,
-      contacted: "VER BIEN",
-      type: crm.type,
-      notes: crm.notes,
+      user: crm.user_id,
       date: crm.date ? format(new Date(crm.date), "yyyy-MM-dd") : "N/A",
-      collection: collection?.amount,
-      order_id: "FALTA AGREGAR",
+      type: crm.type,
+      number: crm.number,
       amount: collection?.amount,
+      notes: crm.notes,
       status: crm.status,
       gps: crm.gps,
-      insitu: crm.insitu.toString(),
     };
   });
 
@@ -227,16 +225,14 @@ const Page = () => {
     },
     { name: "Seller", key: "seller",important: true },
     { name: "Customer", key: "customer",important: true },
-    { name: "Contacted", key: "contacted" },
-    { name: "Type", key: "type",important: true },
-    { name: "Notes", key: "notes",important: true },
+    { name: "User", key: "user" },
     { name: "Date", key: "date" },
-    { name: "Payment", key: "payment" },
-    { name: "Order", key: "order" },
+    { name: "Type", key: "type",important: true },
+    { name: "Number", key: "number",important: true },
     { name: "Amount", key: "amount" },
+    { name: "Notes", key: "notes" },
     { name: "Status", key: "status" },
     { name: "GPS", key: "gps" },
-    { name: "Insitu", key: "insitu" },
   ];
 
   const headerBody = {
