@@ -8,8 +8,10 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { SlLogout } from "react-icons/sl";
+import { useTranslation } from "react-i18next";
 
 const Profile = ({ isMobile }: any) => {
+  const { t } = useTranslation();
   const { selectedClientId, setSelectedClientId } = useClient();
   const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -53,7 +55,7 @@ const Profile = ({ isMobile }: any) => {
     setTimeout(() => {
       setSelectedClientId(""); // Limpia el cliente seleccionado después de un breve retraso
       setIsMenuOpen(false);
-    }, 50); // Ajusta el tiempo según sea necesario (50 ms es un valor común para este caso)
+    }, 50);
   };
 
   useEffect(() => {
@@ -90,13 +92,13 @@ const Profile = ({ isMobile }: any) => {
         )}
       </button>
       {isMenuOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg  text-sm">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg text-sm">
           <ul>
             <li
               onClick={() => handleRedirect("/profile/my-profile")}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
             >
-              <IoPersonOutline /> My Profile
+              <IoPersonOutline /> {t("myProfile")}
             </li>
             {selectedClientId && role !== "CUSTOMER" && (
               <>
@@ -105,17 +107,16 @@ const Profile = ({ isMobile }: any) => {
                   onClick={handleDeselectCustomer}
                   className="px-2 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
                 >
-                  <SlLogout /> Deselect Customer
+                  <SlLogout /> {t("deselectCustomer")}
                 </li>
               </>
             )}
-
             <hr />
             <li
               onClick={handleLogout}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1 text-red-600"
             >
-              <FaPowerOff /> Log Out
+              <FaPowerOff /> {t("logOut")}
             </li>
           </ul>
         </div>

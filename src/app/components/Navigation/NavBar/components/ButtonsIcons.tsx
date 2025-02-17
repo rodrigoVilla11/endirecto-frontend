@@ -11,6 +11,8 @@ import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import i18n from "i18next"; // Asegúrate de tener i18n configurado en tu proyecto
+import ReactCountryFlag from "react-country-flag";
 
 const ButtonsIcons = ({ isMobile }: any) => {
   const { selectedClientId } = useClient();
@@ -29,9 +31,12 @@ const ButtonsIcons = ({ isMobile }: any) => {
 
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
+
   const cartItemCount = customer?.shopping_cart
     ? [...new Set(customer?.shopping_cart.map((item) => item))].length
     : 0;
+
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
@@ -58,12 +63,40 @@ const ButtonsIcons = ({ isMobile }: any) => {
     }
   }, [cartItemCount]);
 
+  // Función para alternar el idioma y cambiar la bandera
+  const handleLanguageToggle = () => {
+    const newLanguage = currentLanguage === "en" ? "es" : "en";
+    setCurrentLanguage(newLanguage);
+    i18n.changeLanguage(newLanguage);
+  };
+
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
       {!isMobile && (
         <MdNotificationsOff className="cursor-pointer text-red-600" />
       )}
-      {!isMobile && <GiUsaFlag className="cursor-pointer" />}
+      {!isMobile && (
+        <button
+          onClick={handleLanguageToggle}
+          className="cursor-pointer text-xl"
+        >
+          {currentLanguage === "es" ? (
+            <ReactCountryFlag
+              countryCode="AR"
+              svg
+              style={{ width: "1em", height: "1em" }}
+              title="Argentina"
+            />
+          ) : (
+            <ReactCountryFlag
+              countryCode="US"
+              svg
+              style={{ width: "1em", height: "1em" }}
+              title="Estados Unidos"
+            />
+          )}
+        </button>
+      )}
       {!isMobile && <MdFullscreen className="cursor-pointer" />}
       {selectedClientId && (
         <div className="relative">

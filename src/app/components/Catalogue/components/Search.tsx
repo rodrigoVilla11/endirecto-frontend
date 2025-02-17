@@ -8,6 +8,7 @@ import Modal from "../../components/Modal";
 import ArticleDetails from "./Articles/components/ArticleDetails";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useTranslation } from "react-i18next";
 
 interface ArticleSearchResultsProps {
   query: string;
@@ -20,6 +21,7 @@ const ArticleSearchResults = ({
   setSearchQuery,
   router,
 }: ArticleSearchResultsProps) => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -60,7 +62,7 @@ const ArticleSearchResults = ({
     <div className="fixed top-28 md:top-20 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black">
       <div className="flex justify-between items-center w-full mb-4">
         <h3 className="text-lg font-bold text-white">
-          Resultados para {query}:
+          {t("resultsFor", { query })}
         </h3>
       </div>
 
@@ -92,13 +94,13 @@ const ArticleSearchResults = ({
 
       {error && (
         <p className="text-red-500">
-          Ocurrió un error al cargar los artículos.
+          {t("errorLoadingArticles")}
         </p>
       )}
 
       {searchResults && searchResults.length === 0 && (
         <p className="text-gray-300">
-          No se encontraron resultados para tu búsqueda.
+          {t("noResultsFound")}
         </p>
       )}
 
@@ -121,7 +123,7 @@ const ArticleSearchResults = ({
           onClick={() => handleRedirect(`/catalogue`)}
           className="mt-6 bg-white text-black px-8 py-3 rounded-lg hover:bg-blue-700 hover:text-white transition duration-300 transform hover:scale-105 focus:outline-none shadow-lg"
         >
-          Ver más...
+          {t("seeMore")}
         </button>
       )}
 

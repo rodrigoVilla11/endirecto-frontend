@@ -87,7 +87,7 @@ const ArticleMenu = ({
   return (
     <div className="relative flex" ref={menuRef}>
       <button
-        className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
         onClick={() => {
           openEquivalencesModal(article.id);
         }}
@@ -98,7 +98,7 @@ const ArticleMenu = ({
 
       {article.article_vehicles && article.article_vehicles.length > 0 && (
         <button
-          className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
           onClick={() => {
             openArticleVehicleModal(article.article_vehicles);
           }}

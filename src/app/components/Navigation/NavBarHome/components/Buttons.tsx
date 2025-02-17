@@ -1,17 +1,21 @@
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { BiSearchAlt } from "react-icons/bi";
-import { GiUsaFlag } from "react-icons/gi";
-import { IoMenu, IoClose } from "react-icons/io5";
+import i18n from "i18next";
 import Search from "../../NavBar/components/Search";
+import ReactCountryFlag from "react-country-flag";
+import { IoMenu, IoClose } from "react-icons/io5";
 
 const Buttons = () => {
   const router = useRouter();
+  const { t } = useTranslation(); // Hook de traducción
   const { isAuthenticated } = useAuth();
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
 
   useEffect(() => {
     const handleResize = () => {
@@ -32,8 +36,6 @@ const Buttons = () => {
 
     if (element) {
       const navbarHeight = document.querySelector("nav")?.clientHeight || 0;
-      const rect = element.getBoundingClientRect();
-
       element.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -55,6 +57,13 @@ const Buttons = () => {
   const handleSearchToggle = () => {
     setSearchOpen(!isSearchOpen);
     if (isMenuOpen) setMenuOpen(false); // Cierra el menú si está abierto
+  };
+
+  // Función para alternar el idioma y cambiar la bandera
+  const handleLanguageToggle = () => {
+    const newLanguage = currentLanguage === "en" ? "es" : "en";
+    setCurrentLanguage(newLanguage);
+    i18n.changeLanguage(newLanguage);
   };
 
   return (
@@ -79,7 +88,24 @@ const Buttons = () => {
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
               <div className="absolute right-0 top-0 h-full w-3/4 bg-gray-900 p-6">
                 <div className="flex justify-between items-center mb-8">
-                  <GiUsaFlag className="text-xl" />
+                  {/* Botón de bandera con funcionalidad i18n */}
+                  <button onClick={handleLanguageToggle} className="text-xl">
+                    {currentLanguage === "es" ? (
+                      <ReactCountryFlag
+                        countryCode="AR"
+                        svg
+                        style={{ width: "1em", height: "1em" }}
+                        title="Argentina"
+                      />
+                    ) : (
+                      <ReactCountryFlag
+                        countryCode="US"
+                        svg
+                        style={{ width: "1em", height: "1em" }}
+                        title="Estados Unidos"
+                      />
+                    )}
+                  </button>
                   <button
                     onClick={() => setMenuOpen(false)}
                     className="text-2xl text-white"
@@ -90,25 +116,25 @@ const Buttons = () => {
 
                 <div className="flex flex-col gap-6 text-white">
                   <a href="/" onClick={(e) => handleRedirect("/")}>
-                    Home
+                    {t("home")}
                   </a>
                   <a href="#brands" onClick={(e) => handleScroll(e, "brands")}>
-                    Brands
+                    {t("brands")}
                   </a>
                   <a href="#tags" onClick={(e) => handleScroll(e, "tags")}>
-                    Tags
+                    {t("tags")}
                   </a>
                   <a
                     href="#articles"
                     onClick={(e) => handleScroll(e, "articles")}
                   >
-                    Articles
+                    {t("articles")}
                   </a>
                   <a
                     href="#contact"
                     onClick={(e) => handleScroll(e, "contact")}
                   >
-                    Contact
+                    {t("contact")}
                   </a>
 
                   <div className="border-t pt-6 mt-6">
@@ -117,14 +143,14 @@ const Buttons = () => {
                         onClick={() => handleRedirect("/dashboard")}
                         className="w-full text-left"
                       >
-                        Dashboard
+                        {t("dashboard")}
                       </button>
                     ) : (
                       <button
                         onClick={() => handleRedirect("/login")}
                         className="w-full text-left"
                       >
-                        Sign In
+                        {t("signIn")}
                       </button>
                     )}
                   </div>
@@ -136,31 +162,48 @@ const Buttons = () => {
       ) : (
         <div className="flex items-center justify-between text-sm text-white gap-6">
           <a href="/" onClick={(e) => handleRedirect("/")}>
-            Home
+            {t("home")}
           </a>
           <a href="#brands" onClick={(e) => handleScroll(e, "brands")}>
-            Brands
+            {t("brands")}
           </a>
           <a href="#tags" onClick={(e) => handleScroll(e, "tags")}>
-            Tags
+            {t("tags")}
           </a>
           <a href="#articles" onClick={(e) => handleScroll(e, "articles")}>
-            Articles
+            {t("articles")}
           </a>
           <a href="#contact" onClick={(e) => handleScroll(e, "contact")}>
-            Contact
+            {t("contact")}
           </a>
-          <button className="text-xl">
-            <GiUsaFlag />
+          {/* Botón de bandera para versión desktop */}
+          <button onClick={handleLanguageToggle} className="text-xl">
+            {currentLanguage === "es" ? (
+              <ReactCountryFlag
+                countryCode="AR"
+                svg
+                style={{ width: "1em", height: "1em" }}
+                title="Argentina"
+              />
+            ) : (
+              <ReactCountryFlag
+                countryCode="US"
+                svg
+                style={{ width: "1em", height: "1em" }}
+                title="Estados Unidos"
+              />
+            )}
           </button>
           {isAuthenticated ? (
             <button onClick={() => handleRedirect("/dashboard")}>
-              Dashboard
+              {t("dashboard")}
             </button>
           ) : (
-            <button onClick={() => handleRedirect("/login")}>Sign In</button>
+            <button onClick={() => handleRedirect("/login")}>
+              {t("signIn")}
+            </button>
           )}
-          <button className="text-xl">
+          <button className="text-xl" onClick={handleSearchToggle}>
             <BiSearchAlt />
           </button>
         </div>

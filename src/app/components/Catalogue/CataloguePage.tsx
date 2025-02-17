@@ -13,8 +13,10 @@ import { useFilters } from "@/app/context/FiltersContext";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useTranslation } from "react-i18next";
 
 const CataloguePage = () => {
+  const { t } = useTranslation();
   const {
     order,
     cart,
@@ -74,7 +76,7 @@ const CataloguePage = () => {
     }
   };
 
-  if (error) return <p>Loading...</p>;
+  if (error) return <p>{t("loading")}</p>;
 
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
@@ -93,7 +95,7 @@ const CataloguePage = () => {
       {/* 🔹 Sección del título y conteo de artículos */}
       <div className="flex justify-end items-end p-4">
         <p className="text-xs text-gray-600 font-semibold pt-8 sm:pt-0">
-          {data?.totalItems || 0} Articles
+          {data?.totalItems || 0} {t("articles")}
         </p>
       </div>
 
@@ -107,7 +109,7 @@ const CataloguePage = () => {
             } rounded`}
           >
             <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
-            Filters
+            {t("filters")}
           </button>
           <button
             onClick={() => toggleShowArticles("catalogue")}
@@ -144,7 +146,7 @@ const CataloguePage = () => {
                   } rounded`}
                 >
                   <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
-                  Filters
+                  {t("filters")}
                 </button>
                 <button
                   onClick={() => toggleShowArticles("catalogue")}

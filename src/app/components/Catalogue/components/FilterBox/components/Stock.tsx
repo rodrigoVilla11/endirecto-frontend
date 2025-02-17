@@ -1,13 +1,15 @@
 "use client";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const Stock = ({ onChange }: any) => {
+  const { t } = useTranslation();
   const [selectedButton, setSelectedButton] = useState("");
 
   const handleButtonClick = (value: string) => {
     if (selectedButton !== value) {
       setSelectedButton(value);
-      onChange(value); 
+      onChange(value);
     } else {
       setSelectedButton("");
       onChange("");
@@ -17,11 +19,8 @@ const Stock = ({ onChange }: any) => {
   return (
     <div className="text-xs font-semibold">
       <div className="mb-4">
-        <label
-          className="block text-gray-700 font-bold mb-2"
-          htmlFor="stock"
-        >
-          Stock
+        <label className="block text-gray-700 font-bold mb-2" htmlFor="stock">
+          {t("stock")}
         </label>
         <div className="flex justify-between items-center gap-1">
           <button
@@ -30,7 +29,7 @@ const Stock = ({ onChange }: any) => {
               selectedButton === "stock:desc" ? "bg-primary text-white" : ""
             }`}
           >
-            Stock
+            {t("stock")}
           </button>
           <button
             onClick={() => handleButtonClick("stock:asc")}
@@ -38,7 +37,7 @@ const Stock = ({ onChange }: any) => {
               selectedButton === "stock:asc" ? "bg-primary text-white" : ""
             }`}
           >
-            Out of Stock
+            {t("outOfStock")}
           </button>
         </div>
       </div>

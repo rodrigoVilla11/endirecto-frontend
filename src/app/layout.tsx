@@ -15,6 +15,7 @@ import FixedBottomScreen, {
 } from "./context/ComparationArticles";
 import { MobileProvider } from "./context/ResponsiveContext";
 
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

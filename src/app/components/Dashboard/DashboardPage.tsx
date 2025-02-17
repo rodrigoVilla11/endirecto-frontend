@@ -25,8 +25,10 @@ import { useCountCustomersQuery } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import { useTranslation } from "react-i18next";
 
 const DashboardPage = () => {
+  const { t } = useTranslation();
   const { isOpen } = useSideMenu();
   const { selectedClientId } = useClient();
 
@@ -42,7 +44,6 @@ const DashboardPage = () => {
   const isSummary = totalDebt && "total_documents_balance" in totalDebt;
 
   // Definir valores dinámicos según el tipo de `data`
-  // Primero, extraemos los valores sin formatear y los convertimos a número
   const rawDocumentsBalance = isClient
     ? parseFloat(totalDebt.documents_balance)
     : isSummary
@@ -55,15 +56,12 @@ const DashboardPage = () => {
     ? parseFloat(totalDebt.total_documents_balance_expired)
     : 0;
 
-  // Suma los valores numéricos directamente
   const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
 
-  // Ahora formatea el resultado final para mostrarlo
   const formattedFinalSumAmount = finalSumAmount.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-
 
   function formatPriceWithCurrency(price: number): string {
     const formattedNumber = new Intl.NumberFormat("es-AR", {
@@ -73,16 +71,16 @@ const DashboardPage = () => {
       maximumFractionDigits: 2,
     })
       .format(price)
-      .replace("ARS", "") // Elimina "ARS" del formato.
-      .trim(); // Elimina espacios extra.
-    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+      .replace("ARS", "")
+      .trim();
+    return `${formattedNumber}`;
   }
 
   const itemsCard = [
     {
       logo: <MdOutlineShoppingBag />,
-      title: "Catalogue",
-      text: "Access our catalog of articles",
+      title: t("catalogue"),
+      text: t("accessCatalog"),
       href: "/catalogue",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -94,16 +92,16 @@ const DashboardPage = () => {
     },
     {
       logo: <CgProfile />,
-      title: "Select Customer",
+      title: t("selectCustomer"),
       subtitle: countCustomersData,
       href: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <MdTextSnippet />,
-      title: "Status Account",
+      title: t("statusAccount"),
       subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
-      text: `Expired: ${formatPriceWithCurrency(rawDocumentsBalance)}`,
+      text: `${t("expired")}: ${formatPriceWithCurrency(rawDocumentsBalance)}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -113,29 +111,15 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    // {
-    //   logo: <TbClockExclamation />,
-    //   title: "Pendings",
-    //   subtitle: "$ 9.999.999",
-    //   text: (
-    //     <>
-    //       Codes: 92
-    //       <br />
-    //       With Stock: $ 9.999.999
-    //     </>
-    //   ),
-    //   href: "",
-    //   allowedRoles: ["ADMINISTRADOR"],
-    // },
     {
       logo: <BsCash />,
-      title: "Interannual Sell",
-      subtitle: "0 %",
+      title: t("interannualSell"),
+      subtitle: t("zeroPercent"),
       text: (
         <>
-          Current Month: $ 0
+          {t("currentMonth")}: $ 0
           <br />
-          Last Year Month: $ 0
+          {t("lastYearMonth")}: $ 0
         </>
       ),
       href: "",
@@ -143,13 +127,13 @@ const DashboardPage = () => {
     },
     {
       logo: <BsCash />,
-      title: "Monthly Sell",
-      subtitle: "0 %",
+      title: t("monthlySell"),
+      subtitle: t("zeroPercent"),
       text: (
         <>
-          Current Month: $ 0
+          {t("currentMonth")}: $ 0
           <br />
-          Last Year Month: $ 0
+          {t("lastYearMonth")}: $ 0
         </>
       ),
       href: "",
@@ -157,9 +141,9 @@ const DashboardPage = () => {
     },
     {
       logo: <FaInfo />,
-      title: "Pending Reclaims",
+      title: t("pendingReclaims"),
       subtitle: "0",
-      text: "Total Reclaims: 0",
+      text: t("totalReclaims"),
       href: "/pendings",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -169,41 +153,27 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    // {
-    //   logo: <CgProfile />,
-    //   title: "Customers Contacted",
-    //   subtitle: "2 %",
-    //   text: (
-    //     <>
-    //       Customers Contacted: 180
-    //       <br />
-    //       Total Customers: 9.999
-    //     </>
-    //   ),
-    //   href: "/crm",
-    //   allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    // },
     {
       logo: <IoIosPaper />,
-      title: "Monthly Orders",
+      title: t("monthlyOrders"),
       subtitle: "$ 9.999.999",
-      text: "Quantity of Orders: 80",
+      text: t("quantityOrders"),
       href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoIosPaper />,
-      title: "Monthly Invoices ",
+      title: t("monthlyInvoices"),
       subtitle: "$ 999.999.999",
-      text: "Number of Invoices: 350",
+      text: t("numberInvoices"),
       href: "/accounts/vouchers",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoNotificationsOutline />,
-      title: "Notifications",
+      title: t("notifications"),
       subtitle: "0",
-      text: "Without reading: 0",
+      text: t("unreadNotifications"),
       href: "/notifications",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -213,18 +183,11 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    // {
-    //   logo: <GoGraph />,
-    //   title: "Days of WEB use Clients",
-    //   subtitle: "1.95 %",
-    //   href: "",
-    //   allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-    // },
   ];
   const itemsShortcuts = [
     {
       logo: <IoIosPaper />,
-      title: "Documents",
+      title: t("documents"),
       href: "/accounts/vouchers",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -236,7 +199,7 @@ const DashboardPage = () => {
     },
     {
       logo: <BsCash />,
-      title: "Collections",
+      title: t("collections"),
       href: "/accounts/payments",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -248,19 +211,19 @@ const DashboardPage = () => {
     },
     {
       logo: <BsCash />,
-      title: "Collections Summaries",
+      title: t("collectionsSummaries"),
       href: "/collections/summaries",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <BsCash />,
-      title: "Collections Unsummaries",
+      title: t("collectionsUnsummaries"),
       href: "/collections/unsummaries",
       allowedRoles: ["ADMINISTRADOR"],
     },
     {
       logo: <IoCalculatorSharp />,
-      title: "Orders",
+      title: t("orders"),
       href: "/orders/orders",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -272,7 +235,7 @@ const DashboardPage = () => {
     },
     {
       logo: <IoCalculatorSharp />,
-      title: "Budget",
+      title: t("budget"),
       href: "/orders/budget",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -284,31 +247,31 @@ const DashboardPage = () => {
     },
     {
       logo: <FaShoppingCart />,
-      title: "Shopping Cart",
+      title: t("shoppingCart"),
       href: "/shopping-cart",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaFileDownload />,
-      title: "Download Price List",
+      title: t("downloadPriceList"),
       href: "/downloads/prices-lists",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaPhone />,
-      title: "Contact",
+      title: t("contact"),
       href: "/contact",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <ImStatsDots />,
-      title: "Statistic",
+      title: t("statistic"),
       href: "/stats",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <CgProfile />,
-      title: "My Profile",
+      title: t("myProfile"),
       href: "/profile/my-profile",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -320,19 +283,19 @@ const DashboardPage = () => {
     },
     {
       logo: <BsCash />,
-      title: "Brand Margins",
+      title: t("brandMargins"),
       href: "/profile/brands-margin",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <BsCash />,
-      title: "Item Margins",
+      title: t("itemMargins"),
       href: "/profile/items-margin",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaPowerOff />,
-      title: "Logout",
+      title: t("logout"),
       href: "",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -375,7 +338,7 @@ const DashboardPage = () => {
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
               />
             </Link>
           ))}
@@ -396,7 +359,7 @@ const DashboardPage = () => {
               <CardShortcuts
                 title={item.title}
                 logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
               />
             </Link>
           ))}

@@ -22,8 +22,10 @@ import { useRouter } from "next/navigation";
 import { LucideMessageSquareShare } from "lucide-react";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useSideMenu } from "@/app/context/SideMenuContext";
+import { useTranslation } from "react-i18next";
 
 const SideMenu = ({ isOpen, setIsOpen }: any) => {
+  const { t } = useTranslation();
   const { selectedClientId, setSelectedClientId } = useClient();
   const { setIsAuthenticated, setRole, role } = useAuth();
   const router = useRouter();
@@ -41,7 +43,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
   const icons = [
     {
       icon: <MdDashboard />,
-      name: "Dashboard",
+      name: t("dashboard"),
       path: role === "VENDEDOR" && selectedClientId ? "/orders/orderSeller" : "/dashboard",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -53,7 +55,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     },
     {
       icon: <MdOutlineShoppingBag />,
-      name: "Catalogue",
+      name: t("catalogue"),
       path: "/catalogue",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -65,113 +67,90 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     },
     {
       icon: <IoIosLaptop />,
-      name: "Systems",
+      name: t("systems"),
       allowedRoles: ["ADMINISTRADOR"],
       subCategories: [
-        { name: "Users", path: "/system/users" },
+        { name: t("users"), path: "/system/users" },
         {
-          name: "Searches Without Results",
+          name: t("searchesWithoutResults"),
           path: "/system/searches",
         },
-        // { name: "Logs", path: "/system/logs" },
-        // { name: "Parameters", path: "/system/parameters" },
-        // { name: "Database Tables", path: "/system/tables" },
-        // { name: "Scheduled Task", path: "/system/crons"},
       ],
     },
     {
       icon: <FaDatabase />,
-      name: "Data",
+      name: t("data"),
       allowedRoles: ["ADMINISTRADOR"],
       subCategories: [
-        { name: "Articles", path: "/data/articles" },
+        { name: t("articles"), path: "/data/articles" },
         {
-          name: "Brands",
+          name: t("brands"),
           path: "/data/brands",
         },
-        // { name: "Families", path: "/data/families" },
-        { name: "Items", path: "/data/items" },
-        // { name: "Subitems", path: "/data/subitems"},
-        // { name: "Files", path: "/data/files" },
+        { name: t("items"), path: "/data/items" },
         {
-          name: "Applications of Articles",
+          name: t("applicationsOfArticles"),
           path: "/data/application-of-articles",
         },
-        { name: "Articles Equivalences", path: "/data/articles-equivalences" },
-        { name: "Articles Technical Details", path: "/data/articles-technical-details" },
-
-        // { name: "Bank Accounts", path: "/data/bank-accounts" },
-        // { name: "Bonifications", path: "/data/bonifications"},
+        { name: t("articlesEquivalences"), path: "/data/articles-equivalences" },
+        { name: t("articlesTechnicalDetails"), path: "/data/articles-technical-details" },
+        { name: t("stock"), path: "/data/stock" },
         {
-          name: "Payment Conditions",
-          path: "/data/payment-conditions",
-        },
-        { name: "Stock", path: "/data/stock" },
-        {
-          name: "Branches",
+          name: t("branches"),
           path: "/data/branches",
         },
         {
-          name: "Transports",
+          name: t("transports"),
           path: "/data/transports",
         },
         {
-          name: "Sellers",
+          name: t("sellers"),
           path: "/data/sellers",
         },
-        { name: "Technical Details", path: "/data/technical-details" },
-
-
+        { name: t("technicalDetails"), path: "/data/technical-details" },
       ],
     },
     {
       icon: <IoMegaphoneOutline />,
-      name: "Marketing",
+      name: t("marketing"),
       allowedRoles: ["ADMINISTRADOR", "MARKETING"],
       subCategories: [
         {
-          name: "Notifications",
+          name: t("notifications"),
           path: "/marketing/notifications",
         },
-        // { name: "Publications of Notifications", path: "/marketing/publications-of-notifications" },
         {
-          name: "Banners",
+          name: t("banners"),
           path: "/marketing/banners",
         },
         {
-          name: "Popups",
+          name: t("popups"),
           path: "/marketing/popups",
           allowedRoles: ["ADMINISTRADOR"],
         },
-        // { name: "Files", path: "/marketing/files"},
         {
-          name: "FAQS",
+          name: t("faqs"),
           path: "/marketing/faqs",
         },
         {
-          name: "Tags",
+          name: t("tags"),
           path: "/marketing/tags",
         },
         {
-          name: "Headers",
+          name: t("headers"),
           path: "/marketing/headers",
         },
-        // { name: "Articles", path: "/data/articles" },
-        // { name: "Brands", path: "/data/brands"  },
-        // { name: "Families", path: "/marketing/families"  },
-        // { name: "Items", path: "/data/items" },
-        // { name: "Subitems", path: "/marketing/subitems" },
       ],
     },
     {
       icon: <CgProfile />,
-      name: "Select Customer",
+      name: t("selectCustomer"),
       path: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       icon: <BsCash />,
-      name: "Current Accounts",
+      name: t("currentAccounts"),
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
@@ -181,38 +160,37 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       ],
       subCategories: [
         {
-          name: "Document Status",
+          name: t("documentStatus"),
           path: "/accounts/status",
         },
         {
-          name: "Payments",
+          name: t("payments"),
           path: "/accounts/payments",
         },
         {
-          name: "Vouchers",
+          name: t("vouchers"),
           path: "/accounts/vouchers",
         },
       ],
     },
     {
       icon: <BsCash />,
-      name: "Collections Summaries",
+      name: t("collectionsSummaries"),
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
       subCategories: [
         {
-          name: "Collections Summaries",
+          name: t("collectionsSummaries"),
           path: "/collections/summaries",
         },
-
         {
-          name: "Collections Unsummaries",
+          name: t("collectionsUnsummaries"),
           path: "/collections/unsummaries",
         },
       ],
     },
     {
       icon: <CgShoppingCart />,
-      name: "Orders",
+      name: t("orders"),
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
@@ -222,28 +200,24 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       ],
       subCategories: [
         {
-          name: "Pedidos",
+          name: t("ordersName"),
           path: "/orders/orders",
         },
         selectedClientId && {
-          name: "Shopping Cart",
+          name: t("shoppingCart"),
           path: "/shopping-cart",
         },
-        // {
-        //   name: "Presupuestos",
-        //   path: "/orders/budgets",
-        // },
       ],
     },
     {
       icon: <MdOutlineMessage />,
-      name: "CRM",
+      name: t("crm"),
       path: "/crm",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       icon: <FaHeart />,
-      name: "Favourites",
+      name: t("favourites"),
       path: "/favourites",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -253,10 +227,9 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
         "CUSTOMER",
       ],
     },
-    // { icon: <FaRegClock />, name: "Pendings", path: "/pendings", allowedRoles: ["ADMINISTRADOR"]  },
     {
       icon: <MdNotificationsNone />,
-      name: "Notifications",
+      name: t("notifications"),
       path: "/notifications",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -268,7 +241,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     },
     {
       icon: <PiDownloadSimpleBold />,
-      name: "Downloads",
+      name: t("downloads"),
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
@@ -278,18 +251,18 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       ],
       subCategories: [
         {
-          name: "Lists Prices Downloads",
+          name: t("listsPricesDownloads"),
           path: "/downloads/prices-lists",
         },
         {
-          name: "Bonifications Downloads",
+          name: t("bonificationsDownloads"),
           path: "/downloads/articles-bonuses",
         },
       ],
     },
     {
       icon: <MdOutlineInfo />,
-      name: "Reclaims",
+      name: t("reclaims"),
       path: "/reclaims",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -301,13 +274,13 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     },
     {
       icon: <ImStatsDots />,
-      name: "Statistics",
+      name: t("statistics"),
       path: "/statistics",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    }, //FALTA HACER STATISTICS
+    },
     {
       icon: <MdOutlineQuestionMark />,
-      name: "FAQ",
+      name: t("faq"),
       path: "/faqs",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -319,7 +292,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     },
     {
       icon: <LucideMessageSquareShare />,
-      name: "Contact",
+      name: t("contact"),
       path: "/contact",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -328,10 +301,10 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-    }, //FALTA HACER CONTACT
+    },
     {
       icon: <IoPersonOutline />,
-      name: "My Profile",
+      name: t("myProfile"),
       path: "/profile/my-profile",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -343,14 +316,14 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       getSubCategories: (role: any, selectedClientId: any) => {
         const allSubCategories = [
           {
-            name: "My Profile",
+            name: t("myProfile"),
             path: "/profile/my-profile",
           },
           {
-            name: "Brand Margins",
+            name: t("brandMargins"),
             path: "/profile/brands-margin",
           },
-          { name: "Item Margins", path: "/profile/items-margin" },
+          { name: t("itemMargins"), path: "/profile/items-margin" },
         ];
 
         if (role === "ADMINISTRADOR") {
@@ -365,10 +338,9 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
         return [];
       },
     },
-
     {
       icon: <FaPowerOff />,
-      name: "LogOut",
+      name: t("logOut"),
       onClick: handleLogout,
       allowedRoles: [
         "ADMINISTRADOR",
@@ -387,12 +359,12 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           .map((icon) => {
             const hasAllowedRole =
               !icon.allowedRoles || icon.allowedRoles.includes(role);
-            const isMyProfile = icon.name === "My Profile";
+            const isMyProfile = icon.name === t("myProfile");
             const shouldShow =
               hasAllowedRole &&
               (isMyProfile ||
                 selectedClientId ||
-                (icon.name !== "Favourites" && icon.name !== "Contact"));
+                (icon.name !== t("favourites") && icon.name !== t("contact")));
 
             if (icon.getSubCategories) {
               return {
@@ -411,8 +383,8 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     <div
       className={`${
         isOpen
-          ? `fixed inset-0 w-full h-full z-50 ${isMobile ? "bg-zinc-900" : "bg-header-color"} px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto` // Mobile: ocupa toda la pantalla | Desktop: comportamiento original
-          : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100" // Mobile: oculto | Desktop: visible sin opacidad
+          ? `fixed inset-0 w-full h-full z-50 ${isMobile ? "bg-zinc-900" : "bg-header-color"} px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
+          : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
       } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar sm:mt-20 mt-28`}
     >
       {filteredIcons.map((icon: any, index: any) => (
