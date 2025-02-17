@@ -1,225 +1,278 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import Input from "@/app/components/components/Input";
-import Header from "@/app/components/components/Header";
-import Table from "@/app/components/components/Table";
-import PrivateRoute from "@/app/context/PrivateRoutes";
-import Modal from "@/app/components/components/Modal";
-import { FaPlus, FaTimes } from "react-icons/fa";
-import { useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
-import debounce from "@/app/context/debounce";
-import CreatePaymentComponent from "./CreatePayment";
+import { useCreateCollectionMutation } from "@/redux/services/collectionsApi";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import React, { useState } from "react";
+import { format } from "date-fns";
+import { IoMdClose } from "react-icons/io";
+import { useClient } from "@/app/context/ClientContext";
+import { useAuth } from "@/app/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
-const ITEMS_PER_PAGE = 15;
+enum status {
+  PENDING = "PENDING",
+  SENDED = "SENDED",
+  SUMMARIZED = "SUMMARIZED",
+  CHARGED = "CHARGED",
+  CANCELED = "CANCELED",
+}
 
-const Page = () => {
-  // Estados para paginación, búsqueda, ordenamiento y modales
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  // "items" contendrá el listado de collections concatenado
-  const [items, setItems] = useState<any[]>([]);
-  // Total global obtenido del endpoint
-  const [totalCollections, setTotalCollections] = useState<number>(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  // Estado para abrir el modal de creación
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { t } = useTranslation();
+  const currentDate = format(new Date(), "yyyy-MM-dd");
 
-  // Referencia para Intersection Observer (infinite scroll)
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
 
-  // Consulta del endpoint: se espera que retorne { collections, total }
-  const { data, error, isLoading, refetch } = useGetCollectionsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-    // Puedes agregar otros filtros aquí si el endpoint lo soporta:
-    // status, startDate, endDate, seller_id, customer_id, etc.
+  const [form, setForm] = useState({
+    number: "",
+    status: status.PENDING,
+    date: currentDate,
+    amount: 0,
+    netamount: 0,
+    branch_id: "",
+    files: "",
+    customer_id: selectedClientId ? selectedClientId : "",
+    seller_id: "",
+    user_id: userData ? userData?._id : "",
+    notes: "",
   });
 
-  // Debounce para la búsqueda
-  const debouncedSearch = debounce((query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-  }, 100);
+  const { data: customersData, isLoading: isLoadingCustomers } = useGetCustomersQuery(null);
+  const { data: sellerData, isLoading: isLoadingSellers } = useGetSellersQuery(null);
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+  const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
 
-  // Efecto para cargar data (paginación, búsqueda, infinite scroll)
-  useEffect(() => {
-    const loadCollections = async () => {
-      if (!isFetching) {
-        setIsFetching(true);
-        try {
-          // Se espera que refetch retorne un objeto con { collections, total }
-          const result = await refetch().unwrap();
-          const fetched = result || { collections: [], total: 0 };
-          const newItems = Array.isArray(fetched.collections)
-            ? fetched.collections
-            : [];
-          setTotalCollections(fetched.total || 0);
-          if (page === 1) {
-            setItems(newItems);
-          } else {
-            setItems((prev) => [...prev, ...newItems]);
-          }
-          setHasMore(newItems.length === ITEMS_PER_PAGE);
-        } catch (err) {
-          console.error("Error loading collections:", err);
-        } finally {
-          setIsFetching(false);
-        }
-      }
-    };
+  const [createCollection, { isLoading: isLoadingCreate, isSuccess, isError }] = useCreateCollectionMutation();
 
-    loadCollections();
-  }, [page, searchQuery, sortQuery, refetch, isFetching]);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
-  // Intersection Observer para el infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !isFetching) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createCollection(form).unwrap();
+      closeModal();
+    } catch (err) {
+      console.error(t("errorCreatingPayment"), err);
     }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isFetching]);
-
-  // Reset de búsqueda
-  const handleResetSearch = () => {
-    setSearchQuery("");
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
   };
-
-  // Handler para ordenamiento
-  const handleSort = useCallback(
-    (field: string) => {
-      const [currentField, currentDirection] = sortQuery.split(":");
-      let newSortQuery = "";
-      if (currentField === field) {
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
-      } else {
-        newSortQuery = `${field}:asc`;
-      }
-      setSortQuery(newSortQuery);
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
-    },
-    [sortQuery]
-  );
-
-  // Configuración de la tabla: mapea cada collection a un objeto para la tabla
-  const tableData = items.map((collection) => ({
-    key: collection._id,
-    id: collection._id,
-    // Ajusta los campos según la estructura de tus collections
-    customer: collection.customer_id,
-    date: collection.date, // Si es necesario, formatea la fecha
-    amount: collection.amount,
-    status: collection.status,
-    seller: collection.seller_id,
-  }));
-
-  const tableHeader = [
-    { name: "Id", key: "id" },
-    { name: "Customer", key: "customer" ,important: true},
-    { name: "Date", key: "date" },
-    { name: "Amount", key: "amount",important: true },
-    { name: "Status", key: "status" },
-    { name: "Seller", key: "seller" },
-  ];
-
-  // Configuración del header: si hay búsqueda, muestra la cantidad local; de lo contrario, muestra el total global
-  const headerBody = {
-    buttons: [
-      { logo: <FaPlus />, title: "New", onClick: () => setCreateModalOpen(true) },
-    ],
-    filters: [
-      {
-        content: (
-          <div className="relative">
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                debouncedSearch(e.target.value)
-              }
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  setPage(1);
-                  setItems([]);
-                  refetch();
-                }
-              }}
-              className="pr-8"
-            />
-            {searchQuery && (
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={handleResetSearch}
-                aria-label="Clear search"
-              >
-                <FaTimes className="text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
-        ),
-      },
-      // Aquí se pueden agregar otros filtros (status, fechas, etc.) si lo deseas
-    ],
-    results: `${totalCollections} Results`,
-  };
-
-  if (isLoading && items.length === 0) {
-    return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        Error loading collections. Please try again later.
-      </div>
-    );
-  }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
-      <div className="gap-4">
-        <h3 className="font-bold p-4">COLLECTIONS</h3>
-        <Header headerBody={headerBody} />
-        <Table
-          headers={tableHeader}
-          data={tableData}
-          onSort={handleSort}
-          sortField={sortQuery.split(":")[0]}
-          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
-        />
-        <div ref={observerRef} className="h-10" />
-        <Modal isOpen={isCreateModalOpen} onClose={() => { setCreateModalOpen(false); setPage(1); setItems([]); refetch(); }}>
-          <CreatePaymentComponent closeModal={() => { setCreateModalOpen(false); setPage(1); setItems([]); refetch(); }} />
-        </Modal>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">{t("newPayment")}</h2>
+          <button
+            onClick={closeModal}
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
+            aria-label={t("close")}
+          >
+            <IoMdClose className="text-sm" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Payment Details */}
+          <div className="border border-gray-200 rounded-md p-3">
+            <h3 className="text-sm font-medium mb-3">{t("paymentDetails")}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium">{t("number")}</label>
+                <input
+                  type="text"
+                  name="number"
+                  value={form.number}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("status")}</label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                >
+                  {Object.values(status).map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("date")}</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={form.date}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("files")}</label>
+                <input
+                  type="text"
+                  name="files"
+                  value={form.files}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("amount")}</label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={form.amount}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("netAmount")}</label>
+                <input
+                  type="number"
+                  name="netamount"
+                  value={form.netamount}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Details */}
+          <div className="border border-gray-200 rounded-md p-3">
+            <h3 className="text-sm font-medium mb-3">{t("additionalDetails")}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium">{t("customer")}</label>
+                <select
+                  name="customer_id"
+                  value={form.customer_id}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                  disabled={!!selectedClientId}
+                >
+                  <option value="">{t("selectCustomer")}</option>
+                  {!isLoadingCustomers &&
+                    customersData?.map((customer: { id: string; name: string }) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("seller")}</label>
+                <select
+                  name="seller_id"
+                  value={form.seller_id}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                >
+                  <option value="">{t("selectSeller")}</option>
+                  {!isLoadingSellers &&
+                    sellerData?.map((seller: { id: string; name: string }) => (
+                      <option key={seller.id} value={seller.id}>
+                        {seller.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("user")}</label>
+                <select
+                  name="user_id"
+                  value={form.user_id}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                  disabled
+                >
+                  <option value="">{t("selectUser")}</option>
+                  {!isLoadingUsers &&
+                    usersData?.map((user: { _id: string; username: string }) => (
+                      <option key={user._id} value={user._id}>
+                        {user.username}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium">{t("branch")}</label>
+                <select
+                  name="branch_id"
+                  value={form.branch_id}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                >
+                  <option value="">{t("selectBranch")}</option>
+                  {!isLoadingBranchs &&
+                    branchsData?.map((branch: { id: string; name: string }) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-xs font-medium">{t("notes")}</label>
+                <textarea
+                  name="notes"
+                  value={form.notes}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              type="submit"
+              className={`rounded-md px-3 py-1 text-sm text-white ${
+                isLoadingCreate ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              }`}
+              disabled={isLoadingCreate}
+            >
+              {isLoadingCreate ? t("saving") : t("save")}
+            </button>
+          </div>
+
+          {isSuccess && <p className="text-green-500 text-sm mt-2">{t("paymentCreatedSuccess")}</p>}
+          {isError && <p className="text-red-500 text-sm mt-2">{t("errorCreatingPayment")}</p>}
+        </form>
       </div>
-    </PrivateRoute>
+    </div>
   );
 };
 
-export default Page;
+export default CreatePaymentComponent;

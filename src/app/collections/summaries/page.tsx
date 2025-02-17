@@ -6,20 +6,21 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaRegFilePdf } from "react-icons/fa";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import {
-  useCountCollectionQuery,
-  useGetCollectionsPagQuery,
-} from "@/redux/services/collectionsApi";
+import { useCountCollectionQuery, useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import { useClient } from "@/app/context/ClientContext";
 import debounce from "@/app/context/debounce";
+import { FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
@@ -115,7 +116,6 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery
         ? sortQuery.split(":")
         : ["", ""];
-
       setSortQuery(
         currentField === field
           ? `${field}:${currentDirection === "asc" ? "desc" : "asc"}`
@@ -151,20 +151,20 @@ const Page = () => {
       amount: collection.amount,
       status: collection.status,
       notes: collection.notes,
-      seller: seller?.name || "NOT FOUND",
+      seller: seller?.name || t("notFound"),
     };
   });
 
   const tableHeader = [
     { component: <AiOutlineDownload className="text-center text-xl" />, key: "info" },
     { component: <FaRegFilePdf className="text-center text-xl" />, key: "pdf" },
-    { name: "Number", key: "number", important: true },
-    { name: "Date", key: "date" },
-    { name: "Payment", key: "payment" },
-    { name: "Amount", key: "amount",important: true },
-    { name: "Status", key: "status",important: true },
-    { name: "Notes", key: "notes" },
-    { name: "Seller", key: "seller" },
+    { name: t("number"), key: "number", important: true },
+    { name: t("date"), key: "date" },
+    { name: t("payment"), key: "payment" },
+    { name: t("amount"), key: "amount", important: true },
+    { name: t("status"), key: "status", important: true },
+    { name: t("notes"), key: "notes" },
+    { name: t("seller"), key: "seller" },
   ];
 
   const headerBody = {
@@ -177,7 +177,7 @@ const Page = () => {
             onChange={(date) =>
               setSearchParams({ ...searchParams, startDate: date })
             }
-            placeholderText="Date From"
+            placeholderText={t("dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
@@ -190,21 +190,20 @@ const Page = () => {
             onChange={(date) =>
               setSearchParams({ ...searchParams, endDate: date })
             }
-            placeholderText="Date To"
+            placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
         ),
       },
     ],
-    // Se utiliza data.total para mostrar la cantidad total de registros
-    results: `${data?.total || 0} Results`,
+    results: `${data?.total || 0} ${t("results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">COLLECTIONS SUMMARIES</h3>
+        <h3 className="font-bold p-4">{t("collectionsSummaries")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}

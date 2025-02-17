@@ -1,22 +1,17 @@
+"use client";
 import React from "react";
 import { FaTrashCan, FaXmark } from "react-icons/fa6";
 import Brands from "./components/Brands";
 import Items from "./components/Items";
 import VehiclesBrands from "./components/VehiclesBrands";
 import { useFilters } from "@/app/context/FiltersContext";
+import { useTranslation } from "react-i18next";
 
 const FilterBox = ({ isVisible, onClose }: any) => {
+  const { t } = useTranslation();
   const {
-    setOrder,
-    order,
-    setCart,
-    cart,
-    setShowPurchasePrice,
-    showPurchasePrice,
     setTags,
     tags,
-    setStock,
-    stock,
     setBrand,
     brand,
     setItem,
@@ -37,7 +32,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           {(tags.length > 0 || brand || item || vehicleBrand) && (
             <div className="px-4 text-sm">
               <h3 className="block text-gray-700 text-sm font-bold mb-2">
-                Filters Applied
+                {t("filtersApplied")}
               </h3>
               <div className="flex gap-2">
                 {tags.length > 0 && (
@@ -89,8 +84,8 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           )}
 
           <Brands onChange={setBrand} brand={brand} />
-          <Items onChange={setItem} item={item}/>
-          <VehiclesBrands onChange={setVehicleBrand} vehicleBrand={vehicleBrand}/>
+          <Items onChange={setItem} item={item} />
+          <VehiclesBrands onChange={setVehicleBrand} vehicleBrand={vehicleBrand} />
         </div>
       )}
     </>

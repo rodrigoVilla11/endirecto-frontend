@@ -1,5 +1,4 @@
 "use client";
-// Importaciones necesarias
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -8,8 +7,10 @@ import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import CardArticles from "./components/CardArticles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useMobile } from "@/app/context/ResponsiveContext";
+import { useTranslation } from "react-i18next";
 
 const SliderArticles = () => {
+  const { t } = useTranslation();
   const { data, error, isLoading } = useGetArticlesQuery({
     page: 1,
     limit: 10,
@@ -20,19 +21,19 @@ const SliderArticles = () => {
   if (isLoading)
     return (
       <div className="flex justify-center items-center h-64">
-        Cargando artículos...
+        {t("loadingArticles")}
       </div>
     );
   if (error)
     return (
       <div className="flex justify-center items-center h-64">
-        Error al cargar los artículos.
+        {t("errorLoadingArticles")}
       </div>
     );
   if (!data || data.totalItems === 0)
     return (
       <div className="flex justify-center items-center h-64">
-        No hay artículos disponibles.
+        {t("noArticlesAvailable")}
       </div>
     );
 
@@ -40,12 +41,12 @@ const SliderArticles = () => {
     <div className="w-full m-10 px-4" id="articles">
       <Swiper
         modules={[Navigation, Autoplay]}
-        spaceBetween={4} // Espaciado entre slides
-        slidesPerView={isMobile ? 2 : 5} // Cantidad de slides visibles
-        navigation // Habilita flechas
-        pagination={{ clickable: true }} // Habilita paginación
-        autoplay={{ delay: 5000 }} // Autoplay cada 5 segundos
-        loop // Habilita loop infinito
+        spaceBetween={4}
+        slidesPerView={isMobile ? 2 : 5}
+        navigation
+        pagination={{ clickable: true }}
+        autoplay={{ delay: 5000 }}
+        loop
       >
         {data.articles.map((article: any) => (
           <SwiperSlide key={article.id}>

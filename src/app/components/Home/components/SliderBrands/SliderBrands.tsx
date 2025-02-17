@@ -8,8 +8,10 @@ import "swiper/css";
 import "swiper/css/navigation";
 import { Navigation, Autoplay } from "swiper/modules";
 import { useMobile } from "@/app/context/ResponsiveContext";
+import { useTranslation } from "react-i18next";
 
 const SliderBrands = () => {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { data: brands, isLoading, error } = useGetBrandsQuery(null);
   const { isMobile } = useMobile();
@@ -23,26 +25,26 @@ const SliderBrands = () => {
 
   // Manejo de estados de carga y error
   if (isLoading) {
-    return <div className="text-center py-4">Cargando marcas...</div>;
+    return <div className="text-center py-4">{t("loadingBrands")}</div>;
   }
 
   if (error) {
-    return <div className="text-center py-4">Error al cargar marcas</div>;
+    return <div className="text-center py-4">{t("errorLoadingBrands")}</div>;
   }
 
   if (!logos?.length) {
-    return <div className="text-center py-4">No hay marcas disponibles</div>;
+    return <div className="text-center py-4">{t("noBrandsAvailable")}</div>;
   }
 
   return (
     <div className="w-full p-4 flex justify-center items-center" id="brands">
       <Swiper
-        modules={[Navigation, Autoplay]} // Módulos necesarios
-        spaceBetween={16} // Espacio entre slides
-        slidesPerView={isMobile ? 3 : 6} // Cantidad de slides visibles
-        autoplay={{ delay: 5000 }} // Habilita autoplay con 5 segundos de intervalo
-        loop // Loop infinito
-        centeredSlides={false} // No centra los slides
+        modules={[Navigation, Autoplay]}
+        spaceBetween={16}
+        slidesPerView={isMobile ? 3 : 6}
+        autoplay={{ delay: 5000 }}
+        loop
+        centeredSlides={false}
       >
         {logos.map((logo) => (
           <SwiperSlide key={logo.id}>

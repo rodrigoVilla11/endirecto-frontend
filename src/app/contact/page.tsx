@@ -1,10 +1,12 @@
-"use client"; 
+"use client";
 import React, { useState, useEffect } from "react";
 import PrivateRoute from "../context/PrivateRoutes";
 import { useClient } from "../context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
 
   const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
@@ -46,36 +48,25 @@ const Page = () => {
   };
 
   if (isLoading) {
-    return <div>Cargando...</div>;
+    return <div>{t("loading")}</div>;
   }
 
   if (error) {
-    return <div>Error al cargar los datos.</div>;
+    return <div>{t("errorLoadingData")}</div>;
   }
 
   return (
-    <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="w-full mx-auto p-6">
         <div className="bg-white shadow-md rounded-md p-6 space-y-4 flex flex-col justify-center">
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Contacto</h2>
+            <h2 className="text-xl font-semibold text-gray-800">{t("contact")}</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             <div className="space-y-2">
-              <label
-                htmlFor="nombre"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Nombre
+              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
+                {t("name")}
               </label>
               <input
                 type="text"
@@ -90,11 +81,8 @@ const Page = () => {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="telefono"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Teléfono
+              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
+                {t("phone")}
               </label>
               <input
                 type="tel"
@@ -109,11 +97,8 @@ const Page = () => {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="correoElectronico"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Correo Electrónico
+              <label htmlFor="correoElectronico" className="block text-sm font-medium text-gray-700">
+                {t("email")}
               </label>
               <input
                 type="email"
@@ -128,11 +113,8 @@ const Page = () => {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="comentario"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Comentario
+              <label htmlFor="comentario" className="block text-sm font-medium text-gray-700">
+                {t("comment")}
               </label>
               <textarea
                 id="comentario"
@@ -150,7 +132,7 @@ const Page = () => {
                 type="submit"
                 className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
               >
-                Enviar
+                {t("send")}
               </button>
             </div>
           </form>

@@ -1,7 +1,10 @@
+"use client";
 import React, { useState } from "react";
+import { X } from "lucide-react";
 import { useClient } from "@/app/context/ClientContext";
 import { Status, useCreateReclaimMutation, Valid } from "@/redux/services/reclaimsApi";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type InformErrorProps = {
   articleId: string;
@@ -9,6 +12,7 @@ type InformErrorProps = {
 };
 
 const InformError = ({ articleId, closeModal }: InformErrorProps) => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const [createReclaim, { isLoading, isSuccess, isError }] = useCreateReclaimMutation();
   const [description, setDescription] = useState("");
@@ -41,14 +45,14 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
 
   return (
     <div className="p-6 w-128">
-      <h2 className="text-xl font-semibold mb-4">Informar Error</h2>
+      <h2 className="text-xl font-semibold mb-4">{t("informErrorTitle")}</h2>
       <div className="mb-4">
         <p className="font-bold text-gray-800">{articleId}</p>
         <p className="text-gray-600">ELF MOTO 4 CRUISE 20W50 X 1L</p>
       </div>
       <textarea
         className="w-full p-3 border border-gray-300 rounded-md"
-        placeholder="Describa el error..."
+        placeholder={t("describeErrorPlaceholder")}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
@@ -59,7 +63,7 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
           onClick={closeModal}
           className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
         >
-          Cerrar
+          {t("close")}
         </button>
         <button
           type="button"
@@ -69,12 +73,12 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
             isLoading ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {isLoading ? "Enviando..." : "Enviar"}
+          {isLoading ? t("sending") : t("send")}
         </button>
       </div>
-      {isSuccess && <p className="text-green-500 mt-4">¡Informe enviado con éxito!</p>}
+      {isSuccess && <p className="text-green-500 mt-4">{t("successMessage")}</p>}
       {isError && (
-        <p className="text-red-500 mt-4">Error al enviar el informe. Inténtelo nuevamente.</p>
+        <p className="text-red-500 mt-4">{t("errorMessage")}</p>
       )}
     </div>
   );

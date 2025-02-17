@@ -22,10 +22,14 @@ import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
+  // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -33,59 +37,33 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
-  const [insitu, setInsitu] = useState("");
-  const [type, setType] = useState("");
-  const [status, setStatus] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  const [contactedStates, setContactedStates] = useState<boolean[]>([]);
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-
   const { selectedClientId } = useClient();
 
-  // Referencias para el Intersection Observer
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-    } else {
-      setCustomer_id("");
-    }
-  }, [selectedClientId]);
-
+  // Nuevo estado para el modal de creación
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
     refetch();
   };
 
+  // Referencia para el IntersectionObserver
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: collectionData } = useGetCollectionsQuery(null);
-
-  function formatDate(date: Date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  // Query que retorna { crms: Crm[], total: number }
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-  } = useGetCrmPagQuery(
+  // Query para CRM que retorna { crms, total }
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetCrmPagQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
-      startDate: startDate ? formatDate(startDate) : undefined,
-      endDate: endDate ? formatDate(endDate) : undefined,
-      type,
-      status,
-      insitu,
+      startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
+      endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+      type: "", // Si deseas filtrar por tipo, asigna aquí
+      status: "", // Si deseas filtrar por status, asigna aquí
+      insitu: "", // Si corresponde
       customer_id,
     },
     {
@@ -96,9 +74,8 @@ const Page = () => {
   );
 
   const [updateCrm] = useUpdateCrmMutation();
-  // Si bien cuentas con countCrmData, ahora usaremos data.total para mostrar el total
 
-  // Actualizar customer_id al cambiar selectedClientId
+  // Actualiza customer_id al cambiar selectedClientId
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
@@ -115,18 +92,12 @@ const Page = () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
-          // Se espera que refetch().unwrap() retorne un objeto con { crms, total }
           const result = await refetch().unwrap();
-          // Extraemos el array de documentos
           const newDocuments = result.crms || [];
-          if (page === 1) {
-            setItems(newDocuments);
-          } else {
-            setItems((prev) => [...prev, ...newDocuments]);
-          }
+          setItems((prev) => (page === 1 ? newDocuments : [...prev, ...newDocuments]));
           setHasMore(newDocuments.length === ITEMS_PER_PAGE);
         } catch (error) {
-          console.error("Error loading documents:", error);
+          console.error(t("errorLoadingDocuments"), error);
         } finally {
           setIsLoading(false);
         }
@@ -149,35 +120,20 @@ const Page = () => {
     );
 
     const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
+    if (currentObserver) observer.observe(currentObserver);
 
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
+      if (currentObserver) observer.unobserve(currentObserver);
     };
   }, [hasMore, isLoading]);
 
-  const handleResetDate = () => {
-    setEndDate(null);
-    setStartDate(null);
-    setItems([]);
-    setPage(1);
-    setHasMore(true);
-  };
-
   const handleSort = useCallback(
     (field: string) => {
-      const [currentField, currentDirection] = sortQuery.split(":");
+      const [currentField, currentDirection] = sortQuery ? sortQuery.split(":") : ["", ""];
       let newSortQuery = "";
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
       setSortQuery(newSortQuery);
@@ -188,18 +144,14 @@ const Page = () => {
     [sortQuery]
   );
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
+  // Mapeo de datos para la tabla
   const tableData = items?.map((crm) => {
     const customer = customersData?.find((data) => data.id === crm.customer_id);
     const seller = sellersData?.find((data) => data.id === crm.seller_id);
-    const collection = collectionData?.find(
-      (data) => data._id === crm.seller_id
-    );
+    const collection = collectionData?.find((data) => data._id === crm.seller_id);
 
     return {
-      key: crm._id, // Se asume que el modelo usa _id o id según corresponda
+      key: crm._id,
       info: (
         <div className="flex justify-center items-center">
           <IoInformationCircleOutline className="text-center text-xl" />
@@ -219,59 +171,31 @@ const Page = () => {
   });
 
   const tableHeader = [
-    {
-      component: <IoInformationCircleOutline className="text-center text-xl" />,
-      key: "info",
-    },
-    { name: "Seller", key: "seller",important: true },
-    { name: "Customer", key: "customer",important: true },
-    { name: "User", key: "user" },
-    { name: "Date", key: "date" },
-    { name: "Type", key: "type",important: true },
-    { name: "Number", key: "number",important: true },
-    { name: "Amount", key: "amount" },
-    { name: "Notes", key: "notes" },
-    { name: "Status", key: "status" },
-    { name: "GPS", key: "gps" },
+    { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
+    { name: t("seller"), key: "seller", important: true },
+    { name: t("customer"), key: "customer", important: true },
+    { name: t("user"), key: "user" },
+    { name: t("date"), key: "date" },
+    { name: t("type"), key: "type", important: true },
+    { name: t("number"), key: "number", important: true },
+    { name: t("amount"), key: "amount" },
+    { name: t("notes"), key: "notes" },
+    { name: t("status"), key: "status" },
+    { name: t("gps"), key: "gps" },
   ];
 
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      {
-        logo: <IoMdPin />,
-        title: "View On Map",
-      },
+      { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
+      { logo: <IoMdPin />, title: t("viewOnMap") },
     ],
     filters: [
       {
         content: (
-          <div>
-            <DatePicker
-              selected={startDate}
-              onChange={(date) => setStartDate(date)}
-              placeholderText="Date From"
-              dateFormat="yyyy-MM-dd"
-              className="border border-gray-300 rounded p-2"
-            />
-            {startDate && (
-              <button
-                className="-translate-y-1/2"
-                onClick={handleResetDate}
-                aria-label="Clear date"
-              >
-                <FaTimes className="text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
-        ),
-      },
-      {
-        content: (
           <DatePicker
-            selected={endDate}
-            onChange={(date) => setEndDate(date)}
-            placeholderText="Date To"
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            placeholderText={t("dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
@@ -279,53 +203,33 @@ const Page = () => {
       },
       {
         content: (
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Status...</option>
-            {Object.values(StatusType).map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-      {
-        content: (
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Type...</option>
-            {Object.values(ActionType).map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            placeholderText={t("dateTo")}
+            dateFormat="yyyy-MM-dd"
+            className="border border-gray-300 rounded p-2"
+          />
         ),
       },
     ],
-    // Se usa data.total, que proviene del query, para mostrar el total de resultados
-    results: `${data?.total || 0} Results`,
+    results: `${data?.total || 0} ${t("results")}`,
   };
 
   return (
-    <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">CRM</h3>
+        <h3 className="font-bold p-4">{t("crm")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
           data={tableData}
           onSort={handleSort}
-          sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          sortField={sortQuery.split(":")[0] || ""}
+          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
-        <div ref={observerRef} className="h-10" />
-
-        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreateCRMComponent closeModal={closeCreateModal} />
-        </Modal>
       </div>
+      <div ref={observerRef} className="h-10" />
     </PrivateRoute>
   );
 };

@@ -1,29 +1,18 @@
-import { useClient } from "@/app/context/ClientContext";
-import {
-  InstanceType,
-  PriorityInstance,
-  useGetCustomerByIdQuery,
-  useUpdateCustomerMutation,
-} from "@/redux/services/customersApi";
+"use client";
+import { useGetCustomerByIdQuery, InstanceType, PriorityInstance, useUpdateCustomerMutation } from "@/redux/services/customersApi";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useClient } from "@/app/context/ClientContext";
+import { useAuth } from "@/app/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
-const CreateInstanceComponent = ({
-  closeModal,
-}: {
-  closeModal: () => void;
-}) => {
+const CreateInstanceComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
-    const {
-      data: customer,
-      error,
-      isLoading,
-      refetch,
-    } = useGetCustomerByIdQuery({
-      id: selectedClientId || "",
-    });
+  const { data: customer, error, isLoading, refetch } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
 
-  // Form state
   const [form, setForm] = useState({
     type: InstanceType.WHATSAPP_MESSAGE,
     priority: PriorityInstance.MEDIUM,
@@ -33,70 +22,55 @@ const CreateInstanceComponent = ({
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
 
-  // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-
     setForm((prevForm) => ({
       ...prevForm,
       [name]: value,
     }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Recupera las instancias actuales del cliente, suponiendo que tienes esta información
-      const currentInstances = customer?.instance ?? []
-  
-      // Nueva instancia a agregar
+      const currentInstances = customer?.instance ?? [];
       const newInstance = {
         type: form.type,
         priority: form.priority,
         notes: form.notes,
       };
-  
-      // Agregar la nueva instancia a las instancias existentes
       const updatedInstances = [...currentInstances, newInstance];
-  
-      // Payload para actualizar al cliente con la nueva instancia
       const payload = {
-        id: selectedClientId || "", // ID del cliente
-        instance: updatedInstances, // Aquí estás enviando todas las instancias, incluida la nueva
+        id: selectedClientId || "",
+        instance: updatedInstances,
       };
-  
-      // Enviar la mutación para actualizar el cliente
       await updateCustomer(payload).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear la instancia:", err);
+      console.error(t("errorCreatingInstance"), err);
     }
   };
-  
-  
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">New Instance</h2>
+          <h2 className="text-lg font-semibold">{t("newInstance")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
+            aria-label={t("close")}
           >
             <IoMdClose className="text-sm" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* General Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium">Type</label>
+              <label className="block text-xs font-medium">{t("type")}</label>
               <select
                 name="type"
                 value={form.type}
@@ -110,9 +84,8 @@ const CreateInstanceComponent = ({
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-medium">Priority</label>
+              <label className="block text-xs font-medium">{t("priority")}</label>
               <select
                 name="priority"
                 value={form.priority}
@@ -126,9 +99,8 @@ const CreateInstanceComponent = ({
                 ))}
               </select>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium">Notes</label>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium">{t("notes")}</label>
               <textarea
                 name="notes"
                 onChange={handleChange}
@@ -137,33 +109,29 @@ const CreateInstanceComponent = ({
               />
             </div>
           </div>
-
           <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
               className={`rounded-md px-3 py-1 text-sm text-white ${
-                isUpdating ? "bg-gray-500" : "bg-blue-600"
+                isUpdating ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
               disabled={isUpdating}
             >
-              {isUpdating ? "Saving..." : "Save"}
+              {isUpdating ? t("saving") : t("save")}
             </button>
           </div>
-
           {isSuccess && (
-            <p className="text-green-500 text-sm mt-2">
-              Instance created successfully!
-            </p>
+            <p className="text-green-500 text-sm mt-2">{t("instanceCreatedSuccess")}</p>
           )}
           {isError && (
-            <p className="text-red-500 text-sm mt-2">Error creating Instance</p>
+            <p className="text-red-500 text-sm mt-2">{t("errorCreatingInstance")}</p>
           )}
         </form>
       </div>

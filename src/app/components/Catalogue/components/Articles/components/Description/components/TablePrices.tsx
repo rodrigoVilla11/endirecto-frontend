@@ -1,12 +1,14 @@
-import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
 import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 const TablePrices = ({ article }: any) => {
+  const { t } = useTranslation();
   const encodedId = encodeURIComponent(article.id);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
@@ -52,32 +54,25 @@ const TablePrices = ({ article }: any) => {
     customer: selectedClientId || "",
   });
 
-  // Obtener el margen de la marca
   let margin: number | undefined;
   if (Array.isArray(brandMargin) && brandMargin.length > 0) {
     margin = brandMargin[0]?.margin;
-  } else {
-    // console.log("brandMargin no es un array o está vacío.");
   }
 
-  // Obtener el margen del artículo
   let marginItem: number | undefined;
   if (Array.isArray(itemMargin) && itemMargin.length > 0) {
     marginItem = itemMargin[0]?.margin;
-  } else {
-    // console.log("itemMargin no es un array o está vacío.");
   }
+
   const totalMargin = (margin || 0) + (marginItem || 0);
 
   const calculateMargin = (price: string | number, margin: number) => {
     if (typeof price === "number" && margin !== undefined) {
-      // Calculamos el margen como un valor absoluto
       const marginAmount = price * (margin / 100);
       return marginAmount;
     }
     return 0;
   };
-  
 
   const calculatePriceWithMarginAndVAT = (
     price: string | number,
@@ -85,10 +80,7 @@ const TablePrices = ({ article }: any) => {
     vatRate: number
   ) => {
     if (typeof price === "number" && margin !== undefined) {
-      // Primero aplicamos el margen total (sumado margin + marginItem)
       const priceWithMargin = price * (1 + margin / 100);
-
-      // Luego aplicamos el IVA sobre el precio con margen
       const finalPrice = priceWithMargin * (1 + vatRate / 100);
       return finalPrice;
     }
@@ -97,8 +89,6 @@ const TablePrices = ({ article }: any) => {
 
   const finalMargin = calculateMargin(priceNoIva, totalMargin);
 
-  
-  // Calculamos el precio con el margen total y luego con IVA
   const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(
     priceNoIva,
     totalMargin,
@@ -106,46 +96,42 @@ const TablePrices = ({ article }: any) => {
   );
 
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
-
   const [integerPartMargin, decimalPartMargin] = formatPrice(finalMargin);
 
   return (
     <div className="text-xs">
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">IVA</p>
+        <p className="font-bold">{t("iva")}</p>
         <p className="font-light">21,00%</p>
       </div>
       <hr />
-
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">Bonuses</p>
+        <p className="font-bold">{t("bonuses")}</p>
         <p className="font-light max-w-40">{bonus?.percentage_1},00%</p>
       </div>
       <hr />
-
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">
-        <p className="font-bold">Net Price</p>
+        <p className="font-bold">{t("netPrice")}</p>
         <p className="font-light max-w-40">
           $ {integerPartNoIva},{decimalPartNoIva}
         </p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">Margin</p>
+        <p className="font-bold">{t("margin")}</p>
         <p className="font-light max-w-40">
-          {margin},00% {marginItem ? +`${marginItem},00%` : ""}
+          {margin},00% {marginItem ? `${marginItem},00%` : ""}
         </p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">Margin $</p>
+        <p className="font-bold">{t("marginValue")}</p>
         <p className="font-light max-w-40">$ {integerPartMargin},{decimalPartMargin}</p>
       </div>
-
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">Suggested Price w/IVA</p>
+        <p className="font-bold">{t("suggestedPriceWithIVA")}</p>
         <p className="font-light max-w-40">
           $ {integerPart},{decimalPart}
         </p>

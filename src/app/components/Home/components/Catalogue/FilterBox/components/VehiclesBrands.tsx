@@ -2,13 +2,15 @@
 import { useGetArticlesVehiclesQuery } from "@/redux/services/articlesVehicles";
 import React from "react";
 import { FaAngleDown } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
+  const { t } = useTranslation();
   const { data: vehiclesBrands } = useGetArticlesVehiclesQuery(null);
 
   const handleVehiclesBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = event.target.value;
-    onChange(selectedValue); // Llama a onChange con el nuevo valor
+    onChange(selectedValue);
   };
 
   return (
@@ -18,17 +20,17 @@ const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="vehiclesBrands"
         >
-          Vehicle&#39;s Brands
+          {t("vehicleBrands")}
         </label>
         <div className="relative flex gap-1 justify-center items-center">
           <select
             id="vehiclesBrands"
-            value={vehicleBrand} // Sincroniza directamente con la prop
+            value={vehicleBrand}
             onChange={handleVehiclesBrandChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            <option value="">Select a Vehicle&#39;s Brand</option>
-            {vehiclesBrands?.map((item) => (
+            <option value="">{t("selectVehicleBrand")}</option>
+            {vehiclesBrands?.map((item: any) => (
               <option key={item.id} value={item.brand}>
                 {item.brand}
               </option>

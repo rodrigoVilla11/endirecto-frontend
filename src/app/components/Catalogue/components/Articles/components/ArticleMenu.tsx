@@ -9,6 +9,7 @@ import InformError from "./ArticeMenuDetails/InformError";
 import { useArticleComparation } from "@/app/context/ComparationArticles";
 import ArticleEquivalence from "./ArticeMenuDetails/ArticleEquivalences";
 import ArticleVehicle from "./ArticeMenuDetails/AritlceVehicles";
+import { useTranslation } from "react-i18next";
 
 const ArticleMenu = ({
   article,
@@ -19,12 +20,12 @@ const ArticleMenu = ({
   isFavourite: boolean;
   article: any;
 }) => {
+  const { t } = useTranslation();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isInformErrorModalOpen, setInformErrorModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
-  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] =
-    useState(false);
+  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -34,7 +35,6 @@ const ArticleMenu = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // 3. Verificamos que menuRef.current exista y forzamos el tipo de event.target a Node.
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
@@ -91,7 +91,7 @@ const ArticleMenu = ({
         onClick={() => {
           openEquivalencesModal(article.id);
         }}
-        title="Ver equivalencias"
+        title={t("viewEquivalences")}
       >
         <GoTag className="w-4 h-4 text-gray-400" />
       </button>
@@ -102,7 +102,7 @@ const ArticleMenu = ({
           onClick={() => {
             openArticleVehicleModal(article.article_vehicles);
           }}
-          title="Ver aplicaciones por articulo"
+          title={t("viewArticleApplications")}
         >
           <FaCar className="w-4 h-4 text-gray-400" />
         </button>
@@ -111,7 +111,7 @@ const ArticleMenu = ({
       <button
         className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
         onClick={handleToggleMenu}
-        title="Opciones"
+        title={t("options")}
       >
         <CiMenuKebab className="w-5 h-5 text-gray-400" />
       </button>
@@ -124,14 +124,14 @@ const ArticleMenu = ({
               onAddToFavourites();
               setIsMenuOpen(false);
             }}
-            title="Añadir a favoritos"
+            title={t("addToFavourites")}
           >
             <FaHeart
               className={`w-4 h-4 mr-2 ${
                 isFavourite ? "text-red-500" : "text-gray-400"
               }`}
             />
-            Favoritos
+            {t("favourites")}
           </button>
 
           <button
@@ -140,10 +140,10 @@ const ArticleMenu = ({
               addArticleId(article);
               setIsMenuOpen(false);
             }}
-            title="Ver detalles"
+            title={t("viewDetails")}
           >
             <TbSquares className="w-4 h-4 mr-2 text-gray-400" />
-            Detalles
+            {t("details")}
           </button>
 
           <button
@@ -153,7 +153,7 @@ const ArticleMenu = ({
               setIsMenuOpen(false);
             }}
           >
-            Informar Error
+            {t("reportError")}
           </button>
         </div>
       )}

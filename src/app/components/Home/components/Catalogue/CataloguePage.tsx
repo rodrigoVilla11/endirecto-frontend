@@ -8,8 +8,10 @@ import Articles from "./Articles/Articles";
 import Modal from "@/app/components/components/Modal";
 import PopUpModal from "./Articles/PopUpModal";
 import FilterBox from "./FilterBox/FilterBox";
+import { useTranslation } from "react-i18next";
 
 const CataloguePage = () => {
+  const { t } = useTranslation();
   const {
     order,
     cart,
@@ -33,7 +35,6 @@ const CataloguePage = () => {
     }
   };
 
-
   const toggleFilterBox = () => {
     setFilterBoxVisible((prevState) => !prevState);
   };
@@ -48,7 +49,7 @@ const CataloguePage = () => {
 
   return (
     <div className="gap-4 p-2">
-      <h3 className="text-bold p-4">CATALOGUE</h3>
+      <h3 className="text-bold p-4">{t("catalogueHeader")}</h3>
       <div className="flex gap-2">
         {/* Filtro lateral */}
         <FilterBox
@@ -68,11 +69,9 @@ const CataloguePage = () => {
                 } rounded`}
               >
                 <FaFilter
-                  className={`${
-                    isFilterBoxVisible ? "text-white" : "text-primary"
-                  }`}
+                  className={`${isFilterBoxVisible ? "text-white" : "text-primary"}`}
                 />
-                Filters
+                {t("filtersButton")}
               </button>
               <button
                 onClick={() => toggleShowArticles("catalogue")}
@@ -83,9 +82,7 @@ const CataloguePage = () => {
                 } rounded`}
               >
                 <RxDashboard
-                  className={`${
-                    showArticles === "catalogue" ? "text-white" : "text-primary"
-                  }`}
+                  className={`${showArticles === "catalogue" ? "text-white" : "text-primary"}`}
                 />
               </button>
               <button
@@ -97,9 +94,7 @@ const CataloguePage = () => {
                 } rounded`}
               >
                 <FaList
-                  className={`${
-                    showArticles === "list" ? "text-white" : "text-primary"
-                  }`}
+                  className={`${showArticles === "list" ? "text-white" : "text-primary"}`}
                 />
               </button>
             </div>

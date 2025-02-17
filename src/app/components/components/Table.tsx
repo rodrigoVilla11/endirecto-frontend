@@ -1,5 +1,5 @@
-import { ChevronDown } from "lucide-react";
 import React, { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { AiFillCaretDown } from "react-icons/ai";
 
 interface TableHeader {
@@ -17,6 +17,8 @@ interface TableProps {
   sortOrder?: "asc" | "desc" | "";
 }
 
+import { useTranslation } from "react-i18next";
+
 export default function Table({
   headers,
   data: rawData,
@@ -24,6 +26,7 @@ export default function Table({
   sortOrder,
   onSort,
 }: TableProps) {
+  const { t } = useTranslation();
   const validData = Array.isArray(rawData) ? rawData : [];
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
@@ -49,8 +52,12 @@ export default function Table({
               .filter((h) => h.important)
               .map((header) => (
                 <div key={header.key} className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-600">{header.name}:</span>
-                  <span className="text-xs text-gray-800">{row[header.key] || "N/A"}</span>
+                  <span className="text-xs font-semibold text-gray-600">
+                    {header.name}:
+                  </span>
+                  <span className="text-xs text-gray-800">
+                    {row[header.key] || t("na")}
+                  </span>
                 </div>
               ))}
           </div>
@@ -63,7 +70,9 @@ export default function Table({
               {headers.map((header) => (
                 <div key={header.key} className="flex justify-between items-center text-xs">
                   <span className="font-medium text-gray-700">{header.name}:</span>
-                  <span className="text-gray-600">{row[header.key] || "N/A"}</span>
+                  <span className="text-gray-600">
+                    {row[header.key] || t("na")}
+                  </span>
                 </div>
               ))}
             </div>
@@ -102,7 +111,7 @@ export default function Table({
         {validData.length === 0 ? (
           <tr>
             <td colSpan={headers.length} className="px-3 py-2 text-center text-gray-500 text-xs">
-              No se encontraron datos
+              {t("noDataFound")}
             </td>
           </tr>
         ) : (

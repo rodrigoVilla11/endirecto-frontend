@@ -1,3 +1,4 @@
+"use client";
 import { useCreateCollectionMutation } from "@/redux/services/collectionsApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
@@ -8,6 +9,7 @@ import { format } from "date-fns";
 import { IoMdClose } from "react-icons/io";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 enum status {
   PENDING = "PENDING",
@@ -18,6 +20,7 @@ enum status {
 }
 
 const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { t } = useTranslation();
   const currentDate = format(new Date(), "yyyy-MM-dd");
 
   const { selectedClientId } = useClient();
@@ -59,19 +62,19 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createCollection(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el pago:", err);
+      console.error(t("errorCreatingPayment"), err);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">New Payment</h2>
+          <h2 className="text-lg font-semibold">{t("newPayment")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
-            aria-label="Close"
+            aria-label={t("close")}
           >
             <IoMdClose className="text-sm" />
           </button>
@@ -80,10 +83,10 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Payment Details */}
           <div className="border border-gray-200 rounded-md p-3">
-            <h3 className="text-sm font-medium mb-3">Payment Details</h3>
+            <h3 className="text-sm font-medium mb-3">{t("paymentDetails")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium">Number</label>
+                <label className="block text-xs font-medium">{t("number")}</label>
                 <input
                   type="text"
                   name="number"
@@ -94,7 +97,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Status</label>
+                <label className="block text-xs font-medium">{t("status")}</label>
                 <select
                   name="status"
                   value={form.status}
@@ -110,7 +113,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Date</label>
+                <label className="block text-xs font-medium">{t("date")}</label>
                 <input
                   type="date"
                   name="date"
@@ -121,7 +124,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Files</label>
+                <label className="block text-xs font-medium">{t("files")}</label>
                 <input
                   type="text"
                   name="files"
@@ -132,7 +135,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Amount</label>
+                <label className="block text-xs font-medium">{t("amount")}</label>
                 <input
                   type="number"
                   name="amount"
@@ -143,7 +146,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Net Amount</label>
+                <label className="block text-xs font-medium">{t("netAmount")}</label>
                 <input
                   type="number"
                   name="netamount"
@@ -157,10 +160,10 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Additional Details */}
           <div className="border border-gray-200 rounded-md p-3">
-            <h3 className="text-sm font-medium mb-3">Additional Details</h3>
+            <h3 className="text-sm font-medium mb-3">{t("additionalDetails")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium">Customer</label>
+                <label className="block text-xs font-medium">{t("customer")}</label>
                 <select
                   name="customer_id"
                   value={form.customer_id}
@@ -168,7 +171,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
                   className="border border-gray-300 rounded-md p-1 text-sm w-full"
                   disabled={!!selectedClientId}
                 >
-                  <option value="">Select customer</option>
+                  <option value="">{t("selectCustomer")}</option>
                   {!isLoadingCustomers &&
                     customersData?.map((customer: { id: string; name: string }) => (
                       <option key={customer.id} value={customer.id}>
@@ -179,14 +182,14 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Seller</label>
+                <label className="block text-xs font-medium">{t("seller")}</label>
                 <select
                   name="seller_id"
                   value={form.seller_id}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-1 text-sm w-full"
                 >
-                  <option value="">Select seller</option>
+                  <option value="">{t("selectSeller")}</option>
                   {!isLoadingSellers &&
                     sellerData?.map((seller: { id: string; name: string }) => (
                       <option key={seller.id} value={seller.id}>
@@ -197,7 +200,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">User</label>
+                <label className="block text-xs font-medium">{t("user")}</label>
                 <select
                   name="user_id"
                   value={form.user_id}
@@ -205,7 +208,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
                   className="border border-gray-300 rounded-md p-1 text-sm w-full"
                   disabled
                 >
-                  <option value="">Select user</option>
+                  <option value="">{t("selectUser")}</option>
                   {!isLoadingUsers &&
                     usersData?.map((user: { _id: string; username: string }) => (
                       <option key={user._id} value={user._id}>
@@ -216,14 +219,14 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium">Branch</label>
+                <label className="block text-xs font-medium">{t("branch")}</label>
                 <select
                   name="branch_id"
                   value={form.branch_id}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-1 text-sm w-full"
                 >
-                  <option value="">Select branch</option>
+                  <option value="">{t("selectBranch")}</option>
                   {!isLoadingBranchs &&
                     branchsData?.map((branch: { id: string; name: string }) => (
                       <option key={branch.id} value={branch.id}>
@@ -234,7 +237,7 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
 
               <div className="col-span-2">
-                <label className="block text-xs font-medium">Notes</label>
+                <label className="block text-xs font-medium">{t("notes")}</label>
                 <textarea
                   name="notes"
                   value={form.notes}
@@ -251,21 +254,27 @@ const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
               className={`rounded-md px-3 py-1 text-sm text-white ${
-                isLoadingCreate ? "bg-gray-500" : "bg-blue-600"
+                isLoadingCreate ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
               disabled={isLoadingCreate}
             >
-              {isLoadingCreate ? "Saving..." : "Save"}
+              {isLoadingCreate ? t("saving") : t("save")}
             </button>
           </div>
 
-          {isSuccess && <p className="text-green-500 text-sm mt-2">Payment created successfully!</p>}
-          {isError && <p className="text-red-500 text-sm mt-2">Error creating payment</p>}
+          {isSuccess && (
+            <p className="text-green-500 text-sm mt-2">
+              {t("paymentCreatedSuccess")}
+            </p>
+          )}
+          {isError && (
+            <p className="text-red-500 text-sm mt-2">{t("errorCreatingPayment")}</p>
+          )}
         </form>
       </div>
     </div>

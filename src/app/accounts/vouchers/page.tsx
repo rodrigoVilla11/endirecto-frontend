@@ -14,10 +14,13 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
 import debounce from "@/app/context/debounce";
 import { FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
-const Page = () => {
+const VouchersComponent = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [limit] = useState(ITEMS_PER_PAGE);
@@ -31,7 +34,11 @@ const Page = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Referencias para Intersection Observer y Loading
+  // Estados para modales y documento seleccionado
+  const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+
+  // Referencia para Intersection Observer y Loading
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
@@ -86,7 +93,7 @@ const Page = () => {
             setItems((prev) => [...prev, ...newItems]);
           }
         } catch (err) {
-          console.error("Error loading documents:", err);
+          console.error(t("errorLoadingDocuments"), err);
         } finally {
           setIsFetching(false);
         }
@@ -94,7 +101,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, refetch, isFetching]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, refetch, isFetching, t]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {
@@ -149,10 +156,16 @@ const Page = () => {
       key: document.id,
       id: (
         <div className="flex justify-center items-center">
-          <IoInformationCircleOutline className="text-center text-xl" />
+          <IoInformationCircleOutline
+            className="text-center text-xl"
+            onClick={() => {
+              setSelectedDocumentId(document.id);
+              setDocumentModalOpen(true);
+            }}
+          />
         </div>
       ),
-      customer: customer ? `${customer.id} - ${customer.name}` : "NOT FOUND",
+      customer: customer ? `${customer.id} - ${customer.name}` : t("notFound"),
       type: document.type,
       number: document.number,
       date: document.date,
@@ -160,35 +173,34 @@ const Page = () => {
       balance: document.amount,
       expiration: document.expiration_date,
       logistic: document.expiration_status,
-      seller: seller?.name || "NOT FOUND",
+      seller: seller?.name || t("notFound"),
     };
   });
 
   const tableHeader = [
     { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
-    { name: "Customer", key: "customer", important: true },
-    { name: "Type", key: "type" },
-    { name: "Number", key: "number", important: true },
-    { name: "Date", key: "date" },
-    { name: "Amount", key: "amount" },
-    { name: "Balance", key: "balance" },
-    { name: "Expiration", key: "expiration" },
-    { name: "Logistic", key: "logistic" },
-    { name: "Seller", key: "seller" },
+    { name: t("customer"), key: "customer", important: true },
+    { name: t("type"), key: "type" },
+    { name: t("number"), key: "number", important: true },
+    { name: t("date"), key: "date" },
+    { name: t("amount"), key: "amount" },
+    { name: t("balance"), key: "balance" },
+    { name: t("expiration"), key: "expiration" },
+    { name: t("logistic"), key: "logistic" },
+    { name: t("seller"), key: "seller" },
   ];
 
-  // Configuración del header:
-  // Si hay búsqueda activa se muestran los items locales; de lo contrario, se muestra el total global.
+  // Configuración del header
   const headerBody = {
     buttons: [
-      { logo: <AiOutlineDownload />, title: "Download" },
+      { logo: <AiOutlineDownload />, title: t("download") },
     ],
     filters: [
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -205,7 +217,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -219,14 +231,14 @@ const Page = () => {
             <DatePicker
               selected={startDate}
               onChange={(date) => setStartDate(date)}
-              placeholderText="Date From"
+              placeholderText={t("dateFrom")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
             />
             <DatePicker
               selected={endDate}
               onChange={(date) => setEndDate(date)}
-              placeholderText="Date To"
+              placeholderText={t("dateTo")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
             />
@@ -235,13 +247,9 @@ const Page = () => {
       },
     ],
     results: searchQuery
-      ? `${items.length} Results`
-      : `${totalDocuments || totalDocuments === 0 ? totalDocuments : totalDocuments} Results`,
+      ? `${items.length} ${t("results")}`
+      : `${totalDocuments || 0} ${t("results")}`,
   };
-
-  // Actualizamos headerBody.results usando el total global
-  const resultsText = searchQuery ? `${items.length} Results` : `${totalDocuments || 0} Results`;
-  headerBody.results = resultsText;
 
   if (isLoading && page === 1) {
     return (
@@ -253,7 +261,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading documents. Please try again later.
+        {t("errorLoadingDocuments")}
       </div>
     );
   }
@@ -261,24 +269,19 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">VOUCHERS</h3>
+        <h3 className="font-bold p-4">{t("statusHeader")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
           data={tableData}
           onSort={handleSort}
           sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
         <div ref={observerRef} className="h-10" />
-        {isLoading && (
-          <div ref={loadingRef} className="flex justify-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          </div>
-        )}
       </div>
     </PrivateRoute>
   );
 };
 
-export default Page;
+export default VouchersComponent;

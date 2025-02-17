@@ -1,13 +1,14 @@
+"use client";
+import React from "react";
 import { useClient } from "@/app/context/ClientContext";
-import {
-  useGetArticlesQuery,
-} from "@/redux/services/articlesApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
-import React from "react";
+import { useTranslation } from "react-i18next";
 
 const CostPrice = ({ articleId, onlyPrice }: any) => {
+  const { t } = useTranslation();
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
@@ -66,28 +67,27 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
 
   return (
     <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
-    {!onlyPrice && <p className="text-gray-500">P. Costo s/IVA</p>}
-
-    <div className="flex flex-col items-end">
-      {offer !== null ? (
-        <>
-          <span className="line-through text-red-500 text-xs">
-            ${integerPart || "0"}
-            {decimalPart && <span className="text-red-500">,{decimalPart}</span>}
-          </span>
+      {!onlyPrice && <p className="text-gray-500">{t("costPriceExclVAT")}</p>}
+      <div className="flex flex-col items-end">
+        {offer !== null ? (
+          <>
+            <span className="line-through text-red-500 text-xs">
+              ${integerPart || "0"}
+              {decimalPart && <span className="text-red-500">,{decimalPart}</span>}
+            </span>
+            <span className="font-semibold text-gray-800">
+              ${integerPartOffer}
+              {decimalPartOffer && <span className="text-sm">,{decimalPartOffer}</span>}
+            </span>
+          </>
+        ) : (
           <span className="font-semibold text-gray-800">
-            ${integerPartOffer}
-            {decimalPartOffer && <span className="text-sm">,{decimalPartOffer}</span>}
+            ${integerPart || "0"}
+            {decimalPart && <span className="text-sm">,{decimalPart}</span>}
           </span>
-        </>
-      ) : (
-        <span className="font-semibold text-gray-800">
-          ${integerPart || "0"}
-          {decimalPart && <span className="text-sm">,{decimalPart}</span>}
-        </span>
-      )}
+        )}
+      </div>
     </div>
-  </div>
   );
 };
 

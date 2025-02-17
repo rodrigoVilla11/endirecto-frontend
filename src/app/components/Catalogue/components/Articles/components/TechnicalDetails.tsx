@@ -1,13 +1,16 @@
+"use client";
 import { useGetArticleTechnicalDetailByArticleIdQuery } from "@/redux/services/articlesTechnicalDetailsApi";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const TechnicalDetails = ({ articleId, technicalDetailId }: any) => {
+  const { t } = useTranslation();
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading } =
     useGetArticleTechnicalDetailByArticleIdQuery({ articleId: encodedId });
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (isLoading) return <p>{t("loading")}</p>;
+  if (error) return <p>{t("error")}</p>;
 
   // Verificar si data es un array y luego buscar el detalle
   const technicalDetail = Array.isArray(data)
@@ -15,13 +18,13 @@ const TechnicalDetails = ({ articleId, technicalDetailId }: any) => {
     : null;
 
   return (
-    <div className="">
+    <div>
       {technicalDetail ? (
-        <div className="">
-          {technicalDetail.value || "No Value"}
+        <div>
+          {technicalDetail.value || t("noValue")}
         </div>
       ) : (
-        <p>No technical detail found</p>
+        <p>{t("noTechnicalDetailFound")}</p>
       )}
     </div>
   );

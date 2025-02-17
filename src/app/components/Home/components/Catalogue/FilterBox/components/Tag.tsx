@@ -1,13 +1,17 @@
-'use client'
+"use client";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const Tag = ({ onSelectTags }: any) => {
+  const { t } = useTranslation();
   const [selectedItem, setSelectedItem] = useState("");
 
   const handleButtonClick = (value: string) => {
     setSelectedItem(value);
     onSelectTags(value);
   };
+
+  const tags = ["OFFER", "OUTLET", "NEW", "COMBO"];
 
   return (
     <div className="px-4 text-sm text-white">
@@ -16,18 +20,18 @@ const Tag = ({ onSelectTags }: any) => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="cart"
         >
-          Tag
+          {t("tagLabel")}
         </label>
         <div className="flex justify-between items-center gap-2">
-          {['OFFER', 'OUTLET', 'NEW', 'COMBO'].map((tag) => (
+          {tags.map((tag) => (
             <button
               key={tag}
               className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-1 ${
-                selectedItem === tag ? 'bg-blue-500' : 'bg-gray-500'
+                selectedItem === tag ? "bg-blue-500" : "bg-gray-500"
               }`}
               onClick={() => handleButtonClick(tag)}
             >
-              {tag}
+              {t(tag)}
             </button>
           ))}
         </div>

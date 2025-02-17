@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import ArticleMenu from "./ArticleMenu";
@@ -15,6 +16,7 @@ import {
 } from "@/redux/services/customersApi";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import { useTranslation } from "react-i18next";
 
 interface FormState {
   id: string;
@@ -23,6 +25,7 @@ interface FormState {
 }
 
 const ArticleDetails = ({ closeModal }: any) => {
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
   const { articleId } = useArticleId();
 
@@ -101,15 +104,15 @@ const ArticleDetails = ({ closeModal }: any) => {
   };
 
   if (isCustomerLoading || isArticleLoading) {
-    return <div>Loading...</div>;
+    return <div>{t("loading")}</div>;
   }
 
   if (customerError || articleError) {
-    return <div>Error loading data</div>;
+    return <div>{t("errorLoadingData")}</div>;
   }
 
   if (!article) {
-    return <div>No article selected</div>;
+    return <div>{t("noArticleSelected")}</div>;
   }
 
   const isFavourite = form.favourites.includes(article.id);
@@ -117,7 +120,7 @@ const ArticleDetails = ({ closeModal }: any) => {
   return (
     <div className="z-50">
       <div className="flex justify-between">
-        <h2 className="text-base font-bold mb-2">Article Details</h2>
+        <h2 className="text-base font-bold mb-2">{t("articleDetails")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"

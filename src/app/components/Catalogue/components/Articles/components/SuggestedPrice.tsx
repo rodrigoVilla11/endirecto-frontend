@@ -1,15 +1,16 @@
+"use client";
 import React from "react";
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
-import {
-  useGetArticlesQuery,
-} from "@/redux/services/articlesApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
+import { useTranslation } from "react-i18next";
 
 const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
+  const { t } = useTranslation();
   const encodedId = encodeURIComponent(articleId);
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
@@ -48,16 +49,12 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   let margin: number | undefined;
   if (Array.isArray(brandMargin) && brandMargin.length > 0) {
     margin = brandMargin[0]?.margin;
-  } else {
-    // console.log("brandMargin no es un array o está vacío.");
   }
 
   // Obtener el margen del artículo
   let marginItem: number | undefined;
   if (Array.isArray(itemMargin) && itemMargin.length > 0) {
     marginItem = itemMargin[0]?.margin;
-  } else {
-    // console.log("itemMargin no es un array o está vacío.");
   }
 
   // Obtener el precio base
@@ -68,11 +65,11 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
 
   // Aplicar descuento si existe
   if (bonus?.percentage_1 && typeof price === "number") {
-    const discount = (price * bonus.percentage_1) / 100; // Calcular el descuento
-    price -= discount; // Aplicar el descuento al precio
+    const discount = (price * bonus.percentage_1) / 100;
+    price -= discount;
   }
 
-  // Calcular el margen total (sumando margin y marginItem si son mayores a 0)
+  // Calcular el margen total (sumando margin y marginItem)
   const totalMargin = (margin || 0) + (marginItem || 0);
 
   // Función para calcular el precio con margen y luego IVA
@@ -82,24 +79,19 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
     vatRate: number
   ) => {
     if (typeof price === "number" && margin !== undefined) {
-      // Primero aplicamos el margen total (sumado margin + marginItem)
       const priceWithMargin = price * (1 + margin / 100);
-
-      // Luego aplicamos el IVA sobre el precio con margen
       const finalPrice = priceWithMargin * (1 + vatRate / 100);
       return finalPrice;
     }
     return 0;
   };
 
-  // Calculamos el precio con el margen total y luego con IVA
   const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(
     price,
     totalMargin,
     21
   );
 
-  // Función para formatear el precio con separadores de miles
   const formatPrice = (price: any) => {
     if (typeof price === "number") {
       const formatted = new Intl.NumberFormat("es-AR", {
@@ -109,19 +101,19 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
       }).format(price);
       return formatted.split(",");
     }
-    return ["N/A", ""]; // Devuelve "N/A" si no es un número válido
+    return ["N/A", ""];
   };
 
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
 
   return (
     <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
-    {!onlyPrice && <p className="text-gray-500">Sug. Price</p>}
-    <p className="font-semibold text-gray-700">
-      ${integerPart || "0"}
-      {decimalPart && <span className="text-sm">,{decimalPart}</span>}
-    </p>
-  </div>
+      {!onlyPrice && <p className="text-gray-500">{t("suggestedPrice")}</p>}
+      <p className="font-semibold text-gray-700">
+        ${integerPart || "0"}
+        {decimalPart && <span className="text-sm">,{decimalPart}</span>}
+      </p>
+    </div>
   );
 };
 

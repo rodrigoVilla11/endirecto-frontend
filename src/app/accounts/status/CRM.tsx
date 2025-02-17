@@ -5,8 +5,10 @@ import CreateInstanceComponent from "./CreateInstance";
 import Modal from "@/app/components/components/Modal";
 import Instance from "./Instance";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
-const CRM = ({ selectedClientId, closeModal}: any) => {
+const CRM = ({ selectedClientId, closeModal }: any) => {
+  const { t } = useTranslation();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const {
@@ -25,14 +27,14 @@ const CRM = ({ selectedClientId, closeModal}: any) => {
   };
 
   return (
-    <div className={`h-auto m-5 p-1`}>
+    <div className="h-auto m-5 p-1">
       <div className="flex justify-between items-center text-sm">
-        <h3 className="font-bold px-4">CRM</h3>
+        <h3 className="font-bold px-4">{t("crm")}</h3>
         <button
           className="bg-black text-white rounded-md px-3 py-1 text-sm"
           onClick={openCreateModal}
         >
-          New Instance
+          {t("newInstance")}
         </button>
         <button
           onClick={closeModal}
@@ -42,7 +44,7 @@ const CRM = ({ selectedClientId, closeModal}: any) => {
         </button>
       </div>
 
-      {/* Renderizar las instancias si existen */}
+      {/* Render instances if available */}
       {customer?.instance && Array.isArray(customer.instance) ? (
         <div className="mt-4">
           {customer.instance.map((item: any, index: number) => (
@@ -50,10 +52,10 @@ const CRM = ({ selectedClientId, closeModal}: any) => {
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-gray-500">No instances available</p>
+        <p className="mt-4 text-gray-500">{t("noInstancesAvailable")}</p>
       )}
 
-      {/* Modal para crear una nueva instancia */}
+      {/* Modal for creating a new instance */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
         <CreateInstanceComponent closeModal={closeCreateModal} />
       </Modal>

@@ -1,9 +1,9 @@
 "use client";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
-import React, { useEffect } from "react";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 const Instance = ({ instances }: any) => {
-  
+  const { t } = useTranslation();
 
   const priorityColors: Record<string, string> = {
     HIGH: "#F2420A", // Red-orange
@@ -17,13 +17,17 @@ const Instance = ({ instances }: any) => {
 
   return (
     <div
-      className={`h-auto m-5 p-1 flex justify-between items-center text-sm`}
+      className="h-auto m-5 p-1 flex justify-between items-center text-sm"
       style={{ backgroundColor: bgColor }}
     >
-      <h3 className="font-bold px-4">INSTANCE</h3>
+      <h3 className="font-bold px-4">{t("instance")}</h3>
       <div className="flex justify-center items-center w-full">
-        <p className="font-bold px-4">Type: {instances.type}</p>
-        <p className="font-bold px-4">Notes: {instances.notes}</p>
+        <p className="font-bold px-4">
+          {t("type")}: {instances.type}
+        </p>
+        <p className="font-bold px-4">
+          {t("notes")}: {instances.notes}
+        </p>
       </div>
     </div>
   );

@@ -11,10 +11,13 @@ import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
@@ -43,8 +46,12 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     status: "SUMMARIZED",
-    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
-    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
     seller_id: searchParams.seller_id,
     customer_id,
     sort: sortQuery,
@@ -128,8 +135,8 @@ const Page = () => {
 
     return {
       key: collection.id,
-      branch: branch?.name || "NOT FOUND",
-      seller: seller?.name || "NOT FOUND",
+      branch: branch?.name || t("notFound"),
+      seller: seller?.name || t("notFound"),
       date: collection.date
         ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
         : "N/A",
@@ -139,18 +146,24 @@ const Page = () => {
   });
 
   // Cálculo del total
-  const sumAmountsDataFilter = tableData?.reduce((acc, doc) => acc + doc.amount, 0);
-  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const sumAmountsDataFilter = tableData?.reduce(
+    (acc, doc) => acc + doc.amount,
+    0
+  );
+  const formatedSumAmountFilter = sumAmountsDataFilter?.toLocaleString(
+    "es-ES",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  );
 
   const tableHeader = [
-    { name: "Branch", key: "branch" },
-    { name: "Seller", key: "seller",important: true },
-    { name: "Date", key: "date" },
-    { name: "Value", key: "value",important: true },
-    { name: "Amount", key: "amount" ,important: true},
+    { name: t("branch"), key: "branch" },
+    { name: t("seller"), key: "seller", important: true },
+    { name: t("date"), key: "date" },
+    { name: t("value"), key: "value", important: true },
+    { name: t("amount"), key: "amount", important: true },
   ];
 
   const headerBody = {
@@ -164,7 +177,7 @@ const Page = () => {
               setSearchParams({ ...searchParams, seller_id: e.target.value })
             }
           >
-            <option value="">Seller...</option>
+            <option value="">{t("sellers")}</option>
             {sellersData?.map((seller) => (
               <option key={seller.id} value={seller.id}>
                 {seller.name}
@@ -179,13 +192,13 @@ const Page = () => {
       amount: formatedSumAmountFilter || "N/A",
     },
     // Se utiliza data.total para mostrar la cantidad total de registros
-    results: `${data?.total || 0} Results`,
+    results: `${data?.total || 0}  ${t("results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">COLLECTIONS UNSUMMARIES</h3>
+        <h3 className="font-bold p-4">{t("collectionsUnsummaries")}</h3>
         <Header headerBody={headerBody} />
         {isQueryLoading && items.length === 0 ? (
           <div className="flex justify-center py-8">

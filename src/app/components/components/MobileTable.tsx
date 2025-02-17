@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import ButtonOnOff from "@/app/components/components/ButtonOnOff";
 import { FaSearch } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 interface MobileTableProps {
   data: any[];
@@ -18,6 +19,7 @@ const MobileTable: React.FC<MobileTableProps> = ({
   handleRemoveItem,
   shopping_cart = false,
 }) => {
+  const { t } = useTranslation();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
   return (
@@ -25,7 +27,7 @@ const MobileTable: React.FC<MobileTableProps> = ({
       <div className="w-full h-full space-y-4">
         {data.map((item) => (
           <div key={item.key} className="border border-gray-600 rounded-lg shadow-sm overflow-hidden">
-            {/* 🔹 Vista Compacta */}
+            {/* Vista Compacta */}
             <div className="flex items-center justify-between bg-white text-black p-3">
               <div className="flex items-center gap-2">
                 {/* Imagen del Producto */}
@@ -44,14 +46,14 @@ const MobileTable: React.FC<MobileTableProps> = ({
                   onClick={() =>
                     setExpandedItem(expandedItem === item.key ? null : item.key)
                   }
-                  className="p-2 text-black "
+                  className="p-2 text-black"
                 >
                   {expandedItem === item.key ? "▲" : "▼"}
                 </button>
               </div>
             </div>
 
-            {/* 🔹 Vista Expandida */}
+            {/* Vista Expandida */}
             {expandedItem === item.key && (
               <div className="p-4 bg-white text-black space-y-3">
                 {/* Imagen Grande */}
@@ -59,23 +61,23 @@ const MobileTable: React.FC<MobileTableProps> = ({
 
                 <div className="grid gap-2 text-sm">
                   <div className="flex justify-between border-b border-gray-700 pb-1">
-                    <span className="text-gray-400">Marca:</span>
+                    <span className="text-gray-400">{t("brandLabel")}:</span>
                     <span className="font-medium">{item.brand}</span>
                   </div>
                   <div className="flex justify-between border-b border-gray-700 pb-1">
-                    <span className="text-gray-400">Stock:</span>
+                    <span className="text-gray-400">{t("stockLabel")}:</span>
                     <span>{item.stock}</span>
                   </div>
                   <div className="flex justify-between border-b border-gray-700 pb-1">
-                    <span className="text-gray-400">Precio Neto:</span>
+                    <span className="text-gray-400">{t("netPriceLabel")}:</span>
                     <span className="font-medium">{item.price}</span>
                   </div>
-                  {/* 🔹 Cantidad Editable */}
+                  {/* Cantidad Editable */}
                   <div className="flex justify-between border-b border-gray-700 pb-1">
-                    <span className="text-gray-400">Cantidad:</span>
+                    <span className="text-gray-400">{t("quantityLabel")}:</span>
                     <input
                       type="number"
-                      value={item.quantity.props.value} // 🔹 Se usa el valor que ya se pasa
+                      value={item.quantity.props.value}
                       className="w-16 text-center border rounded-md text-xs p-1"
                       min={1}
                       onChange={(e) =>
@@ -85,7 +87,7 @@ const MobileTable: React.FC<MobileTableProps> = ({
                     />
                   </div>
                   <div className="flex justify-between border-b border-gray-700 pb-1">
-                    <span className="text-gray-400">Total:</span>
+                    <span className="text-gray-400">{t("totalLabel")}:</span>
                     <span className="font-medium">{item.total}</span>
                   </div>
                 </div>
@@ -96,13 +98,15 @@ const MobileTable: React.FC<MobileTableProps> = ({
                     onClick={() => handleModalOpen("update", item.key)}
                     className="bg-emerald-500 hover:bg-emerald-600 p-2 rounded text-xs flex items-center gap-2"
                   >
-                    <FaSearch className="w-4 h-4" /> Detalles
+                    <FaSearch className="w-4 h-4" /> {t("detailsButton")}
                   </button>
                   <button
-                    onClick={() => handleRemoveItem && handleRemoveItem(item.key)}
+                    onClick={() =>
+                      handleRemoveItem && handleRemoveItem(item.key)
+                    }
                     className="bg-red-500 hover:bg-red-600 p-2 rounded text-xs flex items-center gap-2"
                   >
-                    <FaTrashCan className="w-4 h-4" /> Eliminar
+                    <FaTrashCan className="w-4 h-4" /> {t("deleteButton")}
                   </button>
                 </div>
               </div>

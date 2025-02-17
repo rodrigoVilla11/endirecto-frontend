@@ -1,3 +1,5 @@
+"use client";
+import React, { useState } from "react";
 import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 import {
   ActionType,
@@ -8,12 +10,13 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { format } from "date-fns";
-import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { useClient } from "../context/ClientContext";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { t } = useTranslation();
   const currentDate = format(new Date(), "yyyy-MM-dd");
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
@@ -52,7 +55,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createCrm(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el CRM:", err);
+      console.error(t("errorCreatingCRM"), err);
     }
   };
 
@@ -60,7 +63,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">New CRM</h2>
+          <h2 className="text-lg font-semibold">{t("newCRM")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
@@ -73,7 +76,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
           {/* General Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <label className="block text-sm font-medium text-gray-700">{t("date")}</label>
               <input
                 type="date"
                 name="date"
@@ -83,7 +86,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Notes</label>
+              <label className="block text-sm font-medium text-gray-700">{t("notes")}</label>
               <textarea
                 name="notes"
                 value={form.notes}
@@ -96,7 +99,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
           {/* Status and Type */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className="block text-sm font-medium text-gray-700">{t("status")}</label>
               <select
                 name="status"
                 value={form.status}
@@ -111,7 +114,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <label className="block text-sm font-medium text-gray-700">{t("type")}</label>
               <select
                 name="type"
                 value={form.type}
@@ -130,7 +133,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
           {/* Customer and Seller */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Customer</label>
+              <label className="block text-sm font-medium text-gray-700">{t("customer")}</label>
               <select
                 name="customer_id"
                 value={form.customer_id}
@@ -138,7 +141,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
                 disabled={!!selectedClientId}
               >
-                <option value="">Select customer</option>
+                <option value="">{t("selectCustomer")}</option>
                 {!isLoadingCustomers &&
                   customersData?.map((customer) => (
                     <option key={customer.id} value={customer.id}>
@@ -148,14 +151,14 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Seller</label>
+              <label className="block text-sm font-medium text-gray-700">{t("seller")}</label>
               <select
                 name="seller_id"
                 value={form.seller_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               >
-                <option value="">Select seller</option>
+                <option value="">{t("selectSeller")}</option>
                 {!isLoadingSellers &&
                   sellerData?.map((seller) => (
                     <option key={seller.id} value={seller.id}>
@@ -169,14 +172,14 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
           {/* Collection and User */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Collection</label>
+              <label className="block text-sm font-medium text-gray-700">{t("collection")}</label>
               <select
                 name="collection_id"
                 value={form.collection_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               >
-                <option value="">Select collection</option>
+                <option value="">{t("selectCollection")}</option>
                 {!isLoadingCollection &&
                   collectionData?.map((collection) => (
                     <option key={collection._id} value={collection._id}>
@@ -186,7 +189,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">User</label>
+              <label className="block text-sm font-medium text-gray-700">{t("user")}</label>
               <select
                 name="user_id"
                 value={form.user_id}
@@ -194,7 +197,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
                 disabled
               >
-                <option value="">Select user</option>
+                <option value="">{t("selectUser")}</option>
                 {!isLoadingUsers &&
                   usersData?.map((user) => (
                     <option key={user._id} value={user._id}>
@@ -211,7 +214,7 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
@@ -220,12 +223,16 @@ const CreateCRMComponent = ({ closeModal }: { closeModal: () => void }) => {
               }`}
               disabled={isLoadingCreate}
             >
-              {isLoadingCreate ? "Saving..." : "Save"}
+              {isLoadingCreate ? t("saving") : t("save")}
             </button>
           </div>
 
-          {isSuccess && <p className="text-green-500 text-sm mt-2">CRM created successfully!</p>}
-          {isError && <p className="text-red-500 text-sm mt-2">Error creating CRM</p>}
+          {isSuccess && (
+            <p className="text-green-500 text-sm mt-2">{t("crmCreatedSuccessfully")}</p>
+          )}
+          {isError && (
+            <p className="text-red-500 text-sm mt-2">{t("errorCreatingCRM")}</p>
+          )}
         </form>
       </div>
     </div>

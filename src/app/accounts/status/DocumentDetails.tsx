@@ -1,11 +1,13 @@
 "use client";
-
 import { useGetDocumentByIdQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { X } from "lucide-react";
 import { AiOutlineCheck } from "react-icons/ai";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function DocumentDetails({ documentId, onClose }: { documentId: string; onClose: () => void; }) {
+  const { t } = useTranslation();
   const {
     data: invoice,
     error,
@@ -48,11 +50,11 @@ export default function DocumentDetails({ documentId, onClose }: { documentId: s
       <div className="bg-white rounded-lg w-full max-w-3xl">
         <div className="flex items-center justify-between p-3 bg-gray-200 rounded-t-lg">
           <h2 className="text-lg font-medium text-gray-800">
-            Detalle {invoice?.type} {invoice?.number}
+            {t("documentDetailsTitle", { type: invoice?.type, number: invoice?.number })}
           </h2>
           <button
             onClick={() => {
-              console.log("Cerrando modal...");
+              console.log("Closing modal...");
               onClose();
             }}
             className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -66,27 +68,27 @@ export default function DocumentDetails({ documentId, onClose }: { documentId: s
             {/* Left Column */}
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Fecha:</span>
+                <span className="text-gray-600">{t("date")}:</span>
                 <span className="font-medium">{formatDate(invoice?.date)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Saldo:</span>
+                <span className="text-gray-600">{t("balance")}:</span>
                 <span className="font-medium">$ {formatCurrency(invoice?.balance)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Sucursal:</span>
+                <span className="text-gray-600">{t("branch")}:</span>
                 <span className="font-medium">{invoice?.branch_id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Fecha Vencimiento:</span>
+                <span className="text-gray-600">{t("expirationDate")}:</span>
                 <span className="font-medium">{formatDate(invoice?.expiration_date)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Transporte:</span>
+                <span className="text-gray-600">{t("transport")}:</span>
                 <span className="font-medium">{invoice?.transport_id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Cliente:</span>
+                <span className="text-gray-600">{t("customer")}:</span>
                 <span className="font-medium">{invoice?.customer_id}</span>
               </div>
             </div>
@@ -94,15 +96,15 @@ export default function DocumentDetails({ documentId, onClose }: { documentId: s
             {/* Right Column */}
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Importe:</span>
+                <span className="text-gray-600">{t("amount")}:</span>
                 <span className="font-medium">$ {formatCurrency(invoice?.amount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Importe Neto:</span>
+                <span className="text-gray-600">{t("netAmount")}:</span>
                 <span className="font-medium">$ {formatCurrency(invoice?.netamount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Estado:</span>
+                <span className="text-gray-600">{t("status")}:</span>
                 {invoice?.expiration_status === "VENCIDO" ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     {invoice.expiration_status}
@@ -118,11 +120,11 @@ export default function DocumentDetails({ documentId, onClose }: { documentId: s
                 )}
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Condición de Pago:</span>
+                <span className="text-gray-600">{t("paymentCondition")}:</span>
                 <span className="font-medium">{paymentsConditionsData?.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Vendedor:</span>
+                <span className="text-gray-600">{t("seller")}:</span>
                 <span className="font-medium">{invoice?.seller_id}</span>
               </div>
             </div>

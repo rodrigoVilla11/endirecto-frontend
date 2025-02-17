@@ -1,8 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
+  const { t } = useTranslation();
   const [showPrice, setShowPrice] = useState(true);
 
   const handleShowPrice = (value: boolean) => {
@@ -17,7 +19,7 @@ const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="cart"
         >
-          Show Purchase Price
+          {t("showPurchasePrice")}
         </label>
         <div className="flex justify-between items-center gap-2">
           <button
@@ -26,7 +28,7 @@ const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
               showPrice ? "bg-primary text-white" : ""
             }`}
           >
-            <FaRegEye /> Show
+            <FaRegEye /> {t("show")}
           </button>
           <button
             onClick={() => handleShowPrice(false)}
@@ -34,7 +36,7 @@ const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
               !showPrice ? "bg-primary text-white" : ""
             }`}
           >
-            <FaRegEyeSlash /> Hide
+            <FaRegEyeSlash /> {t("hide")}
           </button>
         </div>
       </div>

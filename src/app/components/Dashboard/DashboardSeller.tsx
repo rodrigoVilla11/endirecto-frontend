@@ -29,24 +29,25 @@ import {
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import { useClient } from "@/app/context/ClientContext";
+import { useTranslation } from "react-i18next";
 
 const DashboardSeller = () => {
+  const { t } = useTranslation();
   const { isOpen } = useSideMenu();
   const { selectedClientId } = useClient();
-
   const { role, userData } = useAuth();
+
   const { data: countCustomersData } = useCountCustomersQuery({
     seller_id: userData?.seller_id,
   });
-const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
-    { id: selectedClientId ?? undefined }
-  );
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
 
-  // Verificar si `data` es un cliente o un objeto con sumas
+  // Determinar si data es de un cliente o un resumen
   const isClient = data && "documents_balance" in data;
   const isSummary = data && "total_documents_balance" in data;
 
-  // Definir valores dinámicos según el tipo de `data`
   const documentsBalance = isClient
     ? data.documents_balance
     : isSummary
@@ -62,19 +63,16 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString(
-    "es-ES",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  );
+  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   const itemsCard = [
     {
       logo: <MdOutlineShoppingBag />,
-      title: "Catalogue",
-      text: "Access our catalog of articles",
+      title: t("catalogue"),
+      text: t("accessCatalog"),
       href: "/catalogue",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -86,16 +84,16 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <CgProfile />,
-      title: "Select Customer",
+      title: t("selectCustomer"),
       subtitle: countCustomersData,
       href: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <MdTextSnippet />,
-      title: "Status Account",
+      title: t("statusAccount"),
       subtitle: `$ ${formatedSumAmount}`,
-      text: `Expired: $ ${formatedExpiredSumAmount}`,
+      text: t("expiredPrice", { amount: formatedExpiredSumAmount }),
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -107,13 +105,13 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <TbClockExclamation />,
-      title: "Pendings",
+      title: t("pendings"),
       subtitle: "$ 9.999.999",
       text: (
         <>
-          Codes: 92
+          {t("codes")}: 92
           <br />
-          With Stock: $ 9.999.999
+          {t("withStock")}: $ 9.999.999
         </>
       ),
       href: "",
@@ -121,13 +119,13 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <BsCash />,
-      title: "Interannual Sell",
+      title: t("interannualSell"),
       subtitle: "0 %",
       text: (
         <>
-          Current Month: $ 0
+          {t("currentMonth")}: $ 0
           <br />
-          Last Year Month: $ 0
+          {t("lastYearMonth")}: $ 0
         </>
       ),
       href: "",
@@ -135,13 +133,13 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <BsCash />,
-      title: "Monthly Sell",
+      title: t("monthlySell"),
       subtitle: "0 %",
       text: (
         <>
-          Current Month: $ 0
+          {t("currentMonth")}: $ 0
           <br />
-          Last Year Month: $ 0
+          {t("lastYearMonth")}: $ 0
         </>
       ),
       href: "",
@@ -149,9 +147,9 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <FaInfo />,
-      title: "Pending Reclaims",
+      title: t("pendingReclaims"),
       subtitle: "0",
-      text: "Total Reclaims: 0",
+      text: t("totalReclaims", { count: 0 }),
       href: "/pendings",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -163,13 +161,13 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <CgProfile />,
-      title: "Customers Contacted",
+      title: t("customersContacted"),
       subtitle: "2 %",
       text: (
         <>
-          Customers Contacted: 180
+          {t("customersContacted")}: 180
           <br />
-          Total Customers: 9.999
+          {t("totalCustomers")}: 9.999
         </>
       ),
       href: "/crm",
@@ -177,25 +175,25 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <IoIosPaper />,
-      title: "Monthly Orders",
+      title: t("monthlyOrders"),
       subtitle: "$ 9.999.999",
-      text: "Quantity of Orders: 80",
+      text: t("quantityOrders", { quantity: 80 }),
       href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoIosPaper />,
-      title: "Monthly Invoices ",
+      title: t("monthlyInvoices"),
       subtitle: "$ 999.999.999",
-      text: "Number of Invoices: 350",
+      text: t("numberInvoices", { count: 350 }),
       href: "/accounts/vouchers",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoNotificationsOutline />,
-      title: "Notifications",
+      title: t("notifications"),
       subtitle: "0",
-      text: "Without reading: 0",
+      text: t("withoutReading", { count: 0 }),
       href: "/notifications",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -205,18 +203,12 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
         "CUSTOMER",
       ],
     },
-    // {
-    //   logo: <GoGraph />,
-    //   title: "Days of WEB use Clients",
-    //   subtitle: "1.95 %",
-    //   href: "",
-    //   allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-    // },
   ];
+
   const itemsShortcuts = [
     {
       logo: <IoIosPaper />,
-      title: "Documents",
+      title: t("documents"),
       href: "/accounts/vouchers",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -228,7 +220,7 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <BsCash />,
-      title: "Collections",
+      title: t("collections"),
       href: "/accounts/payments",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -240,19 +232,19 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <BsCash />,
-      title: "Collections Summaries",
+      title: t("collectionsSummaries"),
       href: "/collections/summaries",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: <BsCash />,
-      title: "Collections Unsummaries",
+      title: t("collectionsUnsummaries"),
       href: "/collections/unsummaries",
       allowedRoles: ["ADMINISTRADOR"],
     },
     {
       logo: <IoCalculatorSharp />,
-      title: "Orders",
+      title: t("orders"),
       href: "/orders/orders",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -264,7 +256,7 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <IoCalculatorSharp />,
-      title: "Budget",
+      title: t("budget"),
       href: "/orders/budget",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -276,31 +268,31 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <FaShoppingCart />,
-      title: "Shopping Cart",
+      title: t("shoppingCart"),
       href: "/shopping-cart",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaFileDownload />,
-      title: "Download Price List",
+      title: t("downloadPriceList"),
       href: "/downloads/prices-lists",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaPhone />,
-      title: "Contact",
+      title: t("contact"),
       href: "/contact",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <ImStatsDots />,
-      title: "Statistic",
+      title: t("statistic"),
       href: "/stats",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <CgProfile />,
-      title: "My Profile",
+      title: t("myProfile"),
       href: "/profile/my-profile",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -312,19 +304,19 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
     },
     {
       logo: <BsCash />,
-      title: "Brand Margins",
+      title: t("brandMargins"),
       href: "/profile/brands-margin",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <BsCash />,
-      title: "Item Margins",
+      title: t("itemMargins"),
       href: "/profile/items-margin",
       allowedRoles: ["CUSTOMER"],
     },
     {
       logo: <FaPowerOff />,
-      title: "Logout",
+      title: t("logout"),
       href: "",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -351,7 +343,7 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
   return (
     <div className="gap-4 bg-black">
       <div className="mt-12 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
-        Hello {userData?.username} {userData?.seller_id}
+        {t("hello", { username: userData?.username, sellerId: userData?.seller_id })}
       </div>
       <div className="overflow-x-auto h-auto">
         <div
@@ -370,7 +362,7 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
               />
             </Link>
           ))}
@@ -391,7 +383,7 @@ const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
               <CardShortcuts
                 title={item.title}
                 logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]" // Ocupa el 50% del ancho disponible
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
               />
             </Link>
           ))}

@@ -6,16 +6,14 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
+import { useTranslation } from "react-i18next";
 
 const SliderImages = () => {
+  const { t } = useTranslation();
   const filterBy = "headers";
-  const {
-    data: marketing,
-    error,
-    isLoading,
-  } = useGetAllMarketingByFilterQuery({ filterBy });
+  const { data: marketing, error, isLoading } = useGetAllMarketingByFilterQuery({ filterBy });
   const router = useRouter();
-  
+
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
@@ -24,18 +22,20 @@ const SliderImages = () => {
 
   if (isLoading)
     return (
-      <div className="flex items-center justify-center h-80">Cargando...</div>
+      <div className="flex items-center justify-center h-80">
+        {t("loading")}
+      </div>
     );
   if (error)
     return (
       <div className="flex items-center justify-center h-80">
-        Error al cargar los datos.
+        {t("errorLoadingData")}
       </div>
     );
   if (!marketing || marketing.length === 0)
     return (
       <div className="flex items-center justify-center h-80">
-        No hay datos disponibles.
+        {t("noDataAvailable")}
       </div>
     );
   return (
@@ -44,16 +44,16 @@ const SliderImages = () => {
       id="home"
     >
       <Swiper
-        modules={[Navigation, Autoplay, Pagination]} // Autoplay, navegación y paginación
-        spaceBetween={0} // Sin espacio entre slides
-        slidesPerView={1} // Una diapositiva visible a la vez
-        navigation // Flechas de navegación
+        modules={[Navigation, Autoplay, Pagination]}
+        spaceBetween={0}
+        slidesPerView={1}
+        navigation
         pagination={{
           clickable: true,
           type: "progressbar",
         }}
-        autoplay={{ delay: 5000 }} // Autoplay cada 5 segundos
-        loop // Loop infinito
+        autoplay={{ delay: 5000 }}
+        loop
       >
         {marketing.map(
           (item) =>
