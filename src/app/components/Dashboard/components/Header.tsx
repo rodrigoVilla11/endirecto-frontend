@@ -38,9 +38,9 @@ const Header = () => {
           </div>
 
           <div className="flex flex-col min-w-0">
-            <p className="text-sm text-gray-600 break-words">
+            <span className="text-sm text-gray-600 break-words">
               {t("welcomeMessage")}
-            </p>
+            </span>
             <h1 className="text-xl font-bold text-gray-900">
               {displayName || t("noNameAvailable")}
             </h1>
