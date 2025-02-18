@@ -23,7 +23,7 @@ import Modal from "../components/components/Modal";
 
 const ITEMS_PER_PAGE = 20;
 
-const pageReclaims = () => {
+const PageReclaims = () => {
   const { t } = useTranslation();
   // Basic states
   const [page, setPage] = useState(1);
@@ -112,7 +112,7 @@ const pageReclaims = () => {
       }
     };
     loadBrands();
-  }, [page, searchQuery, sortQuery, searchParams]);
+  }, [page, searchQuery, sortQuery, searchParams, isLoading, refetch, t]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -415,4 +415,4 @@ const pageReclaims = () => {
   );
 };
 
-export default pageReclaims;
+export default PageReclaims;

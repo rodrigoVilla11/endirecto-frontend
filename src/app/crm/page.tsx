@@ -84,7 +84,7 @@ const Page = () => {
       setCustomer_id("");
       refetch();
     }
-  }, [selectedClientId]);
+  }, [selectedClientId, refetch, isLoading, t]);
 
   // Efecto para cargar documentos (CRM) y manejar la paginación
   useEffect(() => {
@@ -105,7 +105,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, startDate, endDate, customer_id, sortQuery]);
+  }, [page, startDate, endDate, customer_id, sortQuery, refetch, isLoading, t]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {

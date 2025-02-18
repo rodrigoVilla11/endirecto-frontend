@@ -377,7 +377,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           })
           .filter(Boolean)
       : icons;
-  }, [role, selectedClientId]);
+  }, [role, selectedClientId, icons, t]);
 
   return (
     <div

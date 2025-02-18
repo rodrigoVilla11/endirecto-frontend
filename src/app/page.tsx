@@ -1,6 +1,5 @@
 "use client"
 import HomePage from "./components/Home/HomePage";
-import "./i18n/i18n";
 
 export default function Home() {
   return (

@@ -6,7 +6,6 @@ import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useAuth } from "@/app/context/AuthContext";
 import NavBarHome from "./NavBarHome/NavBarHome";
 import { usePathname } from "next/navigation";
-import "../../i18n/i18n";
 
 const NavBarAndSideMenu = () => {
   const { isOpen, setIsOpen } = useSideMenu();

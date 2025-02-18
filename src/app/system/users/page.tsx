@@ -140,7 +140,7 @@ const Page = () => {
     };
 
     loadUsers();
-  }, [page, searchQuery, data, branchData]);
+  }, [page, searchQuery, data, branchData, isLoading, refetch, users]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {

@@ -74,7 +74,7 @@ const Page = () => {
     };
 
     loadBonuses();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, isLoading, refetch]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {

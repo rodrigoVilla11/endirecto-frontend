@@ -83,7 +83,7 @@ const Page = () => {
     };
 
     loadBrands();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, isLoading, refetch]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {

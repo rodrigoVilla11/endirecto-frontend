@@ -66,7 +66,7 @@ const Page = () => {
     };
 
     loadTransports();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, isLoading, refetch]);
 
   // Intersection Observer para el infinite scroll
   useEffect(() => {

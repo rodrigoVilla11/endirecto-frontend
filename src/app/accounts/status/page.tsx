@@ -132,7 +132,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch, t]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {

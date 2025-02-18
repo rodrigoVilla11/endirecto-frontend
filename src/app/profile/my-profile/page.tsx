@@ -90,7 +90,7 @@ const Page = () => {
       setProfileImg(data?.profileImg);
       refetch();
     }
-  }, [selectedClientId, data, uploadResponses]);
+  }, [selectedClientId, data, uploadResponses, refetch]);
 
   useEffect(() => {
     if (isSuccess) {

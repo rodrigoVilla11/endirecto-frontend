@@ -137,7 +137,7 @@ const SelectCustomer = () => {
     };
 
     loadItems();
-  }, [page, searchQuery, searchParams, sortQuery]);
+  }, [page, searchQuery, searchParams, sortQuery, isLoading, refetch]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {

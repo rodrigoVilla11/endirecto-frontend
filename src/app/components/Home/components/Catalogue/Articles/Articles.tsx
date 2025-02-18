@@ -64,7 +64,7 @@ const Articles = ({
     
         setIsFetching(false);
       }
-    }, [data, page, filters]);
+    }, [data, page, filters, isFetching]);
 
   // Configurar Intersection Observer para scroll infinito
   useEffect(() => {

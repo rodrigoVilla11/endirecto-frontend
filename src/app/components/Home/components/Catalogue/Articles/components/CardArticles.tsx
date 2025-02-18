@@ -22,7 +22,7 @@ const CardArticle = ({ article, showPurchasePrice }: any) => {
       setModalOpen(true);
       setArticleId(null); 
     }
-  }, [articleId, article.id]); 
+  }, [articleId, article.id, setArticleId]); 
 
   
 

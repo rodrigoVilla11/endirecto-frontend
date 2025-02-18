@@ -50,7 +50,7 @@ const Page = () => {
     };
 
     loadNotifications();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, isLoading, limit, refetch]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

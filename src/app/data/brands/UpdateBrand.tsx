@@ -80,7 +80,7 @@ const UpdateBrandComponent = ({
         sequence: brand.sequence ?? "",
       });
     }
-  }, [brand]);
+  }, [refetch, brand]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

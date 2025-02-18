@@ -157,7 +157,7 @@ const Page = () => {
           item.price.toLowerCase().includes(lowerSearchTerm)
         );
       });
-  }, [customer, articles, stockData, articlePricesData, brandData, searchTerm]);
+  }, [customer, articles, stockData, articlePricesData, brandData, searchTerm, t]);
 
   const tableHeader = [
     { name: t("table.brand"), key: "brand" },

@@ -114,7 +114,7 @@ const UpdateArticleComponent = ({
         images: article.images ?? [],
       });
     }
-  }, [articleId, article]);
+  }, [articleId, article, refetchArticles]);
   
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

@@ -70,7 +70,7 @@ const Page = () => {
       setCustomer_id("");
       refetch();
     }
-  }, [selectedClientId]);
+  }, [selectedClientId, refetch, isLoading]);
 
   useEffect(() => {
     const loadDocuments = async () => {
@@ -96,7 +96,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

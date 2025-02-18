@@ -53,7 +53,7 @@ const Page = () => {
     };
 
     loadFaqs();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, isLoading, refetch, limit]);
 
   // Efecto para implementar infinite scroll con Intersection Observer
   useEffect(() => {

@@ -31,6 +31,7 @@ const Header = () => {
               <img
                 src={data.profileImg}
                 className="rounded-full h-16 w-16 sm:h-20 sm:w-20"
+                alt="profile-img"
               />
             ) : (
               <p className="text-2xl font-semibold text-white">{firstLetter}</p>

@@ -65,7 +65,7 @@ const Page = () => {
       setCustomer_id(selectedClientId || "");
       refetch();
     }
-  }, [selectedClientId]);
+  }, [selectedClientId, customer_id, refetch]);
 
   // Carga de datos con paginación y ordenamiento
   useEffect(() => {
@@ -86,7 +86,7 @@ const Page = () => {
     };
 
     loadItems();
-  }, [page, sortQuery]);
+  }, [page, sortQuery, customer_id, refetch, isLoading]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {
