@@ -842,5 +842,7 @@
   "url": "URL",
   "tag_url": "Tag URL",
   "success_update": "Tag updated successfully!",
-  "error_update": "Error updating tag"
+  "error_update": "Error updating tag",
+  "search_placeholder": "Search...",
+  "clear_search": "Clear search"
 }

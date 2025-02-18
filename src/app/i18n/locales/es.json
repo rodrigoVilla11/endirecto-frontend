@@ -837,5 +837,7 @@
   "url": "URL",
   "tag_url": "URL de la Etiqueta",
   "success_update": "¡Etiqueta actualizada con éxito!",
-  "error_update": "Error al actualizar la etiqueta"
+  "error_update": "Error al actualizar la etiqueta",
+  "search_placeholder": "Buscar...",
+  "clear_search": "Borrar búsqueda"
 }
