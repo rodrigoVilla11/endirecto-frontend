@@ -1,3 +1,4 @@
+"use client";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import {
   useGetMarketingByIdQuery,
@@ -6,6 +7,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { FaTrashCan } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 type UpdateHeaderComponentProps = {
   marketingId: string;
@@ -25,12 +27,8 @@ const UpdateHeaderComponent = ({
   marketingId,
   closeModal,
 }: UpdateHeaderComponentProps) => {
-  const {
-    data: header,
-    error,
-    isLoading,
-  } = useGetMarketingByIdQuery({ id: marketingId });
-
+  const { t } = useTranslation();
+  const { data: header, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
 
@@ -48,11 +46,7 @@ const UpdateHeaderComponent = ({
 
   const [
     uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-    },
+    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
   ] = useUploadImageMutation();
 
   useEffect(() => {
@@ -80,19 +74,16 @@ const UpdateHeaderComponent = ({
         const response = await uploadImage(selectedHomeFile).unwrap();
         setHomeUploadResponse(response.url);
       } catch (err) {
-        console.error("Error uploading home image:", err);
+        console.error(t("updateHeader.uploadingError"), err);
       }
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
     setForm((prevForm) => ({
       ...prevForm,
-      headers: {
+      header: {
         ...prevForm.header,
         [name]: name === "sequence" ? Number(value) : value,
       },
@@ -112,27 +103,27 @@ const UpdateHeaderComponent = ({
       await updateMarketing(updatedForm).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error updating the banner:", err);
+      console.error(t("updateHeader.updateErrorLog"), err);
     }
   };
 
   const handleRemoveImage = () => {
     setForm((prevForm) => ({
       ...prevForm,
-      headers: {
+      header: {
         ...prevForm.header,
         img: "",
       },
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the header data.</p>;
+  if (isLoading) return <p>{t("updateHeader.loading")}</p>;
+  if (error) return <p>{t("updateHeader.fetchError")}</p>;
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Header</h2>
+        <h2 className="text-lg mb-4">{t("updateHeader.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -143,53 +134,45 @@ const UpdateHeaderComponent = ({
 
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
-
-
           <label className="flex flex-col text-sm">
-            Enable:
+            {t("updateHeader.enableLabel")}:
             <button
               type="button"
               onClick={() =>
                 setForm((prevForm) => ({
                   ...prevForm,
-                  headers: {
+                  header: {
                     ...prevForm.header,
                     enable: !prevForm.header.enable,
                   },
                 }))
               }
               className={`p-1 rounded-md text-sm ${
-                form.header.enable
-                  ? "bg-green-500 text-white"
-                  : "bg-red-500 text-white"
+                form.header.enable ? "bg-green-500 text-white" : "bg-red-500 text-white"
               }`}
             >
-              {form.header.enable ? "Enabled" : "Disabled"}
+              {form.header.enable ? t("updateHeader.enabled") : t("updateHeader.disabled")}
             </button>
           </label>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Image:
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleHomeFileChange}
-            />
+            {t("updateHeader.imageLabel")}:
+            <input type="file" accept="image/*" onChange={handleHomeFileChange} />
             <button
               type="button"
               onClick={handleUploadHome}
               disabled={isLoadingUpload}
               className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
             >
-              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+              {isLoadingUpload ? t("updateHeader.uploading") : t("updateHeader.uploadPrompt")}
             </button>
             {form.header.img && (
               <div className="flex items-center gap-2 mt-1">
                 <img
                   src={form.header.img}
-                  alt="Header Img"
+                  alt={t("updateHeader.homeImageAlt")}
                   className="h-20 w-full rounded-md"
                 />
                 <button
@@ -205,11 +188,11 @@ const UpdateHeaderComponent = ({
         </div>
 
         <label className="flex flex-col text-sm col-span-2">
-          URL:
+          {t("updateHeader.urlLabel")}:
           <textarea
             name="url"
             value={form.header.url}
-            placeholder="Header URL"
+            placeholder={t("updateHeader.urlPlaceholder")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-1 text-sm"
           />
@@ -221,7 +204,7 @@ const UpdateHeaderComponent = ({
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white text-sm"
           >
-            Cancel
+            {t("updateHeader.cancel")}
           </button>
           <button
             type="submit"
@@ -230,18 +213,18 @@ const UpdateHeaderComponent = ({
             }`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updateHeader.updating") : t("updateHeader.update")}
           </button>
         </div>
 
         {isSuccess && (
           <p className="col-span-2 text-green-500 text-sm">
-            Header updated successfully!
+            {t("updateHeader.success")}
           </p>
         )}
         {isError && (
           <p className="col-span-2 text-red-500 text-sm">
-            Error updating header
+            {t("updateHeader.error")}
           </p>
         )}
       </form>

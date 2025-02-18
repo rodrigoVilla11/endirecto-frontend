@@ -7,12 +7,14 @@ import {
   NotificationType,
   useCreateNotificationMutation,
 } from "@/redux/services/notificationsApi";
+import { useTranslation } from "react-i18next";
 
 interface CreateNotificationComponentProps {
   closeModal: () => void;
 }
 
 const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = ({ closeModal }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -40,11 +42,11 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Construir las fechas concatenando la parte de fecha y la parte de hora
+      // Construct schedule dates by concatenating date and time parts
       const schedule_from = `${form.schedule_from_date} ${form.schedule_from_time}`;
       const schedule_to = `${form.schedule_to_date} ${form.schedule_to_time}`;
 
-      // Formatear las fechas a "yyyy-MM-dd HH:mm:ss"
+      // Format dates to "yyyy-MM-dd HH:mm:ss"
       const formattedData = {
         ...form,
         schedule_from: format(new Date(schedule_from), "yyyy-MM-dd HH:mm:ss"),
@@ -54,18 +56,18 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
       await createNotification(formattedData).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error creating notification:", err);
+      console.error(t("createNotification.errorLog"), err);
     }
   };
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">New Notification</h2>
+        <h2 className="text-lg font-semibold">{t("createNotification.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
-          aria-label="Close modal"
+          aria-label={t("createNotification.closeModal")}
         >
           <IoMdClose />
         </button>
@@ -74,11 +76,11 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
       <form className="grid grid-cols-4 gap-4" onSubmit={handleSubmit}>
         {/* Title */}
         <label className="flex flex-col">
-          Title:
+          {t("createNotification.titleLabel")}:
           <input
             name="title"
             value={form.title}
-            placeholder="Notification Title"
+            placeholder={t("createNotification.titlePlaceholder")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
             required
@@ -87,22 +89,22 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Type */}
         <label className="flex flex-col">
-          Type:
+          {t("createNotification.typeLabel")}:
           <select
             name="type"
             value={form.type}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
           >
-            <option value={NotificationType.NOVEDAD}>Novedad</option>
-            <option value={NotificationType.PEDIDO}>Pedido</option>
-            <option value={NotificationType.PRESUPUESTO}>Presupuesto</option>
+            <option value={NotificationType.NOVEDAD}>{t("createNotification.novedad")}</option>
+            <option value={NotificationType.PEDIDO}>{t("createNotification.pedido")}</option>
+            <option value={NotificationType.PRESUPUESTO}>{t("createNotification.presupuesto")}</option>
           </select>
         </label>
 
         {/* Brand */}
         <label className="flex flex-col">
-          Brand:
+          {t("createNotification.brandLabel")}:
           <select
             name="brand_id"
             value={form.brand_id}
@@ -110,7 +112,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
             className="border border-gray-300 rounded-md p-2 text-sm"
             required
           >
-            <option value="">Select brand</option>
+            <option value="">{t("createNotification.selectBrand")}</option>
             {!isLoadingBrands &&
               brandsData?.map((brand: { id: string; name: string }) => (
                 <option key={brand.id} value={brand.id}>
@@ -122,7 +124,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Date From */}
         <label className="flex flex-col">
-          Date From:
+          {t("createNotification.dateFromLabel")}:
           <input
             type="date"
             name="schedule_from_date"
@@ -135,7 +137,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Hour From */}
         <label className="flex flex-col">
-          Hour From:
+          {t("createNotification.hourFromLabel")}:
           <input
             type="time"
             name="schedule_from_time"
@@ -148,7 +150,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Date To */}
         <label className="flex flex-col">
-          Date To:
+          {t("createNotification.dateToLabel")}:
           <input
             type="date"
             name="schedule_to_date"
@@ -161,7 +163,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Hour To */}
         <label className="flex flex-col">
-          Hour To:
+          {t("createNotification.hourToLabel")}:
           <input
             type="time"
             name="schedule_to_time"
@@ -174,11 +176,11 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Description */}
         <label className="col-span-3 flex flex-col">
-          Description:
+          {t("createNotification.descriptionLabel")}:
           <textarea
             name="description"
             value={form.description}
-            placeholder="Notification Description"
+            placeholder={t("createNotification.descriptionPlaceholder")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
             required
@@ -187,11 +189,11 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
         {/* Link */}
         <label className="col-span-3 flex flex-col">
-          Link:
+          {t("createNotification.linkLabel")}:
           <textarea
             name="link"
             value={form.link}
-            placeholder="Notification Link"
+            placeholder={t("createNotification.linkPlaceholder")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
           />
@@ -204,7 +206,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
             onClick={closeModal}
             className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
           >
-            Cancel
+            {t("createNotification.cancel")}
           </button>
           <button
             type="submit"
@@ -213,18 +215,18 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
               isLoadingCreate ? "bg-gray-500" : "bg-green-500"
             }`}
           >
-            {isLoadingCreate ? "Saving..." : "Save"}
+            {isLoadingCreate ? t("createNotification.saving") : t("createNotification.save")}
           </button>
         </div>
 
         {isSuccess && (
           <p className="col-span-3 text-sm text-green-500">
-            Notification created successfully!
+            {t("createNotification.success")}
           </p>
         )}
         {isError && (
           <p className="col-span-3 text-sm text-red-500">
-            Error creating notification
+            {t("createNotification.error")}
           </p>
         )}
       </form>

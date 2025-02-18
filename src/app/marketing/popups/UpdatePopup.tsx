@@ -1,3 +1,4 @@
+"use client";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import {
   useGetMarketingByIdQuery,
@@ -5,54 +6,41 @@ import {
 } from "@/redux/services/marketingApi";
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 type UpdatePopupComponentProps = {
   marketingId: string;
   closeModal: () => void;
 };
 
+type FormState = {
+  _id: string;
+  popups: {
+    name: string;
+    sequence: number;
+    location: string;
+    enable: boolean;
+    web: string;
+    url: string;
+    visualization: number;
+  };
+};
+
 const UpdatePopupComponent = ({
   marketingId,
   closeModal,
 }: UpdatePopupComponentProps) => {
-  const {
-    data: popup,
-    error,
-    isLoading,
-  } = useGetMarketingByIdQuery({ id: marketingId });
+  const { t } = useTranslation();
+  const { data: popup, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResponse, setUploadResponse] = useState<string>("");
 
-  const [
-    uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-    },
-  ] = useUploadImageMutation();
+  const [uploadImage, { isLoading: isLoadingUpload }] = useUploadImageMutation();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (selectedFile) {
-      try {
-        const response = await uploadImage(selectedFile).unwrap();
-        setUploadResponse(response.url);
-      } catch (err) {
-        console.error("Error uploading image:", err);
-      }
-    }
-  };
-
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     _id: "",
     popups: {
       name: "",
@@ -82,11 +70,25 @@ const UpdatePopupComponent = ({
     }
   }, [popup]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
 
+  const handleUpload = async () => {
+    if (selectedFile) {
+      try {
+        const response = await uploadImage(selectedFile).unwrap();
+        setUploadResponse(response.url);
+      } catch (err) {
+        console.error(t("updatePopup.uploadingError"), err);
+      }
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
       popups: {
@@ -112,7 +114,7 @@ const UpdatePopupComponent = ({
       await updateMarketing(updatedForm).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error updating the Popup:", err);
+      console.error(t("updatePopup.updateErrorLog"), err);
     }
   };
 
@@ -137,50 +139,50 @@ const UpdatePopupComponent = ({
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching popup data.</p>;
+  if (isLoading) return <p>{t("updatePopup.loading")}</p>;
+  if (error) return <p>{t("updatePopup.fetchError")}</p>;
 
   return (
     <div>
-      <h2 className="text-lg mb-4">Update Popup</h2>
+      <h2 className="text-lg mb-4">{t("updatePopup.title")}</h2>
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Name:
+            {t("updatePopup.nameLabel")}:
             <input
               name="name"
               value={form.popups.name}
-              placeholder="Popup Name"
+              placeholder={t("updatePopup.namePlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-1"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Sequence:
+            {t("updatePopup.sequenceLabel")}:
             <input
               type="number"
               name="sequence"
               value={form.popups.sequence}
-              placeholder="Popup Sequence"
+              placeholder={t("updatePopup.sequencePlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-1"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Location:
+            {t("updatePopup.locationLabel")}:
             <input
               name="location"
               value={form.popups.location}
-              placeholder="Popup Location"
+              placeholder={t("updatePopup.locationPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-1"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Enable:
+            {t("updatePopup.enableLabel")}:
             <button
               type="button"
               onClick={handleToggleEnable}
@@ -188,14 +190,14 @@ const UpdatePopupComponent = ({
                 form.popups.enable ? "bg-green-500 text-white" : "bg-red-500 text-white"
               }`}
             >
-              {form.popups.enable ? "Enabled" : "Disabled"}
+              {form.popups.enable ? t("updatePopup.enabled") : t("updatePopup.disabled")}
             </button>
           </label>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Web Image:
+            {t("updatePopup.webImageLabel")}:
             <input type="file" accept="image/*" onChange={handleFileChange} />
             <button
               type="button"
@@ -203,11 +205,11 @@ const UpdatePopupComponent = ({
               disabled={isLoadingUpload}
               className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
             >
-              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+              {isLoadingUpload ? t("updatePopup.uploading") : t("updatePopup.uploadPrompt")}
             </button>
             {form.popups.web && (
               <div className="flex items-center gap-2 mt-1">
-                <img src={form.popups.web} alt="Popup Image" className="h-16 w-16 rounded-md" />
+                <img src={form.popups.web} alt={t("updatePopup.webImageAlt")} className="h-16 w-16 rounded-md" />
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -218,30 +220,18 @@ const UpdatePopupComponent = ({
               </div>
             )}
           </label>
-
-          <label className="flex flex-col text-sm">
-            URL:
-            <input
-              name="url"
-              value={form.popups.url}
-              placeholder="Popup URL"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-1"
-            />
-          </label>
-
-          <label className="flex flex-col text-sm">
-            Visualizations:
-            <input
-              type="number"
-              name="visualization"
-              value={form.popups.visualization}
-              placeholder="Popup Visualization"
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-1"
-            />
-          </label>
         </div>
+
+        <label className="flex flex-col text-sm col-span-2">
+          {t("updatePopup.urlLabel")}:
+          <textarea
+            name="url"
+            value={form.popups.url}
+            placeholder={t("updatePopup.urlPlaceholder")}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-1"
+          />
+        </label>
 
         <div className="col-span-2 flex justify-end gap-2 mt-2">
           <button
@@ -249,23 +239,27 @@ const UpdatePopupComponent = ({
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white text-sm"
           >
-            Cancel
+            {t("updatePopup.cancel")}
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white text-sm ${
-              isUpdating ? "bg-gray-500" : "bg-success"
-            }`}
+            className={`rounded-md p-2 text-white text-sm ${isUpdating ? "bg-gray-500" : "bg-success"}`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updatePopup.updating") : t("updatePopup.update")}
           </button>
         </div>
 
         {isSuccess && (
-          <p className="col-span-2 text-green-500 text-sm">Popup updated successfully!</p>
+          <p className="col-span-2 text-green-500 text-sm">
+            {t("updatePopup.success")}
+          </p>
         )}
-        {isError && <p className="col-span-2 text-red-500 text-sm">Error updating popup</p>}
+        {isError && (
+          <p className="col-span-2 text-red-500 text-sm">
+            {t("updatePopup.error")}
+          </p>
+        )}
       </form>
     </div>
   );

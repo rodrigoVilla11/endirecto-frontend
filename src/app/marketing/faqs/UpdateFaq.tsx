@@ -1,8 +1,10 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import {
   useGetFaqByIdQuery,
   useUpdateFaqMutation,
 } from "@/redux/services/faqsApi";
+import { useTranslation } from "react-i18next";
 
 type UpdateFaqComponentProps = {
   faqId: string;
@@ -10,7 +12,7 @@ type UpdateFaqComponentProps = {
 };
 
 const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
-
+  const { t } = useTranslation();
   const { data: faq, error, isLoading } = useGetFaqByIdQuery({ id: faqId });
   const [updateFaq, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateFaqMutation();
@@ -46,19 +48,19 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
       await updateFaq(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al actualizar la FAQ:", err);
+      console.error(t("updateFaq.error"), err);
     }
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (isLoading) return <p>{t("updateFaq.loading")}</p>;
+  if (error) return <p>{t("updateFaq.fetchError")}</p>;
 
   return (
     <div>
-      <h2 className="text-lg mb-4">Update FAQ </h2>
+      <h2 className="text-lg mb-4">{t("updateFaq.title")}</h2>
       <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
         <label className="flex flex-col">
-          Question:
+          {t("updateFaq.questionLabel")}:
           <textarea
             name="question"
             value={form.question}
@@ -67,7 +69,7 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
           />
         </label>
         <label className="flex flex-col">
-          Answer:
+          {t("updateFaq.answerLabel")}:
           <textarea
             name="answer"
             value={form.answer}
@@ -81,7 +83,7 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white"
           >
-            Cancel
+            {t("updateFaq.cancel")}
           </button>
           <button
             type="submit"
@@ -90,13 +92,13 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
             }`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updateFaq.updating") : t("updateFaq.update")}
           </button>
         </div>
         {isSuccess && (
-          <p className="text-green-500">FAQ updated successfully!</p>
+          <p className="text-green-500">{t("updateFaq.success")}</p>
         )}
-        {isError && <p className="text-red-500">Error updating FAQ</p>}
+        {isError && <p className="text-red-500">{t("updateFaq.error")}</p>}
       </form>
     </div>
   );

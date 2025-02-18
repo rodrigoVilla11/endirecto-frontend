@@ -6,6 +6,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 type UpdateTagComponentProps = {
   marketingId: string;
@@ -22,10 +23,9 @@ type FormState = {
   };
 };
 
-const UpdateTagComponent = ({
-  marketingId,
-  closeModal,
-}: UpdateTagComponentProps) => {
+const UpdateTagComponent = ({ marketingId, closeModal }: UpdateTagComponentProps) => {
+  const { t } = useTranslation();
+
   const { data: tag, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
 
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
@@ -80,9 +80,7 @@ const UpdateTagComponent = ({
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
     setForm((prevForm) => ({
@@ -133,13 +131,13 @@ const UpdateTagComponent = ({
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error loading Tag data.</p>;
+  if (isLoading) return <p>{t("loading")}</p>;
+  if (error) return <p>{t("error_loading")}</p>;
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Tag</h2>
+        <h2 className="text-lg mb-4">{t("update_tag")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -151,18 +149,18 @@ const UpdateTagComponent = ({
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Name:
+            {t("name")}:
             <input
               name="name"
               value={form.tags.name}
-              placeholder="Tag Name"
+              placeholder={t("tag_name")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-1 text-sm"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Enable:
+            {t("enable")}:
             <button
               type="button"
               onClick={handleToggleEnable}
@@ -170,14 +168,14 @@ const UpdateTagComponent = ({
                 form.tags.enable ? "bg-green-500 text-white" : "bg-red-500 text-white"
               }`}
             >
-              {form.tags.enable ? "Enabled" : "Disabled"}
+              {form.tags.enable ? t("enabled") : t("disabled")}
             </button>
           </label>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Image:
+            {t("image")}:
             <input type="file" accept="image/*" onChange={handleFileChange} />
             <button
               type="button"
@@ -185,7 +183,7 @@ const UpdateTagComponent = ({
               disabled={isLoadingUpload}
               className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
             >
-              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+              {isLoadingUpload ? t("uploading") : t("upload_image")}
             </button>
             {form.tags.image && (
               <div className="flex items-center gap-2 mt-1">
@@ -203,11 +201,11 @@ const UpdateTagComponent = ({
         </div>
 
         <label className="flex flex-col text-sm col-span-2">
-          URL:
+          {t("url")}:
           <textarea
             name="url"
             value={form.tags.url}
-            placeholder="Tag URL"
+            placeholder={t("tag_url")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-1 text-sm"
           />
@@ -219,27 +217,22 @@ const UpdateTagComponent = ({
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white text-sm"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white text-sm ${
-              isUpdating ? "bg-gray-500" : "bg-success"
-            }`}
+            className={`rounded-md p-2 text-white text-sm ${isUpdating ? "bg-gray-500" : "bg-success"}`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updating") : t("update")}
           </button>
         </div>
 
-        {isSuccess && (
-          <p className="col-span-2 text-green-500 text-sm">Tag updated successfully!</p>
-        )}
-        {isError && <p className="col-span-2 text-red-500 text-sm">Error updating tag</p>}
+        {isSuccess && <p className="col-span-2 text-green-500 text-sm">{t("success_update")}</p>}
+        {isError && <p className="col-span-2 text-red-500 text-sm">{t("error_update")}</p>}
       </form>
     </div>
   );
 };
 
 export default UpdateTagComponent;
-

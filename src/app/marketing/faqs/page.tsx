@@ -12,35 +12,38 @@ import DeleteFaq from "./DeleteFaq";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useGetFaqsPagQuery } from "@/redux/services/faqsApi";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Estados básicos
+  const { t } = useTranslation();
+
+  // Basic states
   const [page, setPage] = useState(1);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Estados para modales
+  // States for modals
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [currentFaqId, setCurrentFaqId] = useState<string | null>(null);
 
-  // Referencias
+  // References
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Query de Redux que ahora retorna { faqs: Faqs[]; total: number }
+  // Redux query (returns an object { faqs: Faq[], total: number })
   const { data, error, isLoading: isQueryLoading, refetch } = useGetFaqsPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
   });
 
-  // Búsqueda con debounce
+  // Debounced search
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -48,13 +51,13 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para manejar la carga inicial y las búsquedas
+  // Effect to load FAQs (initial load and on search)
   useEffect(() => {
     const loadFaqs = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
-          // Se espera que la respuesta tenga la forma { faqs, total }
+          // Expecting the response to have the shape { faqs, total }
           const result = await refetch().unwrap();
           const newFaqs = result.faqs || [];
           if (page === 1) {
@@ -63,8 +66,8 @@ const Page = () => {
             setFaqs((prev) => [...prev, ...newFaqs]);
           }
           setHasMore(newFaqs.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading faqs:", error);
+        } catch (err) {
+          console.error("Error loading FAQs:", err);
         } finally {
           setIsLoading(false);
         }
@@ -74,7 +77,7 @@ const Page = () => {
     loadFaqs();
   }, [page, searchQuery]);
 
-  // Intersection Observer para scroll infinito
+  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -98,7 +101,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Manejadores de modales
+  // Modal handlers
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
@@ -125,7 +128,7 @@ const Page = () => {
     refetch();
   };
 
-  // Reset de búsqueda
+  // Reset search
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
@@ -157,18 +160,17 @@ const Page = () => {
     })) || [];
 
   const tableHeader = [
-    { name: "Question", key: "question",  important: true },
-    { name: "Answer", key: "answer" },
+    { name: t("table.question"), key: "question", important: true },
+    { name: t("table.answer"), key: "answer" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
-  // Aquí usamos data.total para mostrar el total de FAQs
   const headerBody = {
     buttons: [
       {
         logo: <FaPlus />,
-        title: "New",
+        title: t("header.new"),
         onClick: openCreateModal,
       },
     ],
@@ -177,7 +179,7 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -188,7 +190,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -197,7 +199,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${data?.total || 0} Results`,
+    results: t("page.results", { count: data?.total || 0 }),
   };
 
   if (isQueryLoading && faqs.length === 0) {
@@ -211,7 +213,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading faqs. Please try again later.
+        {t("page.errorLoadingFaqs")}
       </div>
     );
   }
@@ -219,10 +221,10 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">FAQS</h3>
+        <h3 className="font-bold p-4">{t("page.faqsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        {/* Elemento para el Infinite Scroll */}
+        {/* Element for infinite scroll */}
         <div ref={observerRef} className="h-10" />
       </div>
 

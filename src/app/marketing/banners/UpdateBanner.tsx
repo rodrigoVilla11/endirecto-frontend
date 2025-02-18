@@ -1,3 +1,4 @@
+"use client";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import {
   useGetMarketingByIdQuery,
@@ -6,6 +7,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { FaTrashCan } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 type UpdateBannerComponentProps = {
   marketingId: string;
@@ -27,12 +29,8 @@ const UpdateBannerComponent = ({
   marketingId,
   closeModal,
 }: UpdateBannerComponentProps) => {
-  const {
-    data: header,
-    error,
-    isLoading,
-  } = useGetMarketingByIdQuery({ id: marketingId });
-
+  const { t } = useTranslation();
+  const { data: header, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
 
@@ -52,11 +50,7 @@ const UpdateBannerComponent = ({
 
   const [
     uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-    },
+    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
   ] = useUploadImageMutation();
 
   useEffect(() => {
@@ -91,11 +85,8 @@ const UpdateBannerComponent = ({
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
     setForm((prevForm) => ({
       ...prevForm,
       headers: {
@@ -132,13 +123,13 @@ const UpdateBannerComponent = ({
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the banner data.</p>;
+  if (isLoading) return <p>{t("updateBanner.loading")}</p>;
+  if (error) return <p>{t("updateBanner.fetchError")}</p>;
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Banner</h2>
+        <h2 className="text-lg mb-4">{t("updateBanner.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -150,29 +141,30 @@ const UpdateBannerComponent = ({
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Name:
+            {t("updateBanner.name")}:
             <input
               name="name"
               value={form.headers.name}
-              placeholder="Banner Name"
+              placeholder={t("updateBanner.namePlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-1 text-sm"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Sequence:
+            {t("updateBanner.sequence")}:
             <input
               type="number"
               name="sequence"
               value={form.headers.sequence}
               onChange={handleChange}
+              placeholder={t("updateBanner.sequencePlaceholder")}
               className="border border-gray-300 rounded-md p-1 text-sm"
             />
           </label>
 
           <label className="flex flex-col text-sm">
-            Enable:
+            {t("updateBanner.enable")}:
             <button
               type="button"
               onClick={() =>
@@ -190,14 +182,14 @@ const UpdateBannerComponent = ({
                   : "bg-red-500 text-white"
               }`}
             >
-              {form.headers.enable ? "Enabled" : "Disabled"}
+              {form.headers.enable ? t("updateBanner.enabled") : t("updateBanner.disabled")}
             </button>
           </label>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
-            Home Image:
+            {t("updateBanner.homeImage")}:
             <input
               type="file"
               accept="image/*"
@@ -209,13 +201,13 @@ const UpdateBannerComponent = ({
               disabled={isLoadingUpload}
               className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
             >
-              {isLoadingUpload ? "Uploading..." : "Upload Image"}
+              {isLoadingUpload ? t("updateBanner.uploading") : t("updateBanner.uploadImage")}
             </button>
             {form.headers.homeWeb && (
               <div className="flex items-center gap-2 mt-1">
                 <img
                   src={form.headers.homeWeb}
-                  alt="Home Banner"
+                  alt={t("updateBanner.homeImageAlt")}
                   className="h-20 w-full rounded-md"
                 />
                 <button
@@ -231,11 +223,11 @@ const UpdateBannerComponent = ({
         </div>
 
         <label className="flex flex-col text-sm col-span-2">
-          URL:
+          {t("updateBanner.url")}:
           <textarea
             name="url"
             value={form.headers.url}
-            placeholder="Banner URL"
+            placeholder={t("updateBanner.urlPlaceholder")}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-1 text-sm"
           />
@@ -247,7 +239,7 @@ const UpdateBannerComponent = ({
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white text-sm"
           >
-            Cancel
+            {t("updateBanner.cancel")}
           </button>
           <button
             type="submit"
@@ -256,18 +248,18 @@ const UpdateBannerComponent = ({
             }`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updateBanner.updating") : t("updateBanner.update")}
           </button>
         </div>
 
         {isSuccess && (
           <p className="col-span-2 text-green-500 text-sm">
-            Banner updated successfully!
+            {t("updateBanner.success")}
           </p>
         )}
         {isError && (
           <p className="col-span-2 text-red-500 text-sm">
-            Error updating banner
+            {t("updateBanner.error")}
           </p>
         )}
       </form>

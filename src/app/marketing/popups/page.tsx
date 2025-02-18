@@ -1,27 +1,30 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
+import PrivateRoute from "@/app/context/PrivateRoutes";
+import Modal from "@/app/components/components/Modal";
 import { FaPlus } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
-import Modal from "@/app/components/components/Modal";
+import { FaTimes } from "react-icons/fa";
 import {
   useCountMarketingQuery,
   useGetMarketingByFilterQuery,
 } from "@/redux/services/marketingApi";
-import DeletePopupComponent from "./DeletePopup";
 import CreatePopupComponent from "./CreatePopup";
 import UpdatePopupComponent from "./UpdatePopup";
-import PrivateRoute from "@/app/context/PrivateRoutes";
+import DeletePopupComponent from "./DeletePopup";
+import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
-    null
-  );
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -31,11 +34,8 @@ const Page = () => {
     error,
     isLoading,
     refetch,
-  } = useGetMarketingByFilterQuery({ filterBy});
-
+  } = useGetMarketingByFilterQuery({ filterBy });
   const { data: countMarketingData } = useCountMarketingQuery(null);
-
- 
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -63,8 +63,8 @@ const Page = () => {
     refetch();
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (isLoading) return <p>{t("page.loading")}</p>;
+  if (error) return <p>{t("page.error")}</p>;
 
   const tableData =
     marketing?.map((popup) => {
@@ -73,12 +73,13 @@ const Page = () => {
         name: popup.popups.name,
         sequence: popup.popups.sequence,
         location: popup.popups.location,
-        enable: popup.popups.enable ? "true" : "false",
+        enable: popup.popups.enable ? t("table.enabled") : t("table.disabled"),
         web: (
           <div className="flex justify-center items-center">
             <img
-              src={(popup.popups.web && popup.popups.web) || "NOT FOUND"}
+              src={popup.popups.web || ""}
               className="h-10"
+              alt={t("table.imageAlt")}
             />
           </div>
         ),
@@ -104,34 +105,36 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name", important: true },
-    { name: "Sequence", key: "sequence" },
-    { name: "Location", key: "location", important: true },
-    { name: "Enable", key: "enable", important: true },
-    { name: "Web", key: "web", important: true },
-    { name: "URL", key: "url" },
-    { name: "Visualizations", key: "visualizations" },
+    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.sequence"), key: "sequence" },
+    { name: t("table.location"), key: "location", important: true },
+    { name: t("table.enable"), key: "enable", important: true },
+    { name: t("table.web"), key: "web", important: true },
+    { name: t("table.url"), key: "url" },
+    { name: t("table.visualizations"), key: "visualization" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
+
   const headerBody = {
     buttons: [
       {
         logo: <FaPlus />,
-        title: "New",
+        title: t("header.new"),
         onClick: openCreateModal,
       },
     ],
     filters: [],
-    results: `${marketing?.length} Results`,
+    results: `${marketing?.length} ${t("header.results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">POPUPS</h3>
+        <h3 className="font-bold p-4">{t("page.popups")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
+        <div ref={observerRef} className="h-10" />
 
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreatePopupComponent closeModal={closeCreateModal} />
@@ -152,7 +155,6 @@ const Page = () => {
             closeModal={closeDeleteModal}
           />
         </Modal>
-        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

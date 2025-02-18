@@ -1,9 +1,13 @@
+"use client";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import { useCreateMarketingMutation } from "@/redux/services/marketingApi";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { FaTrashCan } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     popups: {
       name: "",
@@ -16,7 +20,7 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
     },
   });
 
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]); // To store uploaded images
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [
     uploadImage,
@@ -46,10 +50,10 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
         }));
         setSelectedFile(null); // Clear the selected file after upload
       } catch (err) {
-        console.error("Error uploading image:", err);
+        console.error(t("createPopup.uploadError"), err);
       }
     } else {
-      console.error("No file selected");
+      console.error(t("createPopup.noFileSelected"));
     }
   };
 
@@ -77,7 +81,7 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createMarketing(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el Popup:", err);
+      console.error(t("createPopup.createError"), err);
     }
   };
 
@@ -95,7 +99,7 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-[600px]">
         <div className="flex justify-between mb-4">
-          <h2 className="text-lg font-semibold">New Popup</h2>
+          <h2 className="text-lg font-semibold">{t("createPopup.title")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
@@ -109,57 +113,57 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
             {/* Form Inputs */}
             <div className="flex flex-col">
               <label className="flex flex-col mb-2">
-                Name:
+                {t("createPopup.nameLabel")}:
                 <input
                   name="name"
                   value={form.popups.name}
-                  placeholder="Popup Name"
+                  placeholder={t("createPopup.namePlaceholder")}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
                 />
               </label>
 
               <label className="flex flex-col mb-2">
-                Sequence:
+                {t("createPopup.sequenceLabel")}:
                 <input
                   type="number"
                   name="sequence"
                   value={form.popups.sequence}
-                  placeholder="Popup Sequence"
+                  placeholder={t("createPopup.sequencePlaceholder")}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
                 />
               </label>
 
               <label className="flex flex-col mb-2">
-                Location:
+                {t("createPopup.locationLabel")}:
                 <input
                   name="location"
                   value={form.popups.location}
-                  placeholder="Popup Location"
+                  placeholder={t("createPopup.locationPlaceholder")}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
                 />
               </label>
 
               <div className="flex flex-col">
-                <label>Enable:</label>
+                <label>{t("createPopup.enableLabel")}:</label>
                 <button
                   type="button"
                   onClick={handleToggleEnable}
-                  className={`border border-gray-300 rounded-md p-2 text-white ${
+                  className={`border border-gray-300 rounded-md p-2 text-white w-24 ${
                     form.popups.enable ? "bg-green-500" : "bg-red-500"
                   }`}
                 >
-                  {form.popups.enable ? "On" : "Off"}
+                  {form.popups.enable ? t("createPopup.on") : t("createPopup.off")}
                 </button>
               </div>
             </div>
 
             {/* Upload Section */}
             <div className="flex flex-col">
-              <label className="flex flex-col mb-2">
-                Select Image:
+              <label className="flex flex-col text-sm">
+                {t("createPopup.imageLabel")}:
                 <div className="flex items-center">
                   <input
                     type="file"
@@ -170,24 +174,26 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
                   <button
                     type="button"
                     onClick={handleUpload}
-                    disabled={isLoadingUpload}
+                    disabled={isLoadingUpload || !selectedFile}
                     className="ml-2 bg-blue-500 text-white rounded-md px-4 py-2"
                   >
-                    {isLoadingUpload ? "Uploading..." : "Upload"}
+                    {isLoadingUpload ? t("createPopup.uploading") : t("createPopup.uploadPrompt")}
                   </button>
                 </div>
               </label>
 
               {/* Images Table */}
-              <h3 className="text-md font-semibold mt-4 mb-2">Uploaded Images</h3>
+              <h3 className="text-md font-semibold mt-4 mb-2">
+                {t("createPopup.uploadedImagesTitle")}
+              </h3>
               <table className="min-w-full border border-gray-300 rounded-md">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 p-2 w-1/4 text-center">
-                      Image
+                      {t("createPopup.imageColumn")}
                     </th>
                     <th className="border border-gray-300 p-2 text-center">
-                      URL
+                      {t("createPopup.urlColumn")}
                     </th>
                   </tr>
                 </thead>
@@ -198,7 +204,7 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
                         <td className="border border-gray-300 p-2 text-center">
                           <img
                             src={image}
-                            alt="Uploaded"
+                            alt={t("createPopup.uploadedAlt")}
                             className="h-16 w-16 object-cover mx-auto"
                           />
                         </td>
@@ -220,7 +226,7 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
                         colSpan={2}
                         className="border border-gray-300 p-2 text-center text-gray-500"
                       >
-                        No images uploaded
+                        {t("createPopup.noImages")}
                       </td>
                     </tr>
                   )}
@@ -229,30 +235,30 @@ const CreatePopupComponent = ({ closeModal }: { closeModal: () => void }) => {
             </div>
           </div>
 
+          {/* Buttons */}
           <div className="flex justify-end gap-4 mt-4">
             <button
               type="button"
               onClick={closeModal}
               className="bg-gray-400 rounded-md p-2 text-white"
             >
-              Cancel
+              {t("createPopup.cancel")}
             </button>
             <button
               type="submit"
-              className={`rounded-md p-2 text-white ${
-                isLoadingCreate ? "bg-gray-500" : "bg-success"
-              }`}
+              className={`rounded-md p-2 text-white ${isLoadingCreate ? "bg-gray-500" : "bg-green-500"}`}
               disabled={isLoadingCreate}
             >
-              {isLoadingCreate ? "Saving..." : "Save"}
+              {isLoadingCreate ? t("createPopup.saving") : t("createPopup.save")}
             </button>
           </div>
-
-          {isSuccess && (
-            <p className="text-green-500 mt-2">Popup created successfully!</p>
-          )}
-          {isError && <p className="text-red-500 mt-2">Error creating Popup</p>}
         </form>
+
+        {/* Messages */}
+        {isSuccess && (
+          <p className="text-green-500 mt-4">{t("createPopup.success")}</p>
+        )}
+        {isError && <p className="text-red-500 mt-4">{t("createPopup.error")}</p>}
       </div>
     </div>
   );

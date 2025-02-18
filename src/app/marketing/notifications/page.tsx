@@ -6,38 +6,41 @@ import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import Modal from "@/app/components/components/Modal";
 import { FaPlus, FaTrashCan } from "react-icons/fa6";
-import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
+import { FaTimes } from "react-icons/fa";
+import {
+  useGetNotificationsPagQuery,
+} from "@/redux/services/notificationsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import debounce from "@/app/context/debounce";
 import CreateNotificationComponent from "./CreateNotification";
 import DeleteNotificationComponent from "./DeleteNotification";
-import { FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Estados para paginación, búsqueda, ordenamiento y modales
+  const { t } = useTranslation();
+  // States for pagination, search, sorting and modals
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato "campo:asc" o "campo:desc"
-  // "items" contendrá el listado de notifications (concatenado)
+  const [sortQuery, setSortQuery] = useState<string>(""); // Format: "field:asc" or "field:desc"
+  // "items" will hold the notifications (concatenated)
   const [items, setItems] = useState<any[]>([]);
-  // Total global devuelto por el endpoint
+  // Global total returned by the endpoint
   const [totalNotifications, setTotalNotifications] = useState<number>(0);
-  // Para manejar infinite scroll
+  // For infinite scroll
   const [hasMore, setHasMore] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  // Estados para modales
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  // Modal state for deletion (we open the delete modal when a notification is selected)
   const [currentNotificationId, setCurrentNotificationId] = useState<string | null>(null);
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
-  // Referencia para el Intersection Observer (infinite scroll)
+  // Ref for Intersection Observer (infinite scroll)
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // Otras queries
+  // Other queries
   const { data: branchData } = useGetBranchesQuery(null);
-  // Se espera que useGetNotificationsPagQuery retorne { notifications, total }
+  // useGetNotificationsPagQuery is expected to return an object { notifications, total }
   const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
@@ -45,7 +48,7 @@ const Page = () => {
     sort: sortQuery,
   });
 
-  // Debounced search para evitar disparos con cada tecla
+  // Debounced search to avoid firing with every keystroke
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -53,13 +56,13 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para cargar los notifications (paginación, búsqueda, infinite scroll)
+  // Effect to load notifications (pagination, search, infinite scroll)
   useEffect(() => {
     const loadNotifications = async () => {
       if (!isFetching) {
         setIsFetching(true);
         try {
-          // Se espera que el resultado tenga la forma: { notifications: Notification[], total: number }
+          // Expected response: { notifications: Notification[], total: number }
           const result = await refetch().unwrap();
           const fetched = result || { notifications: [], total: 0 };
           const newItems = Array.isArray(fetched.notifications)
@@ -73,16 +76,16 @@ const Page = () => {
           }
           setHasMore(newItems.length === ITEMS_PER_PAGE);
         } catch (err) {
-          console.error("Error fetching notifications:", err);
+          console.error(t("page.fetchError"), err);
         } finally {
           setIsFetching(false);
         }
       }
     };
     loadNotifications();
-  }, [page, searchQuery, sortQuery, refetch, isFetching]);
+  }, [page, searchQuery, sortQuery, refetch, isFetching, t]);
 
-  // Intersection Observer para infinite scroll
+  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -102,7 +105,7 @@ const Page = () => {
     };
   }, [hasMore, isFetching]);
 
-  // Reset de búsqueda
+  // Reset search handler
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
@@ -110,7 +113,7 @@ const Page = () => {
     setHasMore(true);
   };
 
-  // Handler para ordenamiento
+  // Sorting handler
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
@@ -129,33 +132,12 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Handlers para modales
-  const openCreateModal = () => setCreateModalOpen(true);
-  const closeCreateModal = () => {
-    setCreateModalOpen(false);
-    setPage(1);
-    setItems([]);
-    refetch();
-  };
-
-  const openDeleteModal = (id: string) => {
-    setCurrentNotificationId(id);
-    setDeleteModalOpen(true);
-  };
-  const closeDeleteModal = () => {
-    setDeleteModalOpen(false);
-    setCurrentNotificationId(null);
-    setPage(1);
-    setItems([]);
-    refetch();
-  };
-
-  // Configuración de la tabla: se mapea cada notification
+  // Map notifications to table data
   const tableData = items.map((notification) => {
     const branch = branchData?.find((b) => b.id === notification.branch_id);
     return {
       key: notification._id,
-      brand: branch?.name || "N/A",
+      brand: branch?.name || t("table.noBrand"),
       type: notification.type,
       title: notification.title,
       description: notification.description,
@@ -165,7 +147,7 @@ const Page = () => {
         <div className="flex justify-center items-center">
           <FaTrashCan
             className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(notification._id)}
+            onClick={() => setCurrentNotificationId(notification._id)}
           />
         </div>
       ),
@@ -173,27 +155,30 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Brand", key: "brand" },
-    { name: "Type", key: "type" },
-    { name: "Title", key: "title" },
-    { name: "Description", key: "description" },
-    { name: "Validity", key: "validity" },
-    { name: "Date", key: "date" },
+    { name: t("table.brand"), key: "brand" },
+    { name: t("table.type"), key: "type" },
+    { name: t("table.title"), key: "title" },
+    { name: t("table.description"), key: "description" },
+    { name: t("table.validity"), key: "validity" },
+    { name: t("table.date"), key: "date" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
-  // Configuración del header:
-  // Si hay búsqueda, se muestra la cantidad local; si no, se muestra el total global
+  // Header configuration: if there's a search query, show local count; otherwise, use global total
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
+      {
+        logo: <FaPlus />,
+        title: t("header.new"),
+        onClick: () => setCreateModalOpen(true),
+      },
     ],
     filters: [
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -211,7 +196,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -219,13 +204,10 @@ const Page = () => {
           </div>
         ),
       },
-      {
-        // Aquí podrías agregar un select para filtrar por NotificationType, si lo necesitas.
-      },
     ],
     results: searchQuery
-      ? `${items.length} Results`
-      : `${totalNotifications} Results`,
+      ? `${items.length} ${t("header.results")}`
+      : `${totalNotifications} ${t("header.results")}`,
   };
 
   if (isLoading && items.length === 0) {
@@ -238,7 +220,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading notifications. Please try again later.
+        {t("page.errorLoadingNotifications")}
       </div>
     );
   }
@@ -246,7 +228,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">NOTIFICATIONS</h3>
+        <h3 className="font-bold p-4">{t("page.notifications")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
@@ -257,16 +239,36 @@ const Page = () => {
         />
         <div ref={observerRef} className="h-10" />
 
-        {/* Modal para crear notificación */}
-        <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-          <CreateNotificationComponent closeModal={closeCreateModal} />
+        {/* Modal for creating notification */}
+        <Modal isOpen={isCreateModalOpen} onClose={() => {
+          setCreateModalOpen(false);
+          setPage(1);
+          setItems([]);
+          refetch();
+        }}>
+          <CreateNotificationComponent closeModal={() => {
+            setCreateModalOpen(false);
+            setPage(1);
+            setItems([]);
+            refetch();
+          }} />
         </Modal>
 
-        {/* Modal para eliminar notificación */}
-        <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+        {/* Modal for deleting notification */}
+        <Modal isOpen={currentNotificationId !== null} onClose={() => {
+          setCurrentNotificationId(null);
+          setPage(1);
+          setItems([]);
+          refetch();
+        }}>
           <DeleteNotificationComponent
             notificationId={currentNotificationId || ""}
-            closeModal={closeDeleteModal}
+            closeModal={() => {
+              setCurrentNotificationId(null);
+              setPage(1);
+              setItems([]);
+              refetch();
+            }}
           />
         </Modal>
       </div>

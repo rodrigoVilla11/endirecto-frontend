@@ -13,24 +13,19 @@ import DeleteBannerComponent from "./DeleteBanner";
 import UpdateBannerComponent from "./UpdateBanner";
 import CreateBannerComponent from "./CreateBanner";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
-    null
-  );
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const filterBy = "headers";
-  const {
-    data: marketing,
-    error,
-    isLoading,
-    refetch,
-  } = useGetMarketingByFilterQuery({ filterBy });
+  const { data: marketing, error, isLoading, refetch } = useGetMarketingByFilterQuery({ filterBy });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -58,90 +53,77 @@ const Page = () => {
     refetch();
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (isLoading) return <p>{t("page.loading")}</p>;
+  if (error) return <p>{t("page.error")}</p>;
 
   const tableData =
-    marketing?.map((popup) => {
-      return {
-        key: popup._id,
-        name: popup.headers.name,
-        sequence: popup.headers.sequence,
-        enable: popup.headers.enable ? "true" : "false",
-        homeWeb: (
-          <div className="flex justify-center items-center">
-            <img
-              src={popup.headers.homeWeb && popup.headers.homeWeb}
-              className="h-10"
-            />
-          </div>
-        ),
-        url: popup.headers.url,
-        edit: (
-          <div className="flex justify-center items-center">
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openUpdateModal(popup._id)}
-            />
-          </div>
-        ),
-        erase: (
-          <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer"
-              onClick={() => openDeleteModal(popup._id)}
-            />
-          </div>
-        ),
-      };
-    }) || [];
+    marketing?.map((popup) => ({
+      key: popup._id,
+      name: popup.headers.name,
+      sequence: popup.headers.sequence,
+      enable: popup.headers.enable ? t("table.enable") : t("table.disable"),
+      homeWeb: (
+        <div className="flex justify-center items-center">
+          <img src={popup.headers.homeWeb || ""} className="h-10" alt={t("table.homeWebAlt")} />
+        </div>
+      ),
+      url: popup.headers.url,
+      edit: (
+        <div className="flex justify-center items-center">
+          <FaPencil
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openUpdateModal(popup._id)}
+          />
+        </div>
+      ),
+      erase: (
+        <div className="flex justify-center items-center">
+          <FaTrashCan
+            className="text-center text-lg hover:cursor-pointer"
+            onClick={() => openDeleteModal(popup._id)}
+          />
+        </div>
+      ),
+    })) || [];
 
   const tableHeader = [
-    { name: "Name", key: "name", important: true },
-    { name: "Sequence", key: "sequence" },
-    { name: "Enable", key: "enable" },
-    { name: "Home Web", key: "homeWeb" },
-    { name: "URL", key: "url" },
+    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.sequence"), key: "sequence" },
+    { name: t("table.enableStatus"), key: "enable" },
+    { name: t("table.homeWeb"), key: "homeWeb" },
+    { name: t("table.url"), key: "url" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
+
   const headerBody = {
     buttons: [
       {
         logo: <FaPlus />,
-        title: "New",
+        title: t("header.new"),
         onClick: openCreateModal,
       },
     ],
     filters: [],
-    results: `${marketing?.length} Results`,
+    results: `${marketing?.length} ${t("header.results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">BANNERS</h3>
+        <h3 className="font-bold p-4">{t("page.banners")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateBannerComponent closeModal={closeCreateModal} />
         </Modal>
-
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentMarketingId && (
-            <UpdateBannerComponent
-              marketingId={currentMarketingId}
-              closeModal={closeUpdateModal}
-            />
+            <UpdateBannerComponent marketingId={currentMarketingId} closeModal={closeUpdateModal} />
           )}
         </Modal>
-
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteBannerComponent
-            marketingId={currentMarketingId || ""}
-            closeModal={closeDeleteModal}
-          />
+          <DeleteBannerComponent marketingId={currentMarketingId || ""} closeModal={closeDeleteModal} />
         </Modal>
         <div ref={observerRef} className="h-10" />
       </div>

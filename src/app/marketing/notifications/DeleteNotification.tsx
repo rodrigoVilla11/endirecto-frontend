@@ -1,5 +1,8 @@
+"use client";
 import { useDeleteNotificationMutation } from "@/redux/services/notificationsApi";
 import React from "react";
+import { useTranslation } from "react-i18next";
+
 type DeleteNotificationsProps = {
   notificationId: string;
   closeModal: () => void;
@@ -9,6 +12,7 @@ const DeleteNotificationComponent = ({
   notificationId,
   closeModal,
 }: DeleteNotificationsProps) => {
+  const { t } = useTranslation();
   const [deleteNotification, { isLoading, isSuccess, isError }] =
     useDeleteNotificationMutation();
 
@@ -17,21 +21,21 @@ const DeleteNotificationComponent = ({
       await deleteNotification(notificationId).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error deleting FAQ:", err);
+      console.error(t("deleteNotification.errorLog"), err);
     }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4">Confirm Delete</h2>
-      <p>Are you sure you want to delete this notification?</p>
+      <h2 className="text-lg mb-4">{t("deleteNotification.confirmDelete")}</h2>
+      <p>{t("deleteNotification.confirmPrompt")}</p>
       <div className="flex justify-end gap-4 mt-4">
         <button
           type="button"
           onClick={closeModal}
           className="bg-gray-400 rounded-md p-2 text-white"
         >
-          Cancel
+          {t("deleteNotification.cancel")}
         </button>
         <button
           type="button"
@@ -41,13 +45,15 @@ const DeleteNotificationComponent = ({
           }`}
           disabled={isLoading}
         >
-          {isLoading ? "Deleting..." : "Delete"}
+          {isLoading ? t("deleteNotification.deleting") : t("deleteNotification.delete")}
         </button>
-        {isSuccess && (
-          <p className="text-green-500">Notification deleted successfully!</p>
-        )}
-        {isError && <p className="text-red-500">Error deleting Notification</p>}
       </div>
+      {isSuccess && (
+        <p className="text-green-500 mt-2">{t("deleteNotification.success")}</p>
+      )}
+      {isError && (
+        <p className="text-red-500 mt-2">{t("deleteNotification.error")}</p>
+      )}
     </div>
   );
 };
