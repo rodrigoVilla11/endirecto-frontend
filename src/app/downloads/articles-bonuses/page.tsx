@@ -4,28 +4,28 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { AiOutlineDownload } from "react-icons/ai";
+import { FaTimes } from "react-icons/fa";
 import {
   useCountArticlesBonusesQuery,
   useGetArticlesBonusesPagQuery,
 } from "@/redux/services/articlesBonusesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
-import {
-  useGetAllArticlesQuery,
-} from "@/redux/services/articlesApi";
+import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
-import { FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 20;
 
 const Page = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); //
+  const [sortQuery, setSortQuery] = useState<string>("");
 
   // References
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -42,6 +42,7 @@ const Page = () => {
     query: searchQuery,
     sort: sortQuery,
   });
+
   // Debounced search
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
@@ -52,29 +53,27 @@ const Page = () => {
 
   // Effect for handling initial load and searches
   useEffect(() => {
-    const loadBrands = async () => {
+    const loadBonuses = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
           const result = await refetch().unwrap();
-          const newBrands = result || [];
-
+          const newBonuses = result || [];
           if (page === 1) {
-            setItems(newBrands);
+            setItems(newBonuses);
           } else {
-            setItems((prev) => [...prev, ...newBrands]);
+            setItems((prev) => [...prev, ...newBonuses]);
           }
-
-          setHasMore(newBrands.length === ITEMS_PER_PAGE);
+          setHasMore(newBonuses.length === ITEMS_PER_PAGE);
         } catch (error) {
-          console.error("Error loading brands:", error);
+          console.error("Error loading bonuses:", error);
         } finally {
           setIsLoading(false);
         }
       }
     };
 
-    loadBrands();
+    loadBonuses();
   }, [page, searchQuery, sortQuery]);
 
   // Intersection Observer for infinite scroll
@@ -110,16 +109,12 @@ const Page = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
@@ -151,14 +146,15 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Item", key: "item", important: true },
-    { name: "Discount 1", key: "percentage", important: true },
+    { name: t("table.item"), key: "item", important: true },
+    { name: t("table.discount1"), key: "percentage", important: true },
   ];
+
   const headerBody = {
     buttons: [
       {
         logo: <AiOutlineDownload />,
-        title: "Download",
+        title: t("page.download"),
       },
     ],
     filters: [
@@ -166,7 +162,7 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -177,7 +173,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -186,7 +182,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${countArticlesBonusesData || 0} Results`,
+    results: t("page.results", { count: countArticlesBonusesData || 0 }),
   };
 
   if (isQueryLoading && items.length === 0) {
@@ -200,7 +196,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading items. Please try again later.
+        {t("page.errorLoadingBonuses")}
       </div>
     );
   }
@@ -216,7 +212,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">BONUSES</h3>
+        <h3 className="font-bold p-4">{t("page.bonusesTitle")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && items.length === 0 ? (
@@ -225,7 +221,7 @@ const Page = () => {
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No payment conditions found
+            {t("page.noBonusesFound")}
           </div>
         ) : (
           <>
@@ -240,10 +236,9 @@ const Page = () => {
               <div ref={loadingRef} className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
-            )}{" "}
+            )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

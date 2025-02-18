@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import {
-  useGetFaqsPagQuery,
-} from "@/redux/services/faqsApi";
+import { useGetFaqsPagQuery } from "@/redux/services/faqsApi";
 import PrivateRoute from "../context/PrivateRoutes";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
+
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,7 +18,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Se asume que el query retorna un objeto con { faqs: Faq[], total: number }
-  // Si solo retorna un arreglo, la lógica detecta que no existe "faqs" y usa el array directamente.
+  // Si solo retorna un arreglo, se usa el array directamente.
   const { data, error, isLoading: isQueryLoading, refetch } = useGetFaqsPagQuery({
     page,
     limit,
@@ -77,9 +78,6 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  if (isQueryLoading && page === 1) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
-
   const tableData = items.map((faq) => ({
     key: faq._id,
     question: faq.question,
@@ -87,8 +85,8 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Question", key: "question", important: true },
-    { name: "Answer", key: "answer" },
+    { name: t("table.question"), key: "question", important: true },
+    { name: t("table.answer"), key: "answer" },
   ];
 
   const headerBody = {
@@ -97,14 +95,14 @@ const Page = () => {
       {
         content: (
           <Input
-            placeholder={"Search..."}
+            placeholder={t("page.searchPlaceholder")}
             value={searchQuery}
-            onChange={(e: any) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setSearchQuery(e.target.value);
               // Reiniciamos la página al cambiar la búsqueda
               setPage(1);
             }}
-            onKeyDown={(e: any) => {
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
                 setPage(1);
                 refetch();
@@ -114,12 +112,13 @@ const Page = () => {
         ),
       },
     ],
-    // Si hay búsqueda, se muestra el número de FAQs cargadas;
-    // de lo contrario se usa data.total si existe, o se muestra el total de elementos cargados.
     results: searchQuery
-      ? `${items.length} Results`
-      : `${data?.total || items.length} Results`,
+      ? t("page.results", { count: items.length })
+      : t("page.results", { count: data?.total || items.length }),
   };
+
+  if (isQueryLoading && page === 1) return <p>{t("page.loading")}</p>;
+  if (error) return <p>{t("page.error")}</p>;
 
   return (
     <PrivateRoute
@@ -132,7 +131,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">FAQS</h3>
+        <h3 className="font-bold p-4">{t("page.faqsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         {/* Elemento observado para disparar la carga de la siguiente página */}

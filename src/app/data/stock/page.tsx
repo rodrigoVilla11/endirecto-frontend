@@ -9,10 +9,13 @@ import { FaTimes } from "react-icons/fa";
 import { useGetStockPagQuery } from "@/redux/services/stockApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [stock, setStock] = useState<any[]>([]);
@@ -109,7 +112,8 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -129,19 +133,19 @@ const Page = () => {
       id: stockItem.id,
       article_id: stockItem.article_id,
       quantity: stockItem.quantity,
-      branch: branch?.name || "Unknown Branch",
+      branch: branch?.name || t("table.unknownBranch"),
       quantity_next: stockItem.quantity_next,
       quantity_next_date: stockItem.quantity_next_date,
     };
   });
 
   const tableHeader = [
-    { name: "Id", key: "id", important:true },
-    { name: "Article", key: "article_id" , important:true},
-    { name: "Quantity", key: "quantity", important:true },
-    { name: "Branch", key: "branch" },
-    { name: "Next Entry", key: "quantity_next" },
-    { name: "Date Next Entry", key: "quantity_next_date" },
+    { name: t("table.id"), key: "id", important: true },
+    { name: t("table.article"), key: "article_id", important: true },
+    { name: t("table.quantity"), key: "quantity", important: true },
+    { name: t("table.branch"), key: "branch" },
+    { name: t("table.nextEntry"), key: "quantity_next" },
+    { name: t("table.dateNextEntry"), key: "quantity_next_date" },
   ];
 
   // Configuración del header
@@ -152,7 +156,7 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -163,7 +167,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -172,7 +176,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${totalStock} Results`,
+    results: t("page.results", { count: totalStock }),
   };
 
   if (isQueryLoading && stock.length === 0) {
@@ -185,7 +189,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading stock data. Please try again later.
+        {t("page.errorLoadingStock")}
       </div>
     );
   }
@@ -193,7 +197,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">STOCK</h3>
+        <h3 className="font-bold p-4">{t("page.stockTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && stock.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
@@ -201,7 +205,7 @@ const Page = () => {
           </div>
         ) : stock.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No stock data found
+            {t("page.noStockFound")}
           </div>
         ) : (
           <>

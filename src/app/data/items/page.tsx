@@ -13,11 +13,14 @@ import Modal from "@/app/components/components/Modal";
 import UpdateItemComponent from "./UpdateItem";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Basic states
+  const { t } = useTranslation();
+
+  // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -25,15 +28,15 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Modal states
+  // Estados del modal
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
 
-  // References
+  // Referencias
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
-  // Redux queries
+  // Consultas Redux
   const { data: countItemsData } = useCountItemsQuery(null);
   const {
     data,
@@ -44,10 +47,10 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
-    sort: sortQuery
+    sort: sortQuery,
   });
 
-  // Debounced search
+  // Búsqueda debounced
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
     setPage(1);
@@ -55,7 +58,7 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Effect for handling initial load and searches
+  // Efecto para carga inicial y búsquedas
   useEffect(() => {
     const loadItems = async () => {
       if (!isLoading) {
@@ -82,7 +85,7 @@ const Page = () => {
     loadItems();
   }, [page, searchQuery, sortQuery]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para scroll infinito
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -106,7 +109,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Modal handlers
+  // Handlers del modal
   const handleModalOpen = (id: string) => {
     const encodedId = encodeURIComponent(id);
     setCurrentItemId(encodedId);
@@ -119,7 +122,7 @@ const Page = () => {
     refetch();
   };
 
-  // Reset search
+  // Reiniciar búsqueda
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
@@ -149,7 +152,7 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Table configuration
+  // Configuración de la tabla
   const tableData = items?.map((item) => ({
     key: item.id,
     id: item.id,
@@ -163,7 +166,7 @@ const Page = () => {
             className="h-10 w-auto object-contain"
           />
         ) : (
-          <span className="text-gray-400">No image</span>
+          <span className="text-gray-400">{t("page.noImage")}</span>
         )}
       </div>
     ),
@@ -178,9 +181,13 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Id", key: "id", important:true },
-    { name: "Name", key: "name" , important:true},
-    { component: <FaImage className="text-center text-xl" />, key: "image", important:true },
+    { name: t("table.id"), key: "id", important: true },
+    { name: t("table.name"), key: "name", important: true },
+    {
+      component: <FaImage className="text-center text-xl" />,
+      key: "image",
+      important: true,
+    },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
   ];
 
@@ -191,7 +198,7 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -202,7 +209,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -212,8 +219,8 @@ const Page = () => {
       },
     ],
     results: searchQuery
-      ? `${items.length} Results`
-      : `${countItemsData || 0} Results`,
+      ? t("page.results", { count: items.length })
+      : t("page.results", { count: countItemsData || 0 }),
   };
 
   if (isQueryLoading && items.length === 0) {
@@ -227,7 +234,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading items. Please try again later.
+        {t("page.errorLoadingItems")}
       </div>
     );
   }
@@ -235,7 +242,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">ITEMS</h3>
+        <h3 className="font-bold p-4">{t("page.itemsTitle")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && items.length === 0 ? (
@@ -243,7 +250,9 @@ const Page = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No items found</div>
+          <div className="text-center py-8 text-gray-500">
+            {t("page.noItemsFound")}
+          </div>
         ) : (
           <>
             <Table

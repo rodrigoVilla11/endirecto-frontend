@@ -21,10 +21,13 @@ import CreateArticleVehicleComponent from "./CreateAoA";
 import ImportExcelModal from "./ImportExcel";
 import ExportExcelButton from "./ExportExcelButton";
 import { IoSync } from "react-icons/io5";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>([]);
@@ -161,7 +164,8 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -187,15 +191,15 @@ const Page = () => {
               className="h-10 w-auto object-contain"
             />
           ) : (
-            <span className="text-gray-400">No image</span>
+            <span className="text-gray-400">{t("noImage")}</span>
           )}
         </div>
       ),
-      article: article?.name || "Not found",
-      brand: item?.brand || "Not found",
-      model: item?.model || "Not found",
-      engine: item?.engine || "Not found",
-      year: item?.year || "Not found",
+      article: article?.name || t("notFound", { defaultValue: "Not found" }),
+      brand: item?.brand || t("notFound", { defaultValue: "Not found" }),
+      model: item?.model || t("notFound", { defaultValue: "Not found" }),
+      engine: item?.engine || t("notFound", { defaultValue: "Not found" }),
+      year: item?.year || t("notFound", { defaultValue: "Not found" }),
     };
   });
 
@@ -204,27 +208,39 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Article", key: "article", important:true },
-    { name: "Brand", key: "brand",  important:true },
-    { name: "Model", key: "model" ,  important:true},
-    { name: "Engine", key: "engine" , important:true},
-    { name: "Year", key: "year", important:true },
+    { name: t("article"), key: "article", important: true },
+    { name: t("brand"), key: "brand", important: true },
+    { name: t("model"), key: "model", important: true },
+    { name: t("engine"), key: "engine", important: true },
+    { name: t("year"), key: "year", important: true },
   ];
 
   // Configuración del header (botones, filtros y resultados)
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      { logo: <AiFillFileExcel />, title: "Import Excel", onClick: openImportModal },
-      { logo: <AiFillFileExcel />, title: "Export Excel", onClick: openExportModal },
-      { logo: <IoSync />, title: "Sync Application of Articles", onClick: handleSyncEquivalences },
+      { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("importExcel"),
+        onClick: openImportModal,
+      },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+      {
+        logo: <IoSync />,
+        title: t("syncApplications"),
+        onClick: handleSyncEquivalences,
+      },
     ],
     filters: [
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -235,7 +251,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -244,7 +260,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${data?.total || 0} Results`,
+    results: t("results", { count: data?.total || 0 }),
   };
 
   if (isQueryLoading && applicationsOfArticles.length === 0) {
@@ -258,7 +274,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading applications. Please try again later.
+        {t("errorLoading")}
       </div>
     );
   }
@@ -266,7 +282,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">APPLICATION OF ARTICLES</h3>
+        <h3 className="font-bold p-4">{t("applicationOfArticles")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && applicationsOfArticles.length === 0 ? (
@@ -275,7 +291,7 @@ const Page = () => {
           </div>
         ) : applicationsOfArticles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No applications found
+            {t("noApplicationsFound")}
           </div>
         ) : (
           <>

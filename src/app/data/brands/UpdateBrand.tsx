@@ -6,6 +6,7 @@ import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 type UpdateBrandComponentProps = {
   brandId: string;
@@ -16,6 +17,8 @@ const UpdateBrandComponent = ({
   brandId,
   closeModal,
 }: UpdateBrandComponentProps) => {
+  const { t } = useTranslation();
+
   const {
     data: brand,
     error,
@@ -74,7 +77,7 @@ const UpdateBrandComponent = ({
         id: brand.id ?? "",
         name: brand.name ?? "",
         images: brand.images ?? "",
-        sequence: brand.sequence ?? ""
+        sequence: brand.sequence ?? "",
       });
     }
   }, [brand]);
@@ -118,13 +121,13 @@ const UpdateBrandComponent = ({
     }));
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the brand.</p>;
+  if (isLoading) return <p>{t("updateBrand.loading")}</p>;
+  if (error) return <p>{t("updateBrand.errorFetchingBrand")}</p>;
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">Update Brand</h2>
+        <h2 className="text-lg mb-4">{t("updateBrand.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -135,22 +138,22 @@ const UpdateBrandComponent = ({
 
       <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
         <label className="flex flex-col">
-          ID:
+          {t("updateBrand.label.id")}:
           <input
             name="id"
             value={form.id}
-            placeholder="ID"
+            placeholder={t("updateBrand.label.id")}
             readOnly
             className="border border-black rounded-md p-2 bg-gray-200"
           />
         </label>
 
         <label className="flex flex-col">
-          Name:
+          {t("updateBrand.label.name")}:
           <input
             name="name"
             value={form.name}
-            placeholder="Name"
+            placeholder={t("updateBrand.label.name")}
             onChange={handleChange}
             readOnly
             className="border border-black rounded-md p-2 bg-gray-200"
@@ -158,18 +161,18 @@ const UpdateBrandComponent = ({
         </label>
 
         <label className="flex flex-col">
-          Sequence:
+          {t("updateBrand.label.sequence")}:
           <textarea
             name="sequence"
             value={form.sequence}
-            placeholder="Sequence"
+            placeholder={t("updateBrand.label.sequence")}
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           />
         </label>
 
         <label className="flex flex-col">
-          Images:
+          {t("updateBrand.label.images")}:
           <div className="mb-2">
             <input
               type="file"
@@ -183,18 +186,23 @@ const UpdateBrandComponent = ({
               className={`rounded-md p-2 text-white ${
                 isLoadingUpload ? "bg-gray-500" : "bg-success"
               }`}
+              type="button"
             >
-              {isLoadingUpload ? "Uploading..." : "Upload Images"}
+              {isLoadingUpload
+                ? t("updateBrand.uploading")
+                : t("updateBrand.uploadImages")}
             </button>
-            {isSuccessUpload && <div>Images uploaded successfully!</div>}
-            {isErrorUpload && <div>Error uploading images</div>}
+            {isSuccessUpload && (
+              <div>{t("updateBrand.uploadSuccess")}</div>
+            )}
+            {isErrorUpload && <div>{t("updateBrand.uploadError")}</div>}
           </div>
           <div className="border rounded-md p-2">
             <table className="min-w-full table-auto">
               <thead>
                 <tr>
-                  <th>Image</th>
-                  <th>Link</th>
+                  <th>{t("updateBrand.table.image")}</th>
+                  <th>{t("updateBrand.table.link")}</th>
                   <th>
                     <FaTrashCan />
                   </th>
@@ -244,7 +252,7 @@ const UpdateBrandComponent = ({
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white"
           >
-            Cancel
+            {t("updateBrand.cancel")}
           </button>
           <button
             type="submit"
@@ -253,14 +261,16 @@ const UpdateBrandComponent = ({
             }`}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updateBrand.updating") : t("updateBrand.update")}
           </button>
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">Brand updated successfully!</p>
+          <p className="text-green-500">{t("updateBrand.updatedSuccess")}</p>
         )}
-        {isError && <p className="text-red-500">Error updating brand</p>}
+        {isError && (
+          <p className="text-red-500">{t("updateBrand.updatedError")}</p>
+        )}
       </form>
     </div>
   );

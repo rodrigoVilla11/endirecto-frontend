@@ -8,10 +8,13 @@ import Modal from "@/app/components/components/Modal";
 import { FaTimes } from "react-icons/fa";
 import { useGetPaymentConditionsPagQuery } from "@/redux/services/paymentConditionsApi";
 import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [paymentConditions, setPaymentConditions] = useState<any[]>([]);
@@ -137,15 +140,13 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Id", key: "id", important:true },
-    { name: "Name", key: "name", important:true },
-    { name: "Percentage", key: "percentage", important:true },
-    { name: "Default", key: "default"},
+    { name: t("table.id"), key: "id", important: true },
+    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.percentage"), key: "percentage", important: true },
+    { name: t("table.default"), key: "default" },
   ];
 
-  // Configuración del header:
-  // Si se está buscando, se muestra el total de la página actual (paymentConditions.length);
-  // en caso contrario se muestra el total global obtenido de la query.
+  // Configuración del header
   const headerBody = {
     buttons: [],
     filters: [
@@ -153,7 +154,7 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -164,7 +165,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -173,7 +174,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${totalPaymentConditions} Results`,
+    results: t("page.results", { count: totalPaymentConditions }),
   };
 
   if (isQueryLoading && paymentConditions.length === 0) {
@@ -186,7 +187,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading payment conditions. Please try again later.
+        {t("page.errorLoadingPaymentConditions")}
       </div>
     );
   }
@@ -194,7 +195,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">PAYMENT CONDITIONS</h3>
+        <h3 className="font-bold p-4">{t("page.paymentConditionsTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && paymentConditions.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
@@ -202,7 +203,7 @@ const Page = () => {
           </div>
         ) : paymentConditions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No payment conditions found
+            {t("page.noPaymentConditionsFound")}
           </div>
         ) : (
           <>

@@ -9,30 +9,29 @@ import React, {
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage, FaPencil, FaTrashCan, FaRegFilePdf } from "react-icons/fa6";
+import { FaImage, FaPencil } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
 import {
   useGetArticlesQuery,
 } from "@/redux/services/articlesApi";
-import { useGetBrandsQuery } from "@/redux/services/brandsApi";
-import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
-import { useInfiniteScroll } from "@/app/context/UseInfiniteScroll";
 import { FaTimes } from "react-icons/fa";
 import MobileTable from "@/app/components/components/MobileTable";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos con tipos apropiados
   const [page, setPage] = useState(1);
   const [articles, setArticles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMore, setHasMore] = useState(true);
-
   const [modalState, setModalState] = useState<{
     type: "update" | "delete" | null;
     articleId: string | null;
@@ -40,7 +39,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // References
+  // Referencias
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
@@ -112,17 +111,17 @@ const Page = () => {
           setArticles((prev) => [...prev, ...newItems]);
         }
 
-        // Si el total de artículos devueltos es menor que el `ITEMS_PER_PAGE`, ya no hay más
+        // Si el total de artículos devueltos es menor que ITEMS_PER_PAGE, ya no hay más
         setHasMore(newItems.length === ITEMS_PER_PAGE);
       } catch (error) {
-        console.error("Error cargando artículos:", error);
+        console.error(t("errorLoadingArticles"), error);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadItems();
-  }, [page, searchQuery, sortQuery]);
+  }, [page, searchQuery, sortQuery, refetch, isLoading, t]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -135,7 +134,7 @@ const Page = () => {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1 } // Asegura que solo se active cuando el elemento está completamente visible
+      { threshold: 1 } // Se activa cuando el elemento está completamente visible
     );
 
     observer.observe(observerRef.current);
@@ -164,11 +163,11 @@ const Page = () => {
         try {
           await refetch();
         } catch (error) {
-          console.error("Error refetching data:", error);
+          console.error(t("errorRefetchingData"), error);
         }
       }, 100);
     },
-    [refetch]
+    [refetch, t]
   );
 
   const handleResetSearch = useCallback(() => {
@@ -182,7 +181,7 @@ const Page = () => {
     () =>
       articles.map((article) => ({
         key: article.id,
-        brand: article.brand.name || "NO BRAND",
+        brand: article.brand.name || t("noBrand"),
         image: (
           <div className="flex justify-center items-center">
             {article.images?.[0] ? (
@@ -193,12 +192,11 @@ const Page = () => {
                 loading="lazy"
               />
             ) : (
-              <span className="text-gray-400">No image</span>
+              <span className="text-gray-400">{t("noImage")}</span>
             )}
           </div>
         ),
-        // pdf: article.pdfs,
-        item: article.item.name || "NO ITEM",
+        item: article.item.name || t("noItem"),
         id: article.id,
         supplier: article.supplier_code,
         name: article.name,
@@ -211,33 +209,29 @@ const Page = () => {
           </div>
         ),
       })),
-    [articles, handleModalOpen]
+    [articles, handleModalOpen, t]
   );
 
   const tableHeader = useMemo(
     () => [
-      { name: "Brand", key: "brand", sortable: true, important:true },
+      { name: t("brand"), key: "brand", sortable: true, important: true },
       {
         component: <FaImage className="text-center text-xl" />,
         key: "image",
-        sortable: false, important:true
+        sortable: false,
+        important: true,
       },
-      // {
-      //   component: <FaRegFilePdf className="text-center text-xl" />,
-      //   key: "pdf",
-      //   sortable: false,
-      // },
-      { name: "Item", key: "item", sortable: false},
-      { name: "Id", key: "id", sortable: true , important:true},
-      { name: "Supplier Code", key: "supplier", sortable: true },
-      { name: "Name", key: "name", sortable: true },
+      { name: t("item"), key: "item", sortable: false },
+      { name: t("id"), key: "id", sortable: true, important: true },
+      { name: t("supplierCode"), key: "supplier", sortable: true },
+      { name: t("name"), key: "name", sortable: true },
       {
         component: <FaPencil className="text-center text-xl" />,
         key: "edit",
         sortable: false,
       },
     ],
-    []
+    [t]
   );
 
   const headerBody = useMemo(
@@ -245,7 +239,7 @@ const Page = () => {
       buttons: [
         {
           logo: <AiOutlineDownload />,
-          title: "Download",
+          title: t("download"),
         },
       ],
       filters: [
@@ -253,7 +247,7 @@ const Page = () => {
           content: (
             <div className="relative">
               <Input
-                placeholder="Search..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   debouncedSearch(e.target.value)
@@ -264,7 +258,7 @@ const Page = () => {
                 <button
                   className="right-2 top-1/2 -translate-y-1/2"
                   onClick={handleResetSearch}
-                  aria-label="Clear search"
+                  aria-label={t("clearSearch")}
                 >
                   <FaTimes className="text-gray-400 hover:text-gray-600" />
                 </button>
@@ -273,9 +267,9 @@ const Page = () => {
           ),
         },
       ],
-      results: ` ${data?.totalItems || 0} Articles`,
+      results: t("results", { count: data?.totalItems || 0 }),
     }),
-    [searchQuery, data, debouncedSearch, handleResetSearch]
+    [searchQuery, data, debouncedSearch, handleResetSearch, t]
   );
 
   if (isQueryLoading && articles.length === 0) {
@@ -289,7 +283,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading articles. Please try again later.
+        {t("errorLoadingArticles")}
       </div>
     );
   }
@@ -298,11 +292,11 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">ARTICLES</h3>
+        <h3 className="font-bold p-4">{t("articles")}</h3>
         <Header headerBody={headerBody} />
         {articles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No articles found
+            {t("noArticlesFound")}
           </div>
         ) : (
           <>

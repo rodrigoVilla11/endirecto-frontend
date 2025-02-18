@@ -1,6 +1,6 @@
 "use client"
 import HomePage from "./components/Home/HomePage";
-import "./i18n/i18n"; // Esto ejecuta la configuración de i18n
+import "./i18n/i18n";
 
 export default function Home() {
   return (

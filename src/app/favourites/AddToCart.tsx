@@ -1,5 +1,7 @@
+"use client";
 import { useUpdateCustomerMutation } from "@/redux/services/customersApi";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type AddToCartProps = {
   articleId: string;
@@ -12,6 +14,8 @@ const AddToCartComponent: React.FC<AddToCartProps> = ({
   closeModal,
   customer,
 }) => {
+  const { t } = useTranslation();
+
   const [quantity, setQuantity] = useState(1);
   const [decodedArticleId, setDecodedArticleId] = useState("");
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
@@ -41,8 +45,8 @@ const AddToCartComponent: React.FC<AddToCartProps> = ({
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4">Add to Cart</h2>
-      <p>How many of this article do you want to add to your cart?</p>
+      <h2 className="text-lg mb-4">{t("addToCartPage.title")}</h2>
+      <p>{t("addToCartPage.prompt")}</p>
       <input
         type="number"
         value={quantity}
@@ -56,7 +60,7 @@ const AddToCartComponent: React.FC<AddToCartProps> = ({
           onClick={closeModal}
           className="bg-gray-400 rounded-md p-2 text-white"
         >
-          Cancel
+          {t("addToCartPage.cancel")}
         </button>
         <button
           type="button"
@@ -66,16 +70,14 @@ const AddToCartComponent: React.FC<AddToCartProps> = ({
           }`}
           disabled={isUpdating}
         >
-          {isUpdating ? "Adding..." : "Add to Cart"}
+          {isUpdating ? t("addToCartPage.adding") : t("addToCartPage.add")}
         </button>
       </div>
       {isSuccess && (
-        <p className="text-green-500 mt-2">
-          Article added to cart successfully!
-        </p>
+        <p className="text-green-500 mt-2">{t("addToCartPage.success")}</p>
       )}
       {isError && (
-        <p className="text-red-500 mt-2">Error adding article to cart</p>
+        <p className="text-red-500 mt-2">{t("addToCartPage.error")}</p>
       )}
     </div>
   );

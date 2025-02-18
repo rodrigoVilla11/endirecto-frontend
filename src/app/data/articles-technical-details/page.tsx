@@ -9,15 +9,15 @@ import { FaPlus, FaTimes } from "react-icons/fa";
 import { AiFillFileExcel } from "react-icons/ai";
 import { IoSync } from "react-icons/io5";
 import { useGetArticlesTechnicalDetailsQuery } from "@/redux/services/articlesTechnicalDetailsApi";
-import {
-  useGetAllArticlesQuery,
-  useSyncEquivalencesMutation,
-} from "@/redux/services/articlesApi";
+import { useGetAllArticlesQuery, useSyncEquivalencesMutation } from "@/redux/services/articlesApi";
 import CreateArticlesTechnicalDetailsModal from "./CreateArticleTD";
 import ImportArticlesTDModal from "./ImportExcel";
 import ExportArticlesTDModal from "./ExportExcel";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
+  
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +32,7 @@ const Page = () => {
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const { data: articlesData } = useGetAllArticlesQuery(null);
-  // Se espera que useGetArticlesTechnicalDetailsQuery retorne { technicalDetails, total }
+  // Expecting useGetArticlesTechnicalDetailsQuery to return { technical_details, total }
   const { data, error, isLoading, refetch } = useGetArticlesTechnicalDetailsQuery({
     page,
     limit,
@@ -40,32 +40,29 @@ const Page = () => {
   });
   const [syncEquivalences, { isLoading: isLoadingSync }] = useSyncEquivalencesMutation();
 
-  // Efecto para cargar la data y actualizar items y total
+  // Load data and update items and total
   useEffect(() => {
     if (!isFetching) {
       setIsFetching(true);
       refetch()
         .then((result) => {
-          // result.data debería tener la forma:
-          // { technicalDetails: ArticlesTechnicalDetails[], total: number }
           const fetchedData = result.data || { technical_details: [], total: 0 };
           const newItems = Array.isArray(fetchedData.technical_details)
             ? fetchedData.technical_details
             : [];
           setTotalEquivalences(fetchedData.total || 0);
-          // Si es la primera página, reemplazamos; si no, concatenamos
           setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         })
         .catch((error) => {
-          console.error("Error fetching technical details:", error);
+          console.error(t("errorFetchingTechnicalDetails"), error);
         })
         .finally(() => {
           setIsFetching(false);
         });
     }
-  }, [page, searchQuery, refetch, isFetching]);
+  }, [page, searchQuery, refetch, isFetching, t]);
 
-  // Intersection Observer para infinite scroll
+  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -87,14 +84,14 @@ const Page = () => {
     };
   }, [isFetching]);
 
-  // Handler para resetear la búsqueda
+  // Reset search handler
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
     setItems([]);
   };
 
-  // Handlers de modales
+  // Modal handlers
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
     setCreateModalOpen(false);
@@ -123,38 +120,38 @@ const Page = () => {
     try {
       await syncEquivalences().unwrap();
     } catch (error) {
-      console.error("Error al sincronizar equivalences:", error);
+      console.error(t("errorSyncEquivalences"), error);
     }
   };
 
-  // Configuración de la tabla: mapeamos cada technical detail a un objeto para la tabla.
+  // Map each technical detail to a table row object
   const tableData = items?.map((item) => {
     return {
-      article: item?.article_id || "NOT FOUND",
-      technical_detail_name: item?.technical_detail?.name || "NOT FOUND",
+      article: item?.article_id || t("notFound"),
+      technical_detail_name: item?.technical_detail?.name || t("notFound"),
       value: item?.value,
     };
   });
 
   const tableHeader = [
-    { name: "Article", key: "article",  important:true },
-    { name: "Technical Detail", key: "technical_detail_name", important:true },
-    { name: "Value", key: "value", important:true },
+    { name: t("article"), key: "article", important: true },
+    { name: t("technicalDetail"), key: "technical_detail_name", important: true },
+    { name: t("value"), key: "value", important: true },
   ];
 
-  // Configuración del header: botones, filtros y resultados (usando el total devuelto por el servicio)
+  // Header configuration with buttons, filters, and results
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
-      { logo: <AiFillFileExcel />, title: "Import Excel", onClick: openImportModal },
-      { logo: <AiFillFileExcel />, title: "Export Excel", onClick: openExportModal },
-      { logo: <IoSync />, title: "Sync Equivalences", onClick: handleSyncEquivalences },
+      { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
+      { logo: <AiFillFileExcel />, title: t("importExcel"), onClick: openImportModal },
+      { logo: <AiFillFileExcel />, title: t("exportExcel"), onClick: openExportModal },
+      { logo: <IoSync />, title: t("syncEquivalences"), onClick: handleSyncEquivalences },
     ],
     filters: [
       {
         content: (
           <Input
-            placeholder="Search..."
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)
@@ -170,7 +167,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${totalEquivalences || 0} Results`,
+    results: t("results", { count: totalEquivalences || 0 }),
   };
 
   if (isLoading && items.length === 0) {
@@ -183,7 +180,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading technical details. Please try again later.
+        {t("errorLoadingTechnicalDetails")}
       </div>
     );
   }
@@ -191,7 +188,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">Articles Technical Details</h3>
+        <h3 className="font-bold p-4">{t("articlesTechnicalDetails")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={observerRef} className="h-10" />

@@ -3,113 +3,102 @@ import React, { useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import {
-  useCountBranchQuery,
-  useGetBranchesQuery,
-  useGetBranchPagQuery,
-} from "@/redux/services/branchesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import {
+  useCountBranchQuery,
+  useGetBranchPagQuery,
+} from "@/redux/services/branchesApi";
+import {
   FaAddressBook,
-  FaClock,
-  FaMailchimp,
   FaPhone,
   FaWhatsapp,
 } from "react-icons/fa";
 import { FaLocationPin } from "react-icons/fa6";
-import { BsMailbox } from "react-icons/bs";
 import { CiMail } from "react-icons/ci";
+import { FaClock } from "react-icons/fa";
 import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
- // Estados básicos
-   const [page, setPage] = useState(1);
-   const [branches, setBranches] = useState<any[]>([]);
-   const [hasMore, setHasMore] = useState(true);
-   const [isLoading, setIsLoading] = useState(false);
-   const [searchQuery, setSearchQuery] = useState("");
+  const { t } = useTranslation();
 
- // Referencias
+  // Basic state
+  const [page, setPage] = useState(1);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Refs
   const observerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
+  // Redux queries
+  const { data: countBranchData } = useCountBranchQuery(null);
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetBranchPagQuery({
+    page,
+    limit: ITEMS_PER_PAGE,
+    query: searchQuery,
+  });
 
-   // Queries de Redux (mantenidas como estaban)
-    const { data: countBranchData } = useCountBranchQuery(null);
-    const {
-      data,
-      error,
-      isLoading: isQueryLoading,
-      refetch,
-    } = useGetBranchPagQuery({
-      page,
-      limit: ITEMS_PER_PAGE,
-      query: searchQuery,
-    });
-  
-  // Búsqueda con debounce
-   const debouncedSearch = debounce((query: string) => {
-     setSearchQuery(query);
-     setPage(1);
-     setBranches([]);
-     setHasMore(true);
-   }, 100);
- 
-   // Efecto para manejar la carga inicial y las búsquedas
-   useEffect(() => {
-     const loadBranches = async () => {
-       if (!isLoading) {
-         setIsLoading(true);
-         try {
-           const result = await refetch().unwrap();
-           const newBranchs = result || [];
- 
-           if (page === 1) {
-            setBranches(newBranchs);
-           } else {
-            setBranches((prev) => [...prev, ...newBranchs]);
-           }
- 
-           setHasMore(newBranchs.length === ITEMS_PER_PAGE);
-         } catch (error) {
-           console.error("Error loading branches:", error);
-         } finally {
-           setIsLoading(false);
-         }
-       }
-     };
- 
-     loadBranches();
-   }, [page, searchQuery]);
- 
+  // Debounced search
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setBranches([]);
+    setHasMore(true);
+  }, 100);
 
-  // Intersection Observer para scroll infinito
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const firstEntry = entries[0];
-          if (firstEntry.isIntersecting && hasMore && !isLoading) {
-            setPage((prev) => prev + 1);
+  // Load branches effect
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (!isLoading) {
+        setIsLoading(true);
+        try {
+          const result = await refetch().unwrap();
+          const newBranches = result || [];
+          if (page === 1) {
+            setBranches(newBranches);
+          } else {
+            setBranches((prev) => [...prev, ...newBranches]);
           }
-        },
-        { threshold: 0.5 }
-      );
-  
-      const currentObserver = observerRef.current;
-      if (currentObserver) {
-        observer.observe(currentObserver);
-      }
-  
-      return () => {
-        if (currentObserver) {
-          observer.unobserve(currentObserver);
+          setHasMore(newBranches.length === ITEMS_PER_PAGE);
+        } catch (error) {
+          console.error(t("errorLoadingBranches"), error);
+        } finally {
+          setIsLoading(false);
         }
-      };
-    }, [hasMore, isLoading]);
-  
-    // Reset de búsqueda
+      }
+    };
+
+    loadBranches();
+  }, [page, searchQuery, refetch, isLoading, t]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !isLoading) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentObserver = observerRef.current;
+    if (currentObserver) {
+      observer.observe(currentObserver);
+    }
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+    };
+  }, [hasMore, isLoading]);
+
+  // Reset search handler
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
@@ -117,6 +106,7 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Map branch data to table rows
   const tableData = branches?.map((branch) => ({
     key: branch.id,
     id: branch.id,
@@ -132,7 +122,7 @@ const Page = () => {
         </div>
       </div>
     ),
-    postal_code: branch.postal_code,
+    pc: branch.postal_code,
     phone: (
       <div className="relative group">
         <span>
@@ -166,7 +156,7 @@ const Page = () => {
         </div>
       </div>
     ),
-    schedule: (
+    schedules: (
       <div className="relative group">
         <span>
           <FaClock className="text-center text-xl" />
@@ -177,7 +167,7 @@ const Page = () => {
         </div>
       </div>
     ),
-    mail_contacts: (
+    "contacts-mails": (
       <div className="relative group">
         <span>
           <CiMail className="text-center text-xl" />
@@ -188,7 +178,7 @@ const Page = () => {
         </div>
       </div>
     ),
-    mail_profile: (
+    "profile-mails": (
       <div className="relative group">
         <span>
           <CiMail className="text-center text-xl" />
@@ -199,30 +189,35 @@ const Page = () => {
         </div>
       </div>
     ),
-  
   }));
+
+  // Table header configuration
   const tableHeader = [
-    { name: "Id", key: "id",  important:true },
-    { name: "Name", key: "name", important:true },
-    { name: "Address", key: "address" , important:true},
-    { name: "PC", key: "pc" },
-    { name: "Phone", key: "phone" },
-    { name: "WhatsApp", key: "whatsapp" },
-    { name: "GPS", key: "gps" },
-    { name: "Schedules", key: "schedules" },
-    { name: "Contacts Mails", key: "contacts-mails" },
-    { name: "Profile Mails", key: "profile-mails" },
+    { name: t("id"), key: "id", important: true },
+    { name: t("name"), key: "name", important: true },
+    { name: t("address"), key: "address", important: true },
+    { name: t("postalCode"), key: "pc" },
+    { name: t("phone"), key: "phone" },
+    { name: t("whatsapp"), key: "whatsapp" },
+    { name: t("gps"), key: "gps" },
+    { name: t("schedules"), key: "schedules" },
+    { name: t("contactsMails"), key: "contacts-mails" },
+    { name: t("profileMails"), key: "profile-mails" },
   ];
+
+  // Header body: buttons, filters and results
   const headerBody = {
     buttons: [],
     filters: [
       {
         content: (
           <Input
-            placeholder={"Search..."}
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.target.value)
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
                 refetch();
               }
@@ -232,8 +227,8 @@ const Page = () => {
       },
     ],
     results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countBranchData || 0} Results`,
+      ? t("results", { count: data?.length || 0 })
+      : t("results", { count: countBranchData || 0 }),
   };
 
   if (isQueryLoading && branches.length === 0) {
@@ -247,7 +242,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading branches. Please try again later.
+        {t("errorLoadingBranches")}
       </div>
     );
   }
@@ -255,16 +250,15 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">BRANCHES</h3>
+        <h3 className="font-bold p-4">{t("branches")}</h3>
         <Header headerBody={headerBody} />
-        
         {isLoading && branches.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : branches.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No branches found
+            {t("noBranchesFound")}
           </div>
         ) : (
           <>
@@ -276,7 +270,6 @@ const Page = () => {
             )}
           </>
         )}
-
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>

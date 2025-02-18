@@ -3,6 +3,7 @@ import { useGetItemByIdQuery, useUpdateItemMutation } from "@/redux/services/ite
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 interface Item {
   id: string;
@@ -16,6 +17,7 @@ interface UpdateItemComponentProps {
 }
 
 const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, closeModal }) => {
+  const { t } = useTranslation();
   const { 
     data: item, 
     error: fetchError, 
@@ -53,12 +55,12 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
     if (file) {
       // Validar el tamaño del archivo (por ejemplo, máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setUploadError("File size must be less than 5MB");
+        setUploadError(t("updateItem.errorFileSize"));
         return;
       }
       // Validar el tipo de archivo
       if (!file.type.startsWith('image/')) {
-        setUploadError("File must be an image");
+        setUploadError(t("updateItem.errorFileType"));
         return;
       }
       setSelectedFile(file);
@@ -68,7 +70,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setUploadError("Please select a file first");
+      setUploadError(t("updateItem.errorNoFile"));
       return;
     }
 
@@ -79,9 +81,9 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
         ...prev,
         image: response.url
       }));
-      setSuccessMessage("Image uploaded successfully!");
+      setSuccessMessage(t("updateItem.uploadSuccess"));
     } catch (err) {
-      setUploadError("Error uploading image. Please try again.");
+      setUploadError(t("updateItem.uploadError"));
       console.error("Error uploading image:", err);
     }
   };
@@ -99,19 +101,19 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
     
     // Validación básica
     if (!form.name.trim()) {
-      setUpdateError("Name is required");
+      setUpdateError(t("updateItem.errorNameRequired"));
       return;
     }
 
     try {
       setUpdateError("");
       await updateItem(form).unwrap();
-      setSuccessMessage("Item updated successfully!");
+      setSuccessMessage(t("updateItem.updateSuccess"));
       setTimeout(() => {
         closeModal();
-      }, 1500); // Dar tiempo para ver el mensaje de éxito
+      }, 1500);
     } catch (err) {
-      setUpdateError("Error updating item. Please try again.");
+      setUpdateError(t("updateItem.updateError"));
       console.error("Error updating the item:", err);
     }
   };
@@ -128,7 +130,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
   if (isFetching) {
     return (
       <div className="flex justify-center items-center p-4">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600">{t("updateItem.loading")}</p>
       </div>
     );
   }
@@ -136,7 +138,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
   if (fetchError) {
     return (
       <div className="flex justify-center items-center p-4">
-        <p className="text-red-500">Error fetching the item. Please try again later.</p>
+        <p className="text-red-500">{t("updateItem.errorFetchingItem")}</p>
       </div>
     );
   }
@@ -144,7 +146,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Update Item</h2>
+        <h2 className="text-xl font-semibold">{t("updateItem.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors"
@@ -156,7 +158,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
       <form className="space-y-6" onSubmit={handleUpdate}>
         <div className="space-y-4">
           <label className="block">
-            <span className="text-gray-700">ID:</span>
+            <span className="text-gray-700">{t("updateItem.label.id")}:</span>
             <input
               name="id"
               value={form.id}
@@ -166,19 +168,19 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
           </label>
 
           <label className="block">
-            <span className="text-gray-700">Name:</span>
+            <span className="text-gray-700">{t("updateItem.label.name")}:</span>
             <input
               name="name"
               value={form.name}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-300 focus:ring focus:ring-blue-200"
-              placeholder="Enter item name"
+              placeholder={t("updateItem.placeholder.name")}
             />
             {updateError && <p className="text-red-500 text-sm mt-1">{updateError}</p>}
           </label>
 
           <div className="space-y-2">
-            <span className="text-gray-700">Image:</span>
+            <span className="text-gray-700">{t("updateItem.label.image")}:</span>
             <div className="flex items-center space-x-4">
               <input 
                 type="file" 
@@ -194,7 +196,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
                   isLoadingUpload || !selectedFile ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
                 }`}
               >
-                {isLoadingUpload ? "Uploading..." : "Upload Image"}
+                {isLoadingUpload ? t("updateItem.uploading") : t("updateItem.uploadImage")}
               </button>
             </div>
             {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
@@ -205,15 +207,15 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("updateItem.table.image")}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t("updateItem.table.link")}</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">{t("updateItem.table.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   <tr>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <img src={form.image} alt="Item" className="h-12 w-12 object-cover rounded" />
+                      <img src={form.image} alt={t("updateItem.alt.item")} className="h-12 w-12 object-cover rounded" />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <a
@@ -247,7 +249,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
             onClick={closeModal}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            {t("updateItem.cancel")}
           </button>
           <button
             type="submit"
@@ -256,7 +258,7 @@ const UpdateItemComponent: React.FC<UpdateItemComponentProps> = ({ itemId, close
               isUpdating ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
             }`}
           >
-            {isUpdating ? "Updating..." : "Update"}
+            {isUpdating ? t("updateItem.updating") : t("updateItem.update")}
           </button>
         </div>
       </form>

@@ -1,12 +1,14 @@
 import { useCreateArticleVehicleMutation } from "@/redux/services/articlesVehicles";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 interface CreateArticleVehicleProps {
   closeModal: () => void;
 }
 
 const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ closeModal }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     id: "",
     article_id: "",
@@ -33,7 +35,7 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
       await createArticleVehicle(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear el Article_Vehicle:", err);
+      console.error("Error creating Article Vehicle:", err);
     }
   };
 
@@ -41,7 +43,7 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">New Article Vehicle</h2>
+          <h2 className="text-lg font-semibold">{t("newArticleVehicle")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
@@ -54,24 +56,28 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
           {/* Primera fila: id y article_id */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">ID</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("idLabel")}
+              </label>
               <input
                 type="text"
                 name="id"
                 value={form.id}
                 onChange={handleChange}
-                placeholder="Ej: 22181-PEUGEOT-404-Nafta / Diesel-.../1982"
+                placeholder={t("idPlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Article ID</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("articleIdLabel")}
+              </label>
               <input
                 type="text"
                 name="article_id"
                 value={form.article_id}
                 onChange={handleChange}
-                placeholder="Ej: 22181"
+                placeholder={t("articleIdPlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
@@ -80,24 +86,28 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
           {/* Segunda fila: Brand y Engine */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Brand</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("brandLabel")}
+              </label>
               <input
                 type="text"
                 name="brand"
                 value={form.brand}
                 onChange={handleChange}
-                placeholder="Ej: PEUGEOT"
+                placeholder={t("brandPlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Engine</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("engineLabel")}
+              </label>
               <input
                 type="text"
                 name="engine"
                 value={form.engine}
                 onChange={handleChange}
-                placeholder="Ej: Nafta / Diesel"
+                placeholder={t("enginePlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
@@ -106,24 +116,28 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
           {/* Tercera fila: Model y Year */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Model</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("modelLabel")}
+              </label>
               <input
                 type="text"
                 name="model"
                 value={form.model}
                 onChange={handleChange}
-                placeholder="Ej: 404"
+                placeholder={t("modelPlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Year</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("yearLabel")}
+              </label>
               <input
                 type="text"
                 name="year"
                 value={form.year}
                 onChange={handleChange}
-                placeholder="Ej: .../1982"
+                placeholder={t("yearPlaceholder")}
                 className="border border-gray-300 rounded-md p-1 text-sm w-full"
               />
             </div>
@@ -135,19 +149,29 @@ const CreateArticleVehicleComponent: React.FC<CreateArticleVehicleProps> = ({ cl
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className={`rounded-md px-3 py-1 text-sm text-white ${isLoading ? "bg-gray-500" : "bg-blue-600"}`}
+              className={`rounded-md px-3 py-1 text-sm text-white ${
+                isLoading ? "bg-gray-500" : "bg-blue-600"
+              }`}
             >
-              {isLoading ? "Saving..." : "Save"}
+              {isLoading ? t("saving") : t("save")}
             </button>
           </div>
 
-          {isSuccess && <p className="text-green-500 text-sm mt-2">Article Vehicle created successfully!</p>}
-          {isError && <p className="text-red-500 text-sm mt-2">Error creating Article Vehicle</p>}
+          {isSuccess && (
+            <p className="text-green-500 text-sm mt-2">
+              {t("articleVehicleCreatedSuccess")}
+            </p>
+          )}
+          {isError && (
+            <p className="text-red-500 text-sm mt-2">
+              {t("errorCreatingArticleVehicle")}
+            </p>
+          )}
         </form>
       </div>
     </div>

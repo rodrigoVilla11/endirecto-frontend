@@ -8,10 +8,13 @@ import Modal from "@/app/components/components/Modal";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import { useGetTechnicalDetailsQuery } from "@/redux/services/technicalDetails";
 import CreateTechnicalDetailsModal from "./CreateTechincalDetail";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+  const { t } = useTranslation();
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [limit] = useState(ITEMS_PER_PAGE);
@@ -107,20 +110,20 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: "Id", key: "id", important:true },
-    { name: "Name", key: "name", important:true },
+    { name: t("table.id"), key: "id", important: true },
+    { name: t("table.name"), key: "name", important: true },
   ];
 
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: openCreateModal },
+      { logo: <FaPlus />, title: t("page.new"), onClick: openCreateModal },
     ],
     filters: [
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("page.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
@@ -138,7 +141,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -147,7 +150,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${totalTechnicalDetails || 0} Results`,
+    results: t("page.results", { count: totalTechnicalDetails }),
   };
 
   if (isLoading && technicalDetails.length === 0) {
@@ -160,7 +163,7 @@ const Page = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading technical details. Please try again later.
+        {t("page.errorLoadingTechnicalDetails")}
       </div>
     );
   }
@@ -168,7 +171,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">Technical Details</h3>
+        <h3 className="font-bold p-4">{t("page.technicalDetailsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={observerRef} className="h-10" />

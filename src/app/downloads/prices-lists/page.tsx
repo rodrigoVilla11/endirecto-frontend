@@ -9,8 +9,10 @@ import {
   useGetPricesListPagQuery,
 } from "@/redux/services/pricesListsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,17 +38,18 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Brand", key: "brand", important: true },
-    { name: "File EXCEL", key: "excel" },
-    { name: "File TXT", key: "txt" },
+    { name: t("table.brand"), key: "brand", important: true },
+    { name: t("table.fileExcel"), key: "excel" },
+    { name: t("table.fileTxt"), key: "txt" },
   ];
+
   const headerBody = {
     buttons: [],
     filters: [
       {
         content: (
           <Input
-            placeholder={"Search..."}
+            placeholder={t("page.searchPlaceholder")}
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target.value)}
             onKeyDown={(e: any) => {
@@ -59,8 +62,8 @@ const Page = () => {
       },
     ],
     results: searchQuery
-      ? `${data?.length || 0} Results`
-      : `${countPricesListsData || 0} Results`,
+      ? t("page.results", { count: data?.length || 0 })
+      : t("page.results", { count: countPricesListsData || 0 }),
   };
 
   const handlePreviousPage = () => {
@@ -86,7 +89,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">PRICES LISTS</h3>
+        <h3 className="font-bold p-4">{t("page.pricesListsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div className="flex justify-between items-center p-4">
@@ -95,17 +98,20 @@ const Page = () => {
             disabled={page === 1}
             className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
           >
-            Previous
+            {t("page.previous")}
           </button>
           <p>
-            Page {page} of {Math.ceil((countPricesListsData || 0) / limit)}
+            {t("page.pagination", {
+              page,
+              total: Math.ceil((countPricesListsData || 0) / limit),
+            })}
           </p>
           <button
             onClick={handleNextPage}
             disabled={page === Math.ceil((countPricesListsData || 0) / limit)}
             className="bg-gray-300 hover:bg-gray-400 text-white py-2 px-4 rounded disabled:opacity-50"
           >
-            Next
+            {t("page.next")}
           </button>
         </div>
       </div>

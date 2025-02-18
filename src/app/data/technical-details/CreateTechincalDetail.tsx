@@ -1,13 +1,14 @@
-// CreateTechnicalDetailsModal.tsx
 import { useCreateTechnicalDetailMutation } from "@/redux/services/technicalDetails";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 interface CreateTechnicalDetailsModalProps {
   closeModal: () => void;
 }
 
 const CreateTechnicalDetailsModal: React.FC<CreateTechnicalDetailsModalProps> = ({ closeModal }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     id: "",
     name: "",
@@ -36,31 +37,38 @@ const CreateTechnicalDetailsModal: React.FC<CreateTechnicalDetailsModalProps> = 
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Create Technical Detail</h2>
-          <button onClick={closeModal} className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex items-center justify-center">
+          <h2 className="text-lg font-semibold">{t("createTechnicalDetail.title")}</h2>
+          <button
+            onClick={closeModal}
+            className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex items-center justify-center"
+          >
             <IoMdClose className="text-sm" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">ID</label>
+            <label className="block text-sm font-medium text-gray-700">
+              {t("createTechnicalDetail.label.id")}
+            </label>
             <input
               type="text"
               name="id"
               value={form.id}
               onChange={handleChange}
-              placeholder="Ingrese ID"
+              placeholder={t("createTechnicalDetail.placeholder.id")}
               className="border border-gray-300 rounded-md p-1 text-sm w-full"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <label className="block text-sm font-medium text-gray-700">
+              {t("createTechnicalDetail.label.name")}
+            </label>
             <input
               type="text"
               name="name"
               value={form.name}
               onChange={handleChange}
-              placeholder="Ingrese nombre"
+              placeholder={t("createTechnicalDetail.placeholder.name")}
               className="border border-gray-300 rounded-md p-1 text-sm w-full"
             />
           </div>
@@ -70,21 +78,27 @@ const CreateTechnicalDetailsModal: React.FC<CreateTechnicalDetailsModalProps> = 
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("createTechnicalDetail.cancel")}
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className={`rounded-md px-3 py-1 text-sm text-white ${isLoading ? "bg-gray-500" : "bg-blue-600"}`}
+              className={`rounded-md px-3 py-1 text-sm text-white ${
+                isLoading ? "bg-gray-500" : "bg-blue-600"
+              }`}
             >
-              {isLoading ? "Saving..." : "Save"}
+              {isLoading ? t("createTechnicalDetail.saving") : t("createTechnicalDetail.save")}
             </button>
           </div>
           {isSuccess && (
-            <p className="text-green-500 text-sm mt-2">Technical Detail created successfully!</p>
+            <p className="text-green-500 text-sm mt-2">
+              {t("createTechnicalDetail.success")}
+            </p>
           )}
           {isError && (
-            <p className="text-red-500 text-sm mt-2">Error creating Technical Detail</p>
+            <p className="text-red-500 text-sm mt-2">
+              {t("createTechnicalDetail.error")}
+            </p>
           )}
         </form>
       </div>

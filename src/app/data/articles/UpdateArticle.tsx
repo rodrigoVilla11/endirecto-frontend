@@ -8,6 +8,7 @@ import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import React, { useEffect, useState } from "react";
 import { FaTrashCan } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 type UpdateArticleComponentProps = {
   articleId: string;
@@ -20,6 +21,7 @@ const UpdateArticleComponent = ({
   closeModal,
   onUpdateSuccess,
 }: UpdateArticleComponentProps) => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const {
     data: customer,
@@ -39,16 +41,15 @@ const UpdateArticleComponent = ({
     {
       page: 1,
       limit: 1,
-      articleId: articleId?.trim(), // ✅ Asegurar que no sea `undefined`
-      priceListId: customer?.price_list_id ?? "3", // ✅ Si `undefined`, usa un valor por defecto
+      articleId: articleId?.trim(),
+      priceListId: customer?.price_list_id ?? "3",
     },
     {
-      skip: !articleId, // ✅ Evita ejecutar la consulta si `articleId` no está definido
+      skip: !articleId,
     }
   );
 
   const article = articlesData?.articles?.[0];
-
 
   const [updateArticle, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateArticleMutation();
@@ -71,10 +72,10 @@ const UpdateArticleComponent = ({
   };
 
   const handleUpload = async (event?: React.MouseEvent<HTMLButtonElement>) => {
-    if (event) event.preventDefault(); // Prevenir comportamiento por defecto
+    if (event) event.preventDefault();
 
     if (selectedFiles.length === 0) {
-      console.error("No hay archivos seleccionados para subir");
+      console.error(t("noFilesSelected"));
       return;
     }
 
@@ -87,9 +88,9 @@ const UpdateArticleComponent = ({
       );
 
       setUploadResponses((prevResponses) => [...prevResponses, ...responses]);
-      setSelectedFiles([]); // Limpiar los archivos seleccionados después de subir
+      setSelectedFiles([]);
     } catch (err) {
-      console.error("Error al subir imágenes:", err);
+      console.error(t("errorUploadingImages"), err);
     }
   };
 
@@ -113,10 +114,8 @@ const UpdateArticleComponent = ({
         images: article.images ?? [],
       });
     }
-  }, [articleId, article]); // ✅ Ahora se ejecuta cuando cambia `articleId`
+  }, [articleId, article]);
   
-  
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -145,21 +144,17 @@ const UpdateArticleComponent = ({
       };
 
       await updateArticle(updatedForm).unwrap();
-
-      // Refetch después de actualizar
       await refetch();
 
-      // Notificar al componente padre del éxito
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
 
-      // Esperar un momento antes de cerrar para asegurar que los datos se actualizaron
       setTimeout(() => {
         closeModal();
       }, 100);
     } catch (err) {
-      console.error("Error updating the article:", err);
+      console.error(t("errorUpdatingArticle"), err);
     }
   };
 
@@ -175,7 +170,7 @@ const UpdateArticleComponent = ({
       <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-scroll scrollbar-hide">
         {/* Título y botón de cierre */}
         <div className="flex justify-between">
-          <h2 className="text-lg mb-4">Update Article</h2>
+          <h2 className="text-lg mb-4">{t("updateArticleTitle")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -187,42 +182,42 @@ const UpdateArticleComponent = ({
         {/* Formulario */}
         <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
           <label className="flex flex-col">
-            ID:
+            {t("idLabel")}:
             <input
               name="id"
               value={form.id}
-              placeholder="ID"
+              placeholder={t("idPlaceholder")}
               readOnly
               className="border border-black rounded-md p-2 bg-gray-200"
             />
           </label>
 
           <label className="flex flex-col">
-            Supplier Code:
+            {t("supplierCodeLabel")}:
             <input
               name="supplier_code"
               readOnly
               value={form.supplier_code}
-              placeholder="Supplier Code"
+              placeholder={t("supplierCodePlaceholder")}
               onChange={handleChange}
               className="border border-black rounded-md p-2 bg-gray-200"
             />
           </label>
 
           <label className="flex flex-col">
-            Description:
+            {t("descriptionLabel")}:
             <textarea
               name="description"
               readOnly
               value={form.description}
-              placeholder="Description"
+              placeholder={t("descriptionPlaceholder")}
               onChange={handleChange}
               className="border border-black rounded-md p-2 bg-gray-200"
             />
           </label>
 
           <label className="flex flex-col">
-            Images:
+            {t("imagesLabel")}:
             <div className="flex justify-between p-1">
               <input
                 type="file"
@@ -237,18 +232,18 @@ const UpdateArticleComponent = ({
                   isLoadingUpload ? "bg-gray-500" : "bg-success"
                 }`}
               >
-                {isLoadingUpload ? "Uploading..." : "Upload Images"}
+                {isLoadingUpload ? t("uploading") : t("uploadImagesButton")}
               </button>
 
-              {isSuccessUpload && <div>Images uploaded successfully!</div>}
-              {isErrorUpload && <div>Error uploading images</div>}
+              {isSuccessUpload && <div>{t("imagesUploadedSuccess")}</div>}
+              {isErrorUpload && <div>{t("errorUploadingImages")}</div>}
             </div>
             <div className="border rounded-md p-2 overflow-x-auto">
               <table className="min-w-full table-auto">
                 <thead>
                   <tr>
-                    <th>Image</th>
-                    <th>Link</th>
+                    <th>{t("image")}</th>
+                    <th>{t("link")}</th>
                     <th>
                       <FaTrashCan />
                     </th>
@@ -258,7 +253,11 @@ const UpdateArticleComponent = ({
                   {form.images.map((image, index) => (
                     <tr key={index}>
                       <td>
-                        <img src={image} alt="brand_image" className="h-10" />
+                        <img
+                          src={image}
+                          alt={t("brandImageAlt")}
+                          className="h-10"
+                        />
                       </td>
                       <td>
                         <a
@@ -275,7 +274,7 @@ const UpdateArticleComponent = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(index)}
-                            className="text-red-500 "
+                            className="text-red-500"
                           >
                             <FaTrashCan />
                           </button>
@@ -294,7 +293,7 @@ const UpdateArticleComponent = ({
               onClick={closeModal}
               className="bg-gray-400 rounded-md p-2 text-white"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
@@ -303,14 +302,16 @@ const UpdateArticleComponent = ({
               }`}
               disabled={isUpdating}
             >
-              {isUpdating ? "Updating..." : "Update"}
+              {isUpdating ? t("updating") : t("update")}
             </button>
           </div>
 
           {isSuccess && (
-            <p className="text-green-500">Article updated successfully!</p>
+            <p className="text-green-500">{t("articleUpdatedSuccess")}</p>
           )}
-          {isError && <p className="text-red-500">Error updating article</p>}
+          {isError && (
+            <p className="text-red-500">{t("errorUpdatingArticle")}</p>
+          )}
         </form>
       </div>
     </div>

@@ -1,12 +1,14 @@
 import { useImportArticleVehiclesExcelMutation } from "@/redux/services/articlesVehicles";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 interface ImportExcelModalProps {
   closeModal: () => void;
 }
 
 const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ closeModal }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [importExcel, { isLoading, isSuccess, isError }] = useImportArticleVehiclesExcelMutation();
 
@@ -33,7 +35,7 @@ const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ closeModal }) => {
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Import Excel</h2>
+          <h2 className="text-lg font-semibold">{t("importExcelTitle")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
@@ -44,7 +46,7 @@ const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ closeModal }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Select Excel File
+              {t("selectExcelFile")}
             </label>
             <input
               type="file"
@@ -60,7 +62,7 @@ const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ closeModal }) => {
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
@@ -69,16 +71,18 @@ const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ closeModal }) => {
                 isLoading ? "bg-gray-500" : "bg-blue-600"
               }`}
             >
-              {isLoading ? "Importing..." : "Import"}
+              {isLoading ? t("importing") : t("import")}
             </button>
           </div>
           {isSuccess && (
             <p className="text-green-500 text-sm mt-2">
-              Excel imported successfully!
+              {t("excelImportedSuccessfully")}
             </p>
           )}
           {isError && (
-            <p className="text-red-500 text-sm mt-2">Error importing Excel file</p>
+            <p className="text-red-500 text-sm mt-2">
+              {t("errorImportingExcelFile")}
+            </p>
           )}
         </form>
       </div>
