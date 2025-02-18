@@ -1,12 +1,14 @@
+"use client";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { Roles, useCreateUserMutation } from "@/redux/services/usersApi";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
-  const { data: branchData, isLoading: isLoadingBranch } =
-    useGetBranchesQuery(null);
+  const { t } = useTranslation();
+  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
   const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateUserMutation();
   const { data: sellersData } = useGetSellersQuery(null);
@@ -36,7 +38,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
-      setPasswordError("Passwords do not match");
+      setPasswordError(t("createUser.passwordMismatch"));
       return;
     }
     setPasswordError(null);
@@ -45,7 +47,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
       await createUser(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error creating the user:", err);
+      console.error(t("createUser.errorCreatingUser"), err);
     }
   };
 
@@ -53,11 +55,11 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Create User</h2>
+          <h2 className="text-lg font-semibold">{t("createUser.title")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
-            aria-label="Close"
+            aria-label={t("createUser.close")}
           >
             <IoMdClose />
           </button>
@@ -66,11 +68,11 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
         <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
           {/* Username Field */}
           <label className="flex flex-col">
-            Username:
+            {t("createUser.username")}:
             <input
               name="username"
               value={form.username}
-              placeholder="Username"
+              placeholder={t("createUser.usernamePlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
               required
@@ -79,12 +81,12 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Email Field */}
           <label className="flex flex-col">
-            Email:
+            {t("createUser.email")}:
             <input
               name="email"
               type="email"
               value={form.email}
-              placeholder="Email"
+              placeholder={t("createUser.emailPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
               required
@@ -93,12 +95,12 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Password Field */}
           <label className="flex flex-col">
-            Password:
+            {t("createUser.password")}:
             <input
               name="password"
               type="password"
               value={form.password}
-              placeholder="Password"
+              placeholder={t("createUser.passwordPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
               required
@@ -107,12 +109,12 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Confirm Password Field */}
           <label className="flex flex-col">
-            Confirm Password:
+            {t("createUser.confirmPassword")}:
             <input
               name="confirmPassword"
               type="password"
               value={form.confirmPassword}
-              placeholder="Confirm Password"
+              placeholder={t("createUser.confirmPasswordPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
               required
@@ -126,7 +128,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Role Field */}
           <label className="flex flex-col">
-            Role:
+            {t("createUser.role")}:
             <select
               name="role"
               value={form.role}
@@ -134,7 +136,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
               required
             >
-              <option value="">Select role</option>
+              <option value="">{t("createUser.selectRole")}</option>
               {Object.values(Roles).map((role) => (
                 <option key={role} value={role}>
                   {role}
@@ -145,14 +147,14 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {/* Branch Field */}
           <label className="flex flex-col">
-            Branch:
+            {t("createUser.branch")}:
             <select
               name="branch"
               value={form.branch}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-green-500"
             >
-              <option value="">Select branch</option>
+              <option value="">{t("createUser.selectBranch")}</option>
               {!isLoadingBranch &&
                 branchData?.map((branch) => (
                   <option key={branch.id} value={branch.id}>
@@ -164,13 +166,13 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
 
           {form.role === "VENDEDOR" && (
             <label className="flex flex-col">
-              Seller ID:
+              {t("createUser.sellerId")}:
               <select
                 value={form.seller_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded p-2"
               >
-                <option value="">Seller...</option>
+                <option value="">{t("createUser.sellerPlaceholder")}</option>
                 {sellersData?.map((seller) => (
                   <option key={seller.id} value={seller.id}>
                     {seller.name}
@@ -187,7 +189,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md p-2 text-sm hover:bg-gray-500"
             >
-              Cancel
+              {t("createUser.cancel")}
             </button>
             <button
               type="submit"
@@ -196,19 +198,19 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
               }`}
               disabled={isLoadingCreate}
             >
-              {isLoadingCreate ? "Creating..." : "Create"}
+              {isLoadingCreate ? t("createUser.creating") : t("createUser.create")}
             </button>
           </div>
 
           {/* Success or Error Messages */}
           {isSuccess && (
             <p className="text-green-500 col-span-2 text-sm">
-              User created successfully!
+              {t("createUser.success")}
             </p>
           )}
           {isError && (
             <p className="text-red-500 col-span-2 text-sm">
-              Error creating user
+              {t("createUser.error")}
             </p>
           )}
         </form>

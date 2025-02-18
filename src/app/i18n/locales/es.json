@@ -138,7 +138,12 @@
     "delete": "Eliminar",
     "deleting": "Eliminando...",
     "success": "¡Artículo eliminado exitosamente!",
-    "error": "Error al eliminar el artículo"
+    "error": "Error al eliminar el artículo",
+
+    
+    "title": "Confirmar Eliminación",
+    "confirmMessage": "¿Estás seguro de que deseas eliminar este artículo del carrito?",
+    "errorUpdatingCart": "Error al actualizar el carrito de compras."
   },
   "description": "Descripción",
   "brand": "Marca",
@@ -382,6 +387,13 @@
   "errorLoadingBranches": "Error al cargar las sucursales. Por favor, inténtelo de nuevo más tarde.",
   "noBranchesFound": "No se encontraron sucursales",
   "page": {
+    "title": "Márgenes por Marca",
+    "selectClient": "Por favor, seleccione un cliente",
+    "header": {
+      "massiveChange": "Cambio Masivo",
+      "searchPlaceholder": "Buscar...",
+      "results": "Resultados"
+    },
     "popups": "POPUPS",
     "errorLoadingNotifications": "Error al cargar las notificaciones. Por favor, inténtalo de nuevo más tarde.",
     "notifications": "NOTIFICACIONES",
@@ -435,6 +447,8 @@
     "results": "Resultados"
   },
   "table": {
+    "margin": "Margen",
+    "unknown": "Desconocido",
     "location": "Ubicación",
     "web": "Web",
     "visualizations": "Visualizaciones",
@@ -839,5 +853,384 @@
   "success_update": "¡Etiqueta actualizada con éxito!",
   "error_update": "Error al actualizar la etiqueta",
   "search_placeholder": "Buscar...",
-  "clear_search": "Borrar búsqueda"
+  "clear_search": "Borrar búsqueda",
+  "title": "Título",
+  "validity": "Vigencia",
+
+  "total_without_taxes": "Total Sin Impuestos",
+  "date_from": "Fecha Desde",
+  "date_to": "Fecha Hasta",
+  "clear_date": "Borrar Fecha",
+
+  "add_value": "Agregar Valor",
+  "total_entered": "Total Ingresado",
+  "value_type": "Tipo de Valor",
+  "cash_pesos": "Efectivo Pesos",
+  "transfer_pesos": "Transferencia Pesos",
+  "credit_card": "Tarjeta de Crédito",
+  "currency": "Moneda",
+  "pesos": "Pesos",
+  "dollars": "Dólares",
+  "euros": "Euros",
+  "accept": "Aceptar",
+  "comments": {
+    "predefinedTitle": "Comentarios Predefinidos",
+    "noPredefined": "No hay comentarios predefinidos",
+    "label": "Observaciones",
+    "placeholder": "Escriba aquí sus observaciones...",
+    "clearButton": "Limpiar comentarios"
+  },
+  "no_specified": "No especificado",
+  "due_date": "Fecha de vencimiento",
+  "receipt": "Comprobante",
+  "payment_condition": "Condición de pago",
+  "balance_to_pay": "Saldo a pagar",
+  "document": {
+    "comprobante": "Comprobante",
+    "condicionPago": "Condición de Pago",
+    "importe": "Importe",
+    "descuento": "Descuento",
+    "saldoAPagar": "Saldo a Pagar",
+    "vto": "Vto:",
+    "noEspecificado": "No especificado"
+  },
+  "customerDashboard": {
+    "newOrder": "Nuevo Pedido",
+    "newPayment": "Nuevo Pago",
+    "newVisit": "Nueva Visita",
+    "catalog": "Catálogo",
+    "catalogDescription": "Accedé a nuestro catálogo de artículos",
+    "accountStatus": "Estado de Cuenta",
+    "expired": "VENCIDO:",
+    "pendingClaims": "Reclamos Pendientes",
+    "notFoundCustomer": "CLIENTE NO ENCONTRADO"
+  },
+  "paymentModal": {
+    "headerTitle": "Pago",
+    "date": "Fecha",
+    "gps": "Gps",
+    "noInsitu": "No Insitu",
+    "grossAmount": "Importe Bruto",
+    "netAmount": "Importe Neto",
+    "values": "Valores",
+    "difference": "Diferencia",
+    "daysOfPayment": "Días de Pago {{number}}",
+    "tabs": {
+      "documents": "Comprobantes",
+      "values": "Valores",
+      "comments": "Comentarios"
+    },
+    "send": "ENVIAR",
+    "confirmPayment": "Confirmar Pago",
+    "amount": "Monto",
+    "selectPaymentMethod": "Seleccionar método de pago",
+    "paymentMethods": {
+      "cash": "Efectivo",
+      "card": "Tarjeta",
+      "transfer": "Transferencia"
+    },
+    "cancel": "Cancelar",
+    "confirm": "Confirmar"
+  },
+  "valueView": {
+    "noValuesAdded": "No hay valores agregados."
+  },
+  "visitModal": {
+    "headerTitle": "Visita",
+    "info": {
+      "date": "Fecha",
+      "gps": "GPS",
+      "waitingLocation": "Esperando ubicación...",
+      "insitu": "Insitu ✅",
+      "notInsitu": "No Insitu ❌"
+    },
+    "predefinedComments": "Comentarios Predefinidos",
+    "observations": {
+      "label": "Observaciones",
+      "placeholder": "Ingrese sus observaciones..."
+    },
+    "send": "ENVIAR"
+  },
+  "updateMassive": {
+    "title": "Actualización Masiva",
+    "description": "Ingrese un nuevo margen para la actualización masiva por marca:",
+    "newMarginPlaceholder": "Nuevo margen",
+    "cancel": "Cancelar",
+    "loading": "Actualizando...",
+    "update": "Actualizar Margen",
+    "success": "¡Margen actualizado exitosamente!",
+    "error": "Error al actualizar el margen. Por favor, intente nuevamente.",
+    "invalidMargin": "Por favor, ingrese un margen válido mayor o igual a 0."
+  },
+  "page1": {
+    "title": "Márgenes por Ítem",
+    "selectClient": "Por favor, seleccione un cliente",
+    "invalidMarginAlert": "Por favor, ingrese un número válido y positivo.",
+    "header": {
+      "massiveChange": "Cambio Masivo",
+      "searchPlaceholder": "Buscar...",
+      "results": "{{count}} Resultados"
+    },
+    "table": {
+      "item": "Ítem",
+      "margin": "Margen",
+      "unknown": "Desconocido",
+      "save": "Guardar"
+    }
+  },
+  "updateMassiveItems": {
+    "title": "Actualización Masiva",
+    "description": "Ingrese un nuevo margen para la actualización masiva por ítem:",
+    "newMarginPlaceholder": "Nuevo margen",
+    "cancel": "Cancelar",
+    "loading": "Actualizando...",
+    "update": "Actualizar Margen",
+    "success": "¡Margen actualizado exitosamente!",
+    "error": "Error al actualizar el margen. Por favor, intente nuevamente.",
+    "invalidMargin": "Por favor, ingrese un margen válido mayor o igual a 0."
+  },
+  "profile": {
+    "title": "MI PERFIL",
+    "changePassword": "Cambiar Contraseña",
+    "id": "Id:",
+    "name": "Nombre:",
+    "email": "Correo Electrónico:",
+    "phone": "Teléfonos:",
+    "images": "Imágenes",
+    "uploadImages": "Subir Imágenes",
+    "uploading": "Subiendo...",
+    "imagesUploadedSuccess": "¡Imágenes subidas exitosamente!",
+    "errorUploadingImages": "Error al subir imágenes.",
+    "noFileSelected": "No se ha seleccionado ningún archivo.",
+    "table": {
+      "image": "Imagen",
+      "link": "Enlace",
+      "action": "Acción"
+    },
+    "profileImage": "Imagen de Perfil",
+    "receiveNotifications": "Recibir Notificaciones:",
+    "paymentCondition": "Condición de Pago:",
+    "cuit": "CUIT:",
+    "address": "Dirección:",
+    "locality": "Localidad:",
+    "state": "Provincia:",
+    "priceList": "Lista de Precios:",
+    "updating": "Actualizando...",
+    "updateInformation": "Actualizar Información",
+    "role": "Rol:",
+    "branch": "Sucursal:",
+    "uploadError": "Error al subir imagen:"
+  },
+  "createReclaim": {
+    "title": "Nuevo RECLAIM",
+    "reclaimType": "Tipo de RECLAIM",
+    "selectReclaimType": "Selecciona Tipo de RECLAIM",
+    "description": "Descripción",
+    "newDescription": "Nueva descripción",
+    "article": "Artículo",
+    "selectArticle": "Selecciona Artículo",
+    "branch": "Sucursal",
+    "selectBranch": "Selecciona Sucursal",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "save": "Guardar",
+    "success": "RECLAIM creado exitosamente!",
+    "error": "Error al crear RECLAIM",
+    "errorCreating": "Error al crear el RECLAIM:"
+  },
+  "deleteReclaim": {
+    "title": "Confirmar Eliminación",
+    "confirmMessage": "¿Estás seguro de que deseas eliminar este RECLAIM?",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando...",
+    "delete": "Eliminar",
+    "success": "¡RECLAIM eliminado exitosamente!",
+    "error": "Error al eliminar RECLAIM",
+    "errorDeleting": "Error al eliminar el RECLAIM:"
+  },
+  "updateReclaimComponent": {
+    "loading": "Cargando...",
+    "errorLoading": "Error al cargar datos del RECLAIM.",
+    "header": "Actualizar RECLAIM",
+    "reclaimType": "Tipo de RECLAIM",
+    "description": "Descripción",
+    "article": "Artículo",
+    "branch": "Sucursal",
+    "customer": "Cliente",
+    "date": "Fecha",
+    "cause": "Causa",
+    "solution": "Solución",
+    "internalSolution": "Solución Interna",
+    "valid": "Válido",
+    "validLabel": "Válido",
+    "invalidLabel": "Inválido",
+    "cancel": "Cancelar",
+    "updating": "Actualizando...",
+    "update": "Actualizar",
+    "errorUpdating": "Error al actualizar el RECLAIM:"
+  },
+  "pageReclaims": {
+    "title": "RECLAIMS",
+    "errorLoadingBrands": "Error al cargar reclaims. Por favor, inténtalo de nuevo más tarde.",
+    "noReclaimsFound": "No se encontraron reclaims",
+    "table": {
+      "number": "Número",
+      "status": "Estado",
+      "type": "Tipo",
+      "description": "Descripción",
+      "customer": "Cliente",
+      "user": "Usuario",
+      "branch": "Sucursal",
+      "date": "Fecha"
+    },
+    "header": {
+      "new": "Nuevo",
+      "download": "Descargar",
+      "dateFrom": "Fecha Desde",
+      "dateTo": "Fecha Hasta",
+      "statusPlaceholder": "Estado...",
+      "searchPlaceholder": "Buscar...",
+      "clearSearch": "Limpiar búsqueda",
+      "numberPlaceholder": "Número...",
+      "results": "{{count}} Resultados"
+    },
+    "errorLoading": "Error al cargar datos."
+  },
+  "map": {
+    "loading": "Cargando mapa...",
+    "errorLoadingCustomer": "Error al obtener los datos del cliente.",
+    "noGPSData": "No se han proporcionado datos de GPS",
+    "invalidGPSFormat": "El formato del GPS es inválido. Debe ser lat, lon.",
+    "invalidCoordinates": "Los valores de latitud y longitud deben ser números válidos.",
+    "noApiKey": "Error: No se ha configurado la API Key de Google Maps."
+  },
+  "mapModal": {
+    "noApiKey": "Error: No se ha configurado la API Key de Google Maps.",
+    "close": "Cerrar"
+  },
+  "customerListMobile": {
+    "noCustomersFound": "No se encontraron clientes",
+    "id": "ID",
+    "address": "Dirección",
+    "locality": "Localidad",
+    "state": "Provincia",
+    "paymentCondition": "Condición de Pago",
+    "accountStatus": "Estado de Cuenta",
+    "expiredDebt": "Deuda Vencida",
+    "cartItems": "Art. en Carrito",
+    "gps": "GPS",
+    "close": "Cerrar"
+  },
+  "resetPassword": {
+    "title": "Restablecer Contraseña",
+    "description": "Ingrese una nueva contraseña para el usuario:",
+    "placeholder": "Nueva contraseña",
+    "cancel": "Cancelar",
+    "updating": "Actualizando...",
+    "updatePassword": "Actualizar Contraseña",
+    "success": "¡Contraseña actualizada exitosamente!",
+    "error": "Error al actualizar la contraseña. Por favor, intente nuevamente.",
+    "errorUpdating": "Error al actualizar la contraseña:"
+  },
+  "updateGPS": {
+    "title": "Actualizar GPS",
+    "mapForGPS": "MAPA PARA GPS:",
+    "newLocationPlaceholder": "Nueva ubicación (lat, lon)",
+    "getCurrentLocation": "Obtener ubicación actual",
+    "cancel": "Cancelar",
+    "updating": "Actualizando...",
+    "update": "Actualizar GPS",
+    "success": "¡GPS actualizado exitosamente!",
+    "error": "Error al actualizar el GPS. Por favor, intente nuevamente.",
+    "errorUpdating": "Error al actualizar el GPS:",
+    "geolocationNotSupported": "La geolocalización no es soportada por este navegador.",
+    "errorGettingLocation": "Error obteniendo la ubicación:"
+  },
+  "orderConfirmation": {
+    "title": "Cierre de PEDIDO",
+    "totalLabel": "Total Sin Impuestos",
+    "itemsLabel": "Artículos",
+    "notice": "Atención: El pedido está sujeto a disponibilidad de stock y/o cambios de precio sin previo aviso.",
+    "gpsLabel": "GPS",
+    "notVerified": "No verificado",
+    "insitu": "Insitu ✅",
+    "notInsitu": "No Insitu ❌",
+    "observationsLabel": "Observaciones",
+    "observationsPlaceholder": "Ingrese un comentario",
+    "cancel": "Cancelar",
+    "processing": "Procesando...",
+    "accept": "Aceptar",
+    "geolocationNotSupported": "La geolocalización no es soportada por este navegador.",
+    "noCustomerSelected": "No hay cliente seleccionado.",
+    "errorCheckingInsitu": "Error verificando insitu:",
+    "errorGettingLocation": "Error obteniendo la ubicación:",
+    "genericError": "Error al procesar el pedido"
+  },
+  "createUser": {
+    "title": "Crear Usuario",
+    "close": "Cerrar",
+    "username": "Nombre de usuario",
+    "usernamePlaceholder": "Ingrese nombre de usuario",
+    "email": "Correo Electrónico",
+    "emailPlaceholder": "Ingrese correo electrónico",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Ingrese contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "confirmPasswordPlaceholder": "Repita la contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "role": "Rol",
+    "selectRole": "Seleccione rol",
+    "branch": "Sucursal",
+    "selectBranch": "Seleccione sucursal",
+    "sellerId": "ID de Vendedor",
+    "sellerPlaceholder": "Seleccione vendedor",
+    "cancel": "Cancelar",
+    "creating": "Creando...",
+    "create": "Crear",
+    "success": "¡Usuario creado exitosamente!",
+    "error": "Error al crear usuario",
+    "errorCreatingUser": "Error al crear el usuario:"
+  },
+  "deleteUser": {
+    "title": "Confirmar Eliminación",
+    "confirmMessage": "¿Estás seguro de que deseas eliminar este usuario?",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando...",
+    "delete": "Eliminar",
+    "success": "¡Usuario eliminado exitosamente!",
+    "error": "Error al eliminar el usuario",
+    "errorDeletingUser": "Error al eliminar el usuario:"
+  },
+  "updateUser": {
+    "title": "Actualizar Usuario",
+    "close": "Cerrar",
+    "username": "Nombre de usuario",
+    "usernamePlaceholder": "Ingrese nombre de usuario",
+    "email": "Correo Electrónico",
+    "emailPlaceholder": "Ingrese correo electrónico",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Ingrese contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "confirmPasswordPlaceholder": "Repita la contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "role": "Rol",
+    "selectRole": "Seleccione rol",
+    "roleAdmin": "Administrador",
+    "roleOperator": "Operador",
+    "roleMarketing": "Marketing",
+    "roleSeller": "Vendedor",
+    "branch": "Sucursal",
+    "selectBranch": "Seleccione sucursal",
+    "sellerId": "ID de Vendedor",
+    "sellerPlaceholder": "Seleccione vendedor",
+    "cancel": "Cancelar",
+    "updating": "Actualizando...",
+    "update": "Actualizar",
+    "success": "¡Usuario actualizado exitosamente!",
+    "error": "Error al actualizar usuario",
+    "errorUpdatingUser": "Error al actualizar el usuario:"
+  },
+  "unauthorized": {
+    "message": "No tienes acceso a esta página."
+  }
 }

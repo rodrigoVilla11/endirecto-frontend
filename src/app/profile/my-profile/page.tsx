@@ -10,45 +10,38 @@ import {
   useGetCustomerByIdQuery,
   useUpdateCustomerMutation,
 } from "@/redux/services/customersApi";
-import { FaCheckCircle } from "react-icons/fa";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
+import { useTranslation } from "react-i18next";
+import { FaCheckCircle } from "react-icons/fa";
 
 const Page = () => {
+  const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
+
   const [receiveNotifications, setReceiveNotifications] = useState(false);
-  const { data: branchsData, isLoading: isLoadingBranchs } =
-    useGetBranchesQuery(null);
-  const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
+  const { data: branchsData } = useGetBranchesQuery(null);
+  const { data, isLoading, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
 
-  const branch = branchsData?.find((data) => data.id === userData?.branch);
-  const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
+  const branch = branchsData?.find((d) => d.id === userData?.branch);
+  const [updateCustomer, { isLoading: isUpdating, isSuccess }] =
     useUpdateCustomerMutation();
   const [showTick, setShowTick] = useState(false);
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [logo, setLogo] = useState("");
-
   const [profileImg, setProfileImg] = useState("");
-  const [selectedFileProfile, setSelectedFileProfile] = useState<File | null>(
-    null
-  );
-  const [uploadResponseProfile, setUploadResponseProfile] =
-    useState<string>("");
-
+  const [selectedFileProfile, setSelectedFileProfile] = useState<File | null>(null);
+  const [uploadResponseProfile, setUploadResponseProfile] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File | null>(null);
   const [uploadResponses, setUploadResponses] = useState<string>("");
 
   const [
     uploadImage,
-    {
-      isLoading: isLoadingUpload,
-      isSuccess: isSuccessUpload,
-      isError: isErrorUpload,
-    },
+    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
   ] = useUploadImageMutation();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,9 +50,7 @@ const Page = () => {
     }
   };
 
-  const handleFileChangeProfile = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChangeProfile = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFileProfile(event.target.files[0]);
     }
@@ -71,10 +62,10 @@ const Page = () => {
         const response = await uploadImage(selectedFileProfile).unwrap();
         setUploadResponseProfile(response.url);
       } catch (err) {
-        console.error("Error uploading image:", err);
+        console.error(t("profile.uploadError"), err);
       }
     } else {
-      console.error("No file selected");
+      console.error(t("profile.noFileSelected"));
     }
   };
 
@@ -84,10 +75,10 @@ const Page = () => {
         const responses = await uploadImage(selectedFiles).unwrap();
         setUploadResponses(responses.url);
       } catch (err) {
-        console.error("Error uploading images:", err);
+        console.error(t("profile.uploadError"), err);
       }
     } else {
-      console.error("No files selected");
+      console.error(t("profile.noFileSelected"));
     }
   };
 
@@ -95,7 +86,6 @@ const Page = () => {
     if (selectedClientId && data) {
       setEmail(data?.email);
       setPhone(data?.phone);
-      // Prioriza el link de Cloudinary si existe
       setLogo(data?.logo);
       setProfileImg(data?.profileImg);
       refetch();
@@ -115,7 +105,7 @@ const Page = () => {
     buttons: [
       {
         logo: <FaKey />,
-        title: "Change Password",
+        title: t("profile.changePassword"),
       },
     ],
     filters: [],
@@ -124,29 +114,26 @@ const Page = () => {
 
   const handleRemoveImage = async () => {
     setUploadResponses("");
-     const payload = {
+    const payload = {
       id: data?.id || "",
-      logo:"",
+      logo: "",
     };
-
     await updateCustomer(payload);
-    refetch()
+    refetch();
   };
 
   const handleRemoveImageProfile = async () => {
     setUploadResponseProfile("");
     const payload = {
       id: data?.id || "",
-      profileImg:"",
+      profileImg: "",
     };
-
     await updateCustomer(payload);
-    refetch()
+    refetch();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const payload = {
       id: data?.id || "",
       email: email,
@@ -155,7 +142,6 @@ const Page = () => {
       profileImg: uploadResponseProfile || data?.profileImg || "",
       receive_notifications: receiveNotifications,
     };
-
     await updateCustomer(payload);
   };
 
@@ -170,7 +156,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">MY PROFILE</h3>
+        <h3 className="font-bold p-4">{t("profile.title")}</h3>
         <Header headerBody={headerBody} />
         {selectedClientId ? (
           <div className="w-full mx-auto p-6">
@@ -179,55 +165,54 @@ const Page = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Id:
+                      {t("profile.id")}
                     </label>
                     <input
                       type="text"
                       value={data?.id}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Nombre:
+                      {t("profile.name")}
                     </label>
                     <input
                       type="text"
                       value={data?.name}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Correos Electrónicos:
+                      {t("profile.email")}
                     </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Teléfonos:
+                      {t("profile.phone")}
                     </label>
                     <input
                       type="text"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
+                  {/* Images Section */}
                   <div className="p-4 bg-white rounded-md shadow-md">
                     <label className="flex flex-col gap-4">
-                      <span className="text-lg font-semibold">Images</span>
+                      <span className="text-lg font-semibold">
+                        {t("profile.images")}
+                      </span>
                       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                         <input
                           type="file"
@@ -246,17 +231,19 @@ const Page = () => {
                               : "bg-success hover:bg-success-dark"
                           }`}
                         >
-                          {isLoadingUpload ? "Uploading..." : "Upload Images"}
+                          {isLoadingUpload
+                            ? t("profile.uploading")
+                            : t("profile.uploadImages")}
                         </button>
                       </div>
                       {isSuccessUpload && (
                         <div className="mt-2 text-sm text-green-600 font-medium">
-                          Images uploaded successfully!
+                          {t("profile.imagesUploadedSuccess")}
                         </div>
                       )}
                       {isErrorUpload && (
                         <div className="mt-2 text-sm text-red-600 font-medium">
-                          Error uploading images.
+                          {t("profile.errorUploadingImages")}
                         </div>
                       )}
                       <div className="border rounded-md p-4 mt-4">
@@ -264,13 +251,13 @@ const Page = () => {
                           <thead className="bg-gray-100">
                             <tr>
                               <th className="border border-gray-300 p-2 text-left">
-                                Image
+                                {t("profile.table.image")}
                               </th>
                               <th className="border border-gray-300 p-2 text-left">
-                                Link
+                                {t("profile.table.link")}
                               </th>
                               <th className="border border-gray-300 p-2 text-center">
-                                Action
+                                {t("profile.table.action")}
                               </th>
                             </tr>
                           </thead>
@@ -307,48 +294,47 @@ const Page = () => {
                                 </td>
                               </tr>
                             ) : (
-                                <tr className="hover:bg-gray-50">
-                                  <td className="border border-gray-300 p-2">
-                                    <img
-                                      src={uploadResponses}
-                                      alt=""
-                                      className="h-10 w-auto rounded-md"
-                                    />
-                                  </td>
-                                  <td className="border border-gray-300 p-2">
-                                    <a
-                                      href={uploadResponses}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-500 hover:underline"
-                                    >
-                                      {uploadResponses.length > 30
-                                        ? `${uploadResponses.substring(0, 30)}...`
-                                        : uploadResponses}
-                                    </a>
-                                  </td>
-                                  <td className="border border-gray-300 p-2 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveImage()}
-                                      className="text-red-500 hover:text-red-700 transition"
-                                    >
-                                      <FaTrashCan className="inline-block" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              )
-                            }
+                              <tr className="hover:bg-gray-50">
+                                <td className="border border-gray-300 p-2">
+                                  <img
+                                    src={uploadResponses}
+                                    alt=""
+                                    className="h-10 w-auto rounded-md"
+                                  />
+                                </td>
+                                <td className="border border-gray-300 p-2">
+                                  <a
+                                    href={uploadResponses}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                  >
+                                    {uploadResponses.length > 30
+                                      ? `${uploadResponses.substring(0, 30)}...`
+                                      : uploadResponses}
+                                  </a>
+                                </td>
+                                <td className="border border-gray-300 p-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage()}
+                                    className="text-red-500 hover:text-red-700 transition"
+                                  >
+                                    <FaTrashCan className="inline-block" />
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
                     </label>
                   </div>
-
+                  {/* Profile Image Section */}
                   <div className="p-4 bg-white rounded-md shadow-md">
                     <label className="flex flex-col gap-4">
                       <span className="text-lg font-semibold">
-                        Profile Image
+                        {t("profile.profileImage")}
                       </span>
                       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                         <input
@@ -368,17 +354,19 @@ const Page = () => {
                               : "bg-success hover:bg-success-dark"
                           }`}
                         >
-                          {isLoadingUpload ? "Uploading..." : "Upload Images"}
+                          {isLoadingUpload
+                            ? t("profile.uploading")
+                            : t("profile.uploadImages")}
                         </button>
                       </div>
                       {isSuccessUpload && (
                         <div className="mt-2 text-sm text-green-600 font-medium">
-                          Images uploaded successfully!
+                          {t("profile.imagesUploadedSuccess")}
                         </div>
                       )}
                       {isErrorUpload && (
                         <div className="mt-2 text-sm text-red-600 font-medium">
-                          Error uploading images.
+                          {t("profile.errorUploadingImages")}
                         </div>
                       )}
                       <div className="border rounded-md p-4 mt-4">
@@ -386,13 +374,13 @@ const Page = () => {
                           <thead className="bg-gray-100">
                             <tr>
                               <th className="border border-gray-300 p-2 text-left">
-                                Image
+                                {t("profile.table.image")}
                               </th>
                               <th className="border border-gray-300 p-2 text-left">
-                                Link
+                                {t("profile.table.link")}
                               </th>
                               <th className="border border-gray-300 p-2 text-center">
-                                Action
+                                {t("profile.table.action")}
                               </th>
                             </tr>
                           </thead>
@@ -400,34 +388,24 @@ const Page = () => {
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 p-2">
                                 <img
-                                  src={
-                                    uploadResponseProfile || data?.profileImg
-                                  }
+                                  src={uploadResponseProfile || data?.profileImg}
                                   alt=""
                                   className="h-10 w-auto rounded-md"
                                 />
                               </td>
                               <td className="border border-gray-300 p-2">
                                 <a
-                                  href={
-                                    uploadResponseProfile || data?.profileImg
-                                  }
+                                  href={uploadResponseProfile || data?.profileImg}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-500 hover:underline"
                                 >
                                   {data?.profileImg
                                     ? data?.profileImg.length > 30
-                                      ? `${data?.profileImg.substring(
-                                          0,
-                                          30
-                                        )}...`
+                                      ? `${data?.profileImg.substring(0, 30)}...`
                                       : data?.profileImg
                                     : uploadResponseProfile.length > 30
-                                    ? `${uploadResponseProfile.substring(
-                                        0,
-                                        30
-                                      )}...`
+                                    ? `${uploadResponseProfile.substring(0, 30)}...`
                                     : uploadResponseProfile}
                                 </a>
                               </td>
@@ -446,92 +424,83 @@ const Page = () => {
                       </div>
                     </label>
                   </div>
-
-                  {/* Notifications checkbox */}
+                  {/* Notifications */}
                   <div className="col-span-2 flex items-center">
                     <label className="block text-sm font-medium text-gray-700 mr-4">
-                      Recibir Notificaciones:
+                      {t("profile.receiveNotifications")}
                     </label>
                     <input
                       type="checkbox"
                       checked={receiveNotifications}
-                      onChange={() =>
-                        setReceiveNotifications(!receiveNotifications)
-                      }
+                      onChange={() => setReceiveNotifications(!receiveNotifications)}
                       className="h-6 w-6 text-indigo-600 border-gray-300 rounded"
                     />
                   </div>
-
-                  {/* Additional fields from the last file */}
+                  {/* Additional Data */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Condición de Pago:
+                      {t("profile.paymentCondition")}
                     </label>
                     <input
                       type="text"
                       value={data?.payment_condition_id}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      CUIT:
+                      {t("profile.cuit")}
                     </label>
                     <input
                       type="text"
                       value={data?.cuit}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Dirección:
+                      {t("profile.address")}
                     </label>
                     <input
                       type="text"
                       value={data?.address}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Localidad:
+                      {t("profile.locality")}
                     </label>
                     <input
                       type="text"
                       value={data?.locality}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Provincia:
+                      {t("profile.state")}
                     </label>
                     <input
                       type="text"
                       value={data?.state}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Lista de Precios:
+                      {t("profile.priceList")}
                     </label>
                     <input
                       type="text"
                       value={data?.price_list_id}
                       disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
                 </div>
@@ -540,7 +509,7 @@ const Page = () => {
                   disabled={isUpdating}
                   className="inline-block py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md disabled:bg-gray-400"
                 >
-                  {isUpdating ? "Actualizando..." : "Actualizar Información"}
+                  {isUpdating ? t("profile.updating") : t("profile.updateInformation")}
                 </button>
               </form>
             </div>
@@ -549,29 +518,23 @@ const Page = () => {
           <div className="w-full mx-auto p-6">
             <div className="bg-white shadow-md rounded-md p-6 space-y-4 flex flex-col justify-center">
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">Id:</span>
+                <span className="text-gray-600 font-medium">{t("profile.id")}</span>
                 <span className="text-gray-800 font-mono">{userData?._id}</span>
               </div>
-
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">Nombre:</span>
+                <span className="text-gray-600 font-medium">{t("profile.name")}</span>
                 <span className="text-gray-800">{userData?.username}</span>
               </div>
-
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">Rol:</span>
+                <span className="text-gray-600 font-medium">{t("profile.role")}</span>
                 <span className="text-gray-800">{userData?.role}</span>
               </div>
-
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">
-                  Correo Electrónico:
-                </span>
+                <span className="text-gray-600 font-medium">{t("profile.email")}</span>
                 <span className="text-gray-800">{userData?.email}</span>
               </div>
-
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">Sucursal:</span>
+                <span className="text-gray-600 font-medium">{t("profile.branch")}</span>
                 <span className="text-gray-800">{userData?.branch}</span>
               </div>
             </div>

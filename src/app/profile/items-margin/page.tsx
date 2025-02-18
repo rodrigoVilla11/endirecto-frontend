@@ -11,12 +11,14 @@ import {
 } from "@/redux/services/customersItemsApi";
 import { useClient } from "@/app/context/ClientContext";
 import { skipToken } from "@reduxjs/toolkit/query/react";
-import { useGetItemsQuery } from "@/redux/services/itemsApi"; // Asegúrate de tener esta consulta
+import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import Table from "@/app/components/components/Table";
 import Modal from "@/app/components/components/Modal";
 import UpdateMassive from "./UpdateMassive";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const { selectedClientId } = useClient();
@@ -34,7 +36,7 @@ const Page = () => {
     refetch();
   };
 
-  // Obtención de los items (agregada)
+  // Obtención de los items
   const { data: items = [] } = useGetItemsQuery(null);
 
   const {
@@ -48,24 +50,24 @@ const Page = () => {
   const [editedMargins, setEditedMargins] = useState<{ [key: string]: number }>({});
 
   const tableHeader = [
-    { name: "Item", key: "item", important: true },
-    { name: "Margin", key: "margin", important: true },
+    { name: t("page1.table.item"), key: "item", important: true },
+    { name: t("page1.table.margin"), key: "margin", important: true },
   ];
 
   const headerBody = {
     buttons: [
       {
         logo: <IoMdMenu />,
-        title: "Massive Change",
+        title: t("page1.header.massiveChange"),
         onClick: openUpdateModal,
       },
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: <Input placeholder={t("page1.header.searchPlaceholder")} />,
       },
     ],
-    results: `${customersItems.length} Results`,
+    results: t("page1.header.results", { count: customersItems.length }),
   };
 
   useEffect(() => {
@@ -94,8 +96,7 @@ const Page = () => {
         });
       }
     }
-  }, [customersItems, items, selectedClientId, createCustomersItems, isLoading]);
-  
+  }, [customersItems, items, selectedClientId, createCustomersItems, isLoading, refetch]);
   
   const handleMarginChange = (id: string, value: number) => {
     setEditedMargins((prev) => ({
@@ -108,7 +109,7 @@ const Page = () => {
     const updatedMargin = editedMargins[id];
   
     if (isNaN(updatedMargin) || updatedMargin < 0) {
-      alert("Please enter a valid positive number.");
+      alert(t("page1.invalidMarginAlert"));
       return;
     }
   
@@ -133,10 +134,9 @@ const Page = () => {
   const tableData =
     customersItems?.map((customerItem) => {
       const item = items?.find((data) => data.id === customerItem.item_id);
-
       return {
         key: customerItem._id,
-        item: item ? item.name : "Unknown", // Ahora estamos trabajando con item.name
+        item: item ? item.name : t("page1.table.unknown"),
         margin: (
           <div className="flex items-center justify-center space-x-2">
             <input
@@ -154,7 +154,7 @@ const Page = () => {
               onClick={() => handleSave(customerItem._id)}
               className="px-3 py-1 bg-blue-500 text-white rounded-md"
             >
-              Save
+              {t("page1.table.save")}
             </button>
           </div>
         ),
@@ -162,7 +162,7 @@ const Page = () => {
     }) || [];
 
   if (!selectedClientId) {
-    return <div>Please select a client</div>;
+    return <div>{t("page1.selectClient")}</div>;
   }
 
   return (
@@ -176,7 +176,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">MARGINS BY ITEM</h3>
+        <h3 className="font-bold p-4">{t("page1.title")}</h3>
         <Header headerBody={headerBody} />
         {!isLoading && customersItems.length > 0 && (
           <Table headers={tableHeader} data={tableData} />

@@ -8,8 +8,10 @@ import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { format } from "date-fns";
 import PrivateRoute from "../context/PrivateRoutes";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const { data: brandsData } = useGetBrandsQuery(null);
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
@@ -18,23 +20,19 @@ const Page = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Usamos el query que retorna { notifications: Notification[], total: number }
   const { data, error, isLoading: isQueryLoading, refetch } = useGetNotificationsPagQuery({
     page,
     limit,
     query: searchQuery,
   });
 
-  // Referencia para el Intersection Observer (infinite scroll)
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // Efecto para cargar notificaciones y acumular resultados
   useEffect(() => {
     const loadNotifications = async () => {
       if (!isLoading) {
         setIsLoading(true);
         try {
-          // Se espera que la respuesta tenga la forma { notifications, total }
           const result = await refetch().unwrap();
           const newNotifications = result.notifications || [];
           if (page === 1) {
@@ -42,7 +40,6 @@ const Page = () => {
           } else {
             setItems((prev) => [...prev, ...newNotifications]);
           }
-          // Si se recibieron tantos elementos como el límite, puede haber más
           setHasMore(newNotifications.length === limit);
         } catch (error) {
           console.error("Error loading notifications:", error);
@@ -55,7 +52,6 @@ const Page = () => {
     loadNotifications();
   }, [page, searchQuery]);
 
-  // Efecto para el infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -78,10 +74,9 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  if (isQueryLoading) return <p>Loading...</p>;
-  if (error) return <p>Error</p>;
+  if (isQueryLoading) return <p>{t("loading")}</p>;
+  if (error) return <p>{t("error_loading")}</p>;
 
-  // Mapeo de los datos usando el estado acumulado "items"
   const tableData = items.map((notification) => {
     const brand = brandsData?.find((b) => b.id === notification.brand_id);
     return {
@@ -91,7 +86,6 @@ const Page = () => {
       title: notification.title,
       description: notification.description,
       validity: notification.schedule_to,
-      // Se formatea la fecha para que se muestre como "yyyy-MM-dd"
       date: notification.schedule_from
         ? format(new Date(notification.schedule_from), "yyyy-MM-dd")
         : "",
@@ -104,12 +98,12 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: "Brand", key: "brand" },
-    { name: "Type", key: "type" },
-    { name: "Title", key: "title" },
-    { name: "Description", key: "description" },
-    { name: "Validity", key: "validity" },
-    { name: "Date", key: "date" },
+    { name: t("brand"), key: "brand" },
+    { name: t("type"), key: "type" },
+    { name: t("title"), key: "title" },
+    { name: t("description"), key: "description" },
+    { name: t("validity"), key: "validity" },
+    { name: t("date"), key: "date" },
     { component: <FaDownload className="text-center text-xl" />, key: "download" },
   ];
 
@@ -119,14 +113,14 @@ const Page = () => {
       {
         content: (
           <select>
-            <option value="order">TYPE</option>
+            <option value="order">{t("type")}</option>
           </select>
         ),
       },
       {
         content: (
           <Input
-            placeholder={"Search..."}
+            placeholder={t("search_placeholder")}
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target.value)}
             onKeyDown={(e: any) => {
@@ -139,20 +133,15 @@ const Page = () => {
         ),
       },
     ],
-    // Si hay búsqueda se muestra la cantidad de elementos cargados,
-    // de lo contrario se muestra el total según la respuesta
-    results: searchQuery
-      ? `${items.length} Results`
-      : `${data?.total || 0} Results`,
+    results: searchQuery ? `${items.length} ${t("results")}` : `${data?.total || 0} ${t("results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">NOTIFICATIONS</h3>
+        <h3 className="font-bold p-4">{t("notifications")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        {/* Elemento para el Infinite Scroll */}
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>

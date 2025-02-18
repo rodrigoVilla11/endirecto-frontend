@@ -16,8 +16,10 @@ import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import Table from "@/app/components/components/Table";
 import Modal from "@/app/components/components/Modal";
 import UpdateMassive from "./UpdateMassive";
+import { useTranslation } from "react-i18next";
 
 const Page = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const { selectedClientId } = useClient();
@@ -30,16 +32,16 @@ const Page = () => {
   const [updateCustomersBrands, { isLoading: isUpdating }] =
     useUpdateCustomersBrandsMutation();
 
-    const openUpdateModal = () => {
-      setUpdateModalOpen(true);
-    };
-    const closeUpdateModal = () => {
-      setUpdateModalOpen(false);
-      refetch();
-    };
+  const openUpdateModal = () => {
+    setUpdateModalOpen(true);
+  };
+  const closeUpdateModal = () => {
+    setUpdateModalOpen(false);
+    refetch();
+  };
 
   const {
-    data: customersBrands = [], // Inicializa como un array vacío si no hay datos
+    data: customersBrands = [],
     error,
     isLoading,
     refetch,
@@ -56,24 +58,24 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: "Brand", key: "brand", important: true },
-    { name: "Margin", key: "margin", important: true },
+    { name: t("page.table.brand"), key: "brand", important: true },
+    { name: t("page.table.margin"), key: "margin", important: true },
   ];
 
   const headerBody = {
     buttons: [
       {
         logo: <IoMdMenu />,
-        title: "Massive Change",
-        onClick: openUpdateModal
+        title: t("page.header.massiveChange"),
+        onClick: openUpdateModal,
       },
     ],
     filters: [
       {
-        content: <Input placeholder={"Search..."} />,
+        content: <Input placeholder={t("page.header.searchPlaceholder")} />,
       },
     ],
-    results: "1 Results",
+    results: t("page.header.results"),
   };
 
   useEffect(() => {
@@ -84,13 +86,10 @@ const Page = () => {
       selectedClientId
     ) {
       brands.forEach((brand) => {
-        // Verifica si ya existe un customersBrand con esta marca y cliente
         const existingBrand = customersBrands.find(
           (item) => item.brand_id === brand.id
         );
-
         if (!existingBrand) {
-          // Crear una nueva entrada de customersBrands para cada brand que no exista
           createCustomersBrands({
             margin: 50,
             brand_id: brand.id,
@@ -116,8 +115,6 @@ const Page = () => {
 
   const handleSave = (id: string) => {
     const updatedMargin = editedMargins[id];
-
-    // Enviar la actualización a la API
     updateCustomersBrands({
       _id: id,
       margin: updatedMargin,
@@ -133,7 +130,6 @@ const Page = () => {
   const tableData =
     customersBrands?.map((customersBrand) => {
       const brand = brands?.find((data) => data.id === customersBrand.brand_id);
-
       return {
         key: customersBrand._id,
         image: (
@@ -145,11 +141,11 @@ const Page = () => {
                 className="h-10 w-10 object-cover"
               />
             ) : (
-              "No Image"
+              t("page.table.noImage")
             )}
           </div>
         ),
-        brand: brand ? brand.name : "Unknown", // Si no se encuentra la marca, asigna "Unknown"
+        brand: brand ? brand.name : t("page.table.unknown"),
         margin: (
           <div className="flex items-center justify-center space-x-2">
             <input
@@ -175,7 +171,7 @@ const Page = () => {
     }) || [];
 
   if (!selectedClientId) {
-    return <div>Please select a client</div>;
+    return <div>{t("page.selectClient")}</div>;
   }
 
   return (
@@ -189,20 +185,20 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">MARGINS BY BRAND</h3>
+        <h3 className="font-bold p-4">{t("page.title")}</h3>
         <Header headerBody={headerBody} />
         {!isLoading && customersBrands.length > 0 && (
           <Table headers={tableHeader} data={tableData} />
         )}
       </div>
       <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
-          {selectedClientId && (
-            <UpdateMassive
-              customer_id={selectedClientId}
-              closeModal={closeUpdateModal}
-            />
-          )}
-        </Modal>
+        {selectedClientId && (
+          <UpdateMassive
+            customer_id={selectedClientId}
+            closeModal={closeUpdateModal}
+          />
+        )}
+      </Modal>
     </PrivateRoute>
   );
 };

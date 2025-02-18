@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUpdateCustomerMutation } from '@/redux/services/customersApi';
+import { useTranslation } from 'react-i18next';
 
 type UpdateGPSProps = {
   customerId: string;
@@ -7,6 +8,7 @@ type UpdateGPSProps = {
 };
 
 const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
+  const { t } = useTranslation();
   const [updateCustomer, { isLoading, isSuccess, isError }] = useUpdateCustomerMutation();
   const [gps, setGPS] = useState('');
 
@@ -20,13 +22,13 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
       await updateCustomer(payload).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error updating GPS:', err);
+      console.error(t("updateGPS.errorUpdating"), err);
     }
   };
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      console.error("La geolocalización no es soportada por este navegador.");
+      console.error(t("updateGPS.geolocationNotSupported"));
       return;
     }
 
@@ -38,20 +40,20 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
         setGPS(gpsStr);
       },
       (error) => {
-        console.error("Error obteniendo la ubicación:", error);
+        console.error(t("updateGPS.errorGettingLocation"), error);
       }
     );
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4 font-semibold">Update GPS</h2>
-      <p>MAP FOR GPS:</p>
+      <h2 className="text-lg mb-4 font-semibold">{t("updateGPS.title")}</h2>
+      <p>{t("updateGPS.mapForGPS")}</p>
       <input
         type="text"
         value={gps}
         onChange={(e) => setGPS(e.target.value)}
-        placeholder="New location (lat, lon)"
+        placeholder={t("updateGPS.newLocationPlaceholder")}
         className="w-full mt-4 p-2 border border-gray-300 rounded-md"
       />
       <button
@@ -59,7 +61,7 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
         onClick={handleGetLocation}
         className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
       >
-        Obtener ubicación actual
+        {t("updateGPS.getCurrentLocation")}
       </button>
       <div className="flex justify-end gap-4 mt-6">
         <button
@@ -67,7 +69,7 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
           onClick={closeModal}
           className="bg-gray-400 rounded-md px-4 py-2 text-white hover:bg-gray-500"
         >
-          Cancel
+          {t("updateGPS.cancel")}
         </button>
         <button
           type="button"
@@ -77,11 +79,11 @@ const UpdateGPS = ({ customerId, closeModal }: UpdateGPSProps) => {
           }`}
           disabled={isLoading}
         >
-          {isLoading ? 'Updating...' : 'Update GPS'}
+          {isLoading ? t("updateGPS.updating") : t("updateGPS.update")}
         </button>
       </div>
-      {isSuccess && <p className="text-green-500 mt-4">GPS updated successfully!</p>}
-      {isError && <p className="text-red-500 mt-4">Error updating GPS. Please try again.</p>}
+      {isSuccess && <p className="text-green-500 mt-4">{t("updateGPS.success")}</p>}
+      {isError && <p className="text-red-500 mt-4">{t("updateGPS.error")}</p>}
     </div>
   );
 };

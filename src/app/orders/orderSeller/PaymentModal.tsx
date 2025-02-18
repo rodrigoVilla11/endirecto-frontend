@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { DocumentsView } from "./DocumentsView";
-
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import ValueView from "./ValueView";
 import { CommentsView } from "./CommentsView";
+import { useTranslation } from "react-i18next";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -14,7 +14,8 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
-  const [activeTab, setActiveTab] = useState("COMPROBANTES");
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState("documents");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -35,7 +36,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days_until_expiration_today: number;
     }[]
   >([]);
-
   const [newValues, setNewValues] = useState<
     { amount: string; selectedReason: string; currency: string }[]
   >([]);
@@ -79,9 +79,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     maximumFractionDigits: 2,
   }).format(diff);
 
-  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
-    { id: selectedClientId ?? undefined }
-  );
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
+    id: selectedClientId ?? undefined,
+  });
   if (!isOpen) return null;
 
   const handleRowSelect = (id: string, checked: boolean) => {
@@ -108,7 +108,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <button onClick={onClose} className="text-white">
               ←
             </button>
-            <h2 className="text-xl font-semibold text-white">Pago</h2>
+            <h2 className="text-xl font-semibold text-white">
+              {t("paymentModal.headerTitle")}
+            </h2>
           </div>
           <span className="text-white">📄</span>
         </div>
@@ -116,20 +118,20 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label="Fecha" value={formattedDate} />
+            <InfoRow label={t("paymentModal.date")} value={formattedDate} />
             <InfoRow
               label={
                 <div className="flex items-center gap-2">
-                  Gps <span className="text-red-500">📍</span>
+                  {t("paymentModal.gps")} <span className="text-red-500">📍</span>
                 </div>
               }
-              value={<span className="text-yellow-500">No Insitu</span>}
+              value={<span className="text-yellow-500">{t("paymentModal.noInsitu")}</span>}
             />
-            <InfoRow label="Importe Bruto" value={formattedTotal} />
-            <InfoRow label="Importe Neto" value={formattedTotal} />
-            <InfoRow label="Valores" value={formattedTotalValues} />
+            <InfoRow label={t("paymentModal.grossAmount")} value={formattedTotal} />
+            <InfoRow label={t("paymentModal.netAmount")} value={formattedTotal} />
+            <InfoRow label={t("paymentModal.values")} value={formattedTotalValues} />
             <InfoRow
-              label="Diferencia"
+              label={t("paymentModal.difference")}
               value={formattedDiff}
               valueClassName="text-emerald-500"
             />
@@ -138,13 +140,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               newPayment.map((item, index) => (
                 <InfoRow
                   key={index}
-                  label={`Días de Pago ${item.number}`}
+                  label={t("paymentModal.daysOfPayment", { number: item.number })}
                   value={
                     <>
                       <span
                         className={`${
-                          item.days_until_expiration_today >
-                          item.days_until_expiration
+                          item.days_until_expiration_today > item.days_until_expiration
                             ? "text-red-500"
                             : "text-green-500"
                         }`}
@@ -160,24 +161,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
           {/* Tabs */}
           <div className="grid grid-cols-3">
-            {["COMPROBANTES", "VALORES", "COMENTARIOS"].map((tab) => (
+            {["documents", "values", "comments"].map((tabKey) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tabKey}
+                onClick={() => setActiveTab(tabKey)}
                 className={`p-4 text-sm font-medium ${
-                  activeTab === tab
+                  activeTab === tabKey
                     ? "bg-white text-black"
                     : "bg-zinc-900 text-white"
                 }`}
               >
-                {tab}
+                {t(`paymentModal.tabs.${tabKey}`)}
               </button>
             ))}
           </div>
 
           {/* Tab Content */}
           <div className="p-4">
-            {activeTab === "COMPROBANTES" && (
+            {activeTab === "documents" && (
               <div className="text-white">
                 {data &&
                   "documents" in data &&
@@ -193,12 +194,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   ))}
               </div>
             )}
-            {activeTab === "VALORES" && (
+            {activeTab === "values" && (
               <div className="text-white">
                 <ValueView setNewValues={setNewValues} newValues={newValues} />
               </div>
             )}
-            {activeTab === "COMENTARIOS" && (
+            {activeTab === "comments" && (
               <div className="text-white">
                 <CommentsView comments={comments} setComments={setComments} />
               </div>
@@ -212,7 +213,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             onClick={() => setIsConfirmModalOpen(true)}
             className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
           >
-            ENVIAR
+            {t("paymentModal.send")}
           </button>
         </div>
       </div>
@@ -222,11 +223,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
           <div className="bg-zinc-800 p-6 rounded-lg w-full max-w-sm">
             <h3 className="text-lg font-semibold text-white mb-4">
-              Confirmar Pago
+              {t("paymentModal.confirmPayment")}
             </h3>
             <input
               type="number"
-              placeholder="Monto"
+              placeholder={t("paymentModal.amount")}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="w-full p-2 mb-4 bg-zinc-700 text-white rounded"
@@ -236,17 +237,19 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               onChange={(e) => setPaymentMethod(e.target.value)}
               className="w-full p-2 mb-4 bg-zinc-700 text-white rounded"
             >
-              <option value="">Seleccionar método de pago</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
+              <option value="">{t("paymentModal.selectPaymentMethod")}</option>
+              <option value="efectivo">{t("paymentModal.paymentMethods.cash")}</option>
+              <option value="tarjeta">{t("paymentModal.paymentMethods.card")}</option>
+              <option value="transferencia">
+                {t("paymentModal.paymentMethods.transfer")}
+              </option>
             </select>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setIsConfirmModalOpen(false)}
                 className="px-4 py-2 bg-zinc-600 text-white rounded"
               >
-                Cancelar
+                {t("paymentModal.cancel")}
               </button>
               <button
                 onClick={() => {
@@ -257,7 +260,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
-                Confirmar
+                {t("paymentModal.confirm")}
               </button>
             </div>
           </div>

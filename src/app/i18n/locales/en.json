@@ -365,6 +365,13 @@
   "errorLoadingBranches": "Error loading branches. Please try again later.",
   "noBranchesFound": "No branches found",
   "page": {
+    "title": "Margins by Brand",
+    "selectClient": "Please select a client",
+    "header": {
+      "massiveChange": "Massive Change",
+      "searchPlaceholder": "Search...",
+      "results": "Results"
+    },
     "errorLoadingNotifications": "Error loading notifications. Please try again later.",
     "notifications": "NOTIFICATIONS",
     "headers": "HEADERS",
@@ -419,7 +426,8 @@
     "results": "Results"
   },
   "table": {
-    
+    "margin": "Margin",
+    "unknown": "Unknown",
     "location": "Location",
     "web": "Web",
     "visualizations": "Visualizations",
@@ -484,7 +492,11 @@
     "delete": "Delete",
     "deleting": "Deleting...",
     "success": "Article deleted successfully!",
-    "error": "Error deleting Article"
+    "error": "Error deleting Article",
+
+    "title": "Confirm Delete",
+    "confirmMessage": "Are you sure you want to delete this article from the shopping cart?",
+    "errorUpdatingCart": "Failed to update the shopping cart."
   },
   "updateBrand": {
     "loading": "Loading...",
@@ -844,5 +856,385 @@
   "success_update": "Tag updated successfully!",
   "error_update": "Error updating tag",
   "search_placeholder": "Search...",
-  "clear_search": "Clear search"
+  "clear_search": "Clear search",
+
+  "title": "Title",
+  "validity": "Validity",
+
+  "total_without_taxes": "Total Without Taxes",
+  "date_from": "Date From",
+  "date_to": "Date To",
+  "clear_date": "Clear Date",
+
+  "add_value": "Add Value",
+  "total_entered": "Total Entered",
+  "value_type": "Value Type",
+  "cash_pesos": "Cash Pesos",
+  "transfer_pesos": "Transfer Pesos",
+  "credit_card": "Credit Card",
+  "currency": "Currency",
+  "pesos": "Pesos",
+  "dollars": "Dollars",
+  "euros": "Euros",
+  "accept": "Accept",
+  "comments": {
+    "predefinedTitle": "Predefined Comments",
+    "noPredefined": "No predefined comments",
+    "label": "Observations",
+    "placeholder": "Write your observations here...",
+    "clearButton": "Clear comments"
+  },
+  "no_specified": "Not specified",
+  "due_date": "Due date",
+  "receipt": "Receipt",
+  "payment_condition": "Payment condition",
+  "balance_to_pay": "Balance to pay",
+  "document": {
+    "comprobante": "Receipt",
+    "condicionPago": "Payment Condition",
+    "importe": "Amount",
+    "descuento": "Discount",
+    "saldoAPagar": "Balance Due",
+    "vto": "Exp:",
+    "noEspecificado": "Not specified"
+  },
+  "customerDashboard": {
+    "newOrder": "New Order",
+    "newPayment": "New Payment",
+    "newVisit": "New Visit",
+    "catalog": "Catalog",
+    "catalogDescription": "Access our catalog of items",
+    "accountStatus": "Account Status",
+    "expired": "EXPIRED:",
+    "pendingClaims": "Pending Claims",
+    "notFoundCustomer": "CUSTOMER NOT FOUND"
+  },
+  "paymentModal": {
+    "headerTitle": "Payment",
+    "date": "Date",
+    "gps": "GPS",
+    "noInsitu": "Not On-site",
+    "grossAmount": "Gross Amount",
+    "netAmount": "Net Amount",
+    "values": "Values",
+    "difference": "Difference",
+    "daysOfPayment": "Payment Days {{number}}",
+    "tabs": {
+      "documents": "Documents",
+      "values": "Values",
+      "comments": "Comments"
+    },
+    "send": "SEND",
+    "confirmPayment": "Confirm Payment",
+    "amount": "Amount",
+    "selectPaymentMethod": "Select payment method",
+    "paymentMethods": {
+      "cash": "Cash",
+      "card": "Card",
+      "transfer": "Transfer"
+    },
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "valueView": {
+    "noValuesAdded": "No values added."
+  },
+  "visitModal": {
+    "headerTitle": "Visit",
+    "info": {
+      "date": "Date",
+      "gps": "GPS",
+      "waitingLocation": "Waiting for location...",
+      "insitu": "On-site ✅",
+      "notInsitu": "Not On-site ❌"
+    },
+    "predefinedComments": "Predefined Comments",
+    "observations": {
+      "label": "Observations",
+      "placeholder": "Enter your observations..."
+    },
+    "send": "SEND"
+  },
+  "updateMassive": {
+    "title": "Massive Update",
+    "description": "Enter a new margin for the Massive Update by Brand:",
+    "newMarginPlaceholder": "New margin",
+    "cancel": "Cancel",
+    "loading": "Updating...",
+    "update": "Update Margin",
+    "success": "Margin updated successfully!",
+    "error": "Error updating margin. Please try again.",
+    "invalidMargin": "Please enter a valid margin greater or equal to 0."
+  },
+  "updateMassiveItems": {
+    "title": "Massive Update",
+    "description": "Enter a new margin for the Massive Update by Item:",
+    "newMarginPlaceholder": "New margin",
+    "cancel": "Cancel",
+    "loading": "Updating...",
+    "update": "Update Margin",
+    "success": "Margin updated successfully!",
+    "error": "Error updating margin. Please try again.",
+    "invalidMargin": "Please enter a valid margin greater or equal to 0."
+  },
+  "page1": {
+    "title": "Margins by Item",
+    "selectClient": "Please select a client",
+    "invalidMarginAlert": "Please enter a valid positive number.",
+    "header": {
+      "massiveChange": "Massive Change",
+      "searchPlaceholder": "Search...",
+      "results": "{{count}} Results"
+    },
+    "table": {
+      "item": "Item",
+      "margin": "Margin",
+      "unknown": "Unknown",
+      "save": "Save"
+    }
+  },
+  "profile": {
+    "title": "MY PROFILE",
+    "changePassword": "Change Password",
+    "id": "Id:",
+    "name": "Name:",
+    "email": "Email:",
+    "phone": "Phone:",
+    "images": "Images",
+    "uploadImages": "Upload Images",
+    "uploading": "Uploading...",
+    "imagesUploadedSuccess": "Images uploaded successfully!",
+    "errorUploadingImages": "Error uploading images.",
+    "noFileSelected": "No file selected.",
+    "table": {
+      "image": "Image",
+      "link": "Link",
+      "action": "Action"
+    },
+    "profileImage": "Profile Image",
+    "receiveNotifications": "Receive Notifications:",
+    "paymentCondition": "Payment Condition:",
+    "cuit": "CUIT:",
+    "address": "Address:",
+    "locality": "Locality:",
+    "state": "State:",
+    "priceList": "Price List:",
+    "updating": "Updating...",
+    "updateInformation": "Update Information",
+    "role": "Role:",
+    "branch": "Branch:",
+    "uploadError": "Error uploading image:"
+  },
+  "createReclaim": {
+    "title": "New RECLAIM",
+    "reclaimType": "Reclaim Type",
+    "selectReclaimType": "Select Reclaim Type",
+    "description": "Description",
+    "newDescription": "New Description",
+    "article": "Article",
+    "selectArticle": "Select Article",
+    "branch": "Branch",
+    "selectBranch": "Select Branch",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save",
+    "success": "RECLAIM created successfully!",
+    "error": "Error creating RECLAIM",
+    "errorCreating": "Error creating the RECLAIM:"
+  },
+  "deleteReclaim": {
+    "title": "Confirm Delete",
+    "confirmMessage": "Are you sure you want to delete this RECLAIM?",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "delete": "Delete",
+    "success": "RECLAIM deleted successfully!",
+    "error": "Error deleting RECLAIM",
+    "errorDeleting": "Error deleting the RECLAIM:"
+  },
+  "updateReclaimComponent": {
+    "loading": "Loading...",
+    "errorLoading": "Error loading reclaim data.",
+    "header": "Update Reclaim",
+    "reclaimType": "Reclaim Type",
+    "description": "Description",
+    "article": "Article",
+    "branch": "Branch",
+    "customer": "Customer",
+    "date": "Date",
+    "cause": "Cause",
+    "solution": "Solution",
+    "internalSolution": "Internal Solution",
+    "valid": "Valid",
+    "validLabel": "Valid",
+    "invalidLabel": "Invalid",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "update": "Update",
+    "errorUpdating": "Error updating reclaim:"
+  },
+  "pageReclaims": {
+    "title": "RECLAIMS",
+    "errorLoadingBrands": "Error loading reclaims. Please try again later.",
+    "noReclaimsFound": "No reclaims found",
+    "table": {
+      "number": "Number",
+      "status": "Status",
+      "type": "Type",
+      "description": "Description",
+      "customer": "Customer",
+      "user": "User",
+      "branch": "Branch",
+      "date": "Date"
+    },
+    "header": {
+      "new": "New",
+      "download": "Download",
+      "dateFrom": "Date From",
+      "dateTo": "Date To",
+      "statusPlaceholder": "Status...",
+      "searchPlaceholder": "Search...",
+      "clearSearch": "Clear search",
+      "numberPlaceholder": "Number...",
+      "results": "{{count}} Results"
+    },
+    "errorLoading": "Error loading data."
+  },
+  "map": {
+    "loading": "Loading map...",
+    "errorLoadingCustomer": "Error fetching customer data.",
+    "noGPSData": "No GPS data provided",
+    "invalidGPSFormat": "Invalid GPS format. It should be lat, lon.",
+    "invalidCoordinates": "Latitude and longitude values must be valid numbers.",
+    "noApiKey": "Error: Google Maps API Key is not configured."
+  },
+  "mapModal": {
+    "noApiKey": "Error: Google Maps API Key is not configured.",
+    "close": "Close"
+  },
+  "customerListMobile": {
+    "noCustomersFound": "No customers found",
+    "id": "ID",
+    "address": "Address",
+    "locality": "Locality",
+    "state": "State",
+    "paymentCondition": "Payment Condition",
+    "accountStatus": "Account Status",
+    "expiredDebt": "Expired Debt",
+    "cartItems": "Cart Items",
+    "gps": "GPS",
+    "close": "Close"
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "description": "Enter a new password for the user:",
+    "placeholder": "New password",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "updatePassword": "Update Password",
+    "success": "Password updated successfully!",
+    "error": "Error updating password. Please try again.",
+    "errorUpdating": "Error updating password:"
+  },
+  "updateGPS": {
+    "title": "Update GPS",
+    "mapForGPS": "MAP FOR GPS:",
+    "newLocationPlaceholder": "New location (lat, lon)",
+    "getCurrentLocation": "Get Current Location",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "update": "Update GPS",
+    "success": "GPS updated successfully!",
+    "error": "Error updating GPS. Please try again.",
+    "errorUpdating": "Error updating GPS:",
+    "geolocationNotSupported": "Geolocation is not supported by this browser.",
+    "errorGettingLocation": "Error getting location:"
+  },
+  "orderConfirmation": {
+    "title": "Order Closure",
+    "totalLabel": "Total Before Taxes",
+    "itemsLabel": "Items",
+    "notice": "Note: The order is subject to stock availability and/or price changes without notice.",
+    "gpsLabel": "GPS",
+    "notVerified": "Not verified",
+    "insitu": "On-site ✅",
+    "notInsitu": "Not On-site ❌",
+    "observationsLabel": "Observations",
+    "observationsPlaceholder": "Enter a comment",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "accept": "Accept",
+    "geolocationNotSupported": "Geolocation is not supported by this browser.",
+    "noCustomerSelected": "No customer selected.",
+    "errorCheckingInsitu": "Error checking on-site:",
+    "errorGettingLocation": "Error getting location:",
+    "genericError": "Error processing the order"
+  },
+  "createUser": {
+    "title": "Create User",
+    "close": "Close",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "email": "Email",
+    "emailPlaceholder": "Enter email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "passwordMismatch": "Passwords do not match",
+    "role": "Role",
+    "selectRole": "Select role",
+    "branch": "Branch",
+    "selectBranch": "Select branch",
+    "sellerId": "Seller ID",
+    "sellerPlaceholder": "Select seller",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "create": "Create",
+    "success": "User created successfully!",
+    "error": "Error creating user",
+    "errorCreatingUser": "Error creating the user:"
+  },
+  "deleteUser": {
+    "title": "Confirm Delete",
+    "confirmMessage": "Are you sure you want to delete this user?",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "delete": "Delete",
+    "success": "User deleted successfully!",
+    "error": "Error deleting user",
+    "errorDeletingUser": "Error deleting the user:"
+  },
+  "updateUser": {
+    "title": "Update User",
+    "close": "Close",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "email": "Email",
+    "emailPlaceholder": "Enter email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "passwordMismatch": "Passwords do not match",
+    "role": "Role",
+    "selectRole": "Select role",
+    "roleAdmin": "Administrator",
+    "roleOperator": "Operator",
+    "roleMarketing": "Marketing",
+    "roleSeller": "Seller",
+    "branch": "Branch",
+    "selectBranch": "Select branch",
+    "sellerId": "Seller ID",
+    "sellerPlaceholder": "Select seller",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "update": "Update",
+    "success": "User updated successfully!",
+    "error": "Error updating user",
+    "errorUpdatingUser": "Error updating the user:"
+  },
+  "unauthorized": {
+    "message": "You do not have access to this page."
+  }
 }

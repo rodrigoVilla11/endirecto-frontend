@@ -1,3 +1,4 @@
+"use client";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@/redux/services/usersApi";
 import React, { useEffect, useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { useTranslation } from "react-i18next";
 
 type UpdateUserComponentProps = {
   userId: string;
@@ -17,12 +19,11 @@ const UpdateUserComponent = ({
   userId,
   closeModal,
 }: UpdateUserComponentProps) => {
+  const { t } = useTranslation();
   const { data: user, error, isLoading } = useGetUserByIdQuery({ id: userId });
   const { data: sellersData } = useGetSellersQuery(null);
-
   const [updateUser, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateUserMutation();
-
   const { data: branchData, isLoading: isLoadingBranch } =
     useGetBranchesQuery(null);
 
@@ -34,9 +35,8 @@ const UpdateUserComponent = ({
     email: "",
     role: Roles.ADMINISTRADOR,
     branch: "",
-    seller_id: ""
+    seller_id: "",
   });
-
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ const UpdateUserComponent = ({
         email: user.email ?? "",
         role: user.role ?? "",
         branch: user.branch ?? "",
-        seller_id: user.seller_id ?? ""
+        seller_id: user.seller_id ?? "",
       });
     }
   }, [user]);
@@ -68,7 +68,7 @@ const UpdateUserComponent = ({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
-      setPasswordError("Passwords do not match");
+      setPasswordError(t("updateUser.passwordMismatch"));
       return;
     }
     setPasswordError(null);
@@ -77,114 +77,112 @@ const UpdateUserComponent = ({
       await updateUser(form).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error updating the user:", err);
+      console.error(t("updateUser.errorUpdatingUser"), err);
     }
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching the user.</p>;
+  if (isLoading) return <p>{t("updateUser.loading")}</p>;
+  if (error) return <p>{t("updateUser.errorFetchingUser")}</p>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Update User</h2>
+          <h2 className="text-lg font-semibold">{t("updateUser.title")}</h2>
           <button
             onClick={closeModal}
             className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
+            aria-label={t("updateUser.close")}
           >
             <IoMdClose />
           </button>
         </div>
 
         <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
+          {/* Username Field */}
           <label className="flex flex-col">
-            ID:
-            <input
-              name="_id"
-              value={form._id}
-              readOnly
-              className="border border-gray-300 rounded-md p-2 bg-gray-200"
-            />
-          </label>
-
-          <label className="flex flex-col">
-            Username:
+            {t("updateUser.username")}:
             <input
               name="username"
               value={form.username}
-              placeholder="Username"
+              placeholder={t("updateUser.usernamePlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             />
           </label>
 
+          {/* Email Field */}
           <label className="flex flex-col">
-            Email:
+            {t("updateUser.email")}:
             <input
               name="email"
               value={form.email}
-              placeholder="Email"
+              placeholder={t("updateUser.emailPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             />
           </label>
 
+          {/* Password Field */}
           <label className="flex flex-col">
-            Password:
+            {t("updateUser.password")}:
             <input
               name="password"
               type="password"
               value={form.password}
-              placeholder="Password"
+              placeholder={t("updateUser.passwordPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             />
           </label>
 
+          {/* Confirm Password Field */}
           <label className="flex flex-col">
-            Confirm Password:
+            {t("updateUser.confirmPassword")}:
             <input
               name="confirmPassword"
               type="password"
               value={form.confirmPassword}
-              placeholder="Confirm Password"
+              placeholder={t("updateUser.confirmPasswordPlaceholder")}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             />
           </label>
 
+          {/* Password Error Message */}
           {passwordError && (
             <p className="text-red-500 col-span-2 text-sm">{passwordError}</p>
           )}
 
+          {/* Role Field */}
           <label className="flex flex-col">
-            Role:
+            {t("updateUser.role")}:
             <select
               name="role"
               value={form.role}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             >
-              <option value="">Select role</option>
-              <option value={Roles.ADMINISTRADOR}>Administrador</option>
-              <option value={Roles.OPERADOR}>Operador</option>
-              <option value={Roles.MARKETING}>Marketing</option>
-              <option value={Roles.VENDEDOR}>Vendedor</option>
+              <option value="">{t("updateUser.selectRole")}</option>
+              <option value={Roles.ADMINISTRADOR}>{t("updateUser.roleAdmin")}</option>
+              <option value={Roles.OPERADOR}>{t("updateUser.roleOperator")}</option>
+              <option value={Roles.MARKETING}>{t("updateUser.roleMarketing")}</option>
+              <option value={Roles.VENDEDOR}>{t("updateUser.roleSeller")}</option>
             </select>
           </label>
 
+          {/* Branch Field */}
           <label className="flex flex-col">
-            Branch:
+            {t("updateUser.branch")}:
             <select
               name="branch"
               value={form.branch}
               onChange={handleChange}
               className="border border-gray-300 rounded-md p-2"
             >
-              <option value="">Select branch</option>
+              <option value="">{t("updateUser.selectBranch")}</option>
               {!isLoadingBranch &&
-                branchData?.map((branch: { id: string; name: string }) => (
+                branchData?.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name}
                   </option>
@@ -194,13 +192,13 @@ const UpdateUserComponent = ({
 
           {form.role === "VENDEDOR" && (
             <label className="flex flex-col">
-              Seller ID:
+              {t("updateUser.sellerId")}:
               <select
                 value={form.seller_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded p-2"
               >
-                <option value="">Seller...</option>
+                <option value="">{t("updateUser.sellerPlaceholder")}</option>
                 {sellersData?.map((seller) => (
                   <option key={seller.id} value={seller.id}>
                     {seller.name}
@@ -209,14 +207,15 @@ const UpdateUserComponent = ({
               </select>
             </label>
           )}
-          
+
+          {/* Buttons */}
           <div className="col-span-2 flex justify-end gap-4">
             <button
               type="button"
               onClick={closeModal}
               className="bg-gray-400 text-white rounded-md p-2"
             >
-              Cancel
+              {t("updateUser.cancel")}
             </button>
             <button
               type="submit"
@@ -225,18 +224,18 @@ const UpdateUserComponent = ({
               }`}
               disabled={isUpdating}
             >
-              {isUpdating ? "Updating..." : "Update"}
+              {isUpdating ? t("updateUser.updating") : t("updateUser.update")}
             </button>
           </div>
 
           {isSuccess && (
             <p className="text-green-500 col-span-2 text-sm">
-              User updated successfully!
+              {t("updateUser.success")}
             </p>
           )}
           {isError && (
             <p className="text-red-500 col-span-2 text-sm">
-              Error updating user
+              {t("updateUser.error")}
             </p>
           )}
         </form>

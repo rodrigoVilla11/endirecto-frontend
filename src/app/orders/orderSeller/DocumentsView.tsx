@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useGetDocumentByIdQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 
@@ -20,6 +21,7 @@ export function DocumentsView({
   customerInformation,
   setNewPayment,
 }: ExpandableTableProps) {
+  const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const { data, error, isLoading } = useGetDocumentByIdQuery({
     id: document_id,
@@ -55,14 +57,14 @@ export function DocumentsView({
       maximumFractionDigits: 2,
     })
       .format(price)
-      .replace("ARS", "") // Elimina "ARS" del formato.
-      .trim(); // Elimina espacios extra.
+      .replace("ARS", "")
+      .trim();
 
-    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+    return `${formattedNumber}`;
   }
   function convertToISODate(dateString: string): string {
     const [day, month, year] = dateString.split("/");
-    return `${year}-${month}-${day}`; // Convertimos a formato YYYY-MM-DD
+    return `${year}-${month}-${day}`;
   }
 
   function calculateDaysBetween(startDate: string, endDate: string): number {
@@ -70,10 +72,9 @@ export function DocumentsView({
     const end = new Date(convertToISODate(endDate));
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return 0; // Si alguna fecha es inválida, devolvemos 0
+      return 0;
     }
 
-    // Diferencia en milisegundos y conversión a días
     const differenceInMs = end.getTime() - start.getTime();
     return Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
   }
@@ -93,34 +94,26 @@ export function DocumentsView({
     document_balance: customerInformation
       ? customerInformation.document_balance
       : "",
-    payment_condition: paymentsConditionsData?.name || "No especificado",
-    // discount: data?.details?.descuento || "0%", // Asumiendo que hay un detalle con descuento
+    payment_condition: paymentsConditionsData?.name || t("document.noEspecificado"),
     saldo_a_pagar: customerInformation
       ? customerInformation.document_balance
       : "",
-    // 📌 Diferencia entre `date` y `expiration_date`
     days_until_expiration:
       data?.date && data?.expiration_date
         ? calculateDaysBetween(data.date, data.expiration_date)
         : "N/A",
-
-    // 📌 Diferencia entre `date` y la fecha actual (hoy)
     days_until_expiration_today: data?.date
       ? calculateDaysBetween(data.date, todayFormatted)
       : "N/A",
   };
   const handleCheckboxChange = (id: string, checked: boolean) => {
     if (checked) {
-      // 📌 Agregar el documento a newPayment si está marcado
       setNewPayment((prev: any[]) => [...prev, documentDetails]);
     } else {
-      // 📌 Eliminar el documento de newPayment si se desmarca
       setNewPayment((prev: any[]) =>
         prev.filter((doc) => doc.document_id !== id)
       );
     }
-
-    // 📌 Si existe la función de selección de filas, también la ejecutamos
     onRowSelect?.(id, checked);
   };
 
@@ -152,8 +145,7 @@ export function DocumentsView({
               <div className="flex flex-col">
                 <span className="text-gray-200 font-medium">{data.number}</span>
                 <span className="text-sm text-gray-400">
-                  {formatDate(data.date)} - Vto:{" "}
-                  {formatDate(data.expiration_date)}
+                  {formatDate(data.date)} - {t("document.vto")} {formatDate(data.expiration_date)}
                 </span>
               </div>
             </div>
@@ -168,24 +160,24 @@ export function DocumentsView({
               <div className="flex flex-col gap-4 text-sm">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Comprobante</span>
+                    <span className="text-gray-400">{t("document.comprobante")}</span>
                     <span className="text-gray-200">{data.number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Condición de Pago</span>
+                    <span className="text-gray-400">{t("document.condicionPago")}</span>
                     <span className="text-gray-200">
-                      {paymentsConditionsData?.name}
+                      {paymentsConditionsData?.name || t("document.noEspecificado")}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Importe</span>
+                    <span className="text-gray-400">{t("document.importe")}</span>
                     <span className="text-gray-200">
                       {formatPriceWithCurrency(parseInt(data.amount))}
                     </span>
                   </div>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Importe</span>
+                  <span className="text-gray-400">{t("document.importe")}</span>
                   <span className="text-gray-200">
                     {formatPriceWithCurrency(
                       parseInt(customerInformation.document_balance)
@@ -194,13 +186,13 @@ export function DocumentsView({
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Descuento</span>
+                    <span className="text-gray-400">{t("document.descuento")}</span>
                     <span className="text-gray-200">
                       {/* {data.details.descuento}% */} VER BIEN
                     </span>
                   </div>
                   <div className="flex justify-between font-medium">
-                    <span className="text-gray-400">Saldo a Pagar</span>
+                    <span className="text-gray-400">{t("document.saldoAPagar")}</span>
                     <span className="text-gray-200">
                       {formatPriceWithCurrency(
                         parseInt(customerInformation.document_balance)

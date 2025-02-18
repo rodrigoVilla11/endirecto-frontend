@@ -1,10 +1,11 @@
-"use client"
-
-import { useState } from "react"
+"use client";
+import React, { useState } from "react";
+import Input from "@/app/components/components/Input";
+import { useTranslation } from "react-i18next";
 
 interface CommentsInputProps {
-  comments: string
-  setComments: (value: string) => void
+  comments: string;
+  setComments: (value: string) => void;
 }
 
 const PREDEFINED_COMMENTS = [
@@ -13,25 +14,26 @@ const PREDEFINED_COMMENTS = [
   { id: "3", text: "Requiere modificaciones menores" },
   { id: "4", text: "Rechazado - falta documentación" },
   { id: "5", text: "En proceso de validación" },
-]
+];
 
 export function CommentsView({ comments, setComments }: CommentsInputProps) {
-  const [showPredefinedComments, setShowPredefinedComments] = useState(false)
+  const { t } = useTranslation();
+  const [showPredefinedComments, setShowPredefinedComments] = useState(false);
 
   const addPredefinedComment = (text: string) => {
-    const newComment = comments ? `${comments}\n${text}` : text
-    setComments(newComment)
-  }
+    const newComment = comments ? `${comments}\n${text}` : text;
+    setComments(newComment);
+  };
 
   return (
     <div className="space-y-4">
-      {/* Comentarios Predefinidos */}
+      {/* Predefined Comments Section */}
       <div className="border-b border-zinc-800">
         <button
           onClick={() => setShowPredefinedComments(!showPredefinedComments)}
           className="w-full p-4 flex justify-between items-center text-white"
         >
-          <span>Comentarios Predefinidos</span>
+          <span>{t("comments.predefinedTitle")}</span>
           <span>{showPredefinedComments ? "▼" : "▶"}</span>
         </button>
         {showPredefinedComments && (
@@ -49,16 +51,16 @@ export function CommentsView({ comments, setComments }: CommentsInputProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-zinc-400">No hay comentarios predefinidos</p>
+              <p className="text-zinc-400">{t("comments.noPredefined")}</p>
             )}
           </div>
         )}
       </div>
 
-      {/* Área de texto para comentarios */}
+      {/* Comments Textarea */}
       <div className="space-y-2">
         <label htmlFor="comments" className="block text-sm text-gray-400">
-          Observaciones
+          {t("comments.label")}
         </label>
         <textarea
           id="comments"
@@ -66,17 +68,19 @@ export function CommentsView({ comments, setComments }: CommentsInputProps) {
           onChange={(e) => setComments(e.target.value)}
           rows={4}
           className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          placeholder="Escriba aquí sus observaciones..."
+          placeholder={t("comments.placeholder")}
         />
       </div>
 
-      {/* Botón para limpiar */}
+      {/* Clear Button */}
       {comments && (
-        <button onClick={() => setComments("")} className="text-sm text-gray-400 hover:text-gray-300 transition-colors">
-          Limpiar comentarios
+        <button
+          onClick={() => setComments("")}
+          className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+        >
+          {t("comments.clearButton")}
         </button>
       )}
     </div>
-  )
+  );
 }
-

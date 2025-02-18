@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const Unauthorized = () => {
-  return <div>No tienes acceso a esta página.</div>;
+  const { t } = useTranslation();
+  return <div>{t("unauthorized.message", "No tienes acceso a esta página.")}</div>;
 };
 
 export default Unauthorized;

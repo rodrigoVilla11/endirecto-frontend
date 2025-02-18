@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUpdateCustomerMutation } from '@/redux/services/customersApi';
+import { useTranslation } from 'react-i18next';
 
 type ResetPasswordProps = {
   customerId: string;
@@ -7,6 +8,7 @@ type ResetPasswordProps = {
 };
 
 const ResetPassword = ({ customerId, closeModal }: ResetPasswordProps) => {
+  const { t } = useTranslation();
   const [updateCustomer, { isLoading, isSuccess, isError }] = useUpdateCustomerMutation();
   const [password, setPassword] = useState('');
 
@@ -20,19 +22,21 @@ const ResetPassword = ({ customerId, closeModal }: ResetPasswordProps) => {
       await updateCustomer(payload).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error updating password:', err);
+      console.error(t("resetPassword.errorUpdating"), err);
     }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4 font-semibold">Reset Password</h2>
-      <p>Enter a new password for the user:</p>
+      <h2 className="text-lg mb-4 font-semibold">
+        {t("resetPassword.title")}
+      </h2>
+      <p>{t("resetPassword.description")}</p>
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="New password"
+        placeholder={t("resetPassword.placeholder")}
         className="w-full mt-4 p-2 border border-gray-300 rounded-md"
       />
       <div className="flex justify-end gap-4 mt-6">
@@ -41,7 +45,7 @@ const ResetPassword = ({ customerId, closeModal }: ResetPasswordProps) => {
           onClick={closeModal}
           className="bg-gray-400 rounded-md px-4 py-2 text-white hover:bg-gray-500"
         >
-          Cancel
+          {t("resetPassword.cancel")}
         </button>
         <button
           type="button"
@@ -51,11 +55,11 @@ const ResetPassword = ({ customerId, closeModal }: ResetPasswordProps) => {
           }`}
           disabled={isLoading}
         >
-          {isLoading ? 'Updating...' : 'Update Password'}
+          {isLoading ? t("resetPassword.updating") : t("resetPassword.updatePassword")}
         </button>
       </div>
-      {isSuccess && <p className="text-green-500 mt-4">Password updated successfully!</p>}
-      {isError && <p className="text-red-500 mt-4">Error updating password. Please try again.</p>}
+      {isSuccess && <p className="text-green-500 mt-4">{t("resetPassword.success")}</p>}
+      {isError && <p className="text-red-500 mt-4">{t("resetPassword.error")}</p>}
     </div>
   );
 };

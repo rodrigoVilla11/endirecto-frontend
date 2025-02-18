@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDeleteReclaimMutation } from '@/redux/services/reclaimsApi';
+import { useTranslation } from "react-i18next";
 
 type DeleteReclaimProps = {
   reclaimId: string;
@@ -7,6 +8,7 @@ type DeleteReclaimProps = {
 };
 
 const DeleteReclaim = ({ reclaimId, closeModal }: DeleteReclaimProps) => {
+  const { t } = useTranslation();
   const [deleteReclaim, { isLoading, isSuccess, isError }] = useDeleteReclaimMutation();
 
   const handleDelete = async () => {
@@ -14,21 +16,21 @@ const DeleteReclaim = ({ reclaimId, closeModal }: DeleteReclaimProps) => {
       await deleteReclaim(reclaimId).unwrap();
       closeModal();
     } catch (err) {
-      console.error('Error deleting RECLAIM:', err);
+      console.error(t("deleteReclaim.errorDeleting"), err);
     }
   };
 
   return (
       <div className="p-4">
-        <h2 className="text-lg mb-4">Confirm Delete</h2>
-        <p>Are you sure you want to delete this RECLAIM?</p>
+        <h2 className="text-lg mb-4">{t("deleteReclaim.title")}</h2>
+        <p>{t("deleteReclaim.confirmMessage")}</p>
         <div className="flex justify-end gap-4 mt-4">
           <button
             type="button"
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white"
           >
-            Cancel
+            {t("deleteReclaim.cancel")}
           </button>
           <button
             type="button"
@@ -36,10 +38,10 @@ const DeleteReclaim = ({ reclaimId, closeModal }: DeleteReclaimProps) => {
             className={`rounded-md p-2 text-white ${isLoading ? 'bg-gray-500' : 'bg-red-600'}`}
             disabled={isLoading}
           >
-            {isLoading ? 'Deleting...' : 'Delete'}
+            {isLoading ? t("deleteReclaim.deleting") : t("deleteReclaim.delete")}
           </button>
-          {isSuccess && <p className="text-green-500">RECLAIM deleted successfully!</p>}
-          {isError && <p className="text-red-500">Error deleting RECLAIM</p>}
+          {isSuccess && <p className="text-green-500">{t("deleteReclaim.success")}</p>}
+          {isError && <p className="text-red-500">{t("deleteReclaim.error")}</p>}
         </div>
       </div>
   );

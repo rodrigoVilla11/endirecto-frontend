@@ -1,5 +1,7 @@
-import { Key } from "lucide-react";
+"use client";
 import React, { useState } from "react";
+import { Key } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Customer {
   id: number;
@@ -13,6 +15,7 @@ interface Customer {
   shopping_cart: any;
   gps?: string;
 }
+
 interface DetailRowProps {
   label: string;
   value: any;
@@ -37,6 +40,7 @@ function DetailRow({
 }
 
 function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
+  const { t } = useTranslation();
   // Controla la apertura/cierre del modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Guarda el cliente seleccionado para mostrar sus datos en el modal
@@ -88,14 +92,11 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
               <svg
                 onClick={() => handleArrowClick(customer)}
                 xmlns="http://www.w3.org/2000/svg"
-                className={`h-4 w-4 text-gray-400 flex-shrink-0 cursor-pointer
-                  transition-transform duration-200
-                  ${
-                    // Solo rota si el modal está abierto y el cliente actual es el seleccionado
-                    selectedCustomer?.id === customer.id && isModalOpen
-                      ? "rotate-90"
-                      : ""
-                  }`}
+                className={`h-4 w-4 text-gray-400 flex-shrink-0 cursor-pointer transition-transform duration-200 ${
+                  selectedCustomer?.id === customer.id && isModalOpen
+                    ? "rotate-90"
+                    : ""
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -115,7 +116,9 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
         {!filteredItems?.length && (
           <div className="p-6 text-center">
             <div className="text-gray-400 text-3xl mb-2">🧑💼</div>
-            <p className="text-sm text-gray-500">No se encontraron clientes</p>
+            <p className="text-sm text-gray-500">
+              {t("customerListMobile.noCustomersFound")}
+            </p>
           </div>
         )}
       </div>
@@ -133,46 +136,47 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-white">
                 {selectedCustomer.name}
-              </h2>{" "}
-                 
-                <button className="p-2 bg-red-500 rounded-md text-white"  onClick={() => handleSelectCustomer(selectedCustomer.id)}>
+              </h2>
+              <button
+                className="p-2 bg-red-500 rounded-md text-white"
+                onClick={() => handleSelectCustomer(selectedCustomer.id)}
+              >
                 <Key />
               </button>
             </div>
 
             <div className="space-y-3">
-              <DetailRow label="ID" value={selectedCustomer.id} />
-              <DetailRow label="Dirección" value={selectedCustomer.address} />
-              <DetailRow label="Localidad" value={selectedCustomer.locality} />
-              <DetailRow label="Provincia" value={selectedCustomer.state} />
+              <DetailRow label={t("customerListMobile.id")} value={selectedCustomer.id} />
+              <DetailRow label={t("customerListMobile.address")} value={selectedCustomer.address} />
+              <DetailRow label={t("customerListMobile.locality")} value={selectedCustomer.locality} />
+              <DetailRow label={t("customerListMobile.state")} value={selectedCustomer.state} />
               <DetailRow
-                label="Condición de Pago"
+                label={t("customerListMobile.paymentCondition")}
                 value={selectedCustomer.payment_condition_id}
                 className="border-b border-zinc-800 pb-3"
               />
               <DetailRow
-                label="Estado de Cuenta"
+                label={t("customerListMobile.accountStatus")}
                 value={selectedCustomer.status_account}
                 valueClassName="text-green-400"
               />
               <DetailRow
-                label="Deuda Vencida"
+                label={t("customerListMobile.expiredDebt")}
                 value={selectedCustomer.status_account_expired}
                 valueClassName="text-red-400"
               />
               <DetailRow
-                label="Art. en Carrito"
+                label={t("customerListMobile.cartItems")}
                 value={selectedCustomer.shopping_cart.length.toString()}
               />
-              <DetailRow label="GPS" value={selectedCustomer.gps} />
+              <DetailRow label={t("customerListMobile.gps")} value={selectedCustomer.gps} />
             </div>
 
             <button
               onClick={() => setIsModalOpen(false)}
-              className="mt-6 w-full bg-zinc-800 text-white py-2.5 px-4 rounded-md
-                hover:bg-zinc-700 transition-colors font-medium"
+              className="mt-6 w-full bg-zinc-800 text-white py-2.5 px-4 rounded-md hover:bg-zinc-700 transition-colors font-medium"
             >
-              Cerrar
+              {t("customerListMobile.close")}
             </button>
           </div>
         </div>

@@ -7,27 +7,24 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { AiOutlineDownload } from "react-icons/ai";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import { FaPencil, FaTrashCan } from "react-icons/fa6";
-import {
-  Status,
-  useCountReclaimsQuery,
-  useGetReclaimsPagQuery,
-  Valid,
-} from "@/redux/services/reclaimsApi";
-import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import { useGetUsersQuery } from "@/redux/services/usersApi";
-import Modal from "../components/components/Modal";
+import DatePicker from "react-datepicker";
+import PrivateRoute from "../context/PrivateRoutes";
 import CreateReclaimComponent from "./CreateReclaim";
 import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
-import PrivateRoute from "../context/PrivateRoutes";
-import DatePicker from "react-datepicker";
+import { useGetReclaimsPagQuery, useCountReclaimsQuery, Status } from "@/redux/services/reclaimsApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { useClient } from "../context/ClientContext";
 import debounce from "../context/debounce";
+import { useTranslation } from "react-i18next";
+import Modal from "../components/components/Modal";
 
 const ITEMS_PER_PAGE = 20;
 
-const Page = () => {
+const pageReclaims = () => {
+  const { t } = useTranslation();
   // Basic states
   const [page, setPage] = useState(1);
   const [brands, setBrands] = useState<any[]>([]);
@@ -65,12 +62,8 @@ const Page = () => {
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
-    startDate: searchParams.startDate
-      ? searchParams.startDate.toISOString()
-      : undefined,
-    endDate: searchParams.endDate
-      ? searchParams.endDate.toISOString()
-      : undefined,
+    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
+    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
     valid: searchParams.valid,
     status: searchParams.status,
     document_type_number: searchParams.document_type_number,
@@ -105,22 +98,19 @@ const Page = () => {
         try {
           const result = await refetch().unwrap();
           const newBrands = result || [];
-
           if (page === 1) {
             setBrands(newBrands);
           } else {
             setBrands((prev) => [...prev, ...newBrands]);
           }
-
           setHasMore(newBrands.length === ITEMS_PER_PAGE);
         } catch (error) {
-          console.error("Error loading brands:", error);
+          console.error(t("pageReclaims.errorLoadingBrands"), error);
         } finally {
           setIsLoading(false);
         }
       }
     };
-
     loadBrands();
   }, [page, searchQuery, sortQuery, searchParams]);
 
@@ -135,12 +125,10 @@ const Page = () => {
       },
       { threshold: 0.5 }
     );
-
     const currentObserver = observerRef.current;
     if (currentObserver) {
       observer.observe(currentObserver);
     }
-
     return () => {
       if (currentObserver) {
         observer.unobserve(currentObserver);
@@ -178,16 +166,13 @@ const Page = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
         // Alternar entre ascendente y descendente
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setBrands([]);
@@ -205,12 +190,9 @@ const Page = () => {
   };
 
   const tableData = brands?.map((reclaim) => {
-    const branch = branchData?.find((data) => data.id == reclaim.branch_id);
-    const customer = customerData?.find(
-      (data) => data.id == reclaim.customer_id
-    );
-    const user = userDatas?.find((data) => data._id == reclaim.user_id);
-
+    const branch = branchData?.find((d) => d.id == reclaim.branch_id);
+    const customer = customerData?.find((d) => d.id == reclaim.customer_id);
+    const user = userDatas?.find((d) => d._id == reclaim.user_id);
     return {
       key: reclaim._id,
       info: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -245,14 +227,14 @@ const Page = () => {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
       key: "info",
     },
-    { name: "Number", key: "number" , important: true},
-    { name: "Status", key: "status", important: true },
-    { name: "Type", key: "type", important: true },
-    { name: "Description", key: "description" },
-    { name: "Customer", key: "customer", important: true },
-    { name: "User", key: "user" },
-    { name: "Branch", key: "branch" },
-    { name: "Date", key: "date" },
+    { name: t("pageReclaims.table.number"), key: "number", important: true },
+    { name: t("pageReclaims.table.status"), key: "status", important: true },
+    { name: t("pageReclaims.table.type"), key: "type", important: true },
+    { name: t("pageReclaims.table.description"), key: "description" },
+    { name: t("pageReclaims.table.customer"), key: "customer", important: true },
+    { name: t("pageReclaims.table.user"), key: "user" },
+    { name: t("pageReclaims.table.branch"), key: "branch" },
+    { name: t("pageReclaims.table.date"), key: "date" },
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
@@ -262,14 +244,14 @@ const Page = () => {
         ? [
             {
               logo: <FaPlus />,
-              title: "New",
+              title: t("pageReclaims.header.new"),
               onClick: openCreateModal,
             },
           ]
         : []),
       {
         logo: <AiOutlineDownload />,
-        title: "Download",
+        title: t("pageReclaims.header.download"),
       },
     ],
     filters: [
@@ -280,7 +262,7 @@ const Page = () => {
             onChange={(date) =>
               setSearchParams({ ...searchParams, startDate: date })
             }
-            placeholderText="Date From"
+            placeholderText={t("pageReclaims.header.dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
@@ -293,7 +275,7 @@ const Page = () => {
             onChange={(date) =>
               setSearchParams({ ...searchParams, endDate: date })
             }
-            placeholderText="Date From"
+            placeholderText={t("pageReclaims.header.dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
@@ -307,7 +289,7 @@ const Page = () => {
               setSearchParams({ ...searchParams, status: e.target.value })
             }
           >
-            <option value="">Status...</option>
+            <option value="">{t("pageReclaims.header.statusPlaceholder")}</option>
             {Object.values(Status).map((st) => (
               <option key={st} value={st}>
                 {st}
@@ -316,28 +298,11 @@ const Page = () => {
           </select>
         ),
       },
-      // {
-      //   content: (
-      //     <select
-      //       value={searchParams.valid}
-      //       onChange={(e) =>
-      //         setSearchParams({ ...searchParams, valid: e.target.value })
-      //       }
-      //     >
-      //       <option value="">Valid...</option>
-      //       {Object.values(Valid).map((type) => (
-      //         <option key={type} value={type}>
-      //           {type}
-      //         </option>
-      //       ))}
-      //     </select>
-      //   ),
-      // },
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("pageReclaims.header.searchPlaceholder")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -348,7 +313,7 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={handleResetSearch}
-                aria-label="Clear search"
+                aria-label={t("pageReclaims.header.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
@@ -359,7 +324,7 @@ const Page = () => {
       {
         content: (
           <Input
-            placeholder={"Number..."}
+            placeholder={t("pageReclaims.header.numberPlaceholder")}
             value={searchParams.document_type_number}
             onChange={(e: any) =>
               setSearchParams((prev) => ({
@@ -376,7 +341,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${countReclaimsData || 0} Results`,
+    results: t("pageReclaims.header.results", { count: countReclaimsData || 0 }),
   };
   if (isQueryLoading && brands.length === 0) {
     return (
@@ -385,15 +350,13 @@ const Page = () => {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading brands. Please try again later.
+        {t("pageReclaims.errorLoadingBrands")}
       </div>
     );
   }
-
   return (
     <PrivateRoute
       requiredRoles={[
@@ -405,14 +368,14 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">RECLAIMS</h3>
+        <h3 className="font-bold p-4">{t("pageReclaims.title")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && brands.length === 0 ? (
           <div ref={loadingRef} className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : brands.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No reclaims found</div>
+          <div className="text-center py-8 text-gray-500">{t("pageReclaims.noReclaimsFound")}</div>
         ) : (
           <>
             <Table
@@ -430,11 +393,9 @@ const Page = () => {
           </>
         )}
         <div ref={observerRef} className="h-10" />
-
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateReclaimComponent closeModal={closeCreateModal} />
         </Modal>
-
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentReclaimId && (
             <UpdateReclaimComponent
@@ -443,17 +404,15 @@ const Page = () => {
             />
           )}
         </Modal>
-
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
           <DeleteReclaim
             reclaimId={currentReclaimId || ""}
             closeModal={closeDeleteModal}
           />
         </Modal>
-
       </div>
     </PrivateRoute>
   );
 };
 
-export default Page;
+export default pageReclaims;

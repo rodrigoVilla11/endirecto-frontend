@@ -1,7 +1,7 @@
-// MapModal.tsx
 "use client";
 import React, { useState } from "react";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { useTranslation } from "react-i18next";
 
 type Customer = {
   id: string;
@@ -14,10 +14,11 @@ type MapModalProps = {
 };
 
 const MapModal: React.FC<MapModalProps> = ({ customers, onClose }) => {
+  const { t } = useTranslation();
   const [mapLoaded, setMapLoaded] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return <div>Error: No se ha configurado la API Key de Google Maps.</div>;
+    return <div>{t("mapModal.noApiKey")}</div>;
   }
 
   // Filtrar clientes con datos de GPS válidos y mapearlos a markers
@@ -60,7 +61,7 @@ const MapModal: React.FC<MapModalProps> = ({ customers, onClose }) => {
           onClick={onClose}
           className="absolute top-2 right-2 bg-gray-400 rounded-md px-4 py-2 text-white hover:bg-gray-500"
         >
-          Close
+          {t("mapModal.close")}
         </button>
       </div>
     </LoadScript>

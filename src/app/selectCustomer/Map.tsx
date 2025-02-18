@@ -1,8 +1,8 @@
-// MapComponent.tsx
 "use client";
 import React from "react";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useTranslation } from "react-i18next";
 
 type MapComponentProps = {
   currentCustomerId: string;
@@ -10,37 +10,37 @@ type MapComponentProps = {
 };
 
 const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeModal }) => {
+  const { t } = useTranslation();
   const { data: customer, error, isLoading } = useGetCustomerByIdQuery(
     { id: currentCustomerId || "" },
     { refetchOnMountOrArgChange: true }
   );
   
-
-  if (isLoading) return <div>Cargando mapa...</div>;
-  if (error) return <div>Error al obtener los datos del cliente.</div>;
+  if (isLoading) return <div>{t("map.loading")}</div>;
+  if (error) return <div>{t("map.errorLoadingCustomer")}</div>;
 
   const gps = customer?.gps;
-  if (!gps) return <div>No se han proporcionado datos de GPS</div>;
+  if (!gps) return <div>{t("map.noGPSData")}</div>;
 
   const parts = gps.split(",").map((part) => part.trim());
   if (parts.length !== 2) {
-    return <div>El formato del GPS es inválido. Debe ser lat, lon.</div>;
+    return <div>{t("map.invalidGPSFormat")}</div>;
   }
   const lat = parseFloat(parts[0]);
   const lng = parseFloat(parts[1]);
   if (isNaN(lat) || isNaN(lng)) {
-    return <div>Los valores de latitud y longitud deben ser números válidos.</div>;
+    return <div>{t("map.invalidCoordinates")}</div>;
   }
   const center = { lat, lng };
   const containerStyle = { width: "600px", height: "300px" };
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return <div>Error: No se ha configurado la API Key de Google Maps.</div>;
+    return <div>{t("map.noApiKey")}</div>;
   }
 
   return (
-    <LoadScript googleMapsApiKey={apiKey}  key={currentCustomerId}>
+    <LoadScript googleMapsApiKey={apiKey} key={currentCustomerId}>
       <div className="relative">
         <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={15}>
           {/* Agregamos el Marker para mostrar el pin */}

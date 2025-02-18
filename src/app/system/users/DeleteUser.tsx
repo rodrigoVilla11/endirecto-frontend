@@ -1,5 +1,6 @@
 import { useDeleteUserMutation } from "@/redux/services/usersApi";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 type DeleteUserProps = {
   userId: string;
@@ -7,6 +8,7 @@ type DeleteUserProps = {
 };
 
 const DeleteUserComponent = ({ userId, closeModal }: DeleteUserProps) => {
+  const { t } = useTranslation();
   const [deleteUser, { isLoading, isSuccess, isError }] =
     useDeleteUserMutation();
 
@@ -15,21 +17,21 @@ const DeleteUserComponent = ({ userId, closeModal }: DeleteUserProps) => {
       await deleteUser(userId).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error deleting User:", err);
+      console.error(t("deleteUser.errorDeletingUser"), err);
     }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4">Confirm Delete</h2>
-      <p>Are you sure you want to delete this User?</p>
+      <h2 className="text-lg mb-4">{t("deleteUser.title")}</h2>
+      <p>{t("deleteUser.confirmMessage")}</p>
       <div className="flex justify-end gap-4 mt-4">
         <button
           type="button"
           onClick={closeModal}
           className="bg-gray-400 rounded-md p-2 text-white"
         >
-          Cancel
+          {t("deleteUser.cancel")}
         </button>
         <button
           type="button"
@@ -39,12 +41,14 @@ const DeleteUserComponent = ({ userId, closeModal }: DeleteUserProps) => {
           }`}
           disabled={isLoading}
         >
-          {isLoading ? "Deleting..." : "Delete"}
+          {isLoading ? t("deleteUser.deleting") : t("deleteUser.delete")}
         </button>
         {isSuccess && (
-          <p className="text-green-500">User deleted successfully!</p>
+          <p className="text-green-500">{t("deleteUser.success")}</p>
         )}
-        {isError && <p className="text-red-500">Error deleting User</p>}
+        {isError && (
+          <p className="text-red-500">{t("deleteUser.error")}</p>
+        )}
       </div>
     </div>
   );

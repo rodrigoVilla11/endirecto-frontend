@@ -1,8 +1,6 @@
 "use client";
-import {
-  useGetAllArticlesQuery,
-  useGetArticlesQuery,
-} from "@/redux/services/articlesApi";
+import React, { useState } from "react";
+import { useGetAllArticlesQuery, useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import {
@@ -11,13 +9,14 @@ import {
   Valid,
 } from "@/redux/services/reclaimsApi";
 import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
-import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { format } from "date-fns";
 import { useAuth } from "../context/AuthContext";
 import { useClient } from "../context/ClientContext";
+import { useTranslation } from "react-i18next";
 
 const CreateReclaimComponent = ({ closeModal }: any) => {
+  const { t } = useTranslation();
   const { userData } = useAuth();
   const { selectedClientId } = useClient();
 
@@ -31,7 +30,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     date: Date.now(),
     status: Status.PENDING,
     cause: "",
-    user_id: userData?._id
+    user_id: userData?._id,
   });
 
   const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } =
@@ -43,7 +42,6 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
   const { data: articlesData, isLoading: isLoadingArticles } =
     useGetAllArticlesQuery(null);
 
-    
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -57,6 +55,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
 
   const [createReclaim, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateReclaimMutation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -68,14 +67,14 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
       await createReclaim(formattedData).unwrap();
       closeModal();
     } catch (err) {
-      console.error("Error al crear la RECLAIM:", err);
+      console.error(t("createReclaim.errorCreating"), err);
     }
   };
 
   return (
     <div>
       <div className="flex justify-between">
-        <h2 className="text-lg mb-4">New RECLAIM</h2>
+        <h2 className="text-lg mb-4">{t("createReclaim.title")}</h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -85,14 +84,14 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
       </div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <label className="flex flex-col">
-          Reclaim Type:
+          {t("createReclaim.reclaimType")}:
           <select
             name="reclaims_type_id"
             value={form.reclaims_type_id}
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">Select Reclaim Type</option>
+            <option value="">{t("createReclaim.selectReclaimType")}</option>
             {!isLoadingReclaimsTypes &&
               reclaimsTypesData?.map(
                 (reclaimsTypes: { id: string; name: string }) => (
@@ -105,36 +104,25 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
         </label>
 
         <label className="flex flex-col">
-          Description:
+          {t("createReclaim.description")}:
           <textarea
             name="description"
             value={form.description}
-            placeholder="New Description"
+            placeholder={t("createReclaim.newDescription")}
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           />
         </label>
-        {/* 
-        <label className="flex flex-col">
-          Cause:
-          <textarea
-            name="cause"
-            value={form.cause}
-            placeholder="New cause"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          />
-        </label> */}
 
         <label className="flex flex-col">
-          Article:
+          {t("createReclaim.article")}:
           <select
             name="article_id"
             value={form.article_id}
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">Select Article</option>
+            <option value="">{t("createReclaim.selectArticle")}</option>
             {!isLoadingArticles &&
               articlesData?.map((article: { id: string; name: string }) => (
                 <option key={article.id} value={article.id}>
@@ -145,14 +133,14 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
         </label>
 
         <label className="flex flex-col">
-          Branch:
+          {t("createReclaim.branch")}:
           <select
             name="branch_id"
             value={form.branch_id}
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">Select Branch</option>
+            <option value="">{t("createReclaim.selectBranch")}</option>
             {!isLoadingBranchs &&
               branchsData?.map((branch: { id: string; name: string }) => (
                 <option key={branch.id} value={branch.id}>
@@ -162,24 +150,13 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
           </select>
         </label>
 
-        {/* <label className="flex flex-col">
-          Files:
-          <textarea
-            name="description"
-            value={form.}
-            placeholder="New Description"
-            onChange={handleChange}
-            className="border border-black rounded-md p-2"
-          />
-        </label> */}
-
         <div className="flex justify-end gap-4 mt-4">
           <button
             type="button"
             onClick={closeModal}
             className="bg-gray-400 rounded-md p-2 text-white"
           >
-            Cancel
+            {t("createReclaim.cancel")}
           </button>
           <button
             type="submit"
@@ -188,14 +165,16 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             }`}
             disabled={isLoadingCreate}
           >
-            {isLoadingCreate ? "Saving..." : "Save"}
+            {isLoadingCreate ? t("createReclaim.saving") : t("createReclaim.save")}
           </button>
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">RECLAIM created successfully!</p>
+          <p className="text-green-500">{t("createReclaim.success")}</p>
         )}
-        {isError && <p className="text-red-500">Error creating RECLAIM</p>}
+        {isError && (
+          <p className="text-red-500">{t("createReclaim.error")}</p>
+        )}
       </form>
     </div>
   );

@@ -1,5 +1,4 @@
 "use client";
-
 import {
   ActionType,
   StatusType,
@@ -11,6 +10,7 @@ import { format } from "date-fns";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetCrmPrenotesQuery } from "@/redux/services/crmPrenotes";
+import { useTranslation } from "react-i18next";
 
 interface VisitModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface VisitModalProps {
 }
 
 export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
+  const { t } = useTranslation();
   // Mutaciones para crear CRM y verificar insitu
   const [createCrm] = useCreateCrmMutation();
   const [insituVisit] = useCheckInsituVisitMutation();
@@ -123,7 +124,9 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             <button onClick={onClose} className="text-white">
               ←
             </button>
-            <h2 className="text-xl font-semibold text-white">Visita</h2>
+            <h2 className="text-xl font-semibold text-white">
+              {t("visitModal.headerTitle")}
+            </h2>
           </div>
           <button className="text-white">ℹ️</button>
         </div>
@@ -131,25 +134,31 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label="Fecha" value={currentDate} />
+            <InfoRow label={t("visitModal.info.date")} value={currentDate} />
             <InfoRow
               label={
                 <div
                   className="flex items-center gap-2"
                   onClick={handleGetLocation}
                 >
-                  GPS
+                  {t("visitModal.info.gps")} 
                   <span className="text-emerald-500">📍</span>
                   <span className="text-white">🌐</span>
                 </div>
               }
               value={
                 insitu === null ? (
-                  <span className="text-gray-500">Esperando ubicación...</span>
+                  <span className="text-gray-500">
+                    {t("visitModal.info.waitingLocation")}
+                  </span>
                 ) : insitu ? (
-                  <span className="text-green-500">Insitu ✅</span>
+                  <span className="text-green-500">
+                    {t("visitModal.info.insitu")}
+                  </span>
                 ) : (
-                  <span className="text-red-500">No Insitu ❌</span>
+                  <span className="text-red-500">
+                    {t("visitModal.info.notInsitu")}
+                  </span>
                 )
               }
             />
@@ -158,17 +167,23 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
           {/* Sección de Comentarios Predefinidos */}
           <div className="border-b border-zinc-800">
             <button
-              onClick={() => setShowPredefinedComments(!showPredefinedComments)}
+              onClick={() =>
+                setShowPredefinedComments(!showPredefinedComments)
+              }
               className="w-full p-4 flex justify-between items-center text-white"
             >
-              <span>Comentarios Predefinidos</span>
+              <span>{t("visitModal.predefinedComments")}</span>
               <span>{showPredefinedComments ? "▼" : "▶"}</span>
             </button>
             {showPredefinedComments && (
               <>
                 {data &&
                   data.map((item) => (
-                    <div className="p-4 bg-zinc-800" key={item.id} onClick={() => setObservations(item.name)}>
+                    <div
+                      className="p-4 bg-zinc-800"
+                      key={item.id}
+                      onClick={() => setObservations(item.name)}
+                    >
                       <p className="text-zinc-400">{item.name}</p>
                     </div>
                   ))}
@@ -178,13 +193,15 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
           {/* Observaciones */}
           <div className="p-4">
-            <label className="block text-white mb-2">Observaciones</label>
+            <label className="block text-white mb-2">
+              {t("visitModal.observations.label")}
+            </label>
             <textarea
               value={observations}
               onChange={(e) => setObservations(e.target.value)}
               className="w-full h-32 p-3 bg-zinc-800 text-white rounded-md border border-zinc-700 
                          focus:outline-none focus:border-blue-500 resize-none"
-              placeholder="Ingrese sus observaciones..."
+              placeholder={t("visitModal.observations.placeholder")}
             />
           </div>
         </div>
@@ -195,7 +212,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             onClick={handleSubmit}
             className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
           >
-            ENVIAR
+            {t("visitModal.send")}
           </button>
         </div>
       </div>

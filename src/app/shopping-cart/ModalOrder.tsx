@@ -1,7 +1,6 @@
 "use client";
-
+import React, { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
-import { useState, useEffect } from "react";
 import { CiGps } from "react-icons/ci";
 import { useClient } from "../context/ClientContext";
 import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi";
@@ -10,6 +9,7 @@ import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/custo
 import { useCreateOrderMutation } from "@/redux/services/ordersApi";
 import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 
 interface OrderItem {
   id: string;
@@ -26,7 +26,6 @@ interface OrderConfirmationProps {
   order: OrderItem[];
 }
 
-// Si necesitas definir la estructura de Transaction, inclúyela o extiéndela
 interface TransactionDetails {
   quantity: number;
   article: {
@@ -73,12 +72,13 @@ export default function OrderConfirmation({
   order,
   totalFormatted,
 }: OrderConfirmationProps) {
+  const { t } = useTranslation();
   const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
-  const [checkInsituVisit] = useCheckInsituVisitMutation(); // Hook para verificar insitu
+  const [checkInsituVisit] = useCheckInsituVisitMutation(); // Para verificar si está insitu
   const { selectedClientId } = useClient();
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
-  // Estados para GPS, Insitu y el tick de éxito
+  // Estados para GPS, insitu y tick de éxito
   const [gps, setGPS] = useState("");
   const [insitu, setInsitu] = useState<boolean | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -88,28 +88,12 @@ export default function OrderConfirmation({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Consultas para obtener datos del cliente, transport y condición de pago
-  const {
-    data: customer,
-    error: customerError,
-    isLoading: isCustomerLoading,
-  } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
-
-  const {
-    data: customerTransport,
-    error: customerTransportError,
-    isLoading: isCustomerTransportLoading,
-  } = useGetCustomerTransportByCustomerIdQuery({ id: selectedClientId || "" });
-
-  const {
-    data: paymentsConditionsData,
-    error: paymentError,
-    isLoading: isPaymentLoading,
-  } = useGetPaymentConditionByIdQuery({
+  const { data: customer } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
+  const { data: customerTransport } = useGetCustomerTransportByCustomerIdQuery({ id: selectedClientId || "" });
+  const { data: paymentsConditionsData } = useGetPaymentConditionByIdQuery({
     id: customer?.payment_condition_id || "",
   });
 
-  // Estado para la transacción (pedido)
   const [transaction, setTransaction] = useState<Transaction>({
     status: "sended",
     customer: { id: selectedClientId },
@@ -129,7 +113,6 @@ export default function OrderConfirmation({
     insitu: false,
   });
 
-  // Mapea los detalles del pedido
   useEffect(() => {
     if (order.length > 0) {
       const mappedDetails = order.map((item) => ({
@@ -141,7 +124,6 @@ export default function OrderConfirmation({
         branch: { id: "001" },
         id: item.id,
       }));
-
       setTransaction((prev) => ({
         ...prev,
         details: mappedDetails,
@@ -149,68 +131,55 @@ export default function OrderConfirmation({
     }
   }, [order]);
 
-  // Actualiza las observaciones en la transacción cuando cambian
-  const handleObservationChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
+  const handleObservationChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newNotes = e.target.value;
     setObservations(newNotes);
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
   };
 
-  // Función para obtener la ubicación y verificar si está dentro del rango (insitu)
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      console.error("La geolocalización no es soportada por este navegador.");
+      console.error(t("orderConfirmation.geolocationNotSupported"));
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         const gpsStr = `${latitude}, ${longitude}`;
         setGPS(gpsStr);
-
         if (!selectedClientId) {
-          console.error("No hay cliente seleccionado.");
+          console.error(t("orderConfirmation.noCustomerSelected"));
           return;
         }
-
         try {
-          // Llamada al backend para determinar si la ubicación es insitu (dentro de 500m)
           const response = await checkInsituVisit({
             customerId: selectedClientId,
             currentLat: latitude,
             currentLon: longitude,
           }).unwrap();
-
           setInsitu(response.insitu);
-
-          // Actualiza el objeto transaction con gps e insitu
           setTransaction((prev) => ({
             ...prev,
             gps: gpsStr,
             insitu: response.insitu,
           }));
         } catch (error) {
-          console.error("Error verificando insitu:", error);
+          console.error(t("orderConfirmation.errorCheckingInsitu"), error);
         }
       },
       (error) => {
-        console.error("Error obteniendo la ubicación:", error);
+        console.error(t("orderConfirmation.errorGettingLocation"), error);
       }
     );
   };
 
   const router = useRouter();
 
-  // Función para enviar el pedido
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
-    // Actualiza la transacción con las observaciones actuales
     const updatedTransaction: Transaction = {
       ...transaction,
       date: getLocalISOStringWithOffset(),
@@ -220,8 +189,6 @@ export default function OrderConfirmation({
 
     try {
       await createOrder(updatedTransaction).unwrap();
-
-      // Actualiza el shopping_cart del cliente eliminando solo los artículos incluidos en la transacción
       if (customer && customer.shopping_cart) {
         const transactionArticleIds = updatedTransaction.details.map(
           (detail) => detail.article.id
@@ -231,8 +198,6 @@ export default function OrderConfirmation({
         );
         await updateCustomer({ id: customer.id, shopping_cart: updatedShoppingCart }).unwrap();
       }
-
-      // Mostrar tick verde en el centro de la pantalla y luego cerrar el modal
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -240,9 +205,7 @@ export default function OrderConfirmation({
         window.location.href = "/dashboard";
       }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Error al procesar el pedido"
-      );
+      setError(err instanceof Error ? err.message : t("orderConfirmation.genericError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -250,27 +213,23 @@ export default function OrderConfirmation({
 
   function getLocalISOStringWithOffset(): string {
     const date = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
+    const pad = (n: number) => n.toString().padStart(2, "0");
     const year = date.getFullYear();
     const month = pad(date.getMonth() + 1);
     const day = pad(date.getDate());
     const hours = pad(date.getHours());
     const minutes = pad(date.getMinutes());
     const seconds = pad(date.getSeconds());
-    const ms = date.getMilliseconds().toString().padStart(3, '0');
-    
-    // El offset en minutos (por ejemplo, para UTC-3 obtendrás 180)
+    const ms = date.getMilliseconds().toString().padStart(3, "0");
     const offset = -date.getTimezoneOffset();
-    const sign = offset >= 0 ? '+' : '-';
+    const sign = offset >= 0 ? "+" : "-";
     const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
     const offsetMinutes = pad(Math.abs(offset) % 60);
-  
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offsetHours}:${offsetMinutes}`;
   }
-  
+
   return (
     <>
-      {/* Superposición del tick verde */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-full">
@@ -278,12 +237,11 @@ export default function OrderConfirmation({
           </div>
         </div>
       )}
-
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg w-full max-w-md">
           <div className="flex items-center justify-between p-4 border-b">
             <h2 className="text-lg font-bold text-gray-800">
-              Cierre de PEDIDO
+              {t("orderConfirmation.title")}
             </h2>
             <button
               onClick={onCancel}
@@ -293,30 +251,30 @@ export default function OrderConfirmation({
               <X className="h-6 w-6" />
             </button>
           </div>
-
           <form onSubmit={handleSubmit} className="p-4 space-y-6">
             {error && (
               <div className="p-2 bg-red-100 text-red-700 rounded-md">
                 {error}
               </div>
             )}
-
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-600 text-sm">Total Sin Impuestos</p>
+                <p className="text-gray-600 text-sm">
+                  {t("orderConfirmation.totalLabel")}
+                </p>
                 <p className="text-2xl font-semibold">{totalFormatted}</p>
               </div>
-              <p className="text-gray-600 text-sm">{itemCount} Artículos</p>
+              <p className="text-gray-600 text-sm">
+                {itemCount} {t("orderConfirmation.itemsLabel")}
+              </p>
             </div>
-
             <p className="text-xs text-gray-500 italic">
-              Atención: El pedido está sujeto a disponibilidad de stock y/o
-              cambios de precio sin previo aviso.
+              {t("orderConfirmation.notice")}
             </p>
-
-            {/* Sección para obtener y mostrar la ubicación e insitu */}
             <div className="space-y-2">
-              <p className="font-medium text-gray-700 text-sm">GPS</p>
+              <p className="font-medium text-gray-700 text-sm">
+                {t("orderConfirmation.gpsLabel")}
+              </p>
               <div className="flex items-center space-x-2 text-sm">
                 <button
                   type="button"
@@ -328,32 +286,33 @@ export default function OrderConfirmation({
                 </button>
                 <span className="text-gray-600">
                   {insitu === null
-                    ? "No verificado"
+                    ? t("orderConfirmation.notVerified")
                     : insitu
-                    ? "Insitu ✅"
-                    : "No Insitu ❌"}
+                    ? t("orderConfirmation.insitu")
+                    : t("orderConfirmation.notInsitu")}
                 </span>
               </div>
             </div>
-
             <div className="space-y-2">
               <label
                 htmlFor="observations"
                 className="block text-gray-700 text-base font-bold"
               >
-                Observaciones
+                {t("orderConfirmation.observationsLabel")}
               </label>
               <textarea
                 id="observations"
                 rows={3}
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-base"
-                placeholder="Ingrese un comentario"
+                placeholder={t("orderConfirmation.observationsPlaceholder")}
                 value={observations}
-                onChange={handleObservationChange}
+                onChange={(e) => {
+                  setObservations(e.target.value);
+                  setTransaction((prev) => ({ ...prev, notes: e.target.value }));
+                }}
                 disabled={isSubmitting}
               />
             </div>
-
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
@@ -361,19 +320,14 @@ export default function OrderConfirmation({
                 disabled={isSubmitting}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 font-bold"
               >
-                Cancelar
+                {t("orderConfirmation.cancel")}
               </button>
               <button
                 type="submit"
-                disabled={
-                  isSubmitting ||
-                  isCustomerLoading ||
-                  isPaymentLoading ||
-                  !selectedClientId
-                }
+                disabled={isSubmitting || !selectedClientId}
                 className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 font-bold"
               >
-                {isSubmitting ? "Procesando..." : "Aceptar"}
+                {isSubmitting ? t("orderConfirmation.processing") : t("orderConfirmation.accept")}
               </button>
             </div>
           </form>
@@ -383,17 +337,3 @@ export default function OrderConfirmation({
   );
 }
 
-interface InfoRowProps {
-  label: React.ReactNode;
-  value: React.ReactNode;
-  valueClassName?: string;
-}
-
-function InfoRow({ label, value, valueClassName = "text-white" }: InfoRowProps) {
-  return (
-    <div className="p-4 flex justify-between items-center border-b border-zinc-800">
-      <span className="text-zinc-400">{label}</span>
-      <span className={valueClassName}>{value}</span>
-    </div>
-  );
-}

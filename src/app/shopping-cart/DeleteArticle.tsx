@@ -1,5 +1,6 @@
 import { useUpdateCustomerMutation } from "@/redux/services/customersApi";
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 type DeleteArticleProps = {
   articleId: string;
@@ -12,6 +13,7 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
   closeModal,
   data,
 }) => {
+  const { t } = useTranslation();
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
   const [decodedArticleId, setDecodedArticleId] = useState("");
@@ -34,19 +36,19 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
       if (result) {
         closeModal();
       } else {
-        throw new Error("Failed to update shopping cart");
+        throw new Error(t("deleteArticle.errorUpdatingCart"));
       }
     } catch (err) {
-      console.error("Error deleting Article from cart:", err);
+      console.error(t("deleteArticle.errorDeleting"), err);
     }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg mb-4">Confirm Delete</h2>
-      <p>Are you sure you want to delete this Article from Shopping Cart?</p>
+      <h2 className="text-lg mb-4 font-semibold">{t("deleteArticle.title")}</h2>
+      <p>{t("deleteArticle.confirmMessage")}</p>
       <p className="mt-2 text-sm text-gray-600">
-        Article ID: {decodedArticleId}
+        {t("deleteArticle.articleId")}: {decodedArticleId}
       </p>
       <div className="flex justify-end gap-4 mt-4">
         <button
@@ -54,7 +56,7 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
           onClick={closeModal}
           className="bg-gray-400 rounded-md p-2 text-white"
         >
-          Cancel
+          {t("deleteArticle.cancel")}
         </button>
         <button
           type="button"
@@ -64,16 +66,14 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
           }`}
           disabled={isUpdating}
         >
-          {isUpdating ? "Deleting..." : "Delete"}
+          {isUpdating ? t("deleteArticle.deleting") : t("deleteArticle.delete")}
         </button>
       </div>
       {isSuccess && (
-        <p className="text-green-500 mt-2">
-          Article deleted from cart successfully!
-        </p>
+        <p className="text-green-500 mt-2">{t("deleteArticle.success")}</p>
       )}
       {isError && (
-        <p className="text-red-500 mt-2">Error deleting Article from cart</p>
+        <p className="text-red-500 mt-2">{t("deleteArticle.error")}</p>
       )}
     </div>
   );

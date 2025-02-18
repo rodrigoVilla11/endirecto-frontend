@@ -19,6 +19,7 @@ import { useState } from "react";
 import VisitModal from "./VisitModal";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import { useMobile } from "@/app/context/ResponsiveContext";
+import { useTranslation } from "react-i18next";
 
 interface CustomerDashboardProps {
   customer: {
@@ -35,6 +36,7 @@ export default function CustomerDashboard() {
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const { selectedClientId } = useClient();
   const { isMobile } = useMobile();
+  const { t } = useTranslation();
 
   const {
     data: customer,
@@ -73,7 +75,7 @@ export default function CustomerDashboard() {
   );
 
   if (!customer) {
-    return <>NOT FOUND CUSTOMER</>;
+    return <>{t("customerDashboard.notFoundCustomer")}</>;
   }
 
   const handleNewOrder = () => {
@@ -87,7 +89,9 @@ export default function CustomerDashboard() {
       <div className={`min-h-screen ${isMobile ? "bg-zinc-900" : ""} p-4 mt-10`}>
         <div className="max-w-md mx-auto space-y-4">
           {/* Customer Header */}
-          <h1 className={`text-xl font-bold  ${isMobile ? "text-white" : ""}  mb-6`}>
+          <h1
+            className={`text-xl font-bold ${isMobile ? "text-white" : ""} mb-6`}
+          >
             {customer.id} - {customer.name}
           </h1>
 
@@ -95,12 +99,12 @@ export default function CustomerDashboard() {
           <div className="grid grid-cols-3 gap-3">
             <ActionCard
               icon={<Package className="h-6 w-6 text-red-500" />}
-              title="Nuevo Pedido"
+              title={t("customerDashboard.newOrder")}
               onClick={handleNewOrder}
             />
             <ActionCard
               icon={<DollarSign className="h-6 w-6 text-red-500" />}
-              title="Nuevo Pago"
+              title={t("customerDashboard.newPayment")}
               onClick={() => setIsPaymentModalOpen(true)}
             />
 
@@ -110,7 +114,7 @@ export default function CustomerDashboard() {
             />
             <ActionCard
               icon={<MapPin className="h-6 w-6 text-red-500" />}
-              title="Nueva Visita"
+              title={t("customerDashboard.newVisit")}
               onClick={() => setIsVisitModalOpen(true)}
             />
             <VisitModal
@@ -119,14 +123,6 @@ export default function CustomerDashboard() {
             />
           </div>
 
-          {/* Full Width Action Card
-          <ActionCard
-            icon={<AlertCircle className="h-6 w-6 text-red-500" />}
-            title="Nuevo Reclamo"
-            onClick={() => {}}
-            className="w-full"
-          /> */}
-
           {/* Catalog Section */}
           <section
             className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
@@ -134,10 +130,12 @@ export default function CustomerDashboard() {
           >
             <div className="flex items-center gap-3 mb-2">
               <Archive className="h-6 w-6 text-zinc-400" />
-              <h2 className="text-lg font-semibold text-white">Catálogo</h2>
+              <h2 className="text-lg font-semibold text-white">
+                {t("customerDashboard.catalog")}
+              </h2>
             </div>
             <p className="text-sm text-zinc-300">
-              Accedé a nuestro catálogo de artículos
+              {t("customerDashboard.catalogDescription")}
             </p>
           </section>
 
@@ -149,7 +147,7 @@ export default function CustomerDashboard() {
             <div className="flex items-center gap-3 mb-2">
               <FileText className="h-6 w-6 text-emerald-500" />
               <h2 className="text-lg font-semibold text-white">
-                Estado de Cuenta
+                {t("customerDashboard.accountStatus")}
               </h2>
             </div>
             <div className="space-y-1">
@@ -157,7 +155,7 @@ export default function CustomerDashboard() {
                 $ {formatedSumAmount}
               </p>
               <p className="text-sm text-zinc-300">
-                VENCIDO: $ {formatedExpiredSumAmount}
+                {t("customerDashboard.expired")} $ {formatedExpiredSumAmount}
               </p>
             </div>
           </section>
@@ -170,7 +168,7 @@ export default function CustomerDashboard() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-zinc-400" />
               <h2 className="text-lg font-semibold text-white">
-                Reclamos Pendientes
+                {t("customerDashboard.pendingClaims")}
               </h2>
             </div>
           </section>
@@ -188,7 +186,6 @@ interface ActionCardProps {
 }
 
 function ActionCard({ icon, title, onClick, className = "" }: ActionCardProps) {
-  
   return (
     <button
       onClick={onClick}
