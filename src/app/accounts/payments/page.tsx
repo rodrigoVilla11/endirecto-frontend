@@ -19,7 +19,7 @@ enum status {
   CANCELED = "CANCELED",
 }
 
-const CreatePaymentComponent = ({ closeModal }: { closeModal: () => void }) => {
+const CreatePaymentComponent = ({ closeModal }: { closeModal: any }) => {
   const { t } = useTranslation();
   const currentDate = format(new Date(), "yyyy-MM-dd");
 
