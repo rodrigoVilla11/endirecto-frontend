@@ -145,11 +145,11 @@ const ArticleDetails = ({ closeModal }: any) => {
             />
             <div className="pb-3">
               <CostPrice
-                articleId={article.id}
+                article={article}
                 selectedClientId={selectedClientId}
               />
               <hr className="my-3" />
-              <SuggestedPrice articleId={article.id} />
+              <SuggestedPrice article={article} />
             </div>
           </div>
           <AddToCart
