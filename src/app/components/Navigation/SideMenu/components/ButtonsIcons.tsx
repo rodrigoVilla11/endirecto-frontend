@@ -3,6 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { AiFillCaretDown } from "react-icons/ai";
 import { useSideMenu } from "@/app/context/SideMenuContext";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 interface Icon {
   icon: React.ReactNode;
@@ -27,6 +28,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
 }) => {
   const { setIsOpen } = useSideMenu();
   const router = useRouter();
+  const { isMobile } = useMobile();
 
   // Alterna la visibilidad de las subcategorías y abre el sideMenu.
   const toggleSubCategories = () => {
@@ -56,6 +58,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       toggleSubCategories();
     } else {
       handleRedirect(icon.path || "", event);
+      isMobile && setIsOpen(false)
     }
   };
 
