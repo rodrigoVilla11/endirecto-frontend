@@ -142,7 +142,7 @@ export default function CustomerDashboard() {
           {/* Account Status */}
           <section
             className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
-            onClick={() => router.push("/account/status")}
+            onClick={() => router.push("/accounts/status")}
           >
             <div className="flex items-center gap-3 mb-2">
               <FileText className="h-6 w-6 text-emerald-500" />
