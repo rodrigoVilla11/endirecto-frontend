@@ -8,10 +8,12 @@ import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
 import { useTranslation } from "react-i18next";
+import { skipToken } from "@reduxjs/toolkit/query";
 
-const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
+const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
   const { t } = useTranslation();
-  const encodedId = encodeURIComponent(articleId);
+  const encodedId = encodeURIComponent(article.id);
+
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -20,28 +22,22 @@ const SuggestedPrice = ({ articleId, showPurchasePrice, onlyPrice }: any) => {
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
   // Consultas de datos
-  const {
-    data: articles,
-    isLoading: isArticleLoading,
-    error: articleError,
-  } = useGetArticlesQuery({
-    page: 1,
-    limit: 1,
-    articleId: articleId || "",
-    priceListId: customer?.price_list_id,
-  });
 
-  const article = articles?.articles[0];
+  const articleIdForBonus = article?.item?.id;
+  
 
-  const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item.id || "",
-  });
+  const { data: bonus } = useGetArticleBonusByItemIdQuery(
+    articleIdForBonus ? { id: articleIdForBonus } : skipToken
+  );
+
+  const articleIdForBrand = article?.brand?.id;
+
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
-    id: article?.brand.id || "",
+    id: articleIdForBrand || "",
     customer: selectedClientId || "",
   });
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
-    id: article?.item.id || "",
+    id: articleIdForBonus || "",
     customer: selectedClientId || "",
   });
 

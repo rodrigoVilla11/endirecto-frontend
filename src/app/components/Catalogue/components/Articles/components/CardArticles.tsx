@@ -124,11 +124,11 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
             <ArticleName name={article.name} id={article.id} code={article.supplier_code} />
             {showPurchasePrice && (
               <>
-                <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
+                <CostPrice article={article} selectedClientId={selectedClientId} />
                 <div className="my-2 border-t border-gray-200" />
               </>
             )}
-            <SuggestedPrice articleId={article.id} showPurchasePrice={showPurchasePrice} />
+            <SuggestedPrice article={article} showPurchasePrice={showPurchasePrice} />
           </div>
         </div>
 

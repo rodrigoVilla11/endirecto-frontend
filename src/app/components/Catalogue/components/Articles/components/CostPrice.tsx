@@ -6,10 +6,12 @@ import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonuse
 import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useTranslation } from "react-i18next";
+import { skipToken } from "@reduxjs/toolkit/query";
 
-const CostPrice = ({ articleId, onlyPrice }: any) => {
+const CostPrice = ({ article, onlyPrice }: any) => {
   const { t } = useTranslation();
-  const encodedId = encodeURIComponent(articleId);
+  const encodedId = encodeURIComponent(article.id);
+
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
   const { selectedClientId } = useClient();
@@ -17,23 +19,11 @@ const CostPrice = ({ articleId, onlyPrice }: any) => {
     id: selectedClientId || "",
   });
 
-  const {
-    data: articles,
-    isLoading: isArticleLoading,
-    error: articleError,
-  } = useGetArticlesQuery({
-    page: 1,
-    limit: 1,
-    articleId: articleId || "",
-    priceListId: customer?.price_list_id,
-  });
+  const articleIdForBonus = article?.item?.id;
 
-  const article = articles?.articles[0];
-
-  const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item.id || "",
-  });
-
+const { data: bonus } = useGetArticleBonusByItemIdQuery(
+  articleIdForBonus ? { id: articleIdForBonus } : skipToken
+);
   const priceEntry = data?.find(
     (item) => item.price_list_id === customer?.price_list_id
   );
