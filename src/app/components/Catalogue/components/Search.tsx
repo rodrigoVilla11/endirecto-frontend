@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSearchArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
 import { useFilters } from "@/app/context/FiltersContext";
@@ -27,17 +27,36 @@ const ArticleSearchResults = ({
     id: selectedClientId || "",
   });
 
-  // Ahora utilizamos el endpoint optimizado para buscar artículos por query.
+  // Endpoint para buscar artículos por query
   const {
     data: searchResults,
     error,
     isLoading,
-    refetch,
   } = useSearchArticlesQuery({ query, page: 1, limit: 6 });
 
   const { setSearch } = useFilters();
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
+
+  // Referencia al contenedor del componente
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Detectar clics fuera del componente para limpiar la query
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [setSearchQuery]);
 
   if (!query) {
     return null; // Si no hay texto en la búsqueda, no mostramos nada
@@ -59,7 +78,10 @@ const ArticleSearchResults = ({
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="fixed top-28 md:top-20 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black">
+    <div
+      ref={containerRef}
+      className="fixed top-28 md:top-20 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black"
+    >
       <div className="flex justify-between items-center w-full mb-4">
         <h3 className="text-lg font-bold text-white">
           {t("resultsFor", { query })}
@@ -93,15 +115,11 @@ const ArticleSearchResults = ({
       )}
 
       {error && (
-        <p className="text-red-500">
-          {t("errorLoadingArticles")}
-        </p>
+        <p className="text-red-500">{t("errorLoadingArticles")}</p>
       )}
 
       {searchResults && searchResults.length === 0 && (
-        <p className="text-gray-300">
-          {t("noResultsFound")}
-        </p>
+        <p className="text-gray-300">{t("noResultsFound")}</p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full px-2 overflow-auto">
