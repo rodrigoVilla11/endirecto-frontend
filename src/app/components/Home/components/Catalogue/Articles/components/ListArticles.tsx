@@ -40,7 +40,7 @@ const ListArticles = ({ article }: any) => {
 
       {/* Menú del artículo */}
       <div className="flex items-center w-1/6">
-        <ArticleMenu />
+        <ArticleMenu article={article}/>
       </div>
 
       {/* Modal para mostrar detalles del artículo */}
