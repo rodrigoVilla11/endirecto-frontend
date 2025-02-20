@@ -19,7 +19,7 @@ const ArticleDetails = ({closeModal, article,} : any) => {
       </div>
       <div className="flex gap-4">
         <div className="h-116 w-72 bg-white rounded-sm border border-gray-200 flex flex-col justify-between">
-          <ArticleMenu
+          <ArticleMenu article={article}
           />
           <ArticleImage img={article.images} />
           <ArticleName name={article.name} id={article.id} />
