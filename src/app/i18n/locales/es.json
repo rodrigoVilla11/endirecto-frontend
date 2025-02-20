@@ -140,7 +140,6 @@
     "success": "¡Artículo eliminado exitosamente!",
     "error": "Error al eliminar el artículo",
 
-    
     "title": "Confirmar Eliminación",
     "confirmMessage": "¿Estás seguro de que deseas eliminar este artículo del carrito?",
     "errorUpdatingCart": "Error al actualizar el carrito de compras."
@@ -387,6 +386,12 @@
   "errorLoadingBranches": "Error al cargar las sucursales. Por favor, inténtelo de nuevo más tarde.",
   "noBranchesFound": "No se encontraron sucursales",
   "page": {
+    "table": {
+      "unknown": "Desconocido",
+      "noImage": "Sin Imagen",
+      "brand": "Marca",
+      "margin": "Margen"
+    },
     "title": "Márgenes por Marca",
     "selectClient": "Por favor, seleccione un cliente",
     "header": {

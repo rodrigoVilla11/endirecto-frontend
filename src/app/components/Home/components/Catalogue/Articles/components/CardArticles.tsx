@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import StripeStock from "./StripeStock";
 import ArticleName from "./ArticleName";
 import ArticleImage from "./ArticleImage";
-import ArticleMenu from "./ArticleMenu";
 import Modal from "@/app/components/components/Modal";
 import ArticleDetails from "./ArticleDetails";
 import { useArticleId } from "@/app/context/AritlceIdContext";
+import ArticleMenu from "./ArticleMenu";
 
 interface FormState {
   id: string;
@@ -32,7 +32,7 @@ const CardArticle = ({ article, showPurchasePrice }: any) => {
   return (
     <div className="w-52 h-64 bg-gray-200 m-8">
       <div className="relative bg-white flex flex-col justify-between shadow-lg">
-        <ArticleMenu />
+        <ArticleMenu article={article} />
         <div onClick={openModal}>
           <ArticleImage img={article.images} />
           <div className="bg-gray-200">

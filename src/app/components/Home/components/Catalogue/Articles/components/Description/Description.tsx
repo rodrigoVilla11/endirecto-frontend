@@ -1,5 +1,5 @@
+import Tables from "@/app/components/Catalogue/components/Articles/components/Description/components/Tables";
 import React from "react";
-import Tables from "./components/Tables";
 
 const Description = ({ article, description }: any) => {
   return (

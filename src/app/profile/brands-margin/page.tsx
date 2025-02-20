@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
-import { FaImage } from "react-icons/fa";
+import { FaImage, FaCheck } from "react-icons/fa";
 import { IoMdMenu } from "react-icons/io";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import {
@@ -31,6 +31,9 @@ const Page = () => {
   ] = useCreateCustomersBrandsMutation();
   const [updateCustomersBrands, { isLoading: isUpdating }] =
     useUpdateCustomersBrandsMutation();
+
+  // Estado para controlar la animación de "guardado" por cada registro
+  const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>({});
 
   const openUpdateModal = () => {
     setUpdateModalOpen(true);
@@ -120,7 +123,13 @@ const Page = () => {
       margin: updatedMargin,
     })
       .then(() => {
+        // Activa la animación para este registro
+        setSavedStatus((prev) => ({ ...prev, [id]: true }));
         refetch();
+        // Después de 2 segundos, se oculta el ícono
+        setTimeout(() => {
+          setSavedStatus((prev) => ({ ...prev, [id]: false }));
+        }, 2000);
       })
       .catch((error) => {
         console.error("Error al actualizar el margin", error);
@@ -150,7 +159,7 @@ const Page = () => {
           <div className="flex items-center justify-center space-x-2">
             <input
               type="number"
-              value={editedMargins[customersBrand._id] || customersBrand.margin}
+              value={editedMargins[customersBrand._id] ?? customersBrand.margin}
               onChange={(e) =>
                 handleMarginChange(
                   customersBrand._id,
@@ -165,6 +174,9 @@ const Page = () => {
             >
               Save
             </button>
+            {savedStatus[customersBrand._id] && (
+              <FaCheck className="text-green-500 animate-fade-out" />
+            )}
           </div>
         ),
       };
@@ -199,8 +211,25 @@ const Page = () => {
           />
         )}
       </Modal>
+      {/* Agrega estilos para la animación */}
+      <style jsx>{`
+        @keyframes fadeOut {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.5);
+          }
+        }
+        .animate-fade-out {
+          animation: fadeOut 2s forwards;
+        }
+      `}</style>
     </PrivateRoute>
   );
 };
 
 export default Page;
+  

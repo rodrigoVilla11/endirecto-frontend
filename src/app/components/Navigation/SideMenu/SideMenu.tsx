@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MdDashboard,
   MdOutlineShoppingBag,
@@ -33,7 +33,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setIsOpen(false)
+    setIsOpen(false);
     router.push("/login");
     setIsAuthenticated(false);
     setSelectedClientId("");
@@ -44,7 +44,10 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
     {
       icon: <MdDashboard />,
       name: t("dashboard"),
-      path: role === "VENDEDOR" && selectedClientId ? "/orders/orderSeller" : "/dashboard",
+      path:
+        role === "VENDEDOR" && selectedClientId
+          ? "/orders/orderSeller"
+          : "/dashboard",
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
@@ -92,8 +95,14 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           name: t("applicationsOfArticles"),
           path: "/data/application-of-articles",
         },
-        { name: t("articlesEquivalences"), path: "/data/articles-equivalences" },
-        { name: t("articlesTechnicalDetails"), path: "/data/articles-technical-details" },
+        {
+          name: t("articlesEquivalences"),
+          path: "/data/articles-equivalences",
+        },
+        {
+          name: t("articlesTechnicalDetails"),
+          path: "/data/articles-technical-details",
+        },
         { name: t("stock"), path: "/data/stock" },
         {
           name: t("branches"),
@@ -379,23 +388,50 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       : icons;
   }, [role, selectedClientId, icons, t]);
 
+  // Referencia al contenedor del menú para detectar clics fuera
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const navBtn = document.getElementById("navbar-button");
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !(navBtn && navBtn.contains(event.target as Node))
+      ) {
+        setIsOpen(false);
+      }
+    };
+  
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+  
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, setIsOpen]);
+  
+
   return (
     <div
+      ref={menuRef}
       className={`${
         isOpen
-          ? `fixed inset-0 w-full h-full z-50 ${isMobile ? "bg-zinc-900" : "bg-header-color"} px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
+          ? `fixed inset-0 w-full h-auto z-50 ${
+              isMobile ? "bg-zinc-900" : "bg-header-color"
+            } px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
-      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-scroll hide-scrollbar sm:mt-20 mt-28`}
+      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-20 mt-28`}
     >
-      {filteredIcons.map((icon: any, index: any) => (
-        <ButtonsIcons
-          key={index}
-          icon={icon}
-          isOpen={isOpen}
-          openSubCategory={openSubCategory}
-          setOpenSubCategory={setOpenSubCategory}
-        />
-      ))}
+        {filteredIcons.map((icon: any, index: any) => (
+          <ButtonsIcons
+            key={index}
+            icon={icon}
+            isOpen={isOpen}
+            openSubCategory={openSubCategory}
+            setOpenSubCategory={setOpenSubCategory}
+          />
+        ))}
     </div>
   );
 };

@@ -365,6 +365,12 @@
   "errorLoadingBranches": "Error loading branches. Please try again later.",
   "noBranchesFound": "No branches found",
   "page": {
+    "table": {
+      "unknown": "Unknown",
+      "noImage":"No Image",
+      "brand": "Brand",
+      "margin": "Margin"
+    },
     "title": "Margins by Brand",
     "selectClient": "Please select a client",
     "header": {

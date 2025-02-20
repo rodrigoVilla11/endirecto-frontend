@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import { IoMdMenu } from "react-icons/io";
+import { FaCheck } from "react-icons/fa";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import {
   useCreateCustomersItemsMutation,
@@ -49,6 +50,9 @@ const Page = () => {
 
   const [editedMargins, setEditedMargins] = useState<{ [key: string]: number }>({});
 
+  // Estado para controlar la animación de guardado por cada registro
+  const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>({});
+
   const tableHeader = [
     { name: t("page1.table.item"), key: "item", important: true },
     { name: t("page1.table.margin"), key: "margin", important: true },
@@ -78,10 +82,9 @@ const Page = () => {
       selectedClientId
     ) {
       const missingItems = items.filter(
-        (item) =>
-          !customersItems.some((ci) => ci.item_id === item.id)
+        (item) => !customersItems.some((ci) => ci.item_id === item.id)
       );
-  
+
       if (missingItems.length > 0) {
         Promise.all(
           missingItems.map((item) =>
@@ -97,7 +100,7 @@ const Page = () => {
       }
     }
   }, [customersItems, items, selectedClientId, createCustomersItems, isLoading, refetch]);
-  
+
   const handleMarginChange = (id: string, value: number) => {
     setEditedMargins((prev) => ({
       ...prev,
@@ -107,30 +110,38 @@ const Page = () => {
 
   const handleSave = async (id: string) => {
     const updatedMargin = editedMargins[id];
-  
+
     if (isNaN(updatedMargin) || updatedMargin < 0) {
       alert(t("page1.invalidMarginAlert"));
       return;
     }
-  
+
     try {
       await updateCustomersItems({
         _id: id,
         margin: updatedMargin,
       }).unwrap();
-  
+
+      // Limpiamos el valor editado para este registro
       setEditedMargins((prev) => {
         const updated = { ...prev };
         delete updated[id];
         return updated;
       });
-  
+
+      // Activamos la animación para este registro
+      setSavedStatus((prev) => ({ ...prev, [id]: true }));
       refetch();
+
+      // Desactivamos la animación después de 2 segundos
+      setTimeout(() => {
+        setSavedStatus((prev) => ({ ...prev, [id]: false }));
+      }, 2000);
     } catch (error) {
       console.error("Error al actualizar el margin", error);
     }
   };
-  
+
   const tableData =
     customersItems?.map((customerItem) => {
       const item = items?.find((data) => data.id === customerItem.item_id);
@@ -156,6 +167,9 @@ const Page = () => {
             >
               {t("page1.table.save")}
             </button>
+            {savedStatus[customerItem._id] && (
+              <FaCheck className="text-green-500 animate-fade-out" />
+            )}
           </div>
         ),
       };
@@ -190,6 +204,22 @@ const Page = () => {
           />
         )}
       </Modal>
+      {/* Estilos para la animación */}
+      <style jsx>{`
+        @keyframes fadeOut {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.5);
+          }
+        }
+        .animate-fade-out {
+          animation: fadeOut 2s forwards;
+        }
+      `}</style>
     </PrivateRoute>
   );
 };

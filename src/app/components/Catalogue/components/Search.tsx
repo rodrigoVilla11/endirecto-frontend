@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
 import { useFilters } from "@/app/context/FiltersContext";
@@ -38,37 +38,31 @@ const ArticleSearchResults = ({
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
 
-  // Referencia al contenedor del componente
+  // Referencia al contenedor del componente (si la necesitás para otros usos)
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Detectar clics fuera del componente para limpiar la query
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+  const handleRedirect = useCallback(
+    (path: string) => {
+      if (path) {
+        setSearch(query);
+        router.push(path);
         setSearchQuery("");
+      }
+    },
+    [query, router, setSearch, setSearchQuery]
+  );
+
+  // Listener global para la tecla Enter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && searchResults && searchResults.length > 0) {
+        handleRedirect(`/catalogue`);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [setSearchQuery]);
-
-  if (!query) {
-    return null; // Si no hay texto en la búsqueda, no mostramos nada
-  }
-
-  const handleRedirect = (path: string) => {
-    if (path) {
-      setSearch(query);
-      router.push(path);
-      setSearchQuery("");
-    }
-  };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleRedirect, searchResults]);
 
   const handleOpenModal = (id: string) => {
     setModalOpen(true);
@@ -76,6 +70,10 @@ const ArticleSearchResults = ({
   };
 
   const closeModal = () => setModalOpen(false);
+
+  if (!query) {
+    return null; // Si no hay texto en la búsqueda, no mostramos nada
+  }
 
   return (
     <div
