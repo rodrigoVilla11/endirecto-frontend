@@ -7,9 +7,11 @@ import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/serv
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/customersTransports";
 import { useCreateOrderMutation } from "@/redux/services/ordersApi";
+import { useCreateNotificationMutation, NotificationType } from "@/redux/services/notificationsApi";
 import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { addMonths, format } from "date-fns"
 
 interface OrderItem {
   id: string;
@@ -74,7 +76,9 @@ export default function OrderConfirmation({
 }: OrderConfirmationProps) {
   const { t } = useTranslation();
   const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
-  const [checkInsituVisit] = useCheckInsituVisitMutation(); // Para verificar si está insitu
+  // Nuevo hook para crear notificación
+  const [createNotification] = useCreateNotificationMutation();
+  const [checkInsituVisit] = useCheckInsituVisitMutation();
   const { selectedClientId } = useClient();
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
@@ -188,7 +192,10 @@ export default function OrderConfirmation({
     };
 
     try {
-      await createOrder(updatedTransaction).unwrap();
+      // Crear el pedido
+      const createdOrder = await createOrder(updatedTransaction).unwrap();
+      
+      // Actualizar el carrito del cliente, si corresponde
       if (customer && customer.shopping_cart) {
         const transactionArticleIds = updatedTransaction.details.map(
           (detail) => detail.article.id
@@ -198,6 +205,32 @@ export default function OrderConfirmation({
         );
         await updateCustomer({ id: customer.id, shopping_cart: updatedShoppingCart }).unwrap();
       }
+      
+      // Calcular schedule_from (fecha actual) y schedule_to (1 mes después)
+      const now = new Date();
+      const schedule_from = format(now, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+      const schedule_to = format(addMonths(now, 1), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+    
+      // Generar una cadena con los artículos del pedido
+      const articlesString = updatedTransaction.details
+        .map((detail) => `Artículo ${detail.article.id} (x${detail.quantity})`)
+        .join(", ");
+    
+      // Construir el título y la descripción para la notificación
+      const notificationTitle = `Pedido Número ${createdOrder.tmp_id}, Cliente ${selectedClientId}`;
+      const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
+      
+      // Enviar la notificación de tipo PEDIDO
+      await createNotification({
+        title: notificationTitle,
+        type: NotificationType.PEDIDO,
+        schedule_from, // Fecha actual
+        schedule_to,   // 1 mes después
+        description: notificationDescription,
+        link: `/orders/${createdOrder.tmp_id}`, // Link al detalle del pedido
+        customer_id: selectedClientId || "",
+      }).unwrap();
+    
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -336,4 +369,3 @@ export default function OrderConfirmation({
     </>
   );
 }
-

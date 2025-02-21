@@ -1,6 +1,6 @@
 "use client";
-import { useDeleteNotificationMutation } from "@/redux/services/notificationsApi";
 import React from "react";
+import { useDeleteNotificationMutation } from "@/redux/services/notificationsApi";
 import { useTranslation } from "react-i18next";
 
 type DeleteNotificationsProps = {
@@ -8,10 +8,10 @@ type DeleteNotificationsProps = {
   closeModal: () => void;
 };
 
-const DeleteNotificationComponent = ({
+const DeleteNotificationComponent: React.FC<DeleteNotificationsProps> = ({
   notificationId,
   closeModal,
-}: DeleteNotificationsProps) => {
+}) => {
   const { t } = useTranslation();
   const [deleteNotification, { isLoading, isSuccess, isError }] =
     useDeleteNotificationMutation();
@@ -40,19 +40,25 @@ const DeleteNotificationComponent = ({
         <button
           type="button"
           onClick={handleDelete}
+          disabled={isLoading}
           className={`rounded-md p-2 text-white ${
             isLoading ? "bg-gray-500" : "bg-red-600"
           }`}
-          disabled={isLoading}
         >
-          {isLoading ? t("deleteNotification.deleting") : t("deleteNotification.delete")}
+          {isLoading
+            ? t("deleteNotification.deleting")
+            : t("deleteNotification.delete")}
         </button>
       </div>
       {isSuccess && (
-        <p className="text-green-500 mt-2">{t("deleteNotification.success")}</p>
+        <p className="text-green-500 mt-2">
+          {t("deleteNotification.success")}
+        </p>
       )}
       {isError && (
-        <p className="text-red-500 mt-2">{t("deleteNotification.error")}</p>
+        <p className="text-red-500 mt-2">
+          {t("deleteNotification.error")}
+        </p>
       )}
     </div>
   );

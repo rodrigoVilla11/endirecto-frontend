@@ -432,6 +432,7 @@
     "results": "Results"
   },
   "table": {
+    "read": "Read",
     "margin": "Margin",
     "unknown": "Unknown",
     "location": "Location",
@@ -728,6 +729,26 @@
     "errorLog": "Error deleting Notification:"
   },
   "createNotification": {
+    "customerToggle": "Customer",
+    "customerLabel": "Customer",
+    "articleToggle": "Article",
+    "articleLabel": "Article",
+    "selectArticle": "Select Article",
+    "selectBrandFirst": "Select a brand first",
+
+    "selectCustomer": "Select customer",
+    "now": "Now",
+    "relativeDurationLabel": "Duration",
+    "selectDuration": "Select duration",
+    "duration24h": "24 hours",
+    "duration48h": "48 hours",
+    "duration1w": "1 week",
+    "duration2w": "2 weeks",
+    "duration1m": "1 month",
+
+    "typeLabel": "Type",
+    "false": "No",
+    "true": "Yes",
     "title": "New Notification",
     "searchPlaceholder": "Search...",
     "results": "{{count}} Results",

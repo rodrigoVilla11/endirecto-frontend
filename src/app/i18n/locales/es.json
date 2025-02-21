@@ -452,6 +452,7 @@
     "results": "Resultados"
   },
   "table": {
+    "read": "Leido",
     "margin": "Margen",
     "unknown": "Desconocido",
     "location": "Ubicación",
@@ -724,6 +725,24 @@
     "errorLog": "Error al eliminar la notificación:"
   },
   "createNotification": {
+    "customerToggle": "Cliente",
+    "customerLabel": "Cliente",
+    "articleToggle": "Artículo",
+    "articleLabel": "Artículo",
+    "selectArticle": "Seleccione un artículo",
+    "selectBrandFirst": "Seleccione una marca primero",
+    "selectCustomer": "Seleccione un cliente",
+    "relativeDurationLabel": "Duración",
+    "selectDuration": "Seleccione la duración",
+    "duration24h": "24 horas",
+    "duration48h": "48 horas",
+    "duration1w": "1 semana",
+    "duration2w": "2 semanas",
+    "duration1m": "1 mes",
+    "typeLabel": "Tipo",
+    "now": "Ahora",
+    "false": "No",
+    "true": "Si",
     "title": "Nueva Notificación",
     "searchPlaceholder": "Buscar...",
     "results": "{{count}} Resultados",

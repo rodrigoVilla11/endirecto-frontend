@@ -1,147 +1,244 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaDownload, FaTimes } from "react-icons/fa";
-import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
-import { useGetBrandsQuery } from "@/redux/services/brandsApi";
-import { format } from "date-fns";
-import PrivateRoute from "../context/PrivateRoutes";
+import PrivateRoute from "@/app/context/PrivateRoutes";
+import { FaPlus, FaTrashCan, FaCheck } from "react-icons/fa6";
+import { FaTimes as FaCross, FaTimes } from "react-icons/fa"; // Cruz roja
+import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetNotificationsPagQuery, useUpdateNotificationMutation } from "@/redux/services/notificationsApi";
+import { useClient } from "@/app/context/ClientContext";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const { t } = useTranslation();
-  const { data: brandsData } = useGetBrandsQuery(null);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [items, setItems] = useState<any[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const { selectedClientId } = useClient();
 
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetNotificationsPagQuery({
-    page,
-    limit,
-    query: searchQuery,
-  });
+  // Estados para paginación, búsqueda, ordenamiento y modales
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>(""); // "field:asc" o "field:desc"
+  const [items, setItems] = useState<any[]>([]);
+  const [totalNotifications, setTotalNotifications] = useState<number>(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
+  const { data: branchData } = useGetBranchesQuery(null);
+
+  // Mutation para actualizar el campo "read"
+  const [updateNotification] = useUpdateNotificationMutation();
+
+  // Definimos los parámetros para la consulta.
+  // Si selectedClientId tiene valor, se añade como customer_id; de lo contrario, se omite.
+  const commonParams: {
+    page: number;
+    limit: number;
+    query: string;
+    sort: string;
+    customer_id?: string;
+  } = { page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery };
+  if (selectedClientId) {
+    commonParams.customer_id = selectedClientId;
+  }
+
+  // Usamos siempre useGetNotificationsPagQuery
+  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery(commonParams);
+
+  // Búsqueda con debounce
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  }, 100);
 
   useEffect(() => {
     const loadNotifications = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
+      if (!isFetching) {
+        setIsFetching(true);
         try {
           const result = await refetch().unwrap();
-          const newNotifications = result.notifications || [];
+          const fetched = result || { notifications: [], total: 0 };
+          const newItems = Array.isArray(fetched.notifications) ? fetched.notifications : [];
+          setTotalNotifications(fetched.total || 0);
           if (page === 1) {
-            setItems(newNotifications);
+            setItems(newItems);
           } else {
-            setItems((prev) => [...prev, ...newNotifications]);
+            setItems((prev) => [...prev, ...newItems]);
           }
-          setHasMore(newNotifications.length === limit);
-        } catch (error) {
-          console.error("Error loading notifications:", error);
+          setHasMore(newItems.length === ITEMS_PER_PAGE);
+        } catch (err) {
+          console.error(t("page.fetchError"), err);
         } finally {
-          setIsLoading(false);
+          setIsFetching(false);
         }
       }
     };
-
     loadNotifications();
-  }, [page, searchQuery, isLoading, limit, refetch]);
+  }, [page, searchQuery, sortQuery, refetch, isFetching, t]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !isFetching) {
           setPage((prev) => prev + 1);
         }
       },
       { threshold: 0.5 }
     );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
     }
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
       }
     };
-  }, [hasMore, isLoading]);
+  }, [hasMore, isFetching]);
 
-  if (isQueryLoading) return <p>{t("loading")}</p>;
-  if (error) return <p>{t("error_loading")}</p>;
+  const handleResetSearch = () => {
+    setSearchQuery("");
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  };
+
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      let newSortQuery = "";
+      if (currentField === field) {
+        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+      } else {
+        newSortQuery = `${field}:asc`;
+      }
+      setSortQuery(newSortQuery);
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
+    },
+    [sortQuery]
+  );
+
+  // Función para alternar el campo "read" de una notificación
+  const toggleRead = async (notification: any) => {
+    try {
+      const updated = await updateNotification({
+        id: notification._id,
+        body: { read: !notification.read },
+      }).unwrap();
+      setItems((prev) =>
+        prev.map((item) =>
+          item._id === notification._id ? { ...item, read: updated.read } : item
+        )
+      );
+    } catch (err) {
+      console.error("Error actualizando el estado de read", err);
+    }
+  };
 
   const tableData = items.map((notification) => {
-    const brand = brandsData?.find((b) => b.id === notification.brand_id);
+    const branch = branchData?.find((b) => b.id === notification.brand_id);
     return {
       key: notification._id,
-      brand: brand?.name,
+      brand: branch?.name || t("table.noBrand"),
       type: notification.type,
       title: notification.title,
       description: notification.description,
       validity: notification.schedule_to,
-      date: notification.schedule_from
-        ? format(new Date(notification.schedule_from), "yyyy-MM-dd")
-        : "",
-      download: (
-        <div className="flex justify-center items-center">
-          <FaDownload className="text-center text-xl" />
+      date: notification.schedule_from,
+      read: (
+        <div className="cursor-pointer" onClick={() => toggleRead(notification)}>
+          {notification.read ? (
+            <FaCheck className="text-green-500" />
+          ) : (
+            <FaTimes className="text-red-500" />
+          )}
         </div>
       ),
     };
   });
 
   const tableHeader = [
-    { name: t("brand"), key: "brand" },
-    { name: t("type"), key: "type" },
-    { name: t("title"), key: "title" },
-    { name: t("description"), key: "description" },
-    { name: t("validity"), key: "validity" },
-    { name: t("date"), key: "date" },
-    { component: <FaDownload className="text-center text-xl" />, key: "download" },
+    { name: t("table.brand"), key: "brand" },
+    { name: t("table.type"), key: "type" },
+    { name: t("table.title"), key: "title" },
+    { name: t("table.description"), key: "description" },
+    { name: t("table.validity"), key: "validity" },
+    { name: t("table.date"), key: "date" },
+    { name: t("table.read"), key: "read" },
   ];
 
   const headerBody = {
-    buttons: [],
+    buttons: [
+    ],
     filters: [
       {
         content: (
-          <select>
-            <option value="order">{t("type")}</option>
-          </select>
-        ),
-      },
-      {
-        content: (
-          <Input
-            placeholder={t("search_placeholder")}
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter") {
-                setPage(1);
-                refetch();
+          <div className="relative">
+            <Input
+              placeholder={t("page.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                debouncedSearch(e.target.value)
               }
-            }}
-          />
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  setPage(1);
+                  setItems([]);
+                  refetch();
+                }
+              }}
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={handleResetSearch}
+                aria-label={t("page.clearSearch")}
+              >
+                <FaTimes className="text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         ),
       },
     ],
-    results: searchQuery ? `${items.length} ${t("results")}` : `${data?.total || 0} ${t("results")}`,
+    results: searchQuery
+      ? `${items.length} ${t("header.results")}`
+      : `${totalNotifications} ${t("header.results")}`,
   };
 
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">{t("page.errorLoadingNotifications")}</div>
+    );
+  }
+
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("notifications")}</h3>
+        <h3 className="font-bold p-4">{t("page.notifications")}</h3>
         <Header headerBody={headerBody} />
-        <Table headers={tableHeader} data={tableData} />
+        <Table
+          headers={tableHeader}
+          data={tableData}
+          onSort={handleSort}
+          sortField={sortQuery.split(":")[0]}
+          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+        />
         <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
@@ -149,3 +246,4 @@ const Page = () => {
 };
 
 export default Page;
+

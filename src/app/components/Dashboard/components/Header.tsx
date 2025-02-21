@@ -19,7 +19,9 @@ const Header = () => {
     : userData?.username?.charAt(0) || ""; // Se asigna una letra vacía si 'userData' no tiene valor
 
   const displayName = selectedClientId ? data?.name : userData?.username;
-  const userRole = userData?.role ? userData.role.toUpperCase() : t("noRoleAvailable"); // Asegura que haya un valor para el rol
+  const userRole = userData?.role
+    ? userData.role.toUpperCase()
+    : t("noRoleAvailable"); // Asegura que haya un valor para el rol
 
   return (
     <div className="bg-white shadow-sm mx-2 sm:mx-5 p-4 sm:p-10 mt-12 sm:mt-8">
@@ -46,7 +48,7 @@ const Header = () => {
               {displayName || t("noNameAvailable")}
             </h1>
             <p className="text-sm text-gray-500">
-              {userRole} {selectedClientId && <p>&nbsp;({data?.id})</p>}
+              {userRole} {selectedClientId && <span>&nbsp;({data?.id})</span>}
             </p>
           </div>
         </div>
