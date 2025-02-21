@@ -1256,5 +1256,6 @@
   },
   "unauthorized": {
     "message": "No tienes acceso a esta página."
-  }
+  },
+  "totalWithoutTaxes": "Total sin impuestos"
 }
