@@ -63,7 +63,7 @@ type CreateOrderPayload = {
 export const ordersApi = createApi({
   reducerPath: "ordersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getOrders: builder.query<Order[], null>({
@@ -131,9 +131,7 @@ export const ordersApi = createApi({
     }),
 
     countOrder: builder.query<number, null>({
-      query: () => {
-        return `/orders/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-      },
+      query: () => `/orders/count?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getOrderById: builder.query<Order, { id: string }>({
       query: ({ id }) => `/orders/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -151,6 +149,28 @@ export const ordersApi = createApi({
         method: "DELETE",
       }),
     }),
+    // Nuevo endpoint para obtener la suma de ventas mensuales con filtros
+    getMonthlySales: builder.query<
+      any[],
+      {
+        startDate?: string;
+        endDate?: string;
+        brand?: string;
+        item?: string;
+      }
+    >({
+      query: ({ startDate, endDate, brand, item }) => {
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (brand) params.append("brand", brand);
+        if (item) params.append("item", item);
+        return `/orders/monthly-sales?${params.toString()}`;
+      },
+      transformResponse: (response: any[]) => response,
+    }),
   }),
 });
 
@@ -161,4 +181,5 @@ export const {
   useGetOrderByIdQuery,
   useGetOrdersPagQuery,
   useGetOrdersQuery,
+  useGetMonthlySalesQuery,
 } = ordersApi;
