@@ -11,11 +11,9 @@ export type Notifications = {
   title: string;
   type: NotificationType;
   brand_id: string;
-  schedule_from: string; // Puedes convertir esto a Date en el cliente si es necesario
-  schedule_to: string;   // lo mismo aquí, según la lógica de tu aplicación
+  article_id: string;
   description: string;
   link: string;
-  read?: boolean;
   created_at?: Date;
   updated_at?: Date;
 };
@@ -23,19 +21,22 @@ export type Notifications = {
 export type CreateNotificationPayload = {
   title: string;
   type: NotificationType;
-  article_id?: string;
-  brand_id?: string;
-  schedule_from: string;
-  schedule_to: string;
+  brand_id: string;
+  article_id: string;
   description: string;
   link: string;
-  customer_id?: string;
+  created_at?: Date;
+  updated_at?: Date;
 };
 
 // Puedes definir también un tipo para la actualización (UpdateNotificationDto) si lo requieres
 export type UpdateNotificationPayload = Partial<CreateNotificationPayload> & {
-  // Aquí se pueden agregar otros campos específicos para la actualización, por ejemplo:
-  read?: boolean;
+  title: string;
+  type: NotificationType;
+  brand_id: string;
+  article_id: string;
+  description: string;
+  link: string;
 };
 
 export const notificationsApi = createApi({
@@ -92,7 +93,6 @@ export const notificationsApi = createApi({
         query?: string;
         type?: NotificationType;
         sort?: string;
-        customer_id?: string;
       }
     >({
       query: ({
@@ -101,14 +101,10 @@ export const notificationsApi = createApi({
         query = "",
         type,
         sort = "",
-        customer_id,
       }) => {
         let url = `/notifications?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
         if (type) {
           url += `&type=${type}`;
-        }
-        if (customer_id) {
-          url += `&customerId=${customer_id}`;
         }
         return url;
       },

@@ -4,19 +4,17 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import { FaPlus, FaTrashCan, FaCheck } from "react-icons/fa6";
-import { FaTimes as FaCross, FaTimes } from "react-icons/fa"; // Cruz roja
+import { FaTimes as FaTimes } from "react-icons/fa"; // Cruz roja
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { useGetNotificationsPagQuery, useUpdateNotificationMutation } from "@/redux/services/notificationsApi";
-import { useClient } from "@/app/context/ClientContext";
+import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
+import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const { t } = useTranslation();
-  const { selectedClientId } = useClient();
 
   // Estados para paginación, búsqueda, ordenamiento y modales
   const [page, setPage] = useState(1);
@@ -29,25 +27,15 @@ const Page = () => {
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const { data: branchData } = useGetBranchesQuery(null);
-
-  // Mutation para actualizar el campo "read"
-  const [updateNotification] = useUpdateNotificationMutation();
-
-  // Definimos los parámetros para la consulta.
-  // Si selectedClientId tiene valor, se añade como customer_id; de lo contrario, se omite.
-  const commonParams: {
-    page: number;
-    limit: number;
-    query: string;
-    sort: string;
-    customer_id?: string;
-  } = { page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery };
-  if (selectedClientId) {
-    commonParams.customer_id = selectedClientId;
-  }
+  const { data: articleData } = useGetAllArticlesQuery(null);
 
   // Usamos siempre useGetNotificationsPagQuery
-  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery(commonParams);
+  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({
+    page,
+    limit: ITEMS_PER_PAGE,
+    query: searchQuery,
+    sort: sortQuery,
+  });
 
   // Búsqueda con debounce
   const debouncedSearch = debounce((query: string) => {
@@ -64,7 +52,9 @@ const Page = () => {
         try {
           const result = await refetch().unwrap();
           const fetched = result || { notifications: [], total: 0 };
-          const newItems = Array.isArray(fetched.notifications) ? fetched.notifications : [];
+          const newItems = Array.isArray(fetched.notifications)
+            ? fetched.notifications
+            : [];
           setTotalNotifications(fetched.total || 0);
           if (page === 1) {
             setItems(newItems);
@@ -113,7 +103,8 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -125,58 +116,29 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Función para alternar el campo "read" de una notificación
-  const toggleRead = async (notification: any) => {
-    try {
-      const updated = await updateNotification({
-        id: notification._id,
-        body: { read: !notification.read },
-      }).unwrap();
-      setItems((prev) =>
-        prev.map((item) =>
-          item._id === notification._id ? { ...item, read: updated.read } : item
-        )
-      );
-    } catch (err) {
-      console.error("Error actualizando el estado de read", err);
-    }
-  };
-
   const tableData = items.map((notification) => {
     const branch = branchData?.find((b) => b.id === notification.brand_id);
+    const article = articleData?.find((b) => b.id === notification.article_id);
     return {
       key: notification._id,
-      brand: branch?.name || t("table.noBrand"),
       type: notification.type,
       title: notification.title,
       description: notification.description,
-      validity: notification.schedule_to,
-      date: notification.schedule_from,
-      read: (
-        <div className="cursor-pointer" onClick={() => toggleRead(notification)}>
-          {notification.read ? (
-            <FaCheck className="text-green-500" />
-          ) : (
-            <FaTimes className="text-red-500" />
-          )}
-        </div>
-      ),
+      brand: branch?.name || t("table.noBrand"),
+      article: article?.name || t("table.noBrand"),
     };
   });
 
   const tableHeader = [
-    { name: t("table.brand"), key: "brand" },
     { name: t("table.type"), key: "type" },
     { name: t("table.title"), key: "title" },
     { name: t("table.description"), key: "description" },
-    { name: t("table.validity"), key: "validity" },
-    { name: t("table.date"), key: "date" },
-    { name: t("table.read"), key: "read" },
+    { name: t("table.brand"), key: "brand" },
+    { name: t("table.article"), key: "article" },
   ];
 
   const headerBody = {
-    buttons: [
-    ],
+    buttons: [],
     filters: [
       {
         content: (
@@ -223,7 +185,9 @@ const Page = () => {
   }
   if (error) {
     return (
-      <div className="p-4 text-red-500">{t("page.errorLoadingNotifications")}</div>
+      <div className="p-4 text-red-500">
+        {t("page.errorLoadingNotifications")}
+      </div>
     );
   }
 
@@ -246,4 +210,3 @@ const Page = () => {
 };
 
 export default Page;
-

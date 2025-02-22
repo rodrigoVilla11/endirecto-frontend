@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetNotificationsPagQuery, useUpdateNotificationMutation } from "@/redux/services/notificationsApi";
 import { useClient } from "@/app/context/ClientContext";
+import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -34,25 +35,11 @@ const Page = () => {
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const { data: branchData } = useGetBranchesQuery(null);
+  const { data: articleData } = useGetAllArticlesQuery(null);
 
-  // Mutation para actualizar el campo "read"
-  const [updateNotification] = useUpdateNotificationMutation();
-
-  // Definimos los parámetros para la consulta.
-  // Si selectedClientId tiene valor, se añade como customer_id; de lo contrario, se omite.
-  const commonParams: {
-    page: number;
-    limit: number;
-    query: string;
-    sort: string;
-    customer_id?: string;
-  } = { page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery };
-  if (selectedClientId) {
-    commonParams.customer_id = selectedClientId;
-  }
 
   // Usamos siempre useGetNotificationsPagQuery
-  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery(commonParams);
+  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({ page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery });
 
   // Búsqueda con debounce
   const debouncedSearch = debounce((query: string) => {
@@ -130,42 +117,17 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Función para alternar el campo "read" de una notificación
-  const toggleRead = async (notification: any) => {
-    try {
-      const updated = await updateNotification({
-        id: notification._id,
-        body: { read: !notification.read },
-      }).unwrap();
-      setItems((prev) =>
-        prev.map((item) =>
-          item._id === notification._id ? { ...item, read: updated.read } : item
-        )
-      );
-    } catch (err) {
-      console.error("Error actualizando el estado de read", err);
-    }
-  };
-
   const tableData = items.map((notification) => {
     const branch = branchData?.find((b) => b.id === notification.brand_id);
+    const article = articleData?.find((b) => b.id === notification.article_id);
+
     return {
       key: notification._id,
-      brand: branch?.name || t("table.noBrand"),
       type: notification.type,
       title: notification.title,
       description: notification.description,
-      validity: notification.schedule_to,
-      date: notification.schedule_from,
-      read: (
-        <div className="cursor-pointer" onClick={() => toggleRead(notification)}>
-          {notification.read ? (
-            <FaCheck className="text-green-500" />
-          ) : (
-            <FaTimes className="text-red-500" />
-          )}
-        </div>
-      ),
+      brand: branch?.name || t("table.noBrand"),
+      article: article?.name || t("table.noBrand"),
       erase: (
         <div className="flex justify-center items-center">
           <FaTrashCan
@@ -178,13 +140,11 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: t("table.brand"), key: "brand" },
     { name: t("table.type"), key: "type" },
     { name: t("table.title"), key: "title" },
     { name: t("table.description"), key: "description" },
-    { name: t("table.validity"), key: "validity" },
-    { name: t("table.date"), key: "date" },
-    { name: t("table.read"), key: "read" },
+    { name: t("table.brand"), key: "brand" },
+    { name: t("table.article"), key: "article" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
