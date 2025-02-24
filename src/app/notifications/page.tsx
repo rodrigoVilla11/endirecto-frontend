@@ -1,124 +1,110 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import { FaTimes as FaTimes } from "react-icons/fa"; // Cruz roja
+import { FaTimes as FaTimes } from "react-icons/fa";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { useGetNotificationsPagQuery } from "@/redux/services/notificationsApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
-
-const ITEMS_PER_PAGE = 15;
+import { useClient } from "../context/ClientContext";
+import { useAuth } from "../context/AuthContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { useMarkNotificationAsReadMutation } from "@/redux/services/usersApi";
+import {useMarkNotificationAsReadCustomerMutation} from "@/redux/services/customersApi"
 
 const Page = () => {
   const { t } = useTranslation();
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
 
-  // Estados para paginación, búsqueda, ordenamiento y modales
-  const [page, setPage] = useState(1);
+  // Si hay un cliente seleccionado, obtenemos sus notificaciones
+  const customerQuery = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    {
+      skip: !selectedClientId,
+    }
+  );
+
+  // Determinamos la fuente de las notificaciones:
+  // Si hay id en selectedClient, usamos las del query; sino, las de userData.
+  const notifications = selectedClientId
+    ? customerQuery.data?.notifications || []
+    : userData?.notifications || [];
+
+  // Variable para saber de qué user obtener el id (cliente o usuario logueado)
+  const currentUserId = selectedClientId || userData?._id || "";
+
+  // Estados para búsqueda y ordenamiento
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // "field:asc" o "field:desc"
-  const [items, setItems] = useState<any[]>([]);
-  const [totalNotifications, setTotalNotifications] = useState<number>(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // Formato "campo:asc" o "campo:desc"
 
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  // Debounce para búsqueda
+  const debouncedSearch = debounce((query: string) => {
+    setSearchQuery(query);
+  }, 100);
+
+  // Filtramos las notificaciones en función de la búsqueda
+  const filteredNotifications = notifications.filter((notification: any) => {
+    if (!searchQuery) return true;
+    const lowerSearch = searchQuery.toLowerCase();
+    return (
+      notification.title.toLowerCase().includes(lowerSearch) ||
+      notification.description.toLowerCase().includes(lowerSearch)
+    );
+  });
+
+  // Ordenamos las notificaciones si se especifica un sortQuery
+  const sortedNotifications = [...filteredNotifications];
+  if (sortQuery) {
+    const [field, direction] = sortQuery.split(":");
+    sortedNotifications.sort((a, b) => {
+      if (a[field] < b[field]) return direction === "asc" ? -1 : 1;
+      if (a[field] > b[field]) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // Obtenemos datos de marcas y artículos
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: articleData } = useGetAllArticlesQuery(null);
 
-  // Usamos siempre useGetNotificationsPagQuery
-  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
+  // Hook para el endpoint de marcar notificación como leída
+  const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
 
-  // Búsqueda con debounce
-  const debouncedSearch = debounce((query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-  }, 100);
-
-  useEffect(() => {
-    const loadNotifications = async () => {
-      if (!isFetching) {
-        setIsFetching(true);
-        try {
-          const result = await refetch().unwrap();
-          const fetched = result || { notifications: [], total: 0 };
-          const newItems = Array.isArray(fetched.notifications)
-            ? fetched.notifications
-            : [];
-          setTotalNotifications(fetched.total || 0);
-          if (page === 1) {
-            setItems(newItems);
-          } else {
-            setItems((prev) => [...prev, ...newItems]);
+  // Función para manejar la acción de marcar la notificación como leída
+  const handleMarkAsRead = async (notification: any) => {
+    if (!notification.read && currentUserId) {
+      try {
+        await markNotificationAsRead({
+          id: currentUserId,
+          title: notification.title,
+        }).unwrap();
+        // Actualizamos el estado local: marcamos la notificación como leída
+        const updated = sortedNotifications.map((n) =>
+          n.title === notification.title ? { ...n, read: true } : n
+        );
+        // Actualizamos el array original (esto afectará el filtrado/ordenamiento)
+        // Nota: Si la fuente proviene de RTK Query, considera refetch o actualizar cache.
+        // Aquí actualizamos el estado local derivado.
+        notifications.forEach((n: any, index: any) => {
+          if (n.title === notification.title) {
+            notifications[index].read = true;
           }
-          setHasMore(newItems.length === ITEMS_PER_PAGE);
-        } catch (err) {
-          console.error(t("page.fetchError"), err);
-        } finally {
-          setIsFetching(false);
-        }
+        });
+      } catch (err) {
+        console.error("Error al marcar notificación como leída", err);
       }
-    };
-    loadNotifications();
-  }, [page, searchQuery, sortQuery, refetch, isFetching, t]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !isFetching) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
     }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isFetching]);
-
-  const handleResetSearch = () => {
-    setSearchQuery("");
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
   };
 
-  const handleSort = useCallback(
-    (field: string) => {
-      const [currentField, currentDirection] = sortQuery.split(":");
-      let newSortQuery = "";
-      if (currentField === field) {
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
-      } else {
-        newSortQuery = `${field}:asc`;
-      }
-      setSortQuery(newSortQuery);
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
-    },
-    [sortQuery]
-  );
-
-  const tableData = items.map((notification) => {
+  // Mapeamos los datos para la tabla y añadimos el botón de "read"
+  const tableData = sortedNotifications.map((notification) => {
     const branch = branchData?.find((b) => b.id === notification.brand_id);
-    const article = articleData?.find((b) => b.id === notification.article_id);
+    const article = articleData?.find((a) => a.id === notification.article_id);
     return {
       key: notification._id,
       type: notification.type,
@@ -126,6 +112,15 @@ const Page = () => {
       description: notification.description,
       brand: branch?.name || t("table.noBrand"),
       article: article?.name || t("table.noBrand"),
+      // Nueva columna para el botón que muestra el estado read
+      read: (
+        <button
+          onClick={() => handleMarkAsRead(notification)}
+          disabled={notification.read}
+        >
+          {notification.read ? <MdVisibility /> : <MdVisibilityOff />}
+        </button>
+      ),
     };
   });
 
@@ -135,6 +130,7 @@ const Page = () => {
     { name: t("table.description"), key: "description" },
     { name: t("table.brand"), key: "brand" },
     { name: t("table.article"), key: "article" },
+    { name: t("table.read"), key: "read" },
   ];
 
   const headerBody = {
@@ -151,9 +147,7 @@ const Page = () => {
               }
               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
-                  setPage(1);
-                  setItems([]);
-                  refetch();
+                  // La búsqueda se realiza de forma local
                 }
               }}
               className="pr-8"
@@ -161,7 +155,7 @@ const Page = () => {
             {searchQuery && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={handleResetSearch}
+                onClick={() => setSearchQuery("")}
                 aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
@@ -171,19 +165,18 @@ const Page = () => {
         ),
       },
     ],
-    results: searchQuery
-      ? `${items.length} ${t("header.results")}`
-      : `${totalNotifications} ${t("header.results")}`,
+    results: `${sortedNotifications.length} ${t("header.results")}`,
   };
 
-  if (isLoading && items.length === 0) {
+  // En caso de que se esté cargando el query para el cliente, mostramos un spinner
+  if (selectedClientId && customerQuery.isLoading) {
     return (
       <div className="flex justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
       </div>
     );
   }
-  if (error) {
+  if (selectedClientId && customerQuery.error) {
     return (
       <div className="p-4 text-red-500">
         {t("page.errorLoadingNotifications")}
@@ -199,11 +192,20 @@ const Page = () => {
         <Table
           headers={tableHeader}
           data={tableData}
-          onSort={handleSort}
+          onSort={(field: string) => {
+            const [currentField, currentDirection] = sortQuery.split(":");
+            let newSortQuery = "";
+            if (currentField === field) {
+              newSortQuery =
+                currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+            } else {
+              newSortQuery = `${field}:asc`;
+            }
+            setSortQuery(newSortQuery);
+          }}
           sortField={sortQuery.split(":")[0]}
           sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
         />
-        <div ref={observerRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

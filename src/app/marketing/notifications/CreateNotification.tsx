@@ -14,7 +14,9 @@ interface CreateNotificationComponentProps {
   closeModal: () => void;
 }
 
-const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = ({ closeModal }) => {
+const CreateNotificationComponent: React.FC<
+  CreateNotificationComponentProps
+> = ({ closeModal }) => {
   const { t } = useTranslation();
 
   // Estado del formulario (se agregan customer_id y article_id)
@@ -32,16 +34,22 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
   const [relativeDuration, setRelativeDuration] = useState("");
 
   // Obtener marcas, clientes y artículos
-  const { data: brandsData, isLoading: isLoadingBrands } = useGetBrandsQuery(null);
-  const { data: articlesData, isLoading: isLoadingArticles } = useGetAllArticlesQuery(null);
+  const { data: brandsData, isLoading: isLoadingBrands } =
+    useGetBrandsQuery(null);
+  const { data: articlesData, isLoading: isLoadingArticles } =
+    useGetAllArticlesQuery(null);
 
   // Hook para crear notificación
-  const [createNotification, { isLoading: isLoadingCreate, isSuccess, isError }] =
-    useCreateNotificationMutation();
+  const [
+    createNotification,
+    { isLoading: isLoadingCreate, isSuccess, isError },
+  ] = useCreateNotificationMutation();
 
   // Manejo de cambios en los inputs
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     setForm((prev) => ({
       ...prev,
@@ -63,7 +71,7 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 
     try {
       const formattedData = {
-        ...form
+        ...form,
       };
 
       await createNotification(formattedData).unwrap();
@@ -74,14 +82,20 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
   };
 
   // Filtrar artículos según la marca seleccionada
-  const filteredArticles = articlesData && form.brand_id
-    ? articlesData.filter((article: { id: string; name: string; brand_id: string }) => article.brand_id === form.brand_id)
-    : [];
+  const filteredArticles =
+    articlesData && form.brand_id
+      ? articlesData.filter(
+          (article: { id: string; name: string; brand_id: string }) =>
+            article.brand_id === form.brand_id
+        )
+      : [];
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">{t("createNotification.title")}</h2>
+        <h2 className="text-lg font-semibold">
+          {t("createNotification.title")}
+        </h2>
         <button
           onClick={closeModal}
           className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
@@ -98,13 +112,35 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
           onClick={toggleIsArticle}
           className="bg-purple-500 text-white px-3 py-1 rounded-md text-sm"
         >
-          {t("createNotification.articleToggle")}: {isArticle ? t("createNotification.true") : t("createNotification.false")}
+          {t("createNotification.articleToggle")}:{" "}
+          {isArticle
+            ? t("createNotification.true")
+            : t("createNotification.false")}
         </button>
       </div>
 
       {/* Select de artículos si se activa la opción */}
       {isArticle && (
         <div className="mb-4">
+          {/* Marca */}
+          <label className="flex flex-col">
+            {t("createNotification.brandLabel")}:
+            <select
+              name="brand_id"
+              value={form.brand_id}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2 text-sm"
+              required
+            >
+              <option value="">{t("createNotification.selectBrand")}</option>
+              {!isLoadingBrands &&
+                brandsData?.map((brand: { id: string; name: string }) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+            </select>
+          </label>
           <label className="flex flex-col">
             {t("createNotification.articleLabel")}:
             <select
@@ -121,11 +157,13 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
                   : t("createNotification.selectArticle")}
               </option>
               {!isLoadingArticles &&
-                filteredArticles.map((article: { id: string; name: string }) => (
-                  <option key={article.id} value={article.id}>
-                    {article.name}
-                  </option>
-                ))}
+                filteredArticles.map(
+                  (article: { id: string; name: string }) => (
+                    <option key={article.id} value={article.id}>
+                      {article.name}
+                    </option>
+                  )
+                )}
             </select>
           </label>
         </div>
@@ -154,28 +192,12 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-2 text-sm"
           >
-            <option value={NotificationType.NOVEDAD}>{t("createNotification.novedad")}</option>
-            <option value={NotificationType.PEDIDO}>{t("createNotification.pedido")}</option>
-          </select>
-        </label>
-
-        {/* Marca */}
-        <label className="flex flex-col">
-          {t("createNotification.brandLabel")}:
-          <select
-            name="brand_id"
-            value={form.brand_id}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2 text-sm"
-            required
-          >
-            <option value="">{t("createNotification.selectBrand")}</option>
-            {!isLoadingBrands &&
-              brandsData?.map((brand: { id: string; name: string }) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
+            <option value={NotificationType.NOVEDAD}>
+              {t("createNotification.novedad")}
+            </option>
+            <option value={NotificationType.PEDIDO}>
+              {t("createNotification.pedido")}
+            </option>
           </select>
         </label>
 
@@ -220,7 +242,9 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
               isLoadingCreate ? "bg-gray-500" : "bg-green-500"
             }`}
           >
-            {isLoadingCreate ? t("createNotification.saving") : t("createNotification.save")}
+            {isLoadingCreate
+              ? t("createNotification.saving")
+              : t("createNotification.save")}
           </button>
         </div>
 
@@ -240,4 +264,3 @@ const CreateNotificationComponent: React.FC<CreateNotificationComponentProps> = 
 };
 
 export default CreateNotificationComponent;
-

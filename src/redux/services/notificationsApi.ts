@@ -29,7 +29,11 @@ export type CreateNotificationPayload = {
   updated_at?: Date;
 };
 
-// Puedes definir también un tipo para la actualización (UpdateNotificationDto) si lo requieres
+export type AllNotifications = {
+  notifications: Notifications[];
+  total: number;
+};
+
 export type UpdateNotificationPayload = Partial<CreateNotificationPayload> & {
   title: string;
   type: NotificationType;
@@ -46,12 +50,12 @@ export const notificationsApi = createApi({
   }),
   endpoints: (builder) => ({
     // Obtener todas las notificaciones sin paginación
-    getNotifications: builder.query<Notifications[], null>({
+    getNotifications: builder.query<AllNotifications, null>({
       query: () => `/notifications?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: Notifications[]) => {
-        if (!response || response.length === 0) {
+      transformResponse: (response: AllNotifications) => {
+        if (!response || !response.notifications || response.notifications.length === 0) {
           console.error("No se recibieron notifications en la respuesta");
-          return [];
+          return { notifications: [], total: 0 };
         }
         return response;
       },
@@ -70,7 +74,10 @@ export const notificationsApi = createApi({
       }),
     }),
     // Actualizar una notificación
-    updateNotification: builder.mutation<Notifications, { id: string; body: UpdateNotificationPayload }>({
+    updateNotification: builder.mutation<
+      Notifications,
+      { id: string; body: UpdateNotificationPayload }
+    >({
       query: ({ id, body }) => ({
         url: `/notifications/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PATCH",
@@ -108,14 +115,8 @@ export const notificationsApi = createApi({
         }
         return url;
       },
-      transformResponse: (
-        response: any
-      ): { notifications: Notifications[]; total: number } => {
-        if (
-          !response ||
-          !response.notifications ||
-          response.notifications.length === 0
-        ) {
+      transformResponse: (response: any): { notifications: Notifications[]; total: number } => {
+        if (!response || !response.notifications || response.notifications.length === 0) {
           console.error("No se recibieron notifications en la respuesta");
           return { notifications: [], total: 0 };
         }
@@ -144,14 +145,8 @@ export const notificationsApi = createApi({
         }
         return url;
       },
-      transformResponse: (
-        response: any
-      ): { notifications: Notifications[]; total: number } => {
-        if (
-          !response ||
-          !response.notifications ||
-          response.notifications.length === 0
-        ) {
+      transformResponse: (response: any): { notifications: Notifications[]; total: number } => {
+        if (!response || !response.notifications || response.notifications.length === 0) {
           console.error("No se recibieron notifications en la respuesta");
           return { notifications: [], total: 0 };
         }

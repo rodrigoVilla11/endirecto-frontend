@@ -7,23 +7,35 @@ export enum InstanceType {
   PAYMENT_CLAIM = "PAYMENT CLAIM",
 }
 
+export enum PriorityInstance {
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
+}
+
 export interface Instance {
   type: InstanceType;
   priority: PriorityInstance;
   notes: string;
 }
 
-export enum PriorityInstance {
-  HIGH = "HIGH",
-  MEDIUM = "MEDIUM",
-  LOW = "LOW",
+export interface CreateCustomerNotificationDto {
+  article_id: string;
+  brand_id: string;
+  description: string;
+  link: string;
+  schedule_from: Date;
+  schedule_to: Date;
+  title: string;
+  type: 'NOVEDAD' | 'PEDIDO' | 'PRESUPUESTO';
 }
+
 interface CustomersPagResponse {
   customers: Customer[];
   totalCustomers: number;
 }
 
-type Customer = {
+export type Customer = {
   id: string;
   name: string;
   address: string;
@@ -34,7 +46,7 @@ type Customer = {
   cuit: string;
   branch_id: string;
   payment_condition_id: string;
-  notifications_id: string[];
+  notifications: string[];
   price_list_id: string;
   seller_id: string;
   documents_balance: string[];
@@ -47,7 +59,7 @@ type Customer = {
   gps: string;
 };
 
-type UpdateCustomersPayload = {
+export type UpdateCustomersPayload = {
   id: string;
   email?: string;
   phone?: string;
@@ -127,7 +139,6 @@ export const customerApi = createApi({
         };
       },
     }),
-
     updateCustomer: builder.mutation<Customer, UpdateCustomersPayload>({
       query: ({ id, ...updatedCustomer }) => ({
         url: `/customers/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -149,6 +160,28 @@ export const customerApi = createApi({
       query: ({ id }) =>
         `/customers/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+    // Endpoint para agregar una notificación a los customers que coincidan con el seller_id
+    addNotificationToCustomers: builder.mutation<
+      Customer[],
+      { sellerId: string; notification: CreateCustomerNotificationDto }
+    >({
+      query: (payload) => ({
+        url: `/customers/add-notification?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    // Nuevo endpoint: marcar una notificación como leída usando el title para identificarla
+    markNotificationAsReadCustomer: builder.mutation<
+      Customer,
+      { id: string; title: string }
+    >({
+      query: ({ id, title }) => ({
+        url: `/customers/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PATCH",
+        body: { id, title },
+      }),
+    }),
   }),
 });
 
@@ -159,4 +192,6 @@ export const {
   useCountCustomersQuery,
   useUpdateCustomerMutation,
   useLazyGetCustomersPagQuery,
+  useAddNotificationToCustomersMutation,
+  useMarkNotificationAsReadCustomerMutation,
 } = customerApi;

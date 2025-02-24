@@ -129,6 +129,10 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           path: "/marketing/notifications",
         },
         {
+          name: t("publicate-notifications"),
+          path: "/marketing/publicate-notifications",
+        },
+        {
           name: t("banners"),
           path: "/marketing/banners",
         },

@@ -18,6 +18,7 @@ type User = {
   zone?: string;
   seller_id?: string;
 };
+
 type CreateUserPayload = {
   _id?: string;
   username: string;
@@ -27,6 +28,7 @@ type CreateUserPayload = {
   branch: string;
   seller_id?: string;
 };
+
 type UpdateUserPayload = {
   _id: string;
   username: string;
@@ -36,10 +38,22 @@ type UpdateUserPayload = {
   branch: string;
 };
 
+export interface CreateUserNotificationDto {
+  article_id: string;
+  brand_id: string;
+  description: string;
+  link: string;
+  schedule_from: Date;
+  schedule_to: Date;
+  title: string;
+  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO";
+}
+
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl:
+      process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
     getUsers: builder.query<User[], null>({
@@ -54,7 +68,7 @@ export const usersApi = createApi({
     }),
     getUsersPag: builder.query<
       User[],
-      { page?: number; limit?: number; query?: string, sort?: string }
+      { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "user:asc" } = {}) => {
         return `/users?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
@@ -98,6 +112,37 @@ export const usersApi = createApi({
         method: "DELETE",
       }),
     }),
+    addNotificationToUser: builder.mutation<
+      User[],
+      { userId: string; notification: CreateUserNotificationDto }
+    >({
+      query: (payload) => ({
+        url: `/users/add-notification?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    // Nuevo endpoint para agregar una notificación a usuarios según su role.
+    addNotificationToUsersByRoles: builder.mutation<
+      User[],
+      { roles: Roles[]; notification: CreateUserNotificationDto }
+    >({
+      query: (payload) => ({
+        url: `/users/add-notification-by-roles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    markNotificationAsRead: builder.mutation<
+          User,
+          { id: string; title: string }
+        >({
+          query: ({ id, title }) => ({
+            url: `/users/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+            method: "PATCH",
+            body: { id, title },
+          }),
+        }),
   }),
 });
 
@@ -109,4 +154,7 @@ export const {
   useUpdateUserMutation,
   useGetUsersPagQuery,
   useCreateUserMutation,
+  useAddNotificationToUserMutation,
+  useAddNotificationToUsersByRolesMutation,
+  useMarkNotificationAsReadMutation
 } = usersApi;

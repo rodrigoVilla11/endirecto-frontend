@@ -13,49 +13,43 @@ import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import i18n from "i18next";
 import ReactCountryFlag from "react-country-flag";
-import { useGetNotificationsPagQuery, useUpdateNotificationMutation } from "@/redux/services/notificationsApi";
+import { useAuth } from "@/app/context/AuthContext";
 
 const ButtonsIcons = ({ isMobile }: any) => {
   const { selectedClientId } = useClient();
+  const { userData } = useAuth();
+  const router = useRouter();
 
+  // Si hay un selectedClient, usamos la query para traer sus notificaciones.
   const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
     { refetchOnMountOrArgChange: true }
   );
 
-  const router = useRouter();
+  // Estado local para notificaciones (para actualizar el badge y el listado)
+  // Si hay selectedClient, usaremos las notificaciones traídas por la API;
+  // de lo contrario, se usan las de userData.
+  const [notifications, setNotifications] = useState<any[]>([]);
+  useEffect(() => {
+    if (selectedClientId) {
+      if (customer && customer.notifications) {
+        setNotifications(customer.notifications);
+      }
+    } else {
+      setNotifications(userData?.notifications || []);
+    }
+  }, [userData, selectedClientId]);
+
+
+
+  const cartItemCount = customer?.shopping_cart
+    ? [...new Set(customer.shopping_cart.map((item) => item))].length
+    : 0;
+
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
-
-  // Hook para traer las notificaciones (últimas 5) y guardarlas en estado local
-  const commonParams = {
-    page: 1,
-    limit: 5,
-    query: "",
-    sort: "createdAt:desc",
-    customer_id: selectedClientId || "",
-  };
-  const { data: notificationsData, error, isLoading, refetch } = useGetNotificationsPagQuery(commonParams);
-
-  // Estado local para notificaciones (para poder actualizar el badge y el listado)
-  const [items, setItems] = useState<any[]>([]);
-  useEffect(() => {
-    if (notificationsData && notificationsData.notifications) {
-      setItems(notificationsData.notifications);
-    }
-  }, [notificationsData]);
-
-  // Mutation para actualizar notificación (cambiar "read")
-  const [updateNotification] = useUpdateNotificationMutation();
-
-  // Calcula la cantidad de notificaciones sin leer
-  const unreadCount = items.filter((n) => !n.read).length;
-
-  const cartItemCount = customer?.shopping_cart
-    ? [...new Set(customer?.shopping_cart.map((item) => item))].length
-    : 0;
 
   const handleRedirect = (path: string) => {
     if (path) {
@@ -88,26 +82,6 @@ const ButtonsIcons = ({ isMobile }: any) => {
     i18n.changeLanguage(newLanguage);
   };
 
-  // Al hacer clic en una notificación: si no está leída, la marca como leída y luego redirige
-  const handleNotificationClick = async (notification: any) => {
-    if (!notification.read) {
-      try {
-        const updated = await updateNotification({
-          id: notification._id,
-          body: { read: true },
-        }).unwrap();
-        setItems((prev) =>
-          prev.map((item) =>
-            item._id === notification._id ? { ...item, read: updated.read } : item
-          )
-        );
-      } catch (err) {
-        console.error("Error actualizando el estado de read", err);
-      }
-    }
-    setIsNotificationsMenuOpen(false);
-    router.push("/notifications");
-  };
 
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
@@ -147,38 +121,37 @@ const ButtonsIcons = ({ isMobile }: any) => {
           )}
         </div>
       )}
-      {/* Icono de notificaciones con badge de unread */}
+      {/* Icono de notificaciones con badge (cantidad de notificaciones sin leer) */}
       <div className="relative">
         <MdNotifications
           className="cursor-pointer"
           onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
         />
-        {unreadCount > 0 && (
+        {notifications.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {unreadCount}
+            {notifications.length}
           </span>
         )}
-        {/* Menú desplegable de notificaciones: se posiciona debajo del icono */}
+        {/* Menú desplegable de notificaciones: muestra solo las no leídas */}
         {isNotificationsMenuOpen && (
           <div className="absolute top-full right-0 mt-2 w-80 bg-white text-black shadow-lg rounded-md z-50">
             <div className="p-4 border-b">
               <h3 className="font-bold text-lg">{i18n.t("notifications")}</h3>
             </div>
             <div className="max-h-80 overflow-y-auto">
-              {items && items.length > 0 ? (
+              {notifications.filter((n) => !n.read).length > 0 ? (
                 <ul>
-                  {items.map((notification: any) => (
-                    <li
-                      key={notification._id}
-                      className={`p-4 border-b hover:bg-gray-100 cursor-pointer ${
-                        !notification.read ? "bg-yellow-100" : ""
-                      }`}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <p className="font-semibold">{notification.title}</p>
-                      <p className="text-sm">{notification.description}</p>
-                    </li>
-                  ))}
+                  {notifications
+                    .filter((notification) => !notification.read)
+                    .map((notification: any) => (
+                      <li
+                        key={notification._id}
+                        className="p-4 border-b hover:bg-gray-100 cursor-pointer bg-yellow-100"
+                      >
+                        <p className="font-semibold">{notification.title}</p>
+                        <p className="text-sm">{notification.description}</p>
+                      </li>
+                    ))}
                 </ul>
               ) : (
                 <div className="p-4">{i18n.t("no_notifications")}</div>
@@ -196,7 +169,6 @@ const ButtonsIcons = ({ isMobile }: any) => {
         )}
       </div>
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
-
       {showTick && (
         <div
           className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"
