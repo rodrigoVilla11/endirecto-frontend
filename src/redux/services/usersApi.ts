@@ -39,14 +39,15 @@ type UpdateUserPayload = {
 };
 
 export interface CreateUserNotificationDto {
-  article_id: string;
-  brand_id: string;
+  article_id?: string;
+  brand_id?: string;
   description: string;
   link: string;
   schedule_from: Date;
   schedule_to: Date;
   title: string;
   type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO";
+  customer_id?: string
 }
 
 export const usersApi = createApi({

@@ -3,15 +3,22 @@ import React, { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
 import { CiGps } from "react-icons/ci";
 import { useClient } from "../context/ClientContext";
-import { useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@/redux/services/customersApi";
+import {
+  useGetCustomerByIdQuery,
+  useUpdateCustomerMutation,
+} from "@/redux/services/customersApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
 import { useGetCustomerTransportByCustomerIdQuery } from "@/redux/services/customersTransports";
 import { useCreateOrderMutation } from "@/redux/services/ordersApi";
-import { useCreateNotificationMutation, NotificationType } from "@/redux/services/notificationsApi";
+import {
+  useCreateNotificationMutation,
+  NotificationType,
+} from "@/redux/services/notificationsApi";
 import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { addMonths, format } from "date-fns"
+import { addMonths, format } from "date-fns";
+import { useAddNotificationToUserMutation } from "@/redux/services/usersApi";
 
 interface OrderItem {
   id: string;
@@ -75,12 +82,14 @@ export default function OrderConfirmation({
   totalFormatted,
 }: OrderConfirmationProps) {
   const { t } = useTranslation();
-  const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
+  const [createOrder, { isLoading: isLoadingCreate }] =
+    useCreateOrderMutation();
   // Nuevo hook para crear notificación
-  const [createNotification] = useCreateNotificationMutation();
+  const [addNotificationToUser] = useAddNotificationToUserMutation();
   const [checkInsituVisit] = useCheckInsituVisitMutation();
   const { selectedClientId } = useClient();
-  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdating }] =
+    useUpdateCustomerMutation();
 
   // Estados para GPS, insitu y tick de éxito
   const [gps, setGPS] = useState("");
@@ -92,8 +101,12 @@ export default function OrderConfirmation({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: customer } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
-  const { data: customerTransport } = useGetCustomerTransportByCustomerIdQuery({ id: selectedClientId || "" });
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
+  const { data: customerTransport } = useGetCustomerTransportByCustomerIdQuery({
+    id: selectedClientId || "",
+  });
   const { data: paymentsConditionsData } = useGetPaymentConditionByIdQuery({
     id: customer?.payment_condition_id || "",
   });
@@ -135,7 +148,9 @@ export default function OrderConfirmation({
     }
   }, [order]);
 
-  const handleObservationChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleObservationChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
     const newNotes = e.target.value;
     setObservations(newNotes);
     setTransaction((prev) => ({ ...prev, notes: newNotes }));
@@ -194,7 +209,7 @@ export default function OrderConfirmation({
     try {
       // Crear el pedido
       const createdOrder = await createOrder(updatedTransaction).unwrap();
-      
+
       // Actualizar el carrito del cliente, si corresponde
       if (customer && customer.shopping_cart) {
         const transactionArticleIds = updatedTransaction.details.map(
@@ -203,34 +218,43 @@ export default function OrderConfirmation({
         const updatedShoppingCart = customer.shopping_cart.filter(
           (item: string) => !transactionArticleIds.includes(item)
         );
-        await updateCustomer({ id: customer.id, shopping_cart: updatedShoppingCart }).unwrap();
+        await updateCustomer({
+          id: customer.id,
+          shopping_cart: updatedShoppingCart,
+        }).unwrap();
       }
-      
+
       // Calcular schedule_from (fecha actual) y schedule_to (1 mes después)
       const now = new Date();
       const schedule_from = format(now, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
-      const schedule_to = format(addMonths(now, 1), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
-    
+      const schedule_to = format(
+        addMonths(now, 1),
+        "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+      );
+
       // Generar una cadena con los artículos del pedido
       const articlesString = updatedTransaction.details
         .map((detail) => `Artículo ${detail.article.id} (x${detail.quantity})`)
         .join(", ");
-    
+
       // Construir el título y la descripción para la notificación
       const notificationTitle = `Pedido Número ${createdOrder.tmp_id}, Cliente ${selectedClientId}`;
       const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
-      
+
       // Enviar la notificación de tipo PEDIDO
-      await createNotification({
-        title: notificationTitle,
-        type: NotificationType.PEDIDO,
-        schedule_from, // Fecha actual
-        schedule_to,   // 1 mes después
-        description: notificationDescription,
-        link: `/orders/${createdOrder.tmp_id}`, // Link al detalle del pedido
-        customer_id: selectedClientId || "",
+      await addNotificationToUser({
+        userId: transaction.seller.id || "",
+        notification: {
+          title: notificationTitle,
+          type: NotificationType.PEDIDO,
+          schedule_from: new Date(schedule_from),
+          schedule_to: new Date(schedule_to),
+          description: notificationDescription,
+          link: `/orders/${createdOrder.tmp_id}`, // Link al detalle del pedido
+          customer_id: selectedClientId || "",
+        },
       }).unwrap();
-    
+
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -238,7 +262,9 @@ export default function OrderConfirmation({
         window.location.href = "/dashboard";
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("orderConfirmation.genericError"));
+      setError(
+        err instanceof Error ? err.message : t("orderConfirmation.genericError")
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -341,7 +367,10 @@ export default function OrderConfirmation({
                 value={observations}
                 onChange={(e) => {
                   setObservations(e.target.value);
-                  setTransaction((prev) => ({ ...prev, notes: e.target.value }));
+                  setTransaction((prev) => ({
+                    ...prev,
+                    notes: e.target.value,
+                  }));
                 }}
                 disabled={isSubmitting}
               />
@@ -360,7 +389,9 @@ export default function OrderConfirmation({
                 disabled={isSubmitting || !selectedClientId}
                 className="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 font-bold"
               >
-                {isSubmitting ? t("orderConfirmation.processing") : t("orderConfirmation.accept")}
+                {isSubmitting
+                  ? t("orderConfirmation.processing")
+                  : t("orderConfirmation.accept")}
               </button>
             </div>
           </form>
