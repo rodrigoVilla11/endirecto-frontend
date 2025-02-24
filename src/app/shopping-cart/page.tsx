@@ -85,7 +85,6 @@ const ShoppingCart = () => {
         const paymentCondition = paymentsConditions.find(
           (p) => p.id === customer?.payment_condition_id
         );
-        console.log("paymentCondition",paymentCondition)
 
         const percentagePaymentCondition = Math.abs(
           parseFloat(paymentCondition?.percentage || "0")

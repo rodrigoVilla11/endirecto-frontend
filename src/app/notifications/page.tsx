@@ -26,9 +26,6 @@ const Page = () => {
     { skip: !selectedClientId }
   );
 
-console.log("customerQuery", customerQuery)
-console.log("userData", userData)
-
 
   const notifications = selectedClientId
     ? customerQuery.data?.notifications || []

@@ -42,7 +42,6 @@ export default function NotificationForm() {
   const [duration, setDuration] = useState<number>(24);
   const [notificationState, setNotificationState] = useState<any>(null);
 
-  console.log("notificationState", notificationState);
 
   const sections: Section[] = [
     {
@@ -214,7 +213,6 @@ export default function NotificationForm() {
     }
 
     setNotificationState(newNotificationState);
-    console.log("Notification state:", newNotificationState);
   };
 
   if (isLoading || isLoadingUsers || isLoadingSellers)
