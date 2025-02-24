@@ -46,7 +46,7 @@ export type Customer = {
   cuit: string;
   branch_id: string;
   payment_condition_id: string;
-  notifications: string[];
+  notifications: any;
   price_list_id: string;
   seller_id: string;
   documents_balance: string[];

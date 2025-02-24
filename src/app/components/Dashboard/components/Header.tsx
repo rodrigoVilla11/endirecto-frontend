@@ -68,7 +68,8 @@ const Header = () => {
 
           <div className="flex flex-col items-center">
             <span className="text-2xl font-semibold">
-              {selectedClientId && data?.notifications_id.length}
+              {selectedClientId &&
+                data?.notifications.filter((n: any) => !n.read).length}
             </span>
             <span className="text-sm text-gray-600 text-center">
               {t("notifications")}
