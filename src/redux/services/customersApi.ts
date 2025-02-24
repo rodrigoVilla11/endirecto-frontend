@@ -174,12 +174,12 @@ export const customerApi = createApi({
     // Nuevo endpoint: marcar una notificación como leída usando el title para identificarla
     markNotificationAsReadCustomer: builder.mutation<
       Customer,
-      { id: string; title: string }
+      { id: string; notificationId: string }
     >({
-      query: ({ id, title }) => ({
+      query: ({ id, notificationId }) => ({
         url: `/customers/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PATCH",
-        body: { id, title },
+        body: { id, notificationId },
       }),
     }),
   }),
