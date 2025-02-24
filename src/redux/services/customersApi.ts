@@ -20,8 +20,8 @@ export interface Instance {
 }
 
 export interface CreateCustomerNotificationDto {
-  article_id: string;
-  brand_id: string;
+  article_id?: string;
+  brand_id?: string;
   description: string;
   link: string;
   schedule_from: Date;
