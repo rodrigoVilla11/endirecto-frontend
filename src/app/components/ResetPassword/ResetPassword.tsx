@@ -48,6 +48,8 @@ const LoginPage = () => {
         role: data.role,
         branch: data.branch,
         seller_id: data.seller_id,
+        notifications: data.notifications
+
       };
 
       if (userData._id.length < 10) {
