@@ -15,53 +15,39 @@ import i18n from "i18next";
 import ReactCountryFlag from "react-country-flag";
 import { useAuth } from "@/app/context/AuthContext";
 
-const ButtonsIcons = ({ isMobile }: any) => {
+const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
   const router = useRouter();
 
-  // Si hay un selectedClient, usamos la query para traer sus notificaciones.
-  const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery(
+  const {
+    data: customer,
+    refetch: refetchCustomer,
+    isFetching,
+  } = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
-    { refetchOnMountOrArgChange: true }
+    { skip: !selectedClientId, refetchOnMountOrArgChange: true }
   );
 
-  // Estado local para notificaciones (para actualizar el badge y el listado)
-  // Si hay selectedClient, usaremos las notificaciones traídas por la API;
-  // de lo contrario, se usan las de userData.
   const [notifications, setNotifications] = useState<any[]>([]);
-  useEffect(() => {
-    if (selectedClientId) {
-      if (customer && customer.notifications) {
-        setNotifications(customer.notifications);
-      }
-    } else {
-      setNotifications(userData?.notifications || []);
-    }
-  }, [userData, selectedClientId]);
-
-
-
-  const cartItemCount = customer?.shopping_cart
-    ? [...new Set(customer.shopping_cart.map((item) => item))].length
-    : 0;
-
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
 
-  const handleRedirect = (path: string) => {
-    if (path) {
-      router.push(path);
-    }
-  };
+  const cartItemCount = customer?.shopping_cart
+    ? new Set(customer.shopping_cart).size
+    : 0;
 
   useEffect(() => {
-    if (selectedClientId) {
-      refetchCustomer();
+    if (selectedClientId && customer?.notifications) {
+      setNotifications(customer.notifications);
+    } else if (!selectedClientId && userData?.notifications) {
+      setNotifications(userData.notifications);
+    } else {
+      setNotifications([]);
     }
-  }, [selectedClientId, refetchCustomer]);
+  }, [userData, customer, selectedClientId]);
 
   useEffect(() => {
     if (cartItemCount > 0) {
@@ -76,12 +62,15 @@ const ButtonsIcons = ({ isMobile }: any) => {
     }
   }, [cartItemCount]);
 
+  const handleRedirect = (path: string) => {
+    router.push(path);
+  };
+
   const handleLanguageToggle = () => {
     const newLanguage = currentLanguage === "en" ? "es" : "en";
     setCurrentLanguage(newLanguage);
     i18n.changeLanguage(newLanguage);
   };
-
 
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
@@ -89,7 +78,10 @@ const ButtonsIcons = ({ isMobile }: any) => {
         <MdNotificationsOff className="cursor-pointer text-red-600" />
       )}
       {!isMobile && (
-        <button onClick={handleLanguageToggle} className="cursor-pointer text-xl">
+        <button
+          onClick={handleLanguageToggle}
+          className="cursor-pointer text-xl"
+        >
           {currentLanguage === "es" ? (
             <ReactCountryFlag
               countryCode="AR"
@@ -115,24 +107,22 @@ const ButtonsIcons = ({ isMobile }: any) => {
             onClick={() => handleRedirect("/shopping-cart")}
           />
           {cartItemCount > 0 && (
-            <span className="absolute top-3 left-3 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+            <span className="absolute top-4 left-3 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
               {cartItemCount}
             </span>
           )}
         </div>
       )}
-      {/* Icono de notificaciones con badge (cantidad de notificaciones sin leer) */}
       <div className="relative">
         <MdNotifications
           className="cursor-pointer"
           onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
         />
-        {notifications.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {notifications.length}
+        {notifications.filter((n) => !n.read).length > 0 && (
+          <span className="absolute top-4 left-3 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+            {notifications.filter((n) => !n.read).length}
           </span>
         )}
-        {/* Menú desplegable de notificaciones: muestra solo las no leídas */}
         {isNotificationsMenuOpen && (
           <div className="absolute top-full right-0 mt-2 w-80 bg-white text-black shadow-lg rounded-md z-50">
             <div className="p-4 border-b">
