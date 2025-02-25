@@ -1258,5 +1258,8 @@
     "message": "No tienes acceso a esta página."
   },
   "totalWithoutTaxes": "Total sin impuestos",
-  "publicate-notifications": "Publicación de Notificaciones"
+  "publicate-notifications": "Publicación de Notificaciones",
+  "no_notifications": "No hay notificationes sin leer",
+  "notify_notifications": "Te avisaremos cuando llegue algo nuevo.",
+  "mark_all_as_read": "Marcar todas como leidas"
 }

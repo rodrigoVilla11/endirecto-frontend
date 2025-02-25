@@ -21,7 +21,8 @@ import {
   useGetUserByIdQuery,
   useMarkNotificationAsReadMutation,
 } from "@/redux/services/usersApi";
-import { Bell, X } from "lucide-react";
+import { Bell, CheckCircle, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { selectedClientId } = useClient();
@@ -35,6 +36,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     { skip: !selectedClientId, refetchOnMountOrArgChange: true }
   );
 
+  // Asignamos todas las notificaciones sin filtrar
   const [notifications, setNotifications] = useState<any[]>([]);
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
@@ -49,11 +51,9 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
 
   useEffect(() => {
     if (selectedClientId && customer?.notifications) {
-      setNotifications(customer.notifications.filter((n: any) => !n.read));
+      setNotifications(customer.notifications);
     } else if (!selectedClientId && userQuery.data?.notifications) {
-      setNotifications(
-        userQuery.data?.notifications.filter((n: any) => !n.read)
-      );
+      setNotifications(userQuery.data?.notifications);
     } else {
       setNotifications([]);
     }
@@ -106,6 +106,22 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     }
   };
 
+  // Función para marcar todas las notificaciones (de las últimas 5) como leídas
+  const handleMarkAllAsRead = async () => {
+    const latestNotifications = notifications.slice(0, 5);
+    for (const notification of latestNotifications) {
+      if (!notification.read) {
+        await handleMarkAsRead(notification);
+      }
+    }
+    if (selectedClientId) {
+      await refetchCustomer();
+    } else {
+      await userQuery.refetch();
+    }
+    setIsNotificationsMenuOpen(false);
+  };
+
   // Al hacer clic en una notificación se marca como leída, se refetch y se redirige a /notifications
   const handleNotificationClick = async (notification: any) => {
     await handleMarkAsRead(notification);
@@ -124,10 +140,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
         <MdNotificationsOff className="cursor-pointer text-red-600" />
       )}
       {!isMobile && (
-        <button
-          onClick={handleLanguageToggle}
-          className="cursor-pointer text-xl"
-        >
+        <button onClick={handleLanguageToggle} className="cursor-pointer text-xl">
           {currentLanguage === "es" ? (
             <ReactCountryFlag
               countryCode="AR"
@@ -169,58 +182,167 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
             {notifications.filter((n) => !n.read).length}
           </span>
         )}
-        {isNotificationsMenuOpen && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-white text-black shadow-lg rounded-lg overflow-hidden z-50 border border-gray-200">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center">
-                <Bell className="w-5 h-5 mr-2" />
-                {i18n.t("notifications")}
-              </h3>
-              <button
-                onClick={() => setIsNotificationsMenuOpen(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-                aria-label="Close notifications"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {notifications.filter((n) => !n.read).length > 0 ? (
-                <ul className="divide-y divide-gray-200">
-                  {notifications
-                    .filter((notification) => !notification.read)
-                    .map((notification: any) => (
-                      <li
-                        key={notification._id}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => handleNotificationClick(notification)}
+        <AnimatePresence>
+          {isNotificationsMenuOpen && (
+            <>
+              {isMobile ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                >
+                  <div className="w-[90vw] max-w-md bg-white text-gray-800 shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-primary">
+                      <h3 className="font-bold text-lg flex items-center text-white">
+                        <Bell className="w-6 h-6 mr-3" />
+                        {i18n.t("notifications")}
+                      </h3>
+                      <button
+                        onClick={() => setIsNotificationsMenuOpen(false)}
+                        className="text-white hover:text-gray-200 transition-colors focus:outline-none"
+                        aria-label="Close notifications"
                       >
-                        <p className="font-semibold text-gray-800 mb-1">
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {notification.description}
-                        </p>
-                      </li>
-                    ))}
-                </ul>
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <AnimatePresence>
+                        {notifications.slice(0, 5).length > 0 ? (
+                          <motion.ul className="divide-y divide-gray-100">
+                            {notifications.slice(0, 5).map((notification: any) => (
+                              <motion.li
+                                key={notification._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.2 }}
+                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                  !notification.read
+                                    ? "bg-yellow-100"
+                                    : "hover:bg-gray-50"
+                                }`}
+                                onClick={() => handleNotificationClick(notification)}
+                              >
+                                <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                  {notification.title}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  {notification.description}
+                                </p>
+                              </motion.li>
+                            ))}
+                          </motion.ul>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="p-12 text-center text-gray-500"
+                          >
+                            <Bell className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                            <p className="text-xs font-medium">
+                              {i18n.t("no_notifications")}
+                            </p>
+                            <p className="text-xs mt-2 text-gray-400">
+                              {i18n.t("notify_notifications")}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="p-6 bg-gray-50">
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs w-full px-6 py-3 bg-primary text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        {i18n.t("mark_all_as_read")}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               ) : (
-                <div className="p-8 text-center text-gray-500">
-                  <Bell className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p>{i18n.t("no_notifications")}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full right-0 mt-4 w-96 bg-white text-gray-800 shadow-2xl rounded-2xl overflow-hidden z-50 border border-gray-100"
+                >
+                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-primary">
+                    <h3 className="font-bold text-lg flex items-center text-white">
+                      <Bell className="w-6 h-6 mr-3" />
+                      {i18n.t("notifications")}
+                    </h3>
+                    <button
+                      onClick={() => setIsNotificationsMenuOpen(false)}
+                      className="text-white hover:text-gray-200 transition-colors focus:outline-none"
+                      aria-label="Close notifications"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    <AnimatePresence>
+                      {notifications.slice(0, 5).length > 0 ? (
+                        <motion.ul className="divide-y divide-gray-100">
+                          {notifications.slice(0, 5).map((notification: any) => (
+                            <motion.li
+                              key={notification._id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -20 }}
+                              transition={{ duration: 0.2 }}
+                              className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                !notification.read
+                                  ? "bg-yellow-100"
+                                  : "hover:bg-gray-50"
+                              }`}
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                {notification.title}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {notification.description}
+                              </p>
+                            </motion.li>
+                          ))}
+                        </motion.ul>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="p-12 text-center text-gray-500"
+                        >
+                          <Bell className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+                          <p className="text-xs font-medium">
+                            {i18n.t("no_notifications")}
+                          </p>
+                          <p className="text-xs mt-2 text-gray-400">
+                            {i18n.t("notify_notifications")}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div className="p-6 bg-gray-50">
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="text-xs w-full px-6 py-3 bg-primary text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      {i18n.t("mark_all_as_read")}
+                    </button>
+                  </div>
+                </motion.div>
               )}
-            </div>
-            <div className="p-4 bg-gray-50 text-right">
-              <button
-                onClick={() => setIsNotificationsMenuOpen(false)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              >
-                {i18n.t("close")}
-              </button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </AnimatePresence>
       </div>
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
       {showTick && (

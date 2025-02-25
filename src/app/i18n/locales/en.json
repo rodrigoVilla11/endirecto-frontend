@@ -1265,6 +1265,9 @@
     "message": "You do not have access to this page."
   },
   "totalWithoutTaxes": "Total Without Taxes",
-  "publicate-notifications": "Publication of Notifications"
+  "publicate-notifications": "Publication of Notifications",
+  "no_notifications": "There are no unread notifications",
+  "notify_notifications": "We'll notify you when something new arrives",
+  "mark_all_as_read": "Mark all as read"
 
 }
