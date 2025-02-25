@@ -13,7 +13,10 @@ import { useClient } from "../context/ClientContext";
 import { useAuth } from "../context/AuthContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { useMarkNotificationAsReadMutation } from "@/redux/services/usersApi";
+import {
+  useGetUserByIdQuery,
+  useMarkNotificationAsReadMutation,
+} from "@/redux/services/usersApi";
 import { useMarkNotificationAsReadCustomerMutation } from "@/redux/services/customersApi";
 
 const Page = () => {
@@ -21,17 +24,18 @@ const Page = () => {
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
 
+  const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
+
   const customerQuery = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
 
-
   const notifications = selectedClientId
     ? customerQuery.data?.notifications || []
-    : userData?.notifications || [];
+    : userQuery.data?.notifications || [];
 
-  const currentUserId = selectedClientId || userData?._id || "";
+  const currentUserId = selectedClientId || userQuery.data?._id || "";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
@@ -42,24 +46,25 @@ const Page = () => {
       setLocalNotifications(notifications.filter((n: any) => n.send === true));
     }
   }, [JSON.stringify(notifications)]); // ✅ Usa stringify para prevenir cambios de referencia
-  
 
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
   }, 100);
 
-  const filteredNotifications = localNotifications.filter((notification: any) => {
-    if (!searchQuery) return true;
-    const lowerSearch = searchQuery.toLowerCase();
-    return (
-      notification.title.toLowerCase().includes(lowerSearch) ||
-      notification.description.toLowerCase().includes(lowerSearch)
-    );
-  });
+  const filteredNotifications = localNotifications.filter(
+    (notification: any) => {
+      if (!searchQuery) return true;
+      const lowerSearch = searchQuery.toLowerCase();
+      return (
+        notification.title.toLowerCase().includes(lowerSearch) ||
+        notification.description.toLowerCase().includes(lowerSearch)
+      );
+    }
+  );
 
   const sortedNotifications = useMemo(() => {
     if (!sortQuery) return filteredNotifications;
-  
+
     const [field, direction] = sortQuery.split(":");
     return [...filteredNotifications].sort((a, b) => {
       if (a[field] < b[field]) return direction === "asc" ? -1 : 1;
@@ -67,12 +72,13 @@ const Page = () => {
       return 0;
     });
   }, [filteredNotifications, sortQuery]);
-  
+
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: articleData } = useGetAllArticlesQuery(null);
 
   const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
-  const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
+  const [markNotificationCustomerAsRead] =
+    useMarkNotificationAsReadCustomerMutation();
 
   const handleMarkAsRead = async (notification: any) => {
     if (!notification.read && currentUserId) {
@@ -105,8 +111,12 @@ const Page = () => {
     type: notification.type,
     title: notification.title,
     description: notification.description,
-    brand: branchData?.find((b) => b.id === notification.brand_id)?.name || t("table.noBrand"),
-    article: articleData?.find((a) => a.id === notification.article_id)?.name || t("table.noBrand"),
+    brand:
+      branchData?.find((b) => b.id === notification.brand_id)?.name ||
+      t("table.noBrand"),
+    article:
+      articleData?.find((a) => a.id === notification.article_id)?.name ||
+      t("table.noBrand"),
     read: (
       <button
         onClick={() => handleMarkAsRead(notification)}
@@ -130,11 +140,23 @@ const Page = () => {
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("page.notifications")}</h3>
-        <Header headerBody={{ buttons: [], filters: [], results: `${sortedNotifications.length} ${t("header.results")}` }} />
+        <Header
+          headerBody={{
+            buttons: [],
+            filters: [],
+            results: `${sortedNotifications.length} ${t("header.results")}`,
+          }}
+        />
         <Table
           headers={tableHeader}
           data={tableData}
-          onSort={(field) => setSortQuery((prev) => prev.startsWith(field) && prev.endsWith("asc") ? `${field}:desc` : `${field}:asc`)}
+          onSort={(field) =>
+            setSortQuery((prev) =>
+              prev.startsWith(field) && prev.endsWith("asc")
+                ? `${field}:desc`
+                : `${field}:asc`
+            )
+          }
           sortField={sortQuery.split(":")[0]}
           sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
         />

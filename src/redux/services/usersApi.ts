@@ -17,6 +17,7 @@ type User = {
   branch: string;
   zone?: string;
   seller_id?: string;
+  notifications: any
 };
 
 type CreateUserPayload = {
@@ -157,5 +158,5 @@ export const {
   useCreateUserMutation,
   useAddNotificationToUserMutation,
   useAddNotificationToUsersByRolesMutation,
-  useMarkNotificationAsReadMutation
+  useMarkNotificationAsReadMutation,
 } = usersApi;

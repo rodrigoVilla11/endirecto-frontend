@@ -14,11 +14,14 @@ import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import i18n from "i18next";
 import ReactCountryFlag from "react-country-flag";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
 const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
   const router = useRouter();
+
+  const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
 
   const {
     data: customer,
@@ -42,12 +45,12 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   useEffect(() => {
     if (selectedClientId && customer?.notifications) {
       setNotifications(customer.notifications);
-    } else if (!selectedClientId && userData?.notifications) {
-      setNotifications(userData.notifications);
+    } else if (!selectedClientId && userQuery.data?.notifications) {
+      setNotifications(userQuery.data?.notifications);
     } else {
       setNotifications([]);
     }
-  }, [userData, customer, selectedClientId]);
+  }, [userQuery, customer, selectedClientId]);
 
   useEffect(() => {
     if (cartItemCount > 0) {

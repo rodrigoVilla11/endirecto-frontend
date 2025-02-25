@@ -54,7 +54,6 @@ export default function DocumentDetails({ documentId, onClose }: { documentId: s
           </h2>
           <button
             onClick={() => {
-              console.log("Closing modal...");
               onClose();
             }}
             className="text-gray-500 hover:text-gray-700 transition-colors"
