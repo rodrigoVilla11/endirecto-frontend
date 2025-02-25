@@ -20,15 +20,19 @@ type MapModalProps = {
 export default function MapModal({ customers, onClose }: MapModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation();
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return <div>{t("mapModal.noApiKey")}</div>;
-  }
-
-  // Cargar la API de Google Maps solo una vez
+  
+  // Asigna un valor por defecto para que el hook se ejecute siempre
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  
+  // Llama al hook siempre, sin condiciones
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
   });
+
+  // Ahora, si no hay apiKey, muestra el mensaje y retorna
+  if (!apiKey) {
+    return <div>{t("mapModal.noApiKey")}</div>;
+  }
 
   if (loadError) {
     return <div>Error al cargar la API de Google Maps</div>;
