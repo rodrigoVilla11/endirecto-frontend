@@ -137,12 +137,12 @@ const Page = () => {
   }));
 
   const tableHeader = [
-    { name: t("table.type"), key: "type" },
-    { name: t("table.title"), key: "title" },
+    { name: t("table.type"), key: "type", important: true },
+    { name: t("table.title"), key: "title", important: true },
     { name: t("table.description"), key: "description" },
     { name: t("table.brand"), key: "brand" },
     { name: t("table.article"), key: "article" },
-    { name: t("table.read"), key: "read" },
+    { name: t("table.read"), key: "read", important: true },
   ];
 
   return (
