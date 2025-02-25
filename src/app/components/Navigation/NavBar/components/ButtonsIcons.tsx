@@ -10,11 +10,18 @@ import {
 import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerByIdQuery, useMarkNotificationAsReadCustomerMutation } from "@/redux/services/customersApi";
+import {
+  useGetCustomerByIdQuery,
+  useMarkNotificationAsReadCustomerMutation,
+} from "@/redux/services/customersApi";
 import i18n from "i18next";
 import ReactCountryFlag from "react-country-flag";
 import { useAuth } from "@/app/context/AuthContext";
-import { useGetUserByIdQuery, useMarkNotificationAsReadMutation } from "@/redux/services/usersApi";
+import {
+  useGetUserByIdQuery,
+  useMarkNotificationAsReadMutation,
+} from "@/redux/services/usersApi";
+import { Bell, X } from "lucide-react";
 
 const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { selectedClientId } = useClient();
@@ -23,10 +30,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
 
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
 
-  const {
-    data: customer,
-    refetch: refetchCustomer,
-  } = useGetCustomerByIdQuery(
+  const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
     { skip: !selectedClientId, refetchOnMountOrArgChange: true }
   );
@@ -45,9 +49,11 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
 
   useEffect(() => {
     if (selectedClientId && customer?.notifications) {
-      setNotifications(customer.notifications);
+      setNotifications(customer.notifications.filter((n: any) => !n.read));
     } else if (!selectedClientId && userQuery.data?.notifications) {
-      setNotifications(userQuery.data?.notifications);
+      setNotifications(
+        userQuery.data?.notifications.filter((n: any) => !n.read)
+      );
     } else {
       setNotifications([]);
     }
@@ -77,7 +83,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   };
 
   const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
-  const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
+  const [markNotificationCustomerAsRead] =
+    useMarkNotificationAsReadCustomerMutation();
 
   const handleMarkAsRead = async (notification: any) => {
     if (!notification.read && currentUserId) {
@@ -117,11 +124,24 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
         <MdNotificationsOff className="cursor-pointer text-red-600" />
       )}
       {!isMobile && (
-        <button onClick={handleLanguageToggle} className="cursor-pointer text-xl">
+        <button
+          onClick={handleLanguageToggle}
+          className="cursor-pointer text-xl"
+        >
           {currentLanguage === "es" ? (
-            <ReactCountryFlag countryCode="AR" svg style={{ width: "1em", height: "1em" }} title="Argentina" />
+            <ReactCountryFlag
+              countryCode="AR"
+              svg
+              style={{ width: "1em", height: "1em" }}
+              title="Argentina"
+            />
           ) : (
-            <ReactCountryFlag countryCode="US" svg style={{ width: "1em", height: "1em" }} title="Estados Unidos" />
+            <ReactCountryFlag
+              countryCode="US"
+              svg
+              style={{ width: "1em", height: "1em" }}
+              title="Estados Unidos"
+            />
           )}
         </button>
       )}
@@ -150,34 +170,51 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
           </span>
         )}
         {isNotificationsMenuOpen && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-white text-black shadow-lg rounded-md z-50">
-            <div className="p-4 border-b">
-              <h3 className="font-bold text-lg">{i18n.t("notifications")}</h3>
+          <div className="absolute top-full right-0 mt-2 w-80 bg-white text-black shadow-lg rounded-lg overflow-hidden z-50 border border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="font-bold text-lg flex items-center">
+                <Bell className="w-5 h-5 mr-2" />
+                {i18n.t("notifications")}
+              </h3>
+              <button
+                onClick={() => setIsNotificationsMenuOpen(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+                aria-label="Close notifications"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.filter((n) => !n.read).length > 0 ? (
-                <ul>
+                <ul className="divide-y divide-gray-200">
                   {notifications
                     .filter((notification) => !notification.read)
                     .map((notification: any) => (
                       <li
                         key={notification._id}
-                        className="p-4 border-b hover:bg-gray-100 cursor-pointer"
+                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <p className="font-semibold">{notification.title}</p>
-                        <p className="text-sm">{notification.description}</p>
+                        <p className="font-semibold text-gray-800 mb-1">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {notification.description}
+                        </p>
                       </li>
                     ))}
                 </ul>
               ) : (
-                <div className="p-4">{i18n.t("no_notifications")}</div>
+                <div className="p-8 text-center text-gray-500">
+                  <Bell className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p>{i18n.t("no_notifications")}</p>
+                </div>
               )}
             </div>
-            <div className="p-4 text-right">
+            <div className="p-4 bg-gray-50 text-right">
               <button
                 onClick={() => setIsNotificationsMenuOpen(false)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 {i18n.t("close")}
               </button>
@@ -187,7 +224,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       </div>
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
       {showTick && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse" style={{ zIndex: 9999 }}>
+        <div
+          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"
+          style={{ zIndex: 9999 }}
+        >
           <FaCheckCircle />
         </div>
       )}

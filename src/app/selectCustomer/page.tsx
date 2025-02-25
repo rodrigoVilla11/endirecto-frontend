@@ -228,21 +228,16 @@ const SelectCustomer = () => {
   const { data: allCustomersData } = useGetCustomersPagQuery(
     {
       page: 1,
-      limit: 100, // o el valor que estimes apropiado
-      query: "",
-      hasDebtExpired: "",
-      hasDebt: "",
-      seller_id: "",
-      hasArticlesOnSC: "",
-      sort: "",
-    },
-    {
-      skip: areFiltersApplied, // Solo se ejecuta si NO hay filtros
+      limit: 1000, // o el valor que estimes apropiado
+      query: searchQuery,
+      hasDebtExpired: searchParams.hasDebtExpired,
+      hasDebt: searchParams.hasDebt,
+      seller_id: searchParams.seller_id,
+      hasArticlesOnSC: searchParams.hasArticlesOnSC,
+      sort: sortQuery,
     }
   );
-  const markersCustomers = areFiltersApplied
-    ? filteredItems
-    : allCustomersData?.customers || [];
+  const markersCustomers = allCustomersData?.customers || [];
 
   if (isQueryLoading && items.length === 0) {
     return (
@@ -588,7 +583,10 @@ const SelectCustomer = () => {
             isOpen={isViewAllMapModalOpen}
             onClose={() => setViewAllMapModalOpen(false)}
           >
-            <MapModal customers={markersCustomers} onClose={() => setViewAllMapModalOpen(false)}/>
+            <MapModal
+              customers={markersCustomers}
+              onClose={() => setViewAllMapModalOpen(false)}
+            />
           </Modal>
         )}
 
