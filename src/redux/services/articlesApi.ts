@@ -126,7 +126,7 @@ export const articlesApi = createApi({
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
-
+        
         return `/articles/?${params.toString()}`;
       },
       transformResponse: (response: {

@@ -23,6 +23,7 @@ const UpdateArticleComponent = ({
 }: UpdateArticleComponentProps) => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
+  const encodedId = encodeURIComponent(articleId);
   const {
     data: customer,
     error: customerError,
@@ -41,7 +42,7 @@ const UpdateArticleComponent = ({
     {
       page: 1,
       limit: 1,
-      articleId: articleId?.trim(),
+      articleId: articleId,
       priceListId: customer?.price_list_id ?? "3",
     },
     {
@@ -140,7 +141,7 @@ const UpdateArticleComponent = ({
       const updatedForm = {
         ...form,
         images: [...form.images, ...uploadResponses],
-        id: articleId,
+        id: encodedId,
       };
 
       await updateArticle(updatedForm).unwrap();
