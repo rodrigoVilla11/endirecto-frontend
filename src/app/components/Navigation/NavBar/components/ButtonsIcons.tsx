@@ -10,11 +10,11 @@ import {
 import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useGetCustomerByIdQuery, useMarkNotificationAsReadCustomerMutation } from "@/redux/services/customersApi";
 import i18n from "i18next";
 import ReactCountryFlag from "react-country-flag";
 import { useAuth } from "@/app/context/AuthContext";
-import { useGetUserByIdQuery } from "@/redux/services/usersApi";
+import { useGetUserByIdQuery, useMarkNotificationAsReadMutation } from "@/redux/services/usersApi";
 
 const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { selectedClientId } = useClient();
@@ -26,7 +26,6 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const {
     data: customer,
     refetch: refetchCustomer,
-    isFetching,
   } = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
     { skip: !selectedClientId, refetchOnMountOrArgChange: true }
@@ -37,6 +36,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const [showTick, setShowTick] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
+
+  const currentUserId = selectedClientId || userQuery.data?._id || "";
 
   const cartItemCount = customer?.shopping_cart
     ? new Set(customer.shopping_cart).size
@@ -75,30 +76,52 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     i18n.changeLanguage(newLanguage);
   };
 
+  const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
+  const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
+
+  const handleMarkAsRead = async (notification: any) => {
+    if (!notification.read && currentUserId) {
+      try {
+        if (selectedClientId) {
+          await markNotificationCustomerAsRead({
+            id: currentUserId,
+            notificationId: notification._id,
+          }).unwrap();
+        } else {
+          await markNotificationAsRead({
+            id: currentUserId,
+            title: notification.title,
+          }).unwrap();
+        }
+      } catch (err) {
+        console.error("Error al marcar notificación como leída", err);
+      }
+    }
+  };
+
+  // Al hacer clic en una notificación se marca como leída, se refetch y se redirige a /notifications
+  const handleNotificationClick = async (notification: any) => {
+    await handleMarkAsRead(notification);
+    if (selectedClientId) {
+      await refetchCustomer();
+    } else {
+      await userQuery.refetch();
+    }
+    setIsNotificationsMenuOpen(false);
+    handleRedirect("/notifications");
+  };
+
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-between text-2xl text-white relative">
       {!isMobile && (
         <MdNotificationsOff className="cursor-pointer text-red-600" />
       )}
       {!isMobile && (
-        <button
-          onClick={handleLanguageToggle}
-          className="cursor-pointer text-xl"
-        >
+        <button onClick={handleLanguageToggle} className="cursor-pointer text-xl">
           {currentLanguage === "es" ? (
-            <ReactCountryFlag
-              countryCode="AR"
-              svg
-              style={{ width: "1em", height: "1em" }}
-              title="Argentina"
-            />
+            <ReactCountryFlag countryCode="AR" svg style={{ width: "1em", height: "1em" }} title="Argentina" />
           ) : (
-            <ReactCountryFlag
-              countryCode="US"
-              svg
-              style={{ width: "1em", height: "1em" }}
-              title="Estados Unidos"
-            />
+            <ReactCountryFlag countryCode="US" svg style={{ width: "1em", height: "1em" }} title="Estados Unidos" />
           )}
         </button>
       )}
@@ -139,7 +162,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                     .map((notification: any) => (
                       <li
                         key={notification._id}
-                        className="p-4 border-b hover:bg-gray-100 cursor-pointer bg-yellow-100"
+                        className="p-4 border-b hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleNotificationClick(notification)}
                       >
                         <p className="font-semibold">{notification.title}</p>
                         <p className="text-sm">{notification.description}</p>
@@ -163,10 +187,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       </div>
       <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
       {showTick && (
-        <div
-          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"
-          style={{ zIndex: 9999 }}
-        >
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse" style={{ zIndex: 9999 }}>
           <FaCheckCircle />
         </div>
       )}

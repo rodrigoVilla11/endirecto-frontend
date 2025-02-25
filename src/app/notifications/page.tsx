@@ -137,7 +137,15 @@ const Page = () => {
   ];
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "MARKETING"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("page.notifications")}</h3>
         <Header
