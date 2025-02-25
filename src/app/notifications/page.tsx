@@ -31,6 +31,15 @@ const Page = () => {
     { skip: !selectedClientId }
   );
 
+  // Agregamos un efecto para hacer refetch al montar el componente
+  useEffect(() => {
+    if (selectedClientId) {
+      customerQuery.refetch();
+    } else {
+      userQuery.refetch();
+    }
+  }, []);
+
   const notifications = selectedClientId
     ? customerQuery.data?.notifications || []
     : userQuery.data?.notifications || [];
