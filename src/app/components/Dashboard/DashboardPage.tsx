@@ -114,7 +114,7 @@ const DashboardPage = () => {
     startDate: `${currentYear}-01-01`,
     endDate: `${currentYear}-12-31`,
   });
-
+  
   // Extraemos datos del mes actual y anteriores para ventas
   const currentMonthSalesData = currentYearSalesData?.find(
     (d) => d.month === currentMonth
@@ -151,7 +151,7 @@ const DashboardPage = () => {
       : 0;
 
   const currentMonthOrdersTotal = currentMonthSalesData?.totalSales || 0;
-  const currentMonthOrdersCount = currentMonthSalesData?.totalQty || 0;
+  const currentMonthOrdersCount = currentMonthSalesData?.countOrders || 0;
 
   const currentMonthInvoiceTotal = currentMonthInvoiceData?.totalSales || 0;
   const currentMonthInvoiceCount = currentMonthInvoiceData?.totalQty || 0;
