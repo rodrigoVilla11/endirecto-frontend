@@ -63,7 +63,7 @@
   "quantityOrders": "Quantity of Orders: 80",
   "monthlyInvoices": "Monthly Invoices",
   "numberInvoices": "Number of Invoices: 350",
-  "unreadNotifications": "Without reading: 0",
+  "unreadNotifications": "Without reading",
   "documents": "Documents",
   "collections": "Collections",
   "budget": "Budget",
@@ -1268,6 +1268,7 @@
   "publicate-notifications": "Publication of Notifications",
   "no_notifications": "There are no unread notifications",
   "notify_notifications": "We'll notify you when something new arrives",
-  "mark_all_as_read": "Mark all as read"
+  "mark_all_as_read": "Mark all as read",
+  "lastMonth": "Last Month"
 
 }

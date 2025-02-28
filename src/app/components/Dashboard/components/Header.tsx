@@ -2,6 +2,7 @@
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +13,7 @@ const Header = () => {
     id: selectedClientId || "",
   });
   const { userData } = useAuth();
+  const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
 
   // Verificación de datos disponibles solo cuando se cumple la condición
   const firstLetter = selectedClientId
@@ -68,8 +70,8 @@ const Header = () => {
 
           <div className="flex flex-col items-center">
             <span className="text-2xl font-semibold">
-              {selectedClientId &&
-                data?.notifications.filter((n: any) => !n.read).length}
+              {selectedClientId ?
+                data?.notifications.filter((n: any) => !n.read).length : userQuery.data?.notifications.filter((n: any) => !n.read).length}
             </span>
             <span className="text-sm text-gray-600 text-center">
               {t("notifications")}

@@ -2,6 +2,7 @@
 import React from "react";
 import Header from "./components/Header";
 import Card from "./components/Card";
+import CardShortcuts from "./components/CardShortcuts";
 import { MdOutlineShoppingBag, MdTextSnippet } from "react-icons/md";
 import { TbClockExclamation } from "react-icons/tb";
 import {
@@ -18,53 +19,60 @@ import { IoIosPaper } from "react-icons/io";
 import { IoNotificationsOutline, IoCalculatorSharp } from "react-icons/io5";
 import { GoGraph } from "react-icons/go";
 import { ImStatsDots } from "react-icons/im";
-import CardShortcuts from "./components/CardShortcuts";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
-import { useCountCustomersQuery } from "@/redux/services/customersApi";
+import {
+  useCountCustomersQuery,
+  useGetCustomerByIdQuery,
+} from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import { useTranslation } from "react-i18next";
 
+// Hooks para ventas y facturación (facturas)
+import { useGetMonthlySalesQuery } from "@/redux/services/ordersApi";
+import { useGetMonthlyInvoicesQuery } from "@/redux/services/documentsApi";
+import { useGetUserByIdQuery } from "@/redux/services/usersApi";
+
 const DashboardPage = () => {
   const { t } = useTranslation();
   const { isOpen } = useSideMenu();
   const { selectedClientId } = useClient();
-
   const { role } = useAuth();
+  const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
+  const { userData } = useAuth();
+  const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
+  // Datos de clientes y estado de cuenta
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data: totalDebt, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
+  const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
   });
-  
 
-  // Verificar si `data` es un cliente o un objeto resumen
+  // Determinamos si es un cliente o un resumen global
   const isClient = totalDebt && "documents_balance" in totalDebt;
   const isSummary = totalDebt && "total_documents_balance" in totalDebt;
 
-  // Definir valores dinámicos según el tipo de `data`
   const rawDocumentsBalance = isClient
     ? parseFloat(totalDebt.documents_balance)
     : isSummary
     ? parseFloat(totalDebt.total_documents_balance)
     : 0;
-
   const rawDocumentsBalanceExpired = isClient
     ? parseFloat(totalDebt.documents_balance_expired)
     : isSummary
     ? parseFloat(totalDebt.total_documents_balance_expired)
     : 0;
-
   const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
-
   const formattedFinalSumAmount = finalSumAmount.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  function formatPriceWithCurrency(price: number): string {
-    const formattedNumber = new Intl.NumberFormat("es-AR", {
+  function formatPriceWithCurrency(price: any) {
+    return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       minimumFractionDigits: 2,
@@ -73,9 +81,82 @@ const DashboardPage = () => {
       .format(price)
       .replace("ARS", "")
       .trim();
-    return `${formattedNumber}`;
   }
 
+  const formatCurrency = (value: any) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  // ------------------ LÓGICA PARA VENTAS Y FACTURACIÓN ------------------
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // Mes 1-12
+  const lastYear = currentYear - 1;
+  const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+
+  // Consultamos ventas mensuales del año actual y del año pasado
+  const { data: currentYearSalesData } = useGetMonthlySalesQuery({
+    startDate: `${currentYear}-01-01`,
+    endDate: `${currentYear}-12-31`,
+  });
+  const { data: lastYearSalesData } = useGetMonthlySalesQuery({
+    startDate: `${lastYear}-01-01`,
+    endDate: `${lastYear}-12-31`,
+  });
+
+  // Consultamos facturación mensual (facturas) del año actual
+  const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery({
+    startDate: `${currentYear}-01-01`,
+    endDate: `${currentYear}-12-31`,
+  });
+
+  // Extraemos datos del mes actual y anteriores para ventas
+  const currentMonthSalesData = currentYearSalesData?.find(
+    (d) => d.month === currentMonth
+  );
+  const lastYearSameMonthSalesData = lastYearSalesData?.find(
+    (d) => d.month === currentMonth
+  );
+  let previousMonthSalesData;
+  if (currentMonth === 1) {
+    previousMonthSalesData = lastYearSalesData?.find((d) => d.month === 12);
+  } else {
+    previousMonthSalesData = currentYearSalesData?.find(
+      (d) => d.month === previousMonth
+    );
+  }
+
+  // Datos de facturación mensual del mes actual
+  const currentMonthInvoiceData = currentYearInvoicesData?.find(
+    (d) => d.month === currentMonth
+  );
+
+  // Cálculo de porcentajes
+  const interannualPercentage =
+    lastYearSameMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
+      ? (currentMonthSalesData.totalSales /
+          lastYearSameMonthSalesData.totalSales) *
+        100
+      : 0;
+
+  const monthlyPercentage =
+    previousMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
+      ? (currentMonthSalesData.totalSales / previousMonthSalesData.totalSales) *
+        100
+      : 0;
+
+  const currentMonthOrdersTotal = currentMonthSalesData?.totalSales || 0;
+  const currentMonthOrdersCount = currentMonthSalesData?.totalQty || 0;
+
+  const currentMonthInvoiceTotal = currentMonthInvoiceData?.totalSales || 0;
+  const currentMonthInvoiceCount = currentMonthInvoiceData?.totalQty || 0;
+
+  // ------------------ Definición de Items para Cards ------------------
   const itemsCard = [
     {
       logo: <MdOutlineShoppingBag />,
@@ -111,69 +192,69 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
+    // Venta interanual
     {
       logo: <BsCash />,
       title: t("interannualSell"),
-      subtitle: t("zeroPercent"),
+      subtitle: `${interannualPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}: $ 0
+          {t("currentMonth")}:{" "}
+          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
-          {t("lastYearMonth")}: $ 0
+          {t("lastYearMonth")}:{" "}
+          {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
         </>
       ),
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
+    // Venta mensual
     {
       logo: <BsCash />,
       title: t("monthlySell"),
-      subtitle: t("zeroPercent"),
+      subtitle: `${monthlyPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}: $ 0
+          {t("currentMonth")}:{" "}
+          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
-          {t("lastYearMonth")}: $ 0
+          {t("lastMonth")}:{" "}
+          {formatCurrency(previousMonthSalesData?.totalSales || 0)}
         </>
       ),
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
-    {
-      logo: <FaInfo />,
-      title: t("pendingReclaims"),
-      subtitle: "0",
-      text: t("totalReclaims"),
-      href: "/pendings",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
-    },
+    // Pedidos mensuales
     {
       logo: <IoIosPaper />,
       title: t("monthlyOrders"),
-      subtitle: "$ 9.999.999",
-      text: t("quantityOrders"),
+      subtitle: formatCurrency(currentMonthOrdersTotal),
+      text: `${t("quantityOrders")}: ${currentMonthOrdersCount}`,
       href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
+    // Facturación mensual
     {
       logo: <IoIosPaper />,
       title: t("monthlyInvoices"),
-      subtitle: "$ 999.999.999",
-      text: t("numberInvoices"),
+      subtitle: formatCurrency(currentMonthInvoiceTotal),
+      text: `${t("numberInvoices")}: ${currentMonthInvoiceCount}`,
       href: "/accounts/vouchers",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
       logo: <IoNotificationsOutline />,
       title: t("notifications"),
-      subtitle: "0",
-      text: t("unreadNotifications"),
+      subtitle: selectedClientId
+        ? data?.notifications.length
+        : userQuery.data?.notifications.length,
+      text: `${t("unreadNotifications")}: ${
+        selectedClientId
+          ? data?.notifications.filter((n: any) => !n.read).length
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length
+      }`,
       href: "/notifications",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -184,6 +265,7 @@ const DashboardPage = () => {
       ],
     },
   ];
+
   const itemsShortcuts = [
     {
       logo: <IoIosPaper />,
@@ -309,15 +391,16 @@ const DashboardPage = () => {
 
   const filteredItemsCard = role
     ? itemsCard.filter(
-        (icon) => !icon.allowedRoles || icon.allowedRoles.includes(role)
+        (item) => !item.allowedRoles || item.allowedRoles.includes(role)
       )
     : itemsCard;
 
   const filteredItemsShortcuts = role
     ? itemsShortcuts.filter(
-        (icon) => !icon.allowedRoles || icon.allowedRoles.includes(role)
+        (item) => !item.allowedRoles || item.allowedRoles.includes(role)
       )
-    : itemsCard;
+    : itemsShortcuts;
+
   return (
     <div className="gap-4">
       <Header />
