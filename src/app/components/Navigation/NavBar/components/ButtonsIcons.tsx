@@ -45,6 +45,11 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
 
   const currentUserId = selectedClientId || userQuery.data?._id || "";
 
+  const sortedNotifications = notifications
+  .slice()
+  .sort((a, b) => b.schedule_to - a.schedule_to);
+
+
   const cartItemCount = customer?.shopping_cart
     ? new Set(customer.shopping_cart).size
     : 0;
@@ -208,7 +213,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                       <AnimatePresence>
                         {notifications.slice(0, 5).length > 0 ? (
                           <motion.ul className="divide-y divide-gray-100">
-                            {notifications.slice(0, 5).map((notification: any) => (
+                            {sortedNotifications.slice(0, 5).map((notification: any) => (
                               <motion.li
                                 key={notification._id}
                                 initial={{ opacity: 0, y: 20 }}

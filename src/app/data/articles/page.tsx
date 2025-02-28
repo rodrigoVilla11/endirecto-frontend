@@ -181,7 +181,7 @@ const Page = () => {
     () =>
       articles.map((article) => ({
         key: article.id,
-        brand: article.brand.name || t("noBrand"),
+        brand: article.brand?.name || t("noBrand"),
         image: (
           <div className="flex justify-center items-center">
             {article.images?.[0] ? (

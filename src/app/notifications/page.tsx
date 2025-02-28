@@ -1,10 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import { FaTimes as FaTimes } from "react-icons/fa";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
@@ -18,6 +16,10 @@ import {
   useMarkNotificationAsReadMutation,
 } from "@/redux/services/usersApi";
 import { useMarkNotificationAsReadCustomerMutation } from "@/redux/services/customersApi";
+import { InfoIcon } from "lucide-react";
+import Modal from "../components/components/Modal";
+import NotificationsDetail from "./NotificationDetail";
+
 
 const Page = () => {
   const { t } = useTranslation();
@@ -31,7 +33,7 @@ const Page = () => {
     { skip: !selectedClientId }
   );
 
-  // Agregamos un efecto para hacer refetch al montar el componente
+  // Efecto para hacer refetch al montar el componente
   useEffect(() => {
     if (selectedClientId) {
       customerQuery.refetch();
@@ -49,6 +51,10 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
   const [localNotifications, setLocalNotifications] = useState<any[]>([]);
+  
+  // Estados para el modal
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState<any>(null);
 
   useEffect(() => {
     if (notifications.length > 0) {
@@ -115,8 +121,24 @@ const Page = () => {
     }
   };
 
+  // Funciones para abrir y cerrar el modal de detalle
+  const openDetailModal = (notification: any) => {
+    setCurrentNotification(notification);
+    setIsDetailOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailOpen(false);
+    setCurrentNotification(null);
+  };
+
   const tableData = sortedNotifications.map((notification) => ({
     key: notification._id,
+    info: (
+      <button onClick={() => openDetailModal(notification)}>
+        <InfoIcon className="text-center" />
+      </button>
+    ),
     type: notification.type,
     title: notification.title,
     description: notification.description,
@@ -137,6 +159,7 @@ const Page = () => {
   }));
 
   const tableHeader = [
+    { name: t("info"), key: "info" },
     { name: t("table.type"), key: "type", important: true },
     { name: t("table.title"), key: "title", important: true },
     { name: t("table.description"), key: "description" },
@@ -178,6 +201,13 @@ const Page = () => {
           sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
         />
       </div>
+
+      <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>
+        <NotificationsDetail
+          notification={currentNotification}
+          closeModal={closeDetailModal}
+        />
+      </Modal>
     </PrivateRoute>
   );
 };

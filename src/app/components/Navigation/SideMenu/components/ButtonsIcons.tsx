@@ -44,6 +44,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
+      setIsOpen(false)
       setOpenSubCategory(null);
       router.push(path);
     }
