@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage, FaPencil } from "react-icons/fa6";
+import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
 import { FaTimes } from "react-icons/fa";
 import {
   useCountItemsQuery,
@@ -14,6 +14,7 @@ import UpdateItemComponent from "./UpdateItem";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
+import ItemDetail from "./ItemDetail";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -28,8 +29,9 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
-  // Estados del modal
+  // Estados de los modales: actualización y detalle
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+  const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
 
   // Referencias
@@ -66,13 +68,11 @@ const Page = () => {
         try {
           const result = await refetch().unwrap();
           const newItems = result || [];
-
           if (page === 1) {
             setItems(newItems);
           } else {
             setItems((prev) => [...prev, ...newItems]);
           }
-
           setHasMore(newItems.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading items:", error);
@@ -109,15 +109,21 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Handlers del modal
-  const handleModalOpen = (id: string) => {
+  // Handlers de modales
+  const handleUpdateModalOpen = (id: string) => {
     const encodedId = encodeURIComponent(id);
     setCurrentItemId(encodedId);
     setUpdateModalOpen(true);
   };
 
+  const handleDetailModalOpen = (id: string) => {
+    setCurrentItemId(id);
+    setDetailModalOpen(true);
+  };
+
   const handleModalClose = () => {
     setUpdateModalOpen(false);
+    setDetailModalOpen(false);
     setCurrentItemId(null);
     refetch();
   };
@@ -134,16 +140,12 @@ const Page = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
@@ -155,6 +157,15 @@ const Page = () => {
   // Configuración de la tabla
   const tableData = items?.map((item) => ({
     key: item.id,
+    // Nueva columna de info
+    info: (
+      <div className="flex justify-center items-center">
+        <FaInfo
+          className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+          onClick={() => handleDetailModalOpen(item.id)}
+        />
+      </div>
+    ),
     id: item.id,
     name: item.name,
     image: (
@@ -174,13 +185,18 @@ const Page = () => {
       <div className="flex justify-center items-center">
         <FaPencil
           className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
-          onClick={() => handleModalOpen(item.id)}
+          onClick={() => handleUpdateModalOpen(item.id)}
         />
       </div>
     ),
   }));
 
   const tableHeader = [
+    {
+      component: <FaInfo className="text-center text-xl" />,
+      key: "info",
+      important: true,
+    },
     { name: t("table.id"), key: "id", important: true },
     { name: t("table.name"), key: "name", important: true },
     {
@@ -233,9 +249,7 @@ const Page = () => {
 
   if (error) {
     return (
-      <div className="p-4 text-red-500">
-        {t("page.errorLoadingItems")}
-      </div>
+      <div className="p-4 text-red-500">{t("page.errorLoadingItems")}</div>
     );
   }
 
@@ -271,11 +285,22 @@ const Page = () => {
         )}
         <div ref={observerRef} className="h-10" />
 
+        {/* Modal para actualizar ítem */}
         <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
           {currentItemId && (
             <UpdateItemComponent
               itemId={currentItemId}
               closeModal={handleModalClose}
+            />
+          )}
+        </Modal>
+
+        {/* Modal para ver detalle del ítem */}
+        <Modal isOpen={isDetailModalOpen} onClose={handleModalClose}>
+          {currentItemId && (
+            <ItemDetail
+              data={items.find((item) => item.id === currentItemId)}
+              onClose={handleModalClose}
             />
           )}
         </Modal>

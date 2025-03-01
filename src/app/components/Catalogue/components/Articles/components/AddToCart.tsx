@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useGetStockByArticleIdQuery } from "@/redux/services/stockApi";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaCheck } from "react-icons/fa";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
@@ -34,9 +34,11 @@ const AddToCart: React.FC<AddToCartProps> = ({
   // Estado local para el input como string
   const [inputValue, setInputValue] = useState("");
 
+  // Estado local para mostrar el tick de confirmación
+  const [showTick, setShowTick] = useState(false);
+
   // Sincronizamos el input local con el valor numérico recibido
   useEffect(() => {
-    // Si la cantidad es 1 (valor por defecto), mostramos el input vacío para que se muestre el placeholder
     if (quantity === 1) {
       setInputValue("");
     } else {
@@ -48,25 +50,27 @@ const AddToCart: React.FC<AddToCartProps> = ({
   const updateQuantity = (value: string) => {
     setInputValue(value);
     const parsed = Number(value);
-    // Solo actualizamos el estado numérico si el valor es numérico y mayor a 0
     if (value.trim() !== "" && !isNaN(parsed) && parsed > 0) {
       setQuantity(parsed);
     }
   };
 
   const handleAddToCart = () => {
-    // Si el campo está vacío se interpreta como 1
     const qty = inputValue.trim() === "" ? 1 : Number(inputValue);
-    setQuantity(Math.max(1, qty));
-    onAddToCart(Math.max(1, qty));
+    const validQty = Math.max(1, qty);
+    setQuantity(validQty);
+    onAddToCart(validQty);
+    // Mostrar tick de confirmación
+    setShowTick(true);
+    setTimeout(() => {
+      setShowTick(false);
+    }, 2000);
   };
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
       {role !== "CUSTOMER" && (
-        <p className={`text-xs font-semibold ${stockColor}`}>
-          {stockMessage}
-        </p>
+        <p className={`text-xs font-semibold ${stockColor}`}>{stockMessage}</p>
       )}
       <div className="flex items-center gap-2">
         <input
@@ -76,7 +80,6 @@ const AddToCart: React.FC<AddToCartProps> = ({
           placeholder="1"
           className="border rounded w-12 p-1 text-center text-sm"
           min="1"
-          // Opcional: en onBlur se puede confirmar la cantidad
           onBlur={() => {
             if (inputValue.trim() === "") {
               setInputValue("");
@@ -89,7 +92,11 @@ const AddToCart: React.FC<AddToCartProps> = ({
           onClick={handleAddToCart}
           aria-label={t("addToCart")}
         >
-          <FaShoppingCart className="w-4 h-4" />
+          {showTick ? (
+            <FaCheck className="w-4 h-4" />
+          ) : (
+            <FaShoppingCart className="w-4 h-4" />
+          )}
         </button>
       </div>
     </div>

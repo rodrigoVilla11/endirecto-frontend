@@ -9,18 +9,17 @@ import React, {
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage, FaPencil } from "react-icons/fa6";
-import { AiOutlineDownload } from "react-icons/ai";
-import {
-  useGetArticlesQuery,
-} from "@/redux/services/articlesApi";
+import MobileTable from "@/app/components/components/MobileTable";
 import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
+import { FaImage, FaPencil, FaInfo } from "react-icons/fa6"; // Se agregó FaInfo
+import { AiOutlineDownload } from "react-icons/ai";
 import { FaTimes } from "react-icons/fa";
-import MobileTable from "@/app/components/components/MobileTable";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useTranslation } from "react-i18next";
+import ArticleDetail from "./ArticleDetail";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -33,7 +32,7 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMore, setHasMore] = useState(true);
   const [modalState, setModalState] = useState<{
-    type: "update" | "delete" | null;
+    type: "update" | "delete" | "info" | null;
     articleId: string | null;
   }>({ type: null, articleId: null });
   const [isLoading, setIsLoading] = useState(false);
@@ -134,7 +133,7 @@ const Page = () => {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1 } // Se activa cuando el elemento está completamente visible
+      { threshold: 1 }
     );
 
     observer.observe(observerRef.current);
@@ -148,14 +147,14 @@ const Page = () => {
 
   // Manejadores optimizados
   const handleModalOpen = useCallback(
-    (type: "update" | "delete", id: string) => {
+    (type: "update" | "delete" | "info", id: string) => {
       setModalState({ type, articleId: id });
     },
     []
   );
 
   const handleModalClose = useCallback(
-    async (type: "update" | "delete") => {
+    async (type: "update" | "delete" | "info") => {
       setModalState({ type: null, articleId: null });
 
       // Esperar un momento para asegurar que la actualización se completó
@@ -181,6 +180,15 @@ const Page = () => {
     () =>
       articles.map((article) => ({
         key: article.id,
+        // Nueva columna de info al principio
+        info: (
+          <div className="flex justify-center items-center">
+            <FaInfo
+              className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+              onClick={() => handleModalOpen("info", article.id)}
+            />
+          </div>
+        ),
         brand: article.brand?.name || t("noBrand"),
         image: (
           <div className="flex justify-center items-center">
@@ -196,7 +204,7 @@ const Page = () => {
             )}
           </div>
         ),
-        item: article.item.name || t("noItem"),
+        item: article.item?.name || t("noItem"),
         id: article.id,
         supplier: article.supplier_code,
         name: article.name,
@@ -214,6 +222,12 @@ const Page = () => {
 
   const tableHeader = useMemo(
     () => [
+      {
+        component: <FaInfo className="text-center text-xl" />,
+        key: "info",
+        sortable: false,
+        important: true,
+      },
       { name: t("brand"), key: "brand", sortable: true, important: true },
       {
         component: <FaImage className="text-center text-xl" />,
@@ -281,11 +295,7 @@ const Page = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        {t("errorLoadingArticles")}
-      </div>
-    );
+    return <div className="p-4 text-red-500">{t("errorLoadingArticles")}</div>;
   }
   const isMobile = window.innerWidth < 640;
 
@@ -320,6 +330,7 @@ const Page = () => {
         )}
         <div ref={observerRef} className="h-10" />
 
+        {/* Modal para actualizar artículo */}
         <Modal
           isOpen={modalState.type === "update"}
           onClose={() => handleModalClose("update")}
@@ -331,6 +342,22 @@ const Page = () => {
                 handleModalClose("update");
               }}
               closeModal={() => handleModalClose("update")}
+            />
+          )}
+        </Modal>
+
+        {/* Modal para ver detalle del artículo */}
+        {/* Modal para ver detalle del artículo */}
+        <Modal
+          isOpen={modalState.type === "info"}
+          onClose={() => handleModalClose("info")}
+        >
+          {modalState.articleId && (
+            <ArticleDetail
+              data={articles.find(
+                (article) => article.id === modalState.articleId
+              )}
+              onClose={() => handleModalClose("info")}
             />
           )}
         </Modal>

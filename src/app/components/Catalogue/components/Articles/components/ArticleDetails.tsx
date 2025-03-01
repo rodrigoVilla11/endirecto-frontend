@@ -130,11 +130,13 @@ const ArticleDetails = ({ closeModal }: any) => {
       </div>
       <div className="flex gap-4 flex-col sm:justify-center sm:items-start items-center sm:flex-row">
         <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between pb-2">
+        <div className="flex justify-end">
           <ArticleMenu
             onAddToFavourites={toggleFavourite}
             isFavourite={isFavourite}
             article={article}
           />
+          </div>
           <ArticleImage img={article.images || [""]} />
           <StripeStock articleId={article.id} />
           <div className="p-3 bg-gray-50">

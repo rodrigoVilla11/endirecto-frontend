@@ -21,8 +21,8 @@ const TableTechnicalDetails = ({ articleId }: any) => {
         </tr>
       </thead>
       <tbody className="text-xs">
-        {data && Array.isArray(data) && data.map((technicalDetail: any) => (
-          <tr key={technicalDetail.id}>
+        {data && Array.isArray(data) && data.map((technicalDetail: any, index) => (
+          <tr key={index}>
             <td className="border-t py-2 px-4">
               <TechnicalDetail technical_detail_id={technicalDetail.technical_detail_id}/>
             </td>

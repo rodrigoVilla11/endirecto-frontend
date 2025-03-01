@@ -34,8 +34,8 @@ const Order = ({ onChange }: any) => {
             onChange={handleOrderChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            {orderOptions.map((option) => (
-              <option key={option.id} value={option.id}>
+            {orderOptions.map((option,index) => (
+              <option key={index} value={option.id}>
                 {option.name}
               </option>
             ))}

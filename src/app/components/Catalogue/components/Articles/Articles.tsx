@@ -162,7 +162,7 @@ const Articles: React.FC<ArticlesProps> = ({
                 if (index === items.length - 1) {
                   return (
                     <div
-                      key={article.id || index}
+                      key={index}
                       ref={lastArticleRef}
                       className="max-w-xs w-full"
                     >
@@ -174,7 +174,7 @@ const Articles: React.FC<ArticlesProps> = ({
                   );
                 }
                 return (
-                  <div key={article.id || index} className="max-w-xs w-full">
+                  <div key={index} className="max-w-xs w-full">
                     <CardArticles
                       article={article}
                       showPurchasePrice={showPurchasePrice}
@@ -189,7 +189,7 @@ const Articles: React.FC<ArticlesProps> = ({
                 if (index === items.length - 1) {
                   return (
                     <div
-                      key={article.id || index}
+                      key={ index}
                       ref={lastArticleRef}
                       className="w-full max-w-sm flex justify-center"
                     >
@@ -201,7 +201,7 @@ const Articles: React.FC<ArticlesProps> = ({
                   );
                 }
                 return (
-                  <div key={article.id || index} className="w-full max-w-sm flex justify-center">
+                  <div key={index} className="w-full max-w-sm flex justify-center">
                     <ListArticle
                       article={article}
                       showPurchasePrice={showPurchasePrice}

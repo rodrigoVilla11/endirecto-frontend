@@ -56,14 +56,14 @@ const { data: bonus } = useGetArticleBonusByItemIdQuery(
   const [integerPartOffer, decimalPartOffer] = formatPrice(offer);
 
   return (
-    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
-      {!onlyPrice && <p className="text-gray-500">{t("costPriceExclVAT")}</p>}
+    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center`}>
+      {!onlyPrice && <p className="text-gray-500  text-xs">{t("costPriceExclVAT")}</p>}
       <div className="flex flex-col items-end">
         {offer !== null ? (
           <>
-            <span className="line-through text-red-500 text-xs">
+            <span className="line-through text-red-500 ">
               ${integerPart || "0"}
-              {decimalPart && <span className="text-red-500">,{decimalPart}</span>}
+              {decimalPart && <span className="text-red-500 text-xs">,{decimalPart}</span>}
             </span>
             <span className="font-semibold text-gray-800">
               ${integerPartOffer}
@@ -73,7 +73,7 @@ const { data: bonus } = useGetArticleBonusByItemIdQuery(
         ) : (
           <span className="font-semibold text-gray-800">
             ${integerPart || "0"}
-            {decimalPart && <span className="text-sm">,{decimalPart}</span>}
+            {decimalPart && <span className="text-xs">,{decimalPart}</span>}
           </span>
         )}
       </div>

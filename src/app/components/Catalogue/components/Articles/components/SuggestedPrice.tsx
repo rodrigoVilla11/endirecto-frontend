@@ -12,7 +12,7 @@ import { skipToken } from "@reduxjs/toolkit/query";
 
 const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
   const { t } = useTranslation();
-  const encodedId = encodeURIComponent(article.id);
+  const encodedId = encodeURIComponent(article?.id);
 
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
@@ -103,11 +103,11 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
 
   return (
-    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center text-xs`}>
-      {!onlyPrice && <p className="text-gray-500">{t("suggestedPrice")}</p>}
+    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center`}>
+      {!onlyPrice && <p className="text-gray-500 text-xs">{t("suggestedPrice")}</p>}
       <p className="font-semibold text-gray-700">
         ${integerPart || "0"}
-        {decimalPart && <span className="text-sm">,{decimalPart}</span>}
+        {decimalPart && <span className="text-xs">,{decimalPart}</span>}
       </p>
     </div>
   );

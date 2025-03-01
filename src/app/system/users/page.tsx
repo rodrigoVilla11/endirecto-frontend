@@ -30,7 +30,7 @@ const Page = () => {
   const [sortField, setSortField] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "">("");
 
-
+console.log(users)
   // Estados para modales
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -95,7 +95,7 @@ const Page = () => {
               return {
                 key: user._id,
                 id: user._id,
-                name: user.username,
+                username: user.username,
                 email: user.email,
                 role: user.role,
                 branch: branch?.name || "No Branch",

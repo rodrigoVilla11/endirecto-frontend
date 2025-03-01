@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillCaretDown } from "react-icons/ai";
 import { useSideMenu } from "@/app/context/SideMenuContext";
@@ -30,6 +30,25 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const router = useRouter();
   const { isMobile } = useMobile();
 
+  // Ref para detectar clicks fuera del componente
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpenSubCategory(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [setOpenSubCategory]);
+
   // Alterna la visibilidad de las subcategorías y abre el sideMenu.
   const toggleSubCategories = () => {
     setIsOpen(true);
@@ -44,7 +63,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
-      setIsOpen(false)
+      setIsOpen(false);
       setOpenSubCategory(null);
       router.push(path);
     }
@@ -59,7 +78,9 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       toggleSubCategories();
     } else {
       handleRedirect(icon.path || "", event);
-      isMobile && setIsOpen(false)
+      if (isMobile) {
+        setIsOpen(false);
+      }
     }
   };
 
@@ -67,17 +88,11 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const showSubCategories = openSubCategory === icon.name;
 
   return (
-    <div className="flex flex-col gap-2 text-white">
-      <div
-        className="flex items-center gap-2 cursor-pointer"
-        onClick={handleClick}
-      >
+    <div ref={containerRef} className="flex flex-col gap-2 text-white">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={handleClick}>
         <div className="text-left hover:cursor-pointer">{icon.icon}</div>
-        {isOpen && (
-          <div className="text-xs hover:cursor-pointer">{icon.name}</div>
-        )}
-        {/* Mostrar el caret solo si existen subcategorías y el sideMenu está abierto.
-            Se rota el caret si las subcategorías están abiertas */}
+        {isOpen && <div className="text-xs hover:cursor-pointer">{icon.name}</div>}
+
         {icon.subCategories && isOpen && (
           <AiFillCaretDown
             className={`text-xs cursor-pointer transition-transform duration-300 ${
@@ -86,16 +101,17 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
           />
         )}
       </div>
+
       {icon.subCategories && showSubCategories && (
-        <div className="bg-header-color rounded-md px-2 w-48 transition-all duration-300 max-h-60 overflow-y-auto">
+        <div className="bg-header-color rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto">
           <ul>
             {icon.subCategories.map((subcategory, index) => (
               <li
                 key={index}
-                className="text-sm p-1 hover:cursor-pointer text-center"
+                className="text-sm p-1 hover:cursor-pointer text-left"
                 onClick={(event) => handleRedirect(subcategory.path, event)}
               >
-                <div className="flex gap-1 text-center text-xs">
+                <div className="flex gap-1 text-xs">
                   {subcategory.name}
                 </div>
               </li>

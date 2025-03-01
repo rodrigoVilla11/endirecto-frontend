@@ -157,7 +157,18 @@ const DashboardPage = () => {
   const currentMonthInvoiceCount = currentMonthInvoiceData?.totalQty || 0;
 
   // ------------------ Definición de Items para Cards ------------------
-  const itemsCard = [
+  interface CardItem {
+    logo: React.ReactNode;
+    title: any;
+    subtitle?: any;
+    text?: any | undefined;
+    href: string;
+    allowedRoles: string[];
+    color?: string; // propiedad opcional
+    className?: string;
+  }
+
+  const itemsCard: CardItem[] = [
     {
       logo: <MdOutlineShoppingBag />,
       title: t("catalogue"),
@@ -179,7 +190,7 @@ const DashboardPage = () => {
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
-      logo: <MdTextSnippet />,
+      logo: <MdTextSnippet className={`${rawDocumentsBalance ? "text-red-500" : ""}`}/>,
       title: t("statusAccount"),
       subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
       text: `${t("expired")}: ${formatPriceWithCurrency(rawDocumentsBalance)}`,
@@ -191,16 +202,26 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
+      color: rawDocumentsBalance ? "red" : ""
     },
     // Venta interanual
     {
-      logo: <BsCash />,
+      logo: (
+        <BsCash
+          className={
+            interannualPercentage < 80
+              ? "text-red-500"
+              : interannualPercentage < 100
+              ? "text-yellow-500"
+              : "text-green-500"
+          }
+        />
+      ),
       title: t("interannualSell"),
       subtitle: `${interannualPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}:{" "}
-          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
           {t("lastYearMonth")}:{" "}
           {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
@@ -208,24 +229,46 @@ const DashboardPage = () => {
       ),
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    },
+      // Determinamos el color para el Card (borde inferior y texto) según el porcentaje
+      color:
+        interannualPercentage < 80
+          ? "red"
+          : interannualPercentage < 100
+          ? "yellow"
+          : "green",
+    },    
     // Venta mensual
     {
-      logo: <BsCash />,
+      logo: (
+        <BsCash
+          className={
+            monthlyPercentage < 80
+              ? "text-red-500"
+              : monthlyPercentage < 100
+              ? "text-yellow-500"
+              : "text-green-500"
+          }
+        />
+      ),
       title: t("monthlySell"),
       subtitle: `${monthlyPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}:{" "}
-          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
           {t("lastMonth")}:{" "}
           {formatCurrency(previousMonthSalesData?.totalSales || 0)}
         </>
       ),
-      href: "",
+      href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    },
+      color:
+        monthlyPercentage < 80
+          ? "red"
+          : monthlyPercentage < 100
+          ? "yellow"
+          : "green",
+    },    
     // Pedidos mensuales
     {
       logo: <IoIosPaper />,
@@ -245,15 +288,25 @@ const DashboardPage = () => {
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
-      logo: <IoNotificationsOutline />,
+      logo: (
+        <IoNotificationsOutline
+          className={
+            ((selectedClientId
+              ? data?.notifications.filter((n: any) => !n.read).length
+              : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
+              ? "text-red-500"
+              : "text-green-500"
+          }
+        />
+      ),
       title: t("notifications"),
       subtitle: selectedClientId
         ? data?.notifications.length
         : userQuery.data?.notifications.length,
       text: `${t("unreadNotifications")}: ${
-        selectedClientId
+        (selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0
       }`,
       href: "/notifications",
       allowedRoles: [
@@ -263,7 +316,14 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-    },
+      color:
+        ((selectedClientId
+          ? data?.notifications.filter((n: any) => !n.read).length
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
+          ? "red"
+          : "green",
+    }
+    
   ];
 
   const itemsShortcuts = [
@@ -315,18 +375,18 @@ const DashboardPage = () => {
         "CUSTOMER",
       ],
     },
-    {
-      logo: <IoCalculatorSharp />,
-      title: t("budget"),
-      href: "/orders/budget",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
-    },
+    // {
+    //   logo: <IoCalculatorSharp />,
+    //   title: t("budget"),
+    //   href: "/orders/budget",
+    //   allowedRoles: [
+    //     "ADMINISTRADOR",
+    //     "OPERADOR",
+    //     "MARKETING",
+    //     "VENDEDOR",
+    //     "CUSTOMER",
+    //   ],
+    // },
     {
       logo: <FaShoppingCart />,
       title: t("shoppingCart"),
@@ -348,7 +408,7 @@ const DashboardPage = () => {
     {
       logo: <ImStatsDots />,
       title: t("statistic"),
-      href: "/stats",
+      href: "/statistics",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
     {
@@ -386,6 +446,7 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
+      logout: true
     },
   ];
 
@@ -422,6 +483,7 @@ const DashboardPage = () => {
                 subtitle={item.subtitle}
                 text={item.text}
                 className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
+                color={item.color}
               />
             </Link>
           ))}
@@ -443,6 +505,7 @@ const DashboardPage = () => {
                 title={item.title}
                 logo={item.logo}
                 className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
+                logout={item.logout}
               />
             </Link>
           ))}

@@ -14,7 +14,7 @@ const ArticleEquivalence = ({ articleId, closeModal }: ArticleEquivalenceProps) 
   const { data, error, isLoading } = useGetArticleEquivalenceByArticleIdQuery({ articleId: encodedId });
   
   return (
-    <div className="w-128 z-50 mt-10">
+    <div className="w-128 z-50">
       <div className="flex items-center justify-between p-4 bg-gray-100 rounded-t-lg">
         <h2 className="text-lg font-medium">{t("equivalencesTitle")}</h2>
         <button onClick={closeModal} className="p-1 hover:bg-gray-200 rounded-full">
@@ -29,8 +29,8 @@ const ArticleEquivalence = ({ articleId, closeModal }: ArticleEquivalenceProps) 
           </tr>
         </thead>
         <tbody className="text-xs">
-          {data && Array.isArray(data) && data.map((equivalence: any) => (
-            <tr key={equivalence.id}>
+          {data && Array.isArray(data) && data.map((equivalence: any, index) => (
+            <tr key={index}>
               <td className="border-t py-2 px-4">{equivalence.brand}</td>
               <td className="border-t py-2 px-4 max-w-44">{equivalence.code}</td>
             </tr>

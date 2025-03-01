@@ -178,10 +178,10 @@ const Page = () => {
   );
 
   // Configuración de la tabla
-  const tableData = applicationsOfArticles?.map((item) => {
+  const tableData = applicationsOfArticles?.map((item, index) => {
     const article = articlesData?.find((data) => data.id === item.article_id);
     return {
-      key: `${item.article_id}-${item.brand}-${item.model}-${item.year}`,
+      key: `${index}`,
       image: (
         <div className="flex justify-center items-center">
           {article?.images ? (

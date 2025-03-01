@@ -38,8 +38,8 @@ const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="">{t("selectVehicleBrands")}</option>
-            {vehiclesBrands?.brands.map((item: any) => (
-              <option key={item} value={item}>
+            {vehiclesBrands?.brands.map((item: any, index: any) => (
+              <option key={index} value={item}>
                 {item}
               </option>
             ))}

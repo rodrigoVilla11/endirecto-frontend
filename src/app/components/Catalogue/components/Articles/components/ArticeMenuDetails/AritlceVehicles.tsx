@@ -11,7 +11,7 @@ const ArticleVehicle = ({ articleVehicles, closeModal }: ArticleEquivalenceProps
   const { t } = useTranslation();
 
   return (
-    <div className="w-128 z-50 mt-10">
+    <div className="w-128 z-50">
       <div className="flex items-center justify-between p-4 bg-gray-100 rounded-t-lg">
         <h2 className="text-lg font-medium">{t("articleApplications")}</h2>
         <button
@@ -33,8 +33,8 @@ const ArticleVehicle = ({ articleVehicles, closeModal }: ArticleEquivalenceProps
         <tbody className="text-xs">
           {articleVehicles &&
             Array.isArray(articleVehicles) &&
-            articleVehicles.map((vehicle: any) => (
-              <tr key={vehicle.id} className="border-b">
+            articleVehicles.map((vehicle: any, index: any) => (
+              <tr key={index} className="border-b">
                 <td className="border-t py-2 px-4">{vehicle.brand}</td>
                 <td className="border-t py-2 px-4">{vehicle.engine}</td>
                 <td className="border-t py-2 px-4">{vehicle.model}</td>

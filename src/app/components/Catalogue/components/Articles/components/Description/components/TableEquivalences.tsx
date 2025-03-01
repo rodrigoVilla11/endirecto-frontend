@@ -16,8 +16,8 @@ const TableEquivalences = ({ articleId }: any) => {
         </tr>
       </thead>
       <tbody className="text-xs">
-        {data && Array.isArray(data) && data.map((equivalence: any) => (
-          <tr key={equivalence.id}>
+        {data && Array.isArray(data) && data.map((equivalence: any, index) => (
+          <tr key={index}>
             <td className="border-t py-2 px-4">
               {equivalence.brand}
             </td>

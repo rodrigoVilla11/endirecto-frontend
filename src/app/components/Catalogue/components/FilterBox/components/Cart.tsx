@@ -29,8 +29,8 @@ const Cart = ({ onChange }: any) => {
             onChange={handleOrderChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            {carts.map((cart) => (
-              <option key={cart.id} value={cart.id}>
+            {carts.map((cart, index) => (
+              <option key={index} value={cart.id}>
                 {cart.name}
               </option>
             ))}
