@@ -123,8 +123,8 @@ const ArticleSearchResults = ({
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full px-2 overflow-auto">
         {searchResults &&
           searchResults.length > 0 &&
-          searchResults.map((article) => (
-            <div key={article.id} className="w-full">
+          searchResults.map((article, index) => (
+            <div key={index} className="w-full">
               <CardSearch
                 article={article}
                 setSearchQuery={setSearchQuery}

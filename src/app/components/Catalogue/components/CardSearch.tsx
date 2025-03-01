@@ -17,7 +17,6 @@ const CardSearch = ({ article, setSearchQuery,handleOpenModal }: any) => {
   };
   return (
     <div
-      key={article.id}
       className="relative w-36 sm:w-44 max-w-xs"
       onClick={() => handleRedirect(`/catalogue`)}
     >
