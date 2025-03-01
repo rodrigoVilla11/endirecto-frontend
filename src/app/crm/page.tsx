@@ -4,24 +4,22 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdPin } from "react-icons/io";
-import ButtonOnOff from "../components/components/ButtonOnOff";
+import { FaPlus } from "react-icons/fa";
+import DatePicker from "react-datepicker";
+import { format } from "date-fns";
 import {
-  ActionType,
-  StatusType,
-  useCountCrmQuery,
   useGetCrmPagQuery,
   useUpdateCrmMutation,
+  ActionType,
+  StatusType,
 } from "@/redux/services/crmApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 import PrivateRoute from "../context/PrivateRoutes";
-import DatePicker from "react-datepicker";
-import { FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
-import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
@@ -29,18 +27,24 @@ const ITEMS_PER_PAGE = 15;
 const Page = () => {
   const { t } = useTranslation();
 
-  // Estados básicos
+  // ---------- Estados para la paginación y datos ----------
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ---------- Estados para los filtros ----------
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [customer_id, setCustomer_id] = useState("");
+  const [sellerFilter, setSellerFilter] = useState("");
+  const [userFilter, setUserFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState(""); // Ej. “Estadístico de pedidos”
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  const { selectedClientId } = useClient();
 
-  // Nuevo estado para el modal de creación
+  // ---------- Estados y lógica para modal de creación ----------
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -48,23 +52,33 @@ const Page = () => {
     refetch();
   };
 
-  // Referencia para el IntersectionObserver
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
+  // ---------- Context y data adicional ----------
+  const { selectedClientId } = useClient();
+  const [customer_id, setCustomer_id] = useState("");
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: collectionData } = useGetCollectionsQuery(null);
-  // Query para CRM que retorna { crms, total }
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetCrmPagQuery(
+
+  // ---------- Query principal para CRM ----------
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetCrmPagQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
       endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
-      type: "", // Si deseas filtrar por tipo, asigna aquí
-      status: "", // Si deseas filtrar por status, asigna aquí
-      insitu: "", // Si corresponde
+      type: typeFilter,
+      status: statusFilter,
+      insitu: "", // Ajusta si tu backend lo usa
       customer_id,
+      seller_id: sellerFilter,
+      user_id: userFilter,
+      action: actionFilter, // Si tu backend maneja este campo para “Estadísticas de pedidos”
+      search: searchQuery,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -75,7 +89,7 @@ const Page = () => {
 
   const [updateCrm] = useUpdateCrmMutation();
 
-  // Actualiza customer_id al cambiar selectedClientId
+  // ---------- Actualiza el customer_id al cambiar selectedClientId ----------
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
@@ -86,7 +100,7 @@ const Page = () => {
     }
   }, [selectedClientId, refetch, isLoading, t]);
 
-  // Efecto para cargar documentos (CRM) y manejar la paginación
+  // ---------- Manejo de la carga inicial y paginación ----------
   useEffect(() => {
     const loadDocuments = async () => {
       if (!isLoading) {
@@ -103,11 +117,25 @@ const Page = () => {
         }
       }
     };
-
     loadDocuments();
-  }, [page, startDate, endDate, customer_id, sortQuery, refetch, isLoading, t]);
+  }, [
+    page,
+    startDate,
+    endDate,
+    sellerFilter,
+    userFilter,
+    statusFilter,
+    typeFilter,
+    actionFilter,
+    searchQuery,
+    sortQuery,
+    refetch,
+    isLoading,
+    t,
+  ]);
 
-  // Intersection Observer para scroll infinito
+  // ---------- IntersectionObserver para scroll infinito ----------
+  const observerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -127,6 +155,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
+  // ---------- Manejo de ordenamiento ----------
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery ? sortQuery.split(":") : ["", ""];
@@ -144,7 +173,7 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Mapeo de datos para la tabla
+  // ---------- Mapeo de datos para la tabla ----------
   const tableData = items?.map((crm) => {
     const customer = customersData?.find((data) => data.id === crm.customer_id);
     const seller = sellersData?.find((data) => data.id === crm.seller_id);
@@ -170,6 +199,7 @@ const Page = () => {
     };
   });
 
+  // ---------- Definición de columnas ----------
   const tableHeader = [
     { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
     { name: t("seller"), key: "seller", important: true },
@@ -184,31 +214,162 @@ const Page = () => {
     { name: t("gps"), key: "gps" },
   ];
 
+  // ---------- Filtros en la cabecera (Header) ----------
   const headerBody = {
     buttons: [
       { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
       { logo: <IoMdPin />, title: t("viewOnMap") },
     ],
     filters: [
+      // Fecha desde
       {
         content: (
           <DatePicker
             selected={startDate}
-            onChange={(date) => setStartDate(date)}
+            onChange={(date) => {
+              setStartDate(date);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
             placeholderText={t("dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
         ),
       },
+      // Fecha hasta
       {
         content: (
           <DatePicker
             selected={endDate}
-            onChange={(date) => setEndDate(date)}
+            onChange={(date) => {
+              setEndDate(date);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
             placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      // Filtro por Vendedor
+      {
+        content: (
+          <select
+            value={sellerFilter}
+            onChange={(e) => {
+              setSellerFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="">{t("seller")}</option>
+            {sellersData?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      // Filtro por Usuario
+      {
+        content: (
+          <input
+            type="text"
+            placeholder={t("user")}
+            value={userFilter}
+            onChange={(e) => {
+              setUserFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+            style={{ width: "100px" }}
+          />
+        ),
+      },
+      // Filtro por Estado
+      {
+        content: (
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="">{t("status")}</option>
+            <option value="PENDING">PENDING</option>
+            <option value="CHARGED">CHARGED</option>
+            {/* Agrega más estados si tu backend los maneja */}
+          </select>
+        ),
+      },
+      // Filtro por Tipo
+      {
+        content: (
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="">{t("type")}</option>
+            <option value="VISIT">VISIT</option>
+            <option value="ORDER">ORDER</option>
+            <option value="RECLAIM">RECLAIM</option>
+            {/* Agrega más tipos si tu backend los maneja */}
+          </select>
+        ),
+      },
+      // Filtro "Estadístico de pedidos" (actionFilter)
+      {
+        content: (
+          <select
+            value={actionFilter}
+            onChange={(e) => {
+              setActionFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="">{t("orderStats")}</option>
+            <option value="ORDER_STATS">{t("someOption")}</option>
+            {/* Ajusta las opciones según tu backend */}
+          </select>
+        ),
+      },
+      // Filtro de búsqueda general
+      {
+        content: (
+          <input
+            type="text"
+            placeholder={t("searchPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            className="border border-gray-300 rounded p-2"
+            style={{ width: "120px" }}
           />
         ),
       },
@@ -229,7 +390,14 @@ const Page = () => {
           sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
       </div>
+
+      {/* Intersection Observer div */}
       <div ref={observerRef} className="h-10" />
+
+      {/* Modal de creación */}
+      <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
+        <CreateCRMComponent closeModal={closeCreateModal} />
+      </Modal>
     </PrivateRoute>
   );
 };

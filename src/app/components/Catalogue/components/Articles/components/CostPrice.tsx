@@ -10,7 +10,7 @@ import { skipToken } from "@reduxjs/toolkit/query";
 
 const CostPrice = ({ article, onlyPrice }: any) => {
   const { t } = useTranslation();
-  const encodedId = encodeURIComponent(article.id);
+  const encodedId = encodeURIComponent(article?.id);
 
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });

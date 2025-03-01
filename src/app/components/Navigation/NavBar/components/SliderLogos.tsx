@@ -33,7 +33,7 @@ const SliderLogos = () => {
 
   return (
     <div className="w-64 h-full flex justify-center items-center gap-4">
-      <div className="h-16 w-32 flex justify-center items-center">
+      <div className="h-12 w-32 flex justify-center items-center">
         <img
           src={logos[currentLogoIndex].header.img}
           alt={`Logo ${currentLogoIndex}`}

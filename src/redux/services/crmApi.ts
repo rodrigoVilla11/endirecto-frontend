@@ -6,6 +6,7 @@ export enum ActionType {
   EMAIL = "EMAIL",
   CALL = "CALL",
   MESSAGE = "MESSAGE",
+  RECLAIM = "RECLAIM",
 }
 
 export enum StatusType {
@@ -76,59 +77,66 @@ export const crmApi = createApi({
       },
     }),
     getCrmPag: builder.query<
-      { crms: Crm[]; total: number },
-      {
-        page?: number;
-        limit?: number;
-        startDate?: string;
-        endDate?: string;
-        status?: string;
-        type?: string;
-        insitu?: string;
-        customer_id?: string;
-        sort?: string;
-      }
-    >({
-      query: ({
-        page = 1,
-        limit = 10,
-        startDate,
-        endDate,
-        status,
-        type,
-        insitu,
-        customer_id,
-        sort = "",
-      } = {}) => {
-        const url = `/crm`;
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-          token: process.env.NEXT_PUBLIC_TOKEN || "",
-        });
-        if (sort) {
-          params.append("sort", sort);
-        }
-        if (startDate) params.append("startDate", startDate);
-        if (endDate) params.append("endDate", endDate);
-        if (status) params.append("status", status);
-        if (type) params.append("type", type);
-        if (insitu) params.append("insitu", insitu);
-        if (customer_id) params.append("customer_id", customer_id);
-
-        return `${url}?${params.toString()}`;
-      },
-      transformResponse: (response: {
-        crms: Crm[];
-        total: number;
-      }): { crms: Crm[]; total: number } => {
-        if (!response || !response.crms || response.crms.length === 0) {
-          console.error("No se recibieron rubros en la respuesta");
-          return { crms: [], total: 0 };
-        }
-        return response;
-      },
-    }),
+  { crms: Crm[]; total: number },
+  {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    type?: string;
+    insitu?: string;
+    customer_id?: string;
+    sort?: string;
+    seller_id?: string;
+    user_id?: string;
+    action?: string;
+    search?: string;
+  }
+>({
+  query: ({
+    page = 1,
+    limit = 10,
+    startDate,
+    endDate,
+    status,
+    type,
+    insitu,
+    customer_id,
+    sort = "",
+    seller_id,
+    user_id,
+    action,
+    search,
+  } = {}) => {
+    const url = `/crm`;
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      token: process.env.NEXT_PUBLIC_TOKEN || "",
+    });
+    if (sort) params.append("sort", sort);
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    if (status) params.append("status", status);
+    if (type) params.append("type", type);
+    if (insitu) params.append("insitu", insitu);
+    if (customer_id) params.append("customer_id", customer_id);
+    if (seller_id) params.append("seller_id", seller_id);
+    if (user_id) params.append("user_id", user_id);
+    if (action) params.append("action", action);
+    if (search) params.append("search", search);
+    
+    return `${url}?${params.toString()}`;
+  },
+  transformResponse: (response: { crms: Crm[]; total: number }): { crms: Crm[]; total: number } => {
+    if (!response || !response.crms || response.crms.length === 0) {
+      console.error("No se recibieron rubros en la respuesta");
+      return { crms: [], total: 0 };
+    }
+    return response;
+  },
+}),
 
     countCrm: builder.query<number, null>({
       query: () => {

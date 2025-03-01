@@ -26,7 +26,7 @@ const Header = () => {
     : t("noRoleAvailable"); // Asegura que haya un valor para el rol
 
   return (
-    <div className="bg-white shadow-sm mx-2 sm:mx-4 p-4 sm:p-10 mt-12 sm:mt-8">
+    <div className="bg-white shadow-sm mx-7 sm:mx-9 p-4 sm:p-10 mt-12 sm:mt-8">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         {/* User Profile Section */}
         <div className="flex items-center gap-4 w-full sm:w-auto">

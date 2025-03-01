@@ -24,7 +24,7 @@ const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`w-[350px] sm:w-72 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-b-4 ${className}`}
+      className={`w-80 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-b-4 ${className}`}
       style={{ borderBottomColor: color }}
     >
       <div className="space-y-4">

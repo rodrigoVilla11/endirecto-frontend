@@ -425,7 +425,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
               isMobile ? "bg-zinc-900" : "bg-header-color"
             } px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
-      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-20 mt-28`}
+      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 mt-28`}
     >
         {filteredIcons.map((icon: any, index: any) => (
           <ButtonsIcons

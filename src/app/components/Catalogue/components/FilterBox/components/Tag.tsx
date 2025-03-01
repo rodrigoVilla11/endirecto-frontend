@@ -25,11 +25,11 @@ const Tag = ({ onSelectTags }: any) => {
         <label className="block text-gray-700 font-bold mb-2" htmlFor="cart">
           {t("tag")}
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {tags.map((tag, index) => (
             <button
               key={index}
-              className="flex gap-1 items-center justify-center rounded-md py-2 font-semibold text-white"
+              className="flex gap-1 items-center justify-center rounded-md py-1 px-2 font-semibold text-white"
               onClick={() => handleButtonClick(tag)}
               style={{ backgroundColor: tagColors[tag] }}
             >

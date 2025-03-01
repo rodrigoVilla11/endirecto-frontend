@@ -12,14 +12,14 @@ const Search = () => {
   };
 
   return (
-    <div className="h-10 w-[90%] flex items-center border border-gray-300 rounded-3xl p-2 bg-white shadow-md">
+    <div className="h-8 w-[80%] sm:w-[100%] flex items-center border border-gray-300 rounded-3xl p-2 bg-white shadow-md">
       <div className="relative flex items-center flex-grow">
         <BiSearchAlt className="absolute left-1 text-2xl text-gray-400" />
         <input
           type="text"
           value={searchQuery}
           onChange={handleSearch}
-          className="h-10 rounded-3xl pl-8 border-none focus:ring-0 outline-none text-xs font-semibold"
+          className="h-6 rounded-3xl pl-8 border-none focus:ring-0 outline-none text-xs font-semibold"
           placeholder="Buscá lo que estás necesitando..."
         />
         <ArticleSearchResults

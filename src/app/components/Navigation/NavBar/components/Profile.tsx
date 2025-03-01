@@ -77,19 +77,24 @@ const Profile = ({ isMobile }: any) => {
         className="flex justify-center items-center gap-1"
         onClick={toggleMenu}
       >
-        <div className="rounded-full h-10 w-10 bg-white flex justify-center items-center">
-          {data?.profileImg ? (
-            <img src={data.profileImg} className="rounded-full h-10 w-10" />
-          ) : (
-            <p>{getInitial()}</p>
+        <div className="flex flex-col items-center space-x-2">
+          {/* Círculo con inicial o imagen */}
+          <div className="rounded-full h-8 w-8 bg-white flex justify-center items-center">
+            {data?.profileImg ? (
+              <img src={data.profileImg} className="rounded-full h-8 w-8" />
+            ) : (
+              <span className="font-medium">{getInitial()}</span>
+            )}
+          </div>
+
+          {/* Nombre de usuario y flecha (sólo en escritorio) */}
+          {!isMobile && (
+            <div className="flex items-center text-white text-xs font-light">
+              <p>{selectedClientId ? data?.name : userData?.username}</p>
+              <IoIosArrowDown className="ml-1" />
+            </div>
           )}
         </div>
-        {!isMobile && (
-          <div className="flex justify-center items-center text-white text-sm font-semibold">
-            <p>{selectedClientId ? data?.name : userData?.username}</p>
-            <IoIosArrowDown />
-          </div>
-        )}
       </button>
       {isMenuOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg text-sm">

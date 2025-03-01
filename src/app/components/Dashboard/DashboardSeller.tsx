@@ -68,7 +68,19 @@ const DashboardSeller = () => {
     maximumFractionDigits: 2,
   });
 
-  const itemsCard = [
+    // ------------------ Definición de Items para Cards ------------------
+    interface CardItem {
+      logo: React.ReactNode;
+      title: any;
+      subtitle?: any;
+      text?: any | undefined;
+      href: string;
+      allowedRoles: string[];
+      color?: string; // propiedad opcional
+      className?: string;
+    }
+
+  const itemsCard: CardItem[] = [
     {
       logo: <MdOutlineShoppingBag />,
       title: t("catalogue"),

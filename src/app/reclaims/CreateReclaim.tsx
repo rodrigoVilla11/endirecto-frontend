@@ -1,19 +1,17 @@
 "use client";
 import React, { useState } from "react";
-import { useGetAllArticlesQuery, useGetArticlesQuery } from "@/redux/services/articlesApi";
-import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import {
-  Status,
-  useCreateReclaimMutation,
-  Valid,
-} from "@/redux/services/reclaimsApi";
-import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
 import { IoMdClose } from "react-icons/io";
 import { format } from "date-fns";
+import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
+import { useGetBranchesQuery } from "@/redux/services/branchesApi";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { Status, useCreateReclaimMutation, Valid } from "@/redux/services/reclaimsApi";
+import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useClient } from "../context/ClientContext";
-import { useTranslation } from "react-i18next";
+// Importar el hook de CRM
+import { ActionType, StatusType, useCreateCrmMutation } from "@/redux/services/crmApi";
 
 const CreateReclaimComponent = ({ closeModal }: any) => {
   const { t } = useTranslation();
@@ -33,19 +31,13 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     user_id: userData?._id,
   });
 
-  const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } =
-    useGetReclaimsTypesQuery(null);
-  const { data: branchsData, isLoading: isLoadingBranchs } =
-    useGetBranchesQuery(null);
-  const { data: customersData, isLoading: isLoadingCustomers } =
-    useGetCustomersQuery(null);
-  const { data: articlesData, isLoading: isLoadingArticles } =
-    useGetAllArticlesQuery(null);
+  const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery(null);
+  const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
+  const { data: customersData, isLoading: isLoadingCustomers } = useGetCustomersQuery(null);
+  const { data: articlesData, isLoading: isLoadingArticles } = useGetAllArticlesQuery(null);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm((prevForm) => ({
       ...prevForm,
@@ -53,8 +45,9 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     }));
   };
 
-  const [createReclaim, { isLoading: isLoadingCreate, isSuccess, isError }] =
-    useCreateReclaimMutation();
+  const [createReclaim, { isLoading: isLoadingCreate, isSuccess, isError }] = useCreateReclaimMutation();
+  // Hook para crear CRM
+  const [createCrm] = useCreateCrmMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,12 +57,45 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
         date: format(new Date(form.date), "dd/MM/yyyy HH:mm"),
       };
 
-      await createReclaim(formattedData).unwrap();
+      // 1. Crear el reclaim
+      const createdReclaim = await createReclaim(formattedData).unwrap();
+
+      // 2. Crear el registro en CRM de tipo "RECLAIM"
+      const crmDate = getLocalISOStringWithOffset();
+      await createCrm({
+        date: crmDate,
+        type: ActionType.RECLAIM,
+        insitu: false, // No aplica para reclamación
+        status: StatusType.PENDING, // O el status que corresponda
+        notes: `Reclaim creado. Descripción: ${form.description}`,
+        collection_id: "",
+        customer_id: form.customer_id,
+        order_id: "", // No aplica para reclamación
+        seller_id: userData?._id || "",
+      }).unwrap();
+
       closeModal();
     } catch (err) {
       console.error(t("createReclaim.errorCreating"), err);
     }
   };
+
+  function getLocalISOStringWithOffset(): string {
+    const date = new Date();
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+    const ms = date.getMilliseconds().toString().padStart(3, "0");
+    const offset = -date.getTimezoneOffset();
+    const sign = offset >= 0 ? "+" : "-";
+    const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
+    const offsetMinutes = pad(Math.abs(offset) % 60);
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offsetHours}:${offsetMinutes}`;
+  }
 
   return (
     <div>
@@ -93,13 +119,11 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
           >
             <option value="">{t("createReclaim.selectReclaimType")}</option>
             {!isLoadingReclaimsTypes &&
-              reclaimsTypesData?.map(
-                (reclaimsTypes: { id: string; name: string }) => (
-                  <option key={reclaimsTypes.id} value={reclaimsTypes.id}>
-                    {reclaimsTypes.name}
-                  </option>
-                )
-              )}
+              reclaimsTypesData?.map((reclaimType: { id: string; name: string }) => (
+                <option key={reclaimType.id} value={reclaimType.id}>
+                  {reclaimType.name}
+                </option>
+              ))}
           </select>
         </label>
 
@@ -160,21 +184,15 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
           </button>
           <button
             type="submit"
-            className={`rounded-md p-2 text-white ${
-              isLoadingCreate ? "bg-gray-500" : "bg-success"
-            }`}
+            className={`rounded-md p-2 text-white ${isLoadingCreate ? "bg-gray-500" : "bg-success"}`}
             disabled={isLoadingCreate}
           >
             {isLoadingCreate ? t("createReclaim.saving") : t("createReclaim.save")}
           </button>
         </div>
 
-        {isSuccess && (
-          <p className="text-green-500">{t("createReclaim.success")}</p>
-        )}
-        {isError && (
-          <p className="text-red-500">{t("createReclaim.error")}</p>
-        )}
+        {isSuccess && <p className="text-green-500">{t("createReclaim.success")}</p>}
+        {isError && <p className="text-red-500">{t("createReclaim.error")}</p>}
       </form>
     </div>
   );

@@ -184,32 +184,24 @@ const Articles: React.FC<ArticlesProps> = ({
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center p-2 w-full">
-              {items.map((article, index) => {
-                if (index === items.length - 1) {
-                  return (
-                    <div
-                      key={ index}
-                      ref={lastArticleRef}
-                      className="w-full max-w-sm flex justify-center"
-                    >
-                      <ListArticle
-                        article={article}
-                        showPurchasePrice={showPurchasePrice}
-                      />
-                    </div>
-                  );
-                }
-                return (
-                  <div key={index} className="w-full max-w-sm flex justify-center">
-                    <ListArticle
-                      article={article}
-                      showPurchasePrice={showPurchasePrice}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            <div className="w-full max-w-4xl mx-auto p-4">
+            {items.map((article, index) => {
+              const isLast = index === items.length - 1;
+              return (
+                <div
+                  key={index}
+                  ref={isLast ? lastArticleRef : null}
+                  className="mb-4"
+                >
+                  <ListArticle
+                    article={article}
+                    showPurchasePrice={showPurchasePrice}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          
           )}
 
           {/* Indicador de carga para artículos adicionales */}

@@ -9,7 +9,7 @@ import Profile from "./components/Profile";
 const NavBar = ({ setIsOpen, isOpen }: any) => {
   const isMobile = window.innerWidth < 640;
   return (
-    <nav className={`w-full h-28 sm:h-20 ${isMobile ? "bg-zinc-900 " : "bg-header-color"} fixed z-40 flex justify-between px-10`}>
+    <nav className={`w-full h-28 sm:h-16 ${isMobile ? "bg-zinc-900 " : "bg-header-color"} fixed z-40 flex justify-between px-4`}>
       {isMobile ? (
         <div className="w-full flex items-start justify-center sm:justify-between gap-4 mt-4 sm:mt-0">
           <div className="flex items-center gap-4">

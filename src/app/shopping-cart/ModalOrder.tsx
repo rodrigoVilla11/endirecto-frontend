@@ -14,7 +14,7 @@ import {
   useCreateNotificationMutation,
   NotificationType,
 } from "@/redux/services/notificationsApi";
-import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
+import { ActionType, StatusType, useCheckInsituVisitMutation, useCreateCrmMutation } from "@/redux/services/crmApi";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { addMonths, format } from "date-fns";
@@ -82,21 +82,20 @@ export default function OrderConfirmation({
   totalFormatted,
 }: OrderConfirmationProps) {
   const { t } = useTranslation();
-  const [createOrder, { isLoading: isLoadingCreate }] =
-    useCreateOrderMutation();
-  // Nuevo hook para crear notificación
+  const router = useRouter();
+
+  const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
   const [addNotificationToUser] = useAddNotificationToUserMutation();
   const [checkInsituVisit] = useCheckInsituVisitMutation();
-  const { selectedClientId } = useClient();
-  const [updateCustomer, { isLoading: isUpdating }] =
-    useUpdateCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
+  const [createCrm] = useCreateCrmMutation();
 
-  // Estados para GPS, insitu y tick de éxito
+  const { selectedClientId } = useClient();
+
+  // Estados para GPS, insitu, tick de éxito y observaciones
   const [gps, setGPS] = useState("");
   const [insitu, setInsitu] = useState<boolean | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // Otros estados
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,84 +191,6 @@ export default function OrderConfirmation({
     );
   };
 
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    const updatedTransaction: Transaction = {
-      ...transaction,
-      date: getLocalISOStringWithOffset(),
-      created_at: getLocalISOStringWithOffset(),
-      notes: observations,
-    };
-
-    try {
-      // Crear el pedido
-      const createdOrder = await createOrder(updatedTransaction).unwrap();
-
-      // Actualizar el carrito del cliente, si corresponde
-      if (customer && customer.shopping_cart) {
-        const transactionArticleIds = updatedTransaction.details.map(
-          (detail) => detail.article.id
-        );
-        const updatedShoppingCart = customer.shopping_cart.filter(
-          (item: string) => !transactionArticleIds.includes(item)
-        );
-        await updateCustomer({
-          id: customer.id,
-          shopping_cart: updatedShoppingCart,
-        }).unwrap();
-      }
-
-      // Calcular schedule_from (fecha actual) y schedule_to (1 mes después)
-      const now = new Date();
-      const schedule_from = format(now, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
-      const schedule_to = format(
-        addMonths(now, 1),
-        "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
-      );
-
-      // Generar una cadena con los artículos del pedido
-      const articlesString = updatedTransaction.details
-        .map((detail) => `Artículo ${detail.article.id} (x${detail.quantity})`)
-        .join(", ");
-
-      // Construir el título y la descripción para la notificación
-      const notificationTitle = `Pedido Número ${createdOrder.tmp_id}, Cliente ${selectedClientId}`;
-      const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
-
-      // Enviar la notificación de tipo PEDIDO
-      await addNotificationToUser({
-        userId: transaction.seller.id || "",
-        notification: {
-          title: notificationTitle,
-          type: NotificationType.PEDIDO,
-          schedule_from: new Date(schedule_from),
-          schedule_to: new Date(schedule_to),
-          description: notificationDescription,
-          link: `/orders/${createdOrder.tmp_id}`, // Link al detalle del pedido
-          customer_id: selectedClientId || "",
-        },
-      }).unwrap();
-
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        onCancel();
-        window.location.href = "/dashboard";
-      }, 2000);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("orderConfirmation.genericError")
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   function getLocalISOStringWithOffset(): string {
     const date = new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -286,6 +207,95 @@ export default function OrderConfirmation({
     const offsetMinutes = pad(Math.abs(offset) % 60);
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offsetHours}:${offsetMinutes}`;
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      date: getLocalISOStringWithOffset(),
+      created_at: getLocalISOStringWithOffset(),
+      notes: observations,
+    };
+
+    try {
+      // 1. Crear el pedido
+      const createdOrder = await createOrder(updatedTransaction).unwrap();
+
+      // 2. Actualizar el carrito del cliente, si corresponde
+      if (customer && customer.shopping_cart) {
+        const transactionArticleIds = updatedTransaction.details.map(
+          (detail) => detail.article.id
+        );
+        const updatedShoppingCart = customer.shopping_cart.filter(
+          (item: string) => !transactionArticleIds.includes(item)
+        );
+        await updateCustomer({
+          id: customer.id,
+          shopping_cart: updatedShoppingCart,
+        }).unwrap();
+      }
+
+      // 3. Calcular schedule_from y schedule_to para la notificación
+      const now = new Date();
+      const schedule_from = format(now, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+      const schedule_to = format(
+        addMonths(now, 1),
+        "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+      );
+
+      // Generar una cadena con los artículos del pedido
+      const articlesString = updatedTransaction.details
+        .map((detail) => `Artículo ${detail.article.id} (x${detail.quantity})`)
+        .join(", ");
+
+      // Construir título y descripción para la notificación
+      const notificationTitle = `Pedido Número ${createdOrder.tmp_id}, Cliente ${selectedClientId}`;
+      const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
+
+      // 4. Enviar la notificación de tipo PEDIDO
+      await addNotificationToUser({
+        userId: transaction.seller.id || "",
+        notification: {
+          title: notificationTitle,
+          type: NotificationType.PEDIDO,
+          schedule_from: new Date(schedule_from),
+          schedule_to: new Date(schedule_to),
+          description: notificationDescription,
+          link: `/orders/${createdOrder.tmp_id}`,
+          customer_id: selectedClientId || "",
+        },
+      }).unwrap();
+
+      // 5. Crear el registro en CRM de tipo "ORDER"
+      await createCrm({
+        date: getLocalISOStringWithOffset(),
+        type: ActionType.ORDER,
+        insitu: updatedTransaction.insitu,
+        status: StatusType.PENDING,
+        notes: `Pedido Nro. ${createdOrder.tmp_id}. Observaciones: ${observations}`,
+        collection_id: "",
+        customer_id: selectedClientId || "",
+        order_id: createdOrder.tmp_id,
+        seller_id: transaction.seller.id || "",
+      }).unwrap();
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onCancel();
+        window.location.href = "/dashboard";
+      }, 2000);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : t("orderConfirmation.genericError")
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>

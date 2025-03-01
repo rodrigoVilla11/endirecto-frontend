@@ -7,7 +7,7 @@ const ButtonSideMenu = ({setIsOpen, isOpen} : any) => {
     }
   return (
     <button onClick={handleOpen} id="navbar-button">
-      <IoMenu className='text-white text-2xl'/>
+      <IoMenu className='text-white text-xl'/>
     </button>
   )
 }

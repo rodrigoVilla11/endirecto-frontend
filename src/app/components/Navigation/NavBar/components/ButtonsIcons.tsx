@@ -142,7 +142,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-evenly text-2xl text-white relative">
       {!isMobile && (
-        <button onClick={handleLanguageToggle} className="cursor-pointer text-xl">
+        <button onClick={handleLanguageToggle} className="cursor-pointer">
           {currentLanguage === "es" ? (
             <ReactCountryFlag
               countryCode="AR"

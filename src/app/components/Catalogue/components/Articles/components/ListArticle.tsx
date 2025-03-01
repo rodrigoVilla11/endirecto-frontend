@@ -96,23 +96,29 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
     });
   };
 
-  
   const isFavourite = form.favourites.includes(article.id);
 
   const openModal = () => setModalOpen(true);
   const closeModal = () => {
     setModalOpen(false);
-
   };
-  
 
   return (
     <div
-      className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4 gap-4"
-      
+      className="flex flex-col sm:flex-row 
+               items-start sm:items-center 
+               sm:justify-between 
+               bg-gray-100 p-4 rounded-lg 
+               shadow-lg mb-4 gap-4"
     >
       {/* Imagen del artículo */}
-      <div className="flex items-center justify-center w-24 h-24 bg-white border border-gray-200 rounded-lg shadow-sm" onClick={openModal}>
+      <div
+        className="w-24 sm:w-24 h-24 sm:h-24 
+                 bg-white border border-gray-200 
+                 rounded-lg shadow-sm flex 
+                 items-center justify-center"
+        onClick={openModal}
+      >
         <img
           src={article.images?.[0] || "/placeholder.png"}
           alt={article.name}
@@ -123,7 +129,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
       {/* Detalles del artículo */}
       <div className="flex-1 flex flex-col gap-1" onClick={openModal}>
         <h3 className="text-xs font-bold text-gray-800">{article.id}</h3>
-        <p className="text-xs text-gray-600 max-w-48 break-words overflow-hidden max-h-12 ">
+        <p className="text-xs text-gray-600 max-w-48 break-words overflow-hidden max-h-12">
           {article.name}
         </p>
         <StripeStock
@@ -133,14 +139,21 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
       </div>
 
       {/* Precios */}
-      <div className="flex flex-col items-end min-w-[150px] gap-2" onClick={openModal}>
+      <div
+        className="flex flex-col items-end min-w-[150px]"
+        onClick={openModal}
+      >
         <SuggestedPrice
           articleId={article.id}
           showPurchasePrice={showPurchasePrice}
           className="text-xl font-bold text-gray-900"
         />
         {showPurchasePrice && (
-          <CostPrice articleId={article.id} selectedClientId={selectedClientId}  className="text-gray-500 text-sm" />
+          <CostPrice
+            articleId={article.id}
+            selectedClientId={selectedClientId}
+            className="text-gray-500 text-sm"
+          />
         )}
       </div>
 
@@ -154,7 +167,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
       </div>
 
       {/* Cantidad y botón de agregar al carrito */}
-      <div className="flex items-center gap-2 w-1/6">
+      <div className="flex items-center gap-2 w-full sm:w-auto">
         <input
           type="number"
           value={quantity}
@@ -164,7 +177,9 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
         />
         <button
           onClick={toggleShoppingCart}
-          className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg shadow-sm"
+          className="flex items-center justify-center bg-green-500 
+                   hover:bg-green-600 text-white p-2 
+                   rounded-lg shadow-sm"
         >
           <MdShoppingCart className="text-xl" />
         </button>
