@@ -63,11 +63,14 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
-      setIsOpen(false);
-      setOpenSubCategory(null);
       router.push(path);
+      setTimeout(() => {
+        setIsOpen(false);
+        setOpenSubCategory(null);
+      }, 0);
     }
   };
+  
 
   // Ejecuta onClick personalizado o alterna las subcategorías/redirige.
   const handleClick = (event: React.MouseEvent) => {
@@ -106,15 +109,19 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
         <div className="bg-header-color rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto">
           <ul>
             {icon.subCategories.map((subcategory, index) => (
-              <li
-                key={index}
-                className="text-sm p-1 hover:cursor-pointer text-left"
-                onClick={(event) => handleRedirect(subcategory.path, event)}
-              >
-                <div className="flex gap-1 text-xs">
-                  {subcategory.name}
-                </div>
-              </li>
+             <li
+             key={index}
+             className="text-sm p-1 hover:cursor-pointer text-left"
+             onMouseDown={(event) => {
+               event.stopPropagation();
+               handleRedirect(subcategory.path, event);
+             }}
+           >
+             <div className="flex gap-1 text-xs">
+               {subcategory.name}
+             </div>
+           </li>
+           
             ))}
           </ul>
         </div>
