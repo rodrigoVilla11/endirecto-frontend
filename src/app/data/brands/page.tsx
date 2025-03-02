@@ -4,7 +4,7 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
-import { FaTimes } from "react-icons/fa";
+import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import {
   useCountBrandsQuery,
   useGetBrandsPagQuery,
@@ -15,6 +15,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
 import BrandDetail from "./BrandDetail";
+import { GoPencil } from "react-icons/go";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -159,9 +160,9 @@ const Page = () => {
     // Nueva columna de info
     info: (
       <div className="flex justify-center items-center">
-        <FaInfo
-          className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
-          onClick={() => handleDetailModalOpen(brand.id)}
+        <FaInfoCircle
+         className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
+         onClick={() => handleDetailModalOpen(brand.id)}
         />
       </div>
     ),
@@ -183,8 +184,8 @@ const Page = () => {
     sequence: brand.sequence,
     edit: (
       <div className="flex justify-center items-center">
-        <FaPencil
-          className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+        <GoPencil
+          className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400 p-1.5 rounded-sm"
           onClick={() => handleUpdateModalOpen(brand.id)}
         />
       </div>
@@ -193,12 +194,12 @@ const Page = () => {
 
   const tableHeader = [
     {
-      component: <FaInfo className="text-center text-xl" />,
+      component: <FaInfoCircle className="text-center text-xl" />,
       key: "info",
       important: true,
     },
-    { name: t("table.id"), key: "id", important: true },
-    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.id"), key: "id", important: true, sortable: true },
+    { name: t("table.name"), key: "name", important: true, sortable: true },
     {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
@@ -206,7 +207,7 @@ const Page = () => {
     },
     { name: t("table.sequence"), key: "sequence" },
     {
-      component: <FaPencil className="text-center text-xl" />,
+      component: <GoPencil className="text-center text-xl" />,
       key: "edit",
     },
   ];
@@ -260,7 +261,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">{t("page.brandsTitle")}</h3>
+        <h3 className="font-bold pt-4 px-4">{t("page.brandsTitle")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && brands.length === 0 ? (

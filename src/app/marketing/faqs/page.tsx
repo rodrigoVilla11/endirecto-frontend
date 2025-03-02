@@ -13,6 +13,8 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { useGetFaqsPagQuery } from "@/redux/services/faqsApi";
 import { useTranslation } from "react-i18next";
+import { GoPencil } from "react-icons/go";
+import { IoIosTrash } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -37,7 +39,12 @@ const Page = () => {
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Redux query (returns an object { faqs: Faq[], total: number })
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetFaqsPagQuery({
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetFaqsPagQuery({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
@@ -143,16 +150,16 @@ const Page = () => {
       answer: faq.answer,
       edit: (
         <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
+          <GoPencil
+            className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
             onClick={() => openUpdateModal(faq._id)}
           />
         </div>
       ),
       erase: (
         <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
+          <IoIosTrash
+            className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
             onClick={() => openDeleteModal(faq._id)}
           />
         </div>
@@ -162,8 +169,8 @@ const Page = () => {
   const tableHeader = [
     { name: t("table.question"), key: "question", important: true },
     { name: t("table.answer"), key: "answer" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {
@@ -211,11 +218,7 @@ const Page = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        {t("page.errorLoadingFaqs")}
-      </div>
-    );
+    return <div className="p-4 text-red-500">{t("page.errorLoadingFaqs")}</div>;
   }
 
   return (
@@ -234,7 +237,10 @@ const Page = () => {
 
       <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
         {currentFaqId && (
-          <UpdateFaqComponent faqId={currentFaqId} closeModal={closeUpdateModal} />
+          <UpdateFaqComponent
+            faqId={currentFaqId}
+            closeModal={closeUpdateModal}
+          />
         )}
       </Modal>
 

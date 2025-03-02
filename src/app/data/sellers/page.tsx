@@ -140,7 +140,7 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("table.id"), key: "id", important: true },
-    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.name"), key: "name", important: true, sortable: true  },
     { name: t("table.branch"), key: "branch", important: true },
   ];
 

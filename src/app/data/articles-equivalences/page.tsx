@@ -157,8 +157,8 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: t("article"), key: "article", important: true },
-    { name: t("brand"), key: "brand", important: true },
+    { name: t("article"), key: "article", important: true, sortable: true  },
+    { name: t("brand"), key: "brand", important: true , sortable: true },
     { name: t("code"), key: "code", important: true },
   ];
 
@@ -224,7 +224,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("articlesEquivalences")}</h3>
+        <h3 className="font-bold pt-4 px-4">{t("articlesEquivalences")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={observerRef} className="h-10" />

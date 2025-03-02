@@ -16,6 +16,8 @@ import UpdateTagComponent from "./UpdateTag";
 import DeleteTagComponent from "./DeleteTag";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
+import { GoPencil } from "react-icons/go";
+import { IoIosTrash } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -24,7 +26,9 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const filterBy = "tags";
@@ -73,22 +77,26 @@ const Page = () => {
         enable: popup.tags.enable ? t("table.enabled") : t("table.disabled"),
         image: (
           <div className="flex justify-center items-center">
-            <img src={popup.tags.image || ""} className="h-10" alt={t("table.imageAlt")} />
+            <img
+              src={popup.tags.image || ""}
+              className="h-10"
+              alt={t("table.imageAlt")}
+            />
           </div>
         ),
         url: popup.tags.url,
         edit: (
           <div className="flex justify-center items-center">
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer"
+            <GoPencil
+              className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
               onClick={() => openUpdateModal(popup._id)}
             />
           </div>
         ),
         erase: (
           <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer"
+            <IoIosTrash
+              className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
               onClick={() => openDeleteModal(popup._id)}
             />
           </div>
@@ -97,12 +105,12 @@ const Page = () => {
     }) || [];
 
   const tableHeader = [
-    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.name"), key: "name", important: true, sortable: true },
     { name: t("table.enable"), key: "enable", important: true },
     { name: t("table.image"), key: "image", important: true },
     { name: t("table.url"), key: "url" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {

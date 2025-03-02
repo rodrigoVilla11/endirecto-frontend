@@ -12,9 +12,13 @@ import CreateNotificationComponent from "./CreateNotification";
 import DeleteNotificationComponent from "./DeleteNotification";
 import { useTranslation } from "react-i18next";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { useGetNotificationsPagQuery, useUpdateNotificationMutation } from "@/redux/services/notificationsApi";
+import {
+  useGetNotificationsPagQuery,
+  useUpdateNotificationMutation,
+} from "@/redux/services/notificationsApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
+import { IoIosTrash } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -30,16 +34,22 @@ const Page = () => {
   const [totalNotifications, setTotalNotifications] = useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [currentNotificationId, setCurrentNotificationId] = useState<string | null>(null);
+  const [currentNotificationId, setCurrentNotificationId] = useState<
+    string | null
+  >(null);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: articleData } = useGetAllArticlesQuery(null);
 
-
   // Usamos siempre useGetNotificationsPagQuery
-  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({ page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery });
+  const { data, error, isLoading, refetch } = useGetNotificationsPagQuery({
+    page,
+    limit: ITEMS_PER_PAGE,
+    query: searchQuery,
+    sort: sortQuery,
+  });
 
   // Búsqueda con debounce
   const debouncedSearch = debounce((query: string) => {
@@ -56,7 +66,9 @@ const Page = () => {
         try {
           const result = await refetch().unwrap();
           const fetched = result || { notifications: [], total: 0 };
-          const newItems = Array.isArray(fetched.notifications) ? fetched.notifications : [];
+          const newItems = Array.isArray(fetched.notifications)
+            ? fetched.notifications
+            : [];
           setTotalNotifications(fetched.total || 0);
           if (page === 1) {
             setItems(newItems);
@@ -105,7 +117,8 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -130,8 +143,8 @@ const Page = () => {
       article: article?.name || t("table.noBrand"),
       erase: (
         <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
+          <IoIosTrash
+            className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
             onClick={() => setCurrentNotificationId(notification._id)}
           />
         </div>
@@ -140,12 +153,12 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: t("table.type"), key: "type" },
-    { name: t("table.title"), key: "title" },
+    { name: t("table.type"), key: "type", sortable: true },
+    { name: t("table.title"), key: "title", sortable: true },
     { name: t("table.description"), key: "description" },
-    { name: t("table.brand"), key: "brand" },
-    { name: t("table.article"), key: "article" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { name: t("table.brand"), key: "brand", sortable: true },
+    { name: t("table.article"), key: "article", sortable: true },
+    { component: <IoIosTrash className="text-center text-xl" />, key: "erase" },
   ];
 
   const headerBody = {
@@ -202,7 +215,9 @@ const Page = () => {
   }
   if (error) {
     return (
-      <div className="p-4 text-red-500">{t("page.errorLoadingNotifications")}</div>
+      <div className="p-4 text-red-500">
+        {t("page.errorLoadingNotifications")}
+      </div>
     );
   }
 
@@ -266,4 +281,3 @@ const Page = () => {
 };
 
 export default Page;
-

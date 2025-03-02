@@ -141,8 +141,8 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("table.id"), key: "id", important: true },
-    { name: t("table.article"), key: "article_id", important: true },
-    { name: t("table.quantity"), key: "quantity", important: true },
+    { name: t("table.article"), key: "article_id", important: true, sortable: true  },
+    { name: t("table.quantity"), key: "quantity", important: true, sortable: true  },
     { name: t("table.branch"), key: "branch" },
     { name: t("table.nextEntry"), key: "quantity_next" },
     { name: t("table.dateNextEntry"), key: "quantity_next_date" },

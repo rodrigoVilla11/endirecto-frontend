@@ -10,7 +10,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useClient } from "@/app/context/ClientContext";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaInfoCircle, FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
 import CRM from "./CRM";
 import DocumentDetails from "./DocumentDetails";
@@ -41,7 +41,9 @@ const Page = () => {
   // Estados para los modales y documentos
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
 
   // Definición de la función para abrir el modal de creación
   const openCreateModal = () => setCreateModalOpen(true);
@@ -51,7 +53,6 @@ const Page = () => {
     (acc, doc) => acc + Number(doc.amount),
     0
   );
-
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { selectedClientId } = useClient();
@@ -86,13 +87,22 @@ const Page = () => {
   };
 
   // Extraer sortField y sortOrder de sortQuery
-  const [rawSortField, rawSortOrder] = sortQuery ? sortQuery.split(":") : [undefined, undefined];
+  const [rawSortField, rawSortOrder] = sortQuery
+    ? sortQuery.split(":")
+    : [undefined, undefined];
   const sortField = rawSortField;
   const sortOrder =
-    rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : undefined;
+    rawSortOrder === "asc" || rawSortOrder === "desc"
+      ? rawSortOrder
+      : undefined;
 
   // Consulta RTK Query para documentos
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetLookupDocumentsQuery(
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetLookupDocumentsQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
@@ -132,7 +142,17 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch, t]);
+  }, [
+    page,
+    searchQuery,
+    startDate,
+    endDate,
+    customer_id,
+    sortQuery,
+    isLoading,
+    refetch,
+    t,
+  ]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {
@@ -178,7 +198,8 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -207,8 +228,12 @@ const Page = () => {
       return !customer_id || document.customer_id === customer_id;
     })
     ?.map((document) => {
-      const customer = customersData?.find((data) => data.id === document.customer_id);
-      const seller = sellersData?.find((data) => data.id === document.seller_id);
+      const customer = customersData?.find(
+        (data) => data.id === document.customer_id
+      );
+      const seller = sellersData?.find(
+        (data) => data.id === document.seller_id
+      );
       const isSelected = selectedDocs.some((doc) => doc.key === document.id);
       return {
         key: document.id,
@@ -218,23 +243,25 @@ const Page = () => {
             onToggle={() => handleToggleSelectDocument(document)}
           />
         ),
-        id: (
+        info: (
           <div className="flex justify-center items-center">
-            <IoInformationCircleOutline
-              className="text-center text-xl"
+            <FaInfoCircle
+              className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
               onClick={() => handleOpenDocumentModal(document.id)}
             />
           </div>
         ),
-        customer: customer ? `${customer.id} - ${customer.name}` : t("notFound"),
+        customer: customer
+          ? `${customer.id} - ${customer.name}`
+          : t("notFound"),
         type: document.type,
         number: document.number,
         date: document.date,
-        amount: document.amount,
-        balance: document.amount,
-        expiration: document.expiration_date,
-        logistic: document.expiration_status || "",
-        seller: seller?.name || t("notFound"),
+        amount: <div className="text-end">{document.amount}</div>,
+        balance: <div className="text-end">{document.amount}</div>,
+        expiration_date: document.expiration_date,
+        expiration_status: document.expiration_status || "",
+        seller_id: seller?.name || t("notFound"),
       };
     });
 
@@ -314,7 +341,13 @@ const Page = () => {
 
   return (
     <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
     >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("statusHeader")}</h3>
@@ -322,8 +355,11 @@ const Page = () => {
         <Table
           headers={[
             { name: t("action"), key: "action" },
-            { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
-            { name: t("customer"), key: "customer_id" },
+            {
+              component: <FaInfoCircle className="text-center text-xl" />,
+              key: "info",
+            },
+            { name: t("customer"), key: "customer" },
             { name: t("type"), key: "type" },
             { name: t("number"), key: "number", important: true },
             { name: t("date"), key: "date" },

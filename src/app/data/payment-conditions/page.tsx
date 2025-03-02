@@ -141,8 +141,8 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("table.id"), key: "id", important: true },
-    { name: t("table.name"), key: "name", important: true },
-    { name: t("table.percentage"), key: "percentage", important: true },
+    { name: t("table.name"), key: "name", important: true , sortable: true },
+    { name: t("table.percentage"), key: "percentage", important: true , sortable: true },
     { name: t("table.default"), key: "default" },
   ];
 

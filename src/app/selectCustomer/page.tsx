@@ -217,26 +217,16 @@ const SelectCustomer = () => {
 
   const filteredItems = useMemo(() => removeDuplicates(items), [items]);
 
-  const areFiltersApplied = !!(
-    searchQuery ||
-    searchParams.hasDebt ||
-    searchParams.hasDebtExpired ||
-    searchParams.hasArticlesOnSC ||
-    searchParams.seller_id ||
-    sortQuery
-  );
-  const { data: allCustomersData } = useGetCustomersPagQuery(
-    {
-      page: 1,
-      limit: 1000, // o el valor que estimes apropiado
-      query: searchQuery,
-      hasDebtExpired: searchParams.hasDebtExpired,
-      hasDebt: searchParams.hasDebt,
-      seller_id: searchParams.seller_id,
-      hasArticlesOnSC: searchParams.hasArticlesOnSC,
-      sort: sortQuery,
-    }
-  );
+  const { data: allCustomersData } = useGetCustomersPagQuery({
+    page: 1,
+    limit: 1000, // o el valor que estimes apropiado
+    query: searchQuery,
+    hasDebtExpired: searchParams.hasDebtExpired,
+    hasDebt: searchParams.hasDebt,
+    seller_id: searchParams.seller_id,
+    hasArticlesOnSC: searchParams.hasArticlesOnSC,
+    sort: sortQuery,
+  });
   const markersCustomers = allCustomersData?.customers || [];
 
   if (isQueryLoading && items.length === 0) {
@@ -322,10 +312,19 @@ const SelectCustomer = () => {
         </div>
       ),
       "payment-condition": paymentCondition?.name || "NOT FOUND",
-      "status-account": formatPriceWithCurrency(customer.totalAmount),
-      "expired-debt": formatPriceWithCurrency(customer.totalAmountExpired),
+      "status-account": (
+        <div className="text-end">{formatPriceWithCurrency(customer.totalAmount)}</div>
+      ),
+      "expired-debt": (
+        <div className="text-end text-red-600">{formatPriceWithCurrency(customer.totalAmountExpired)}</div>
+      ),
       "articles-on-cart": customer.shopping_cart.length,
-      gps: <FiMapPin onClick={() => openViewGPSModal(customer.id)} />,
+      gps: (
+        <FiMapPin
+          onClick={() => openViewGPSModal(customer.id)}
+          className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
+        />
+      ),
       menu: (
         <div className="relative">
           <CiMenuKebab
@@ -356,16 +355,15 @@ const SelectCustomer = () => {
   const tableHeader = [
     {
       component: <CgProfile className="text-center text-xl" />,
-      key: "profile",
+      key: "icon",
     },
     { name: "Id", key: "id", important: true },
-    { name: "Customer", key: "customer", important: true },
-    { name: "Name", key: "name" },
+    { name: "Customer", key: "customer", important: true, sortable: true },
     { name: "Address", key: "address" },
     { name: "Payment Condition", key: "payment-condition" },
-    { name: "Status Account", key: "status-account" },
-    { name: "Expired Debt", key: "expired-debt" },
-    { name: "Articles on Cart", key: "articles-on-cart" },
+    { name: "Status Account", key: "status-account", sortable: true },
+    { name: "Expired Debt", key: "expired-debt", sortable: true },
+    { name: "Articles on Cart", key: "articles-on-cart", sortable: true },
     { name: "GPS", key: "gps", important: true },
     {
       component: <CiMenuKebab className="text-center text-xl" />,

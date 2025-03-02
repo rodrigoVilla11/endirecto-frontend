@@ -17,6 +17,8 @@ import CreateUserComponent from "./CreateUser";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { FaTimes } from "react-icons/fa";
+import { GoPencil } from "react-icons/go";
+import { IoIosTrash } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -101,17 +103,17 @@ console.log(users)
                 branch: branch?.name || "No Branch",
                 zone: user.zone || "No Zone",
                 edit: (
-                  <div className="flex justify-center items-center">
-                    <FaPencil
-                      className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+                  <div className="flex justify-center items-center ">
+                    <GoPencil
+                      className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
                       onClick={() => handleModalOpen("update", user._id)}
                     />
                   </div>
                 ),
                 erase: (
                   <div className="flex justify-center items-center">
-                    <FaTrashCan
-                      className="text-center text-lg hover:cursor-pointer hover:text-red-500"
+                    <IoIosTrash
+                      className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
                       onClick={() => handleModalOpen("delete", user._id)}
                     />
                   </div>
@@ -211,13 +213,13 @@ console.log(users)
 
   const tableHeader = [
     { name: "Id", key: "id" },
-    { name: "User", key: "username", important: true },
+    { name: "User", key: "username", important: true, sortable: true },
     { name: "Email", key: "email" },
-    { name: "Role", key: "role", important: true },
+    { name: "Role", key: "role", important: true,  sortable: true },
     { name: "Branch", key: "branch" },
     { name: "Zone", key: "zone" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {

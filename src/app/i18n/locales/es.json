@@ -418,10 +418,11 @@
     "noBrandsFound": "No se encontraron marcas",
     "errorLoadingBrands": "Error al cargar las marcas. Por favor, inténtalo de nuevo más tarde.",
     "results": "{{count}} Resultados",
-    "itemsTitle": "ARTÍCULOS",
+    "itemsTitle": "RUBROS",
     "noItemsFound": "No se encontraron artículos",
     "errorLoadingItems": "Error al cargar los artículos. Por favor, inténtalo de nuevo más tarde.",
     "paymentConditionsTitle": "CONDICIONES DE PAGO",
+    "paymentConditions": "Condiciones de pago",
     "errorLoadingPaymentConditions": "Error al cargar las condiciones de pago. Por favor, inténtalo de nuevo más tarde.",
     "noPaymentConditionsFound": "No se encontraron condiciones de pago",
     "stockTitle": "STOCK",
@@ -1264,5 +1265,7 @@
   "publicate-notifications": "Publicación de Notificaciones",
   "no_notifications": "No hay notificationes sin leer",
   "notify_notifications": "Te avisaremos cuando llegue algo nuevo.",
-  "mark_all_as_read": "Marcar todas como leidas"
+  "mark_all_as_read": "Marcar todas como leidas",
+  "allItems": "Todos los rubros",
+  "allBrands": "Todos las marcas"
 }

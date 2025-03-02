@@ -208,10 +208,10 @@ const Page = () => {
       component: <FaImage className="text-center text-xl" />,
       key: "image",
     },
-    { name: t("article"), key: "article", important: true },
-    { name: t("brand"), key: "brand", important: true },
-    { name: t("model"), key: "model", important: true },
-    { name: t("engine"), key: "engine", important: true },
+    { name: t("article"), key: "article", important: true, sortable: true },
+    { name: t("brand"), key: "brand", important: true, sortable: true },
+    { name: t("model"), key: "model", important: true , sortable: true},
+    { name: t("engine"), key: "engine", important: true, sortable: true },
     { name: t("year"), key: "year", important: true },
   ];
 
@@ -282,7 +282,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">{t("applicationOfArticles")}</h3>
+        <h3 className="font-bold pt-4 px-4">{t("applicationOfArticles")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && applicationsOfArticles.length === 0 ? (

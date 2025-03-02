@@ -492,7 +492,7 @@ const DashboardPage = () => {
       <div className="overflow-x-auto h-auto">
         <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[250px]" : "min-w-[220px]"
+            isOpen ? "min-w-[300px]" : "min-w-[250px]"
           }`}
         >
           {filteredItemsShortcuts.map((item, index) => (

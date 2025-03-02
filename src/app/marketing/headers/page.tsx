@@ -14,13 +14,17 @@ import CreateHeaderComponent from "./CreateHeader";
 import UpdateHeaderComponent from "./UpdateHeader";
 import DeleteHeaderComponent from "./DeleteHeader";
 import { useTranslation } from "react-i18next";
+import { IoIosTrash } from "react-icons/io";
+import { GoPencil } from "react-icons/go";
 
 const Page = () => {
   const { t } = useTranslation();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const filterBy = "header";
 
@@ -78,16 +82,16 @@ const Page = () => {
       url: item.header.url,
       edit: (
         <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
+          <GoPencil
+            className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
             onClick={() => openUpdateModal(item._id)}
           />
         </div>
       ),
       erase: (
         <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
+          <IoIosTrash
+            className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
             onClick={() => openDeleteModal(item._id)}
           />
         </div>
@@ -98,8 +102,8 @@ const Page = () => {
     { name: t("table.enable"), key: "enable", important: true },
     { name: t("table.image"), key: "img", important: true },
     { name: t("table.url"), key: "url" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {

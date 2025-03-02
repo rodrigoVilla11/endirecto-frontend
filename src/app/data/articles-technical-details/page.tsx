@@ -134,7 +134,7 @@ const Page = () => {
   });
 
   const tableHeader = [
-    { name: t("article"), key: "article", important: true },
+    { name: t("article"), key: "article", important: true, sortable: true },
     { name: t("technicalDetail"), key: "technical_detail_name", important: true },
     { name: t("value"), key: "value", important: true },
   ];

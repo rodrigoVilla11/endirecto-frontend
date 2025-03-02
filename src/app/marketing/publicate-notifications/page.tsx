@@ -48,7 +48,7 @@ export default function NotificationForm() {
     {
       id: "roles",
       title: "Roles",
-      isRequired: true,
+      isOptional: true,
       items: ["ADMINISTRADOR", "MARKETING", "OPERADOR", "VENDEDOR"],
     },
     {
@@ -236,7 +236,7 @@ export default function NotificationForm() {
       <div className="mx-auto p-4">
         <h1 className="text-2xl font-semibold mb-6">PUBLICACIÓN DE NOTIFICACIONES</h1>
         {/* Form Header */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 bg-white pt-20 px-4 pb-4 rounded-lg">
           <div className="col-span-1">
             <label className="block text-sm font-medium mb-1">Notificación</label>
             <select
@@ -308,7 +308,7 @@ export default function NotificationForm() {
         <div className="space-y-4">
           {sections.map((section) => (
             <div key={section.id} className="border rounded-sm">
-              <div className="bg-primary text-white p-3 flex items-center justify-between">
+              <div className="bg-table text-white p-3 flex items-center justify-between">
                 <button
                   onClick={() => toggleSection(section.id)}
                   className="flex items-center gap-2 flex-1"
@@ -329,20 +329,20 @@ export default function NotificationForm() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleSelectAll(section.id)}
-                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                    className="px-3 py-1 bg-white text-black hover:bg-gray-600 rounded text-sm"
                   >
                     Todo
                   </button>
                   <button
                     onClick={() => handleSelectNone(section.id)}
-                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                    className="px-3 py-1 bg-white text-black hover:bg-gray-600 rounded text-sm"
                   >
                     Nada
                   </button>
                 </div>
               </div>
               {expandedSections.includes(section.id) && (
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-2 bg-white">
                   {section.id === "sellers" || section.id === "customers" ? (
                     sellersData?.map((seller: any) => {
                       const sellerId = seller.id;

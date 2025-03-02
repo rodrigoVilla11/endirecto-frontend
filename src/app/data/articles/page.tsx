@@ -14,10 +14,16 @@ import Modal from "@/app/components/components/Modal";
 import UpdateArticleComponent from "./UpdateArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
-import { FaImage, FaPencil, FaInfo } from "react-icons/fa6"; // Se agregó FaInfo
+import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
-import { FaTimes } from "react-icons/fa";
+import { FaInfoCircle, FaTimes } from "react-icons/fa";
+import { GoPencil } from "react-icons/go";
+
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+// 👇 Agrega estos imports para las marcas e ítems
+import { useGetBrandsQuery } from "@/redux/services/brandsApi";
+import { useGetItemsQuery } from "@/redux/services/itemsApi";
+
 import { useTranslation } from "react-i18next";
 import ArticleDetail from "./ArticleDetail";
 
@@ -26,7 +32,7 @@ const ITEMS_PER_PAGE = 15;
 const Page = () => {
   const { t } = useTranslation();
 
-  // Estados básicos con tipos apropiados
+  // Estados de paginación, artículos, búsqueda y sort
   const [page, setPage] = useState(1);
   const [articles, setArticles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,12 +42,20 @@ const Page = () => {
     articleId: string | null;
   }>({ type: null, articleId: null });
   const [isLoading, setIsLoading] = useState(false);
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc" o "campo:desc"
 
-  // Referencias
+  // 👇 Estados para filtrar por marca e ítem
+  const [brandFilter, setBrandFilter] = useState("");
+  const [itemFilter, setItemFilter] = useState("");
+
+  // Referencias para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
 
+  // Llamadas a APIs
+  const { data: brands } = useGetBrandsQuery(null);
+  const { data: items } = useGetItemsQuery(null);
+
+  // Se incluye brand e item en la query
   const {
     data,
     error,
@@ -54,6 +68,8 @@ const Page = () => {
       query: searchQuery,
       sort: sortQuery,
       priceListId: "3",
+      brand: brandFilter, // 👈 se pasa el filtro de marca
+      item: itemFilter,   // 👈 se pasa el filtro de ítem
     },
     {
       refetchOnMountOrArgChange: false,
@@ -62,17 +78,18 @@ const Page = () => {
     }
   );
 
+  // Función para alternar el orden
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
 
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
+        // Alternar asc/desc
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
+        // Nuevo campo => asc por defecto
         newSortQuery = `${field}:asc`;
       }
 
@@ -94,11 +111,23 @@ const Page = () => {
     []
   );
 
-  // Effect for handling initial load and searches
+  // Cuando cambie brandFilter o itemFilter, se resetea la paginación y artículos
+  const handleBrandChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setBrandFilter(e.target.value);
+    setPage(1);
+    setArticles([]);
+  }, []);
+
+  const handleItemChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemFilter(e.target.value);
+    setPage(1);
+    setArticles([]);
+  }, []);
+
+  // Efecto para cargar artículos
   useEffect(() => {
     const loadItems = async () => {
       if (isLoading) return;
-
       setIsLoading(true);
       try {
         const result = await refetch().unwrap();
@@ -110,7 +139,7 @@ const Page = () => {
           setArticles((prev) => [...prev, ...newItems]);
         }
 
-        // Si el total de artículos devueltos es menor que ITEMS_PER_PAGE, ya no hay más
+        // Si vienen menos artículos que el límite, no hay más
         setHasMore(newItems.length === ITEMS_PER_PAGE);
       } catch (error) {
         console.error(t("errorLoadingArticles"), error);
@@ -120,9 +149,18 @@ const Page = () => {
     };
 
     loadItems();
-  }, [page, searchQuery, sortQuery, refetch, isLoading, t]);
+  }, [
+    page,
+    searchQuery,
+    sortQuery,
+    brandFilter,
+    itemFilter, // 👈 se incluye en las dependencias
+    refetch,
+    isLoading,
+    t,
+  ]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer para infinite scroll
   useEffect(() => {
     if (!observerRef.current) return;
 
@@ -145,7 +183,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Manejadores optimizados
+  // Manejadores para abrir/cerrar modales
   const handleModalOpen = useCallback(
     (type: "update" | "delete" | "info", id: string) => {
       setModalState({ type, articleId: id });
@@ -156,8 +194,7 @@ const Page = () => {
   const handleModalClose = useCallback(
     async (type: "update" | "delete" | "info") => {
       setModalState({ type: null, articleId: null });
-
-      // Esperar un momento para asegurar que la actualización se completó
+      // Esperar un poco para asegurar actualización
       setTimeout(async () => {
         try {
           await refetch();
@@ -175,16 +212,15 @@ const Page = () => {
     setArticles([]);
   }, []);
 
-  // Componentes de tabla memorizados
+  // Datos que se mostrarán en la tabla
   const tableData = useMemo(
     () =>
       articles.map((article) => ({
         key: article.id,
-        // Nueva columna de info al principio
         info: (
           <div className="flex justify-center items-center">
-            <FaInfo
-              className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+            <FaInfoCircle
+              className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
               onClick={() => handleModalOpen("info", article.id)}
             />
           </div>
@@ -210,8 +246,8 @@ const Page = () => {
         name: article.name,
         edit: (
           <div className="flex justify-center items-center">
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer hover:text-blue-500"
+            <GoPencil
+              className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400 p-1.5 rounded-sm"
               onClick={() => handleModalOpen("update", article.id)}
             />
           </div>
@@ -220,10 +256,11 @@ const Page = () => {
     [articles, handleModalOpen, t]
   );
 
+  // Estructura de encabezados de tabla
   const tableHeader = useMemo(
     () => [
       {
-        component: <FaInfo className="text-center text-xl" />,
+        component: <FaInfoCircle className="text-center text-xl" />,
         key: "info",
         sortable: false,
         important: true,
@@ -235,12 +272,12 @@ const Page = () => {
         sortable: false,
         important: true,
       },
-      { name: t("item"), key: "item", sortable: false },
+      { name: t("item"), key: "item", sortable: true },
       { name: t("id"), key: "id", sortable: true, important: true },
       { name: t("supplierCode"), key: "supplier", sortable: true },
       { name: t("name"), key: "name", sortable: true },
       {
-        component: <FaPencil className="text-center text-xl" />,
+        component: <GoPencil className="text-center text-lg" />,
         key: "edit",
         sortable: false,
       },
@@ -248,8 +285,9 @@ const Page = () => {
     [t]
   );
 
-  const headerBody = useMemo(
-    () => ({
+  // Armado del Header (botones, filtros, etc.)
+  const headerBody = useMemo(() => {
+    return {
       buttons: [
         {
           logo: <AiOutlineDownload />,
@@ -257,6 +295,7 @@ const Page = () => {
         },
       ],
       filters: [
+        // Filtro de búsqueda
         {
           content: (
             <div className="relative">
@@ -270,7 +309,7 @@ const Page = () => {
               />
               {searchQuery && (
                 <button
-                  className="right-2 top-1/2 -translate-y-1/2"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
                   onClick={handleResetSearch}
                   aria-label={t("clearSearch")}
                 >
@@ -280,11 +319,56 @@ const Page = () => {
             </div>
           ),
         },
+        // Filtro por marca
+        {
+          content: (
+            <select
+              className="w-full max-w-sm border border-gray-300 rounded-md p-2 md:p-3 text-xs outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              value={brandFilter}
+              onChange={handleBrandChange}
+            >
+              <option value="">{t("allBrands")}</option>
+              {brands?.map((b: any) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ),
+        },
+        // Filtro por ítem
+        {
+          content: (
+            <select
+              className="w-full max-w-sm border border-gray-300 rounded-md p-2 md:p-3 text-xs outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              value={itemFilter}
+              onChange={handleItemChange}
+            >
+              <option value="">{t("allItems")}</option>
+              {items?.map((it: any) => (
+                <option key={it.id} value={it.id}>
+                  {it.name}
+                </option>
+              ))}
+            </select>
+          ),
+        },
       ],
       results: t("results", { count: data?.totalItems || 0 }),
-    }),
-    [searchQuery, data, debouncedSearch, handleResetSearch, t]
-  );
+    };
+  }, [
+    searchQuery,
+    brandFilter,
+    itemFilter,
+    data,
+    brands,
+    items,
+    debouncedSearch,
+    handleResetSearch,
+    handleBrandChange,
+    handleItemChange,
+    t,
+  ]);
 
   if (isQueryLoading && articles.length === 0) {
     return (
@@ -297,13 +381,15 @@ const Page = () => {
   if (error) {
     return <div className="p-4 text-red-500">{t("errorLoadingArticles")}</div>;
   }
-  const isMobile = window.innerWidth < 640;
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">{t("articles")}</h3>
+        <h3 className="font-bold pt-4 px-4">{t("articles")}</h3>
         <Header headerBody={headerBody} />
+
         {articles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             {t("noArticlesFound")}
@@ -328,6 +414,7 @@ const Page = () => {
             )}
           </>
         )}
+
         <div ref={observerRef} className="h-10" />
 
         {/* Modal para actualizar artículo */}
@@ -346,7 +433,6 @@ const Page = () => {
           )}
         </Modal>
 
-        {/* Modal para ver detalle del artículo */}
         {/* Modal para ver detalle del artículo */}
         <Modal
           isOpen={modalState.type === "info"}

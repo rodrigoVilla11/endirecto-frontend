@@ -16,6 +16,8 @@ import UpdatePopupComponent from "./UpdatePopup";
 import DeletePopupComponent from "./DeletePopup";
 import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
+import { IoIosTrash } from "react-icons/io";
+import { GoPencil } from "react-icons/go";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -24,7 +26,9 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -87,16 +91,16 @@ const Page = () => {
         visualization: popup.popups.visualization,
         edit: (
           <div className="flex justify-center items-center">
-            <FaPencil
-              className="text-center text-lg hover:cursor-pointer"
+            <GoPencil
+              className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
               onClick={() => openUpdateModal(popup._id)}
             />
           </div>
         ),
         erase: (
           <div className="flex justify-center items-center">
-            <FaTrashCan
-              className="text-center text-lg hover:cursor-pointer"
+            <IoIosTrash
+              className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
               onClick={() => openDeleteModal(popup._id)}
             />
           </div>
@@ -112,8 +116,8 @@ const Page = () => {
     { name: t("table.web"), key: "web", important: true },
     { name: t("table.url"), key: "url" },
     { name: t("table.visualizations"), key: "visualization" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {

@@ -14,18 +14,27 @@ import UpdateBannerComponent from "./UpdateBanner";
 import CreateBannerComponent from "./CreateBanner";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useTranslation } from "react-i18next";
+import { IoIosTrash } from "react-icons/io";
+import { GoPencil } from "react-icons/go";
 
 const Page = () => {
   const { t } = useTranslation();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
-  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(null);
+  const [currentMarketingId, setCurrentMarketingId] = useState<string | null>(
+    null
+  );
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const filterBy = "headers";
-  const { data: marketing, error, isLoading, refetch } = useGetMarketingByFilterQuery({ filterBy });
+  const {
+    data: marketing,
+    error,
+    isLoading,
+    refetch,
+  } = useGetMarketingByFilterQuery({ filterBy });
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -64,22 +73,26 @@ const Page = () => {
       enable: popup.headers.enable ? t("table.enable") : t("table.disable"),
       homeWeb: (
         <div className="flex justify-center items-center">
-          <img src={popup.headers.homeWeb || ""} className="h-10" alt={t("table.homeWebAlt")} />
+          <img
+            src={popup.headers.homeWeb || ""}
+            className="h-10"
+            alt={t("table.homeWebAlt")}
+          />
         </div>
       ),
       url: popup.headers.url,
       edit: (
         <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
+          <GoPencil
+            className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
             onClick={() => openUpdateModal(popup._id)}
           />
         </div>
       ),
       erase: (
         <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
+          <IoIosTrash
+            className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
             onClick={() => openDeleteModal(popup._id)}
           />
         </div>
@@ -87,13 +100,13 @@ const Page = () => {
     })) || [];
 
   const tableHeader = [
-    { name: t("table.name"), key: "name", important: true },
+    { name: t("table.name"), key: "name", important: true,  sortable: true },
     { name: t("table.sequence"), key: "sequence" },
     { name: t("table.enableStatus"), key: "enable" },
     { name: t("table.homeWeb"), key: "homeWeb" },
     { name: t("table.url"), key: "url" },
-    { component: <FaPencil className="text-center text-xl" />, key: "edit" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
+    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
+    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
   ];
 
   const headerBody = {
@@ -119,11 +132,17 @@ const Page = () => {
         </Modal>
         <Modal isOpen={isUpdateModalOpen} onClose={closeUpdateModal}>
           {currentMarketingId && (
-            <UpdateBannerComponent marketingId={currentMarketingId} closeModal={closeUpdateModal} />
+            <UpdateBannerComponent
+              marketingId={currentMarketingId}
+              closeModal={closeUpdateModal}
+            />
           )}
         </Modal>
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
-          <DeleteBannerComponent marketingId={currentMarketingId || ""} closeModal={closeDeleteModal} />
+          <DeleteBannerComponent
+            marketingId={currentMarketingId || ""}
+            closeModal={closeDeleteModal}
+          />
         </Modal>
         <div ref={observerRef} className="h-10" />
       </div>

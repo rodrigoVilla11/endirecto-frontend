@@ -397,6 +397,7 @@
     "noItemsFound": "No items found",
     "errorLoadingItems": "Error loading items. Please try again later.",
     "paymentConditionsTitle": "PAYMENT CONDITIONS",
+    "paymentConditions": "Payment Conditions",
     "errorLoadingPaymentConditions": "Error loading payment conditions. Please try again later.",
     "noPaymentConditionsFound": "No payment conditions found",
     "stockTitle": "STOCK",
@@ -1269,6 +1270,8 @@
   "no_notifications": "There are no unread notifications",
   "notify_notifications": "We'll notify you when something new arrives",
   "mark_all_as_read": "Mark all as read",
-  "lastMonth": "Last Month"
+  "lastMonth": "Last Month",
+  "allItems": "All Items",
+  "allBrands": "All Brands"
 
 }
