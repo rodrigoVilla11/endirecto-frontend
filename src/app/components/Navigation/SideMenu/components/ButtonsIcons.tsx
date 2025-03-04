@@ -67,7 +67,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       setTimeout(() => {
         setIsOpen(false);
         setOpenSubCategory(null);
-      }, 0);
+      }, 1000);
     }
   };
   

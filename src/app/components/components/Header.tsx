@@ -16,7 +16,7 @@ const Header = ({ headerBody }: any) => {
           <div className="flex items-center gap-2">
             <p className="font-medium text-gray-600">
               {headerBody.secondSection.title}
-              <span className="font-bold pl-2 text-lg text-blue-600">{headerBody.secondSection.amount}</span>
+              <span className="font-bold pl-2 text-lg text-red-600">{headerBody.secondSection.amount}</span>
             </p>
           </div>
           {headerBody.secondSection.total && (
