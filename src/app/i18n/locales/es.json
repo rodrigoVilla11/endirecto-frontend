@@ -1267,5 +1267,6 @@
   "notify_notifications": "Te avisaremos cuando llegue algo nuevo.",
   "mark_all_as_read": "Marcar todas como leidas",
   "allItems": "Todos los rubros",
-  "allBrands": "Todos las marcas"
+  "allBrands": "Todos las marcas",
+  "articleId": "ID del Articulo:"
 }

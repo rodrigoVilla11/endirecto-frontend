@@ -86,7 +86,7 @@ const Buttons = () => {
 
           {isMenuOpen && (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
-              <div className="absolute right-0 top-0 h-full w-3/4 bg-gray-900 p-6">
+              <div className="absolute right-0 top-0 h-full w-3/4 bg-header-color p-6">
                 <div className="flex justify-between items-center mb-8">
                   {/* Botón de bandera con funcionalidad i18n */}
                   <button onClick={handleLanguageToggle} className="text-xl">

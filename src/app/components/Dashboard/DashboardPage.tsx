@@ -468,7 +468,7 @@ const DashboardPage = () => {
       <div className="overflow-x-auto h-auto">
         <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[300px]" : "min-w-[250px]"
+            isOpen ? "min-w-[250px]" : "min-w-[200px]"
           }`}
         >
           {filteredItemsCard.map((item, index) => (
@@ -482,7 +482,7 @@ const DashboardPage = () => {
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 ]"
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
                 color={item.color}
               />
             </Link>
@@ -492,7 +492,7 @@ const DashboardPage = () => {
       <div className="overflow-x-auto h-auto">
         <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[300px]" : "min-w-[250px]"
+            isOpen ? "min-w-[250px]" : "min-w-[220px]"
           }`}
         >
           {filteredItemsShortcuts.map((item, index) => (

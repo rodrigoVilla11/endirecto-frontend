@@ -78,7 +78,7 @@ const ArticleSearchResults = ({
   return (
     <div
       ref={containerRef}
-      className="fixed top-28 md:top-20 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-lg border-2 border-black"
+      className="fixed top-28 md:top-16 left-0 right-0 bg-[rgba(0,0,0,0.8)] shadow-lg p-6 z-50 h-auto max-h-[80vh] flex flex-col justify-between items-center rounded-b-lg border-2 border-black"
     >
       <div className="flex justify-between items-center w-full mb-4">
         <h3 className="text-lg font-bold text-white">

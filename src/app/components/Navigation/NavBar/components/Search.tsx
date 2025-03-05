@@ -1,7 +1,7 @@
 import ArticleSearchResults from "@/app/components/Catalogue/components/Search";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { BiSearchAlt } from "react-icons/bi";
+import { BiSearchAlt, BiX } from "react-icons/bi";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -9,6 +9,11 @@ const Search = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  };
+
+
+  const clearSearch = () => {
+    setSearchQuery("");
   };
 
   return (
@@ -22,6 +27,12 @@ const Search = () => {
           className="h-6 rounded-3xl pl-8 border-none focus:ring-0 outline-none text-xs font-semibold"
           placeholder="Buscá lo que estás necesitando..."
         />
+        {searchQuery && (
+          <BiX
+            onClick={clearSearch}
+            className="absolute right-1 text-2xl text-gray-400 cursor-pointer"
+          />
+        )}
         <ArticleSearchResults
           query={searchQuery}
           setSearchQuery={setSearchQuery}

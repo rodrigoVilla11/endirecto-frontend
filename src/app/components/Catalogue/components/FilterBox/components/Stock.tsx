@@ -1,10 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import { useFilters } from "@/app/context/FiltersContext";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 const Stock = ({ onChange }: any) => {
   const { t } = useTranslation();
   const [selectedButton, setSelectedButton] = useState("");
+  const { stock } = useFilters();
+
+  useEffect(() => {
+    // Solo se deselecciona si el valor del stock es diferente al botón seleccionado.
+    if (stock !== selectedButton) {
+      setSelectedButton("");
+    }
+  }, [stock, selectedButton]);
 
   const handleButtonClick = (value: string) => {
     if (selectedButton !== value) {

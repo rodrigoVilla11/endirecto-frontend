@@ -17,7 +17,7 @@ const StripeStock = ({ articleId }: any) => {
           : hasStock === "NO-STOCK"
           ? "bg-red-600" 
           : hasStock === "LOW-STOCK"
-          ? "bg-orange-600" 
+          ? "bg-yellow-400" 
           : "bg-gray-500" 
       } font-bold text-white text-center pt-1  text-xs`}
     >

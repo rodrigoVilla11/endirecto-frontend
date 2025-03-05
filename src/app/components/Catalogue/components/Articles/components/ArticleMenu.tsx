@@ -25,7 +25,8 @@ const ArticleMenu = ({
   const [isInformErrorModalOpen, setInformErrorModalOpen] = useState(false);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
-  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] = useState(false);
+  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] =
+    useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -86,16 +87,17 @@ const ArticleMenu = ({
 
   return (
     <div className="relative flex" ref={menuRef}>
-      <button
-        className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
-        onClick={() => {
-          openEquivalencesModal(article.id);
-        }}
-        title={t("viewEquivalences")}
-      >
-        <GoTag className="w-4 h-4 text-gray-400" />
-      </button>
-
+      {article.article_equivalence && article.article_equivalence.length > 0 && (
+        <button
+          className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
+          onClick={() => {
+            openEquivalencesModal(article.id);
+          }}
+          title={t("viewEquivalences")}
+        >
+          <GoTag className="w-4 h-4 text-gray-400" />
+        </button>
+      )}
       {article.article_vehicles && article.article_vehicles.length > 0 && (
         <button
           className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"

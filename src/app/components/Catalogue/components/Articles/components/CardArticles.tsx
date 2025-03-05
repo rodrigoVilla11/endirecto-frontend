@@ -110,7 +110,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
         <div onClick={() => handleOpenModal(article.id)} className="cursor-pointer">
           {/* Tag and Image Section */}
           <div className="relative">
-            <div className="absolute w-full h-full flex justify-end items-end p-2 z-20">
+          <div className="absolute w-full h-full flex justify-start items-start z-20 opacity-75">
               <Tag tag={article.tag} />
             </div>
             <div className="aspect-square w-full">
