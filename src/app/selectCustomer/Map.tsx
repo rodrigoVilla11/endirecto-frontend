@@ -10,41 +10,34 @@ type MapComponentProps = {
 };
 
 const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeModal }) => {
+  // All hooks are called unconditionally
   const { t } = useTranslation();
-
-  // Consulta para obtener el cliente por ID
   const { data: customer, error, isLoading } = useGetCustomerByIdQuery(
     { id: currentCustomerId },
     { refetchOnMountOrArgChange: true }
   );
-
-  // Validar la API Key de Google Maps
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return <div>{t("map.noApiKey")}</div>;
-  }
 
-  // Manejo de estados de carga y error
-  if (isLoading) return <div>{t("map.loading")}</div>;
-  if (error) return <div>{t("map.errorLoadingCustomer")}</div>;
-
-  // Obtener y validar la cadena GPS del cliente
-  const gps = customer?.gps;
-  if (!gps) return <div>{t("map.noGPSData")}</div>;
-
+  // useMemo is called regardless of the conditionals
   const center = useMemo(() => {
-    const parts = gps.split(",").map((part) => part.trim());
+    if (!customer?.gps) return null;
+    const parts = customer.gps.split(",").map((part) => part.trim());
     if (parts.length !== 2) return null;
     const lat = parseFloat(parts[0]);
     const lng = parseFloat(parts[1]);
     return isNaN(lat) || isNaN(lng) ? null : { lat, lng };
-  }, [gps]);
+  }, [customer?.gps]);
 
-  if (!center) {
-    return <div>{t("map.invalidGPSFormat")}</div>;
+  // Conditional rendering based on the hook values
+  if (!apiKey) {
+    return <div>{t("map.noApiKey")}</div>;
   }
+  if (isLoading) return <div>{t("map.loading")}</div>;
+  if (error) return <div>{t("map.errorLoadingCustomer")}</div>;
+  if (!customer?.gps) return <div>{t("map.noGPSData")}</div>;
+  if (!center) return <div>{t("map.invalidGPSFormat")}</div>;
 
-  // Estilo del contenedor del mapa (puedes ajustarlo según tus necesidades o hacerlo responsive)
+  // Style for the map container
   const containerStyle = { width: "600px", height: "300px" };
 
   return (
