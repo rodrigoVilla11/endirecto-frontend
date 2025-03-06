@@ -358,7 +358,7 @@ const DashboardSeller = () => {
         {t("hello", { username: userData?.username, sellerId: userData?.seller_id })}
       </div>
       <div className="overflow-x-auto h-auto">
-        <div
+      <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[200px]"
           }`}
@@ -374,14 +374,14 @@ const DashboardSeller = () => {
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
+               className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
               />
             </Link>
           ))}
         </div>
       </div>
       <div className="overflow-x-auto h-auto">
-        <div
+      <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[220px]"
           }`}
