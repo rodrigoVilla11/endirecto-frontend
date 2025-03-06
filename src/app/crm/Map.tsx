@@ -11,13 +11,7 @@ type MapComponentProps = {
 const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) => {
   const { t } = useTranslation();
 
-  // Validar la API Key de Google Maps
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return <div>{t("map.noApiKey")}</div>;
-  }
-
-  // Calcular y memorizar las coordenadas centrales a partir de currentGPS
+  // Always call hooks before any early returns
   const center = useMemo(() => {
     if (!currentGPS) return null;
     const parts = currentGPS.split(",").map((part) => part.trim());
@@ -27,11 +21,16 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) =
     return isNaN(lat) || isNaN(lng) ? null : { lat, lng };
   }, [currentGPS]);
 
+  // Validate API key and center after all hooks have been called
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return <div>{t("map.noApiKey")}</div>;
+  }
   if (!center) {
     return <div>{t("map.invalidGPSFormat")}</div>;
   }
 
-  // Estilo del contenedor del mapa (puedes ajustarlo según tus necesidades o hacerlo responsive)
+  // Style for the map container
   const containerStyle = { width: "600px", height: "300px" };
 
   return (
@@ -54,4 +53,3 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) =
 };
 
 export default MapComponent;
-
