@@ -4,7 +4,7 @@ import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdPin } from "react-icons/io";
-import { FaPlus } from "react-icons/fa";
+import { FaInfoCircle, FaPlus } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import {
@@ -21,6 +21,11 @@ import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
 import { useTranslation } from "react-i18next";
+import debounce from "../context/debounce";
+import { FiMapPin } from "react-icons/fi";
+import MapComponent from "./Map";
+import CRMDetail from "./CRMDetail";
+import { useGetOrdersQuery } from "@/redux/services/ordersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -31,7 +36,7 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // ---------- Estados para los filtros ----------
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -40,24 +45,32 @@ const Page = () => {
   const [userFilter, setUserFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState(""); // Ej. “Estadístico de pedidos”
+  const [actionFilter, setActionFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [sortQuery, setSortQuery] = useState<string>("");
+  const [isViewGPSModalOpen, setViewGPSModalOpen] = useState(false);
+  const [currentGPS, setCurrentGPS] = useState<string | null>(null);
+  const [modalState, setModalState] = useState<{
+    type: "update" | "delete" | "info" | null;
+    crm: any | null;
+  }>({ type: null, crm: null });
 
   // ---------- Estados y lógica para modal de creación ----------
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const openCreateModal = () => setCreateModalOpen(true);
-  const closeCreateModal = () => {
+  const openCreateModal = useCallback(() => setCreateModalOpen(true), []);
+  const closeCreateModal = useCallback(() => {
     setCreateModalOpen(false);
     refetch();
-  };
+  }, []);
 
   // ---------- Context y data adicional ----------
   const { selectedClientId } = useClient();
   const [customer_id, setCustomer_id] = useState("");
+
+  // ---------- Queries para datos relacionados ----------
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const { data: collectionData } = useGetCollectionsQuery(null);
+  const { data: collectionData } = useGetOrdersQuery(null);
 
   // ---------- Query principal para CRM ----------
   const {
@@ -65,25 +78,29 @@ const Page = () => {
     error,
     isLoading: isQueryLoading,
     refetch,
+    isFetching,
   } = useGetCrmPagQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
-      startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-      endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+      startDate: startDate
+        ? format(startDate, "yyyy-MM-dd") + "T00:00:00.000Z"
+        : undefined,
+      endDate: endDate
+        ? format(endDate, "yyyy-MM-dd") + "T23:59:59.999Z"
+        : undefined,
       type: typeFilter,
       status: statusFilter,
-      insitu: "", // Ajusta si tu backend lo usa
+      insitu: "",
       customer_id,
       seller_id: sellerFilter,
       user_id: userFilter,
-      action: actionFilter, // Si tu backend maneja este campo para “Estadísticas de pedidos”
+      action: actionFilter,
       search: searchQuery,
+      sort: sortQuery,
     },
     {
       refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
     }
   );
 
@@ -91,56 +108,67 @@ const Page = () => {
 
   // ---------- Actualiza el customer_id al cambiar selectedClientId ----------
   useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch();
-    } else {
-      setCustomer_id("");
-      refetch();
+    if (selectedClientId !== undefined) {
+      setCustomer_id(selectedClientId || "");
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
     }
-  }, [selectedClientId, refetch, isLoading, t]);
+  }, [selectedClientId]);
 
-  // ---------- Manejo de la carga inicial y paginación ----------
+  // ---------- Manejo de la carga inicial y actualización de datos ----------
   useEffect(() => {
-    const loadDocuments = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newDocuments = result.crms || [];
-          setItems((prev) => (page === 1 ? newDocuments : [...prev, ...newDocuments]));
-          setHasMore(newDocuments.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error(t("errorLoadingDocuments"), error);
-        } finally {
-          setIsLoading(false);
-        }
+    if (!isFetching && data?.crms) {
+      if (page === 1) {
+        setItems(data.crms);
+      } else {
+        setItems((prevItems) => [...prevItems, ...data.crms]);
       }
-    };
-    loadDocuments();
-  }, [
-    page,
-    startDate,
-    endDate,
-    sellerFilter,
-    userFilter,
-    statusFilter,
-    typeFilter,
-    actionFilter,
-    searchQuery,
-    sortQuery,
-    refetch,
-    isLoading,
-    t,
-  ]);
+      setHasMore(data.crms.length === ITEMS_PER_PAGE);
+      setIsLoadingMore(false);
+    }
+  }, [data, isFetching, page]);
+
+  // ---------- Función para resetear la paginación y filtros ----------
+  const resetPagination = useCallback(() => {
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  }, []);
+
+  // ---------- Debounce para la búsqueda ----------
+  const debouncedSearch = useCallback(
+    debounce((value: string) => {
+      setSearchQuery(value);
+      resetPagination();
+    }, 500),
+    [resetPagination]
+  );
 
   // ---------- IntersectionObserver para scroll infinito ----------
   const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const openViewGPSModal = (gps: string) => {
+    console.log("Abriendo modal...", gps);
+    setCurrentGPS(gps);
+    setViewGPSModalOpen(true);
+  };
+  const closeViewGPSModal = () => {
+    setViewGPSModalOpen(false);
+    setCurrentGPS(null);
+  };
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
+        if (
+          firstEntry.isIntersecting &&
+          hasMore &&
+          !isFetching &&
+          !isLoadingMore
+        ) {
+          setIsLoadingMore(true);
           setPage((prev) => prev + 1);
         }
       },
@@ -153,242 +181,312 @@ const Page = () => {
     return () => {
       if (currentObserver) observer.unobserve(currentObserver);
     };
-  }, [hasMore, isLoading]);
+  }, [hasMore, isFetching, isLoadingMore]);
 
   // ---------- Manejo de ordenamiento ----------
   const handleSort = useCallback(
     (field: string) => {
-      const [currentField, currentDirection] = sortQuery ? sortQuery.split(":") : ["", ""];
+      const [currentField, currentDirection] = sortQuery
+        ? sortQuery.split(":")
+        : ["", ""];
       let newSortQuery = "";
+
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
+
       setSortQuery(newSortQuery);
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
+      resetPagination();
     },
-    [sortQuery]
+    [sortQuery, resetPagination]
   );
 
-  // ---------- Mapeo de datos para la tabla ----------
-  const tableData = items?.map((crm) => {
-    const customer = customersData?.find((data) => data.id === crm.customer_id);
-    const seller = sellersData?.find((data) => data.id === crm.seller_id);
-    const collection = collectionData?.find((data) => data._id === crm.seller_id);
+  // ---------- Funciones para manejar cambios de filtros ----------
+  const handleDateChange = useCallback(
+    (setter: React.Dispatch<React.SetStateAction<Date | null>>) =>
+      (date: Date | null) => {
+        setter(date);
+        resetPagination();
+      },
+    [resetPagination]
+  );
 
-    return {
-      key: crm._id,
-      info: (
-        <div className="flex justify-center items-center">
-          <IoInformationCircleOutline className="text-center text-xl" />
-        </div>
-      ),
-      seller: seller?.name,
-      customer: customer?.name,
-      user: crm.user_id,
-      date: crm.date ? format(new Date(crm.date), "yyyy-MM-dd") : "N/A",
-      type: crm.type,
-      number: crm.number,
-      amount: collection?.amount,
-      notes: crm.notes,
-      status: crm.status,
-      gps: crm.gps,
-    };
-  });
+  const handleFilterChange = useCallback(
+    (setter: React.Dispatch<React.SetStateAction<string>>) =>
+      (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+        setter(e.target.value);
+        resetPagination();
+      },
+    [resetPagination]
+  );
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      debouncedSearch(e.target.value);
+    },
+    [debouncedSearch]
+  );
+
+  const handleModalOpen = useCallback(
+    (type: "update" | "delete" | "info", crm: any) => {
+      setModalState({ type, crm: crm });
+    },
+    []
+  );
+  const handleModalClose = useCallback(
+    async (type: "update" | "delete" | "info") => {
+      setModalState({ type: null, crm: null });
+      // Esperar un poco para asegurar actualización
+      setTimeout(async () => {
+        try {
+          await refetch();
+        } catch (error) {
+          console.error(t("errorRefetchingData"), error);
+        }
+      }, 100);
+    },
+    [refetch, t]
+  );
+
+  // ---------- Memoización del mapeo de datos para la tabla ----------
+  const tableData = React.useMemo(
+    () =>
+      items?.map((crm) => {
+        const customer = customersData?.find(
+          (data) => data.id === crm.customer_id
+        );
+        const seller = sellersData?.find((data) => data.id === crm.seller_id);
+        const collection = collectionData?.orders?.find(
+          (data) => String(data.tmp_id) === String(crm.order_id)
+        );
+        console.log("crm.order_id:", crm.order_id, "collection:", collection);
+
+        return {
+          key: crm._id,
+          info: (
+            <div className="flex justify-center items-center">
+              <FaInfoCircle
+                className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
+                onClick={() => handleModalOpen("info", crm)}
+              />
+            </div>
+          ),
+          seller: seller?.name || t("notAvailable"),
+          customer: customer?.name || t("notAvailable"),
+          user: crm.user_id || t("notAvailable"),
+          date: crm.date
+            ? format(new Date(crm.date), "yyyy-MM-dd")
+            : t("notAvailable"),
+          type: crm.type || t("notAvailable"),
+          number: crm.number || t("notAvailable"),
+          amount: collection?.total || t("notAvailable"),
+          notes: crm.notes || t("notAvailable"),
+          gps: crm.gps ? (
+            <FiMapPin
+              onClick={() => openViewGPSModal(crm.gps)}
+              className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
+            />
+          ) : (
+            "No GPS"
+          ),
+        };
+      }) || [],
+    [items, customersData, sellersData, collectionData, t]
+  );
 
   // ---------- Definición de columnas ----------
-  const tableHeader = [
-    { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
-    { name: t("seller"), key: "seller", important: true },
-    { name: t("customer"), key: "customer", important: true },
-    { name: t("user"), key: "user" },
-    { name: t("date"), key: "date" },
-    { name: t("type"), key: "type", important: true },
-    { name: t("number"), key: "number", important: true },
-    { name: t("amount"), key: "amount" },
-    { name: t("notes"), key: "notes" },
-    { name: t("status"), key: "status" },
-    { name: t("gps"), key: "gps" },
-  ];
+  const tableHeader = React.useMemo(
+    () => [
+      {
+        component: (
+          <IoInformationCircleOutline className="text-center text-xl" />
+        ),
+        key: "info",
+      },
+      { name: t("seller"), key: "seller", important: true },
+      { name: t("customer"), key: "customer", important: true },
+      { name: t("user"), key: "user" },
+      { name: t("date"), key: "date" },
+      { name: t("type"), key: "type", important: true },
+      { name: t("number"), key: "number", important: true },
+      { name: t("amount"), key: "amount" },
+      { name: t("notes"), key: "notes" },
+      { name: t("gps"), key: "gps" },
+    ],
+    [t]
+  );
 
   // ---------- Filtros en la cabecera (Header) ----------
-  const headerBody = {
-    buttons: [
-      { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
-      { logo: <IoMdPin />, title: t("viewOnMap") },
-    ],
-    filters: [
-      // Fecha desde
-      {
-        content: (
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => {
-              setStartDate(date);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            placeholderText={t("dateFrom")}
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-        ),
-      },
-      // Fecha hasta
-      {
-        content: (
-          <DatePicker
-            selected={endDate}
-            onChange={(date) => {
-              setEndDate(date);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            placeholderText={t("dateTo")}
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-          />
-        ),
-      },
-      // Filtro por Vendedor
-      {
-        content: (
-          <select
-            value={sellerFilter}
-            onChange={(e) => {
-              setSellerFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-          >
-            <option value="">{t("seller")}</option>
-            {sellersData?.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-      // Filtro por Usuario
-      {
-        content: (
-          <input
-            type="text"
-            placeholder={t("user")}
-            value={userFilter}
-            onChange={(e) => {
-              setUserFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-            style={{ width: "100px" }}
-          />
-        ),
-      },
-      // Filtro por Estado
-      {
-        content: (
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-          >
-            <option value="">{t("status")}</option>
-            <option value="PENDING">PENDING</option>
-            <option value="CHARGED">CHARGED</option>
-            {/* Agrega más estados si tu backend los maneja */}
-          </select>
-        ),
-      },
-      // Filtro por Tipo
-      {
-        content: (
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-          >
-            <option value="">{t("type")}</option>
-            <option value="VISIT">VISIT</option>
-            <option value="ORDER">ORDER</option>
-            <option value="RECLAIM">RECLAIM</option>
-            {/* Agrega más tipos si tu backend los maneja */}
-          </select>
-        ),
-      },
-      // Filtro "Estadístico de pedidos" (actionFilter)
-      {
-        content: (
-          <select
-            value={actionFilter}
-            onChange={(e) => {
-              setActionFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-          >
-            <option value="">{t("orderStats")}</option>
-            <option value="ORDER_STATS">{t("someOption")}</option>
-            {/* Ajusta las opciones según tu backend */}
-          </select>
-        ),
-      },
-      // Filtro de búsqueda general
-      {
-        content: (
-          <input
-            type="text"
-            placeholder={t("searchPlaceholder")}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            className="border border-gray-300 rounded p-2"
-            style={{ width: "120px" }}
-          />
-        ),
-      },
-    ],
-    results: `${data?.total || 0} ${t("results")}`,
-  };
+  const headerBody = React.useMemo(
+    () => ({
+      buttons: [
+        { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
+        { logo: <IoMdPin />, title: t("viewOnMap") },
+      ],
+      filters: [
+        // Fecha desde
+        {
+          content: (
+            <DatePicker
+              selected={startDate}
+              onChange={handleDateChange(setStartDate)}
+              placeholderText={t("dateFrom")}
+              dateFormat="yyyy-MM-dd"
+              className="border border-gray-300 rounded p-2"
+            />
+          ),
+        },
+        // Fecha hasta
+        {
+          content: (
+            <DatePicker
+              selected={endDate}
+              onChange={handleDateChange(setEndDate)}
+              placeholderText={t("dateTo")}
+              dateFormat="yyyy-MM-dd"
+              className="border border-gray-300 rounded p-2"
+            />
+          ),
+        },
+        // Filtro por Vendedor
+        {
+          content: (
+            <select
+              value={sellerFilter}
+              onChange={handleFilterChange(setSellerFilter)}
+              className="border border-gray-300 rounded p-2"
+            >
+              <option value="">{t("seller")}</option>
+              {sellersData?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          ),
+        },
+        // Filtro por Usuario
+        {
+          content: (
+            <input
+              type="text"
+              placeholder={t("user")}
+              value={userFilter}
+              onChange={handleFilterChange(setUserFilter)}
+              className="border border-gray-300 rounded p-2"
+              style={{ width: "100px" }}
+            />
+          ),
+        },
+        // Filtro por Estado
+        {
+          content: (
+            <select
+              value={statusFilter}
+              onChange={handleFilterChange(setStatusFilter)}
+              className="border border-gray-300 rounded p-2"
+            >
+              <option value="">{t("status")}</option>
+              <option value="PENDING">PENDING</option>
+              <option value="CHARGED">CHARGED</option>
+            </select>
+          ),
+        },
+        // Filtro por Tipo
+        {
+          content: (
+            <select
+              value={typeFilter}
+              onChange={handleFilterChange(setTypeFilter)}
+              className="border border-gray-300 rounded p-2"
+            >
+              <option value="">{t("type")}</option>
+              <option value="VISIT">VISIT</option>
+              <option value="ORDER">ORDER</option>
+              <option value="RECLAIM">RECLAIM</option>
+            </select>
+          ),
+        },
+        // Filtro "Estadístico de pedidos" (actionFilter)
+        {
+          content: (
+            <select
+              value={actionFilter}
+              onChange={handleFilterChange(setActionFilter)}
+              className="border border-gray-300 rounded p-2"
+            >
+              <option value="">{t("orderStats")}</option>
+              <option value="ORDER_STATS">{t("someOption")}</option>
+            </select>
+          ),
+        },
+        // Filtro de búsqueda general
+        {
+          content: (
+            <input
+              type="text"
+              placeholder={t("searchPlaceholder")}
+              defaultValue={searchQuery}
+              onChange={handleSearchChange}
+              className="border border-gray-300 rounded p-2"
+              style={{ width: "120px" }}
+            />
+          ),
+        },
+      ],
+      results: `${data?.total || 0} ${t("results")}`,
+    }),
+    [
+      t,
+      startDate,
+      endDate,
+      sellerFilter,
+      userFilter,
+      statusFilter,
+      typeFilter,
+      actionFilter,
+      searchQuery,
+      data?.total,
+      sellersData,
+      openCreateModal,
+      handleDateChange,
+      handleFilterChange,
+      handleSearchChange,
+    ]
+  );
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        {t("errorLoadingData")}: {JSON.stringify(error)}
+      </div>
+    );
+  }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("crm")}</h3>
         <Header headerBody={headerBody} />
-        <Table
-          headers={tableHeader}
-          data={tableData}
-          onSort={handleSort}
-          sortField={sortQuery.split(":")[0] || ""}
-          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
-        />
+        {isQueryLoading && page === 1 ? (
+          <div className="p-4 text-center">{t("loading")}</div>
+        ) : (
+          <Table
+            headers={tableHeader}
+            data={tableData}
+            onSort={handleSort}
+            sortField={sortQuery.split(":")[0] || ""}
+            sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
+          />
+        )}
+        {isLoadingMore && (
+          <div className="text-center py-2">{t("loadingMore")}</div>
+        )}
       </div>
 
       {/* Intersection Observer div */}
@@ -397,6 +495,27 @@ const Page = () => {
       {/* Modal de creación */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
         <CreateCRMComponent closeModal={closeCreateModal} />
+      </Modal>
+
+      {isViewGPSModalOpen && currentGPS && (
+        <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
+          <MapComponent
+            currentGPS={currentGPS}
+            closeModal={closeViewGPSModal}
+          />
+        </Modal>
+      )}
+
+      <Modal
+        isOpen={modalState.type === "info"}
+        onClose={() => handleModalClose("info")}
+      >
+        {modalState.crm && (
+          <CRMDetail
+            data={modalState.crm}
+            onClose={() => handleModalClose("info")}
+          />
+        )}
       </Modal>
     </PrivateRoute>
   );

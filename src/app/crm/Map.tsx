@@ -1,22 +1,15 @@
 "use client";
 import React, { useMemo } from "react";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useTranslation } from "react-i18next";
 
 type MapComponentProps = {
-  currentCustomerId: string;
+  currentGPS: string;
   closeModal: () => void;
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeModal }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) => {
   const { t } = useTranslation();
-
-  // Consulta para obtener el cliente por ID
-  const { data: customer, error, isLoading } = useGetCustomerByIdQuery(
-    { id: currentCustomerId },
-    { refetchOnMountOrArgChange: true }
-  );
 
   // Validar la API Key de Google Maps
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -24,21 +17,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeMod
     return <div>{t("map.noApiKey")}</div>;
   }
 
-  // Manejo de estados de carga y error
-  if (isLoading) return <div>{t("map.loading")}</div>;
-  if (error) return <div>{t("map.errorLoadingCustomer")}</div>;
-
-  // Obtener y validar la cadena GPS del cliente
-  const gps = customer?.gps;
-  if (!gps) return <div>{t("map.noGPSData")}</div>;
-
+  // Calcular y memorizar las coordenadas centrales a partir de currentGPS
   const center = useMemo(() => {
-    const parts = gps.split(",").map((part) => part.trim());
+    if (!currentGPS) return null;
+    const parts = currentGPS.split(",").map((part) => part.trim());
     if (parts.length !== 2) return null;
     const lat = parseFloat(parts[0]);
     const lng = parseFloat(parts[1]);
     return isNaN(lat) || isNaN(lng) ? null : { lat, lng };
-  }, [gps]);
+  }, [currentGPS]);
 
   if (!center) {
     return <div>{t("map.invalidGPSFormat")}</div>;
@@ -48,7 +35,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeMod
   const containerStyle = { width: "600px", height: "300px" };
 
   return (
-    <LoadScript googleMapsApiKey={apiKey}>
+    <LoadScript googleMapsApiKey={apiKey} key={currentGPS}>
       <div className="relative">
         <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={15}>
           <Marker position={center} />
@@ -67,3 +54,4 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeMod
 };
 
 export default MapComponent;
+

@@ -14,7 +14,12 @@ interface OrderDetails {
   id: string;
 }
 
+interface Orders {
+  orders: Order[],
+  total: number
+}
 interface Order {
+  _id: string;
   status: string;
   customer: {
     id: string | null;
@@ -66,12 +71,12 @@ export const ordersApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    getOrders: builder.query<Order[], null>({
+    getOrders: builder.query<Orders, null>({
       query: () => `/orders?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: Order[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron order en la respuesta");
-          return [];
+      transformResponse: (response: Orders) => {
+        if (!response || !response.orders) {
+          console.error("No se recibieron pedidos en la respuesta");
+          return { orders: [], total: 0 };
         }
         return response;
       },
@@ -121,7 +126,7 @@ export const ordersApi = createApi({
         }
         return `${url}?${params.toString()}`;
       },
-      transformResponse: (response: { orders: Order[]; total: number }) => {
+      transformResponse: (response: Orders) => {
         if (!response || !response.orders) {
           console.error("No se recibieron pedidos en la respuesta");
           return { orders: [], total: 0 };

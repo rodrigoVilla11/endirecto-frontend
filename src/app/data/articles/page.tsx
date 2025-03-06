@@ -20,7 +20,6 @@ import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import { GoPencil } from "react-icons/go";
 
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
-// 👇 Agrega estos imports para las marcas e ítems
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
 
@@ -44,18 +43,17 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc" o "campo:desc"
 
-  // 👇 Estados para filtrar por marca e ítem
+  // Estados para filtrar por marca e ítem
   const [brandFilter, setBrandFilter] = useState("");
   const [itemFilter, setItemFilter] = useState("");
 
-  // Referencias para el infinite scroll
+  // Referencia para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   // Llamadas a APIs
   const { data: brands } = useGetBrandsQuery(null);
   const { data: items } = useGetItemsQuery(null);
 
-  // Se incluye brand e item en la query
   const {
     data,
     error,
@@ -68,8 +66,8 @@ const Page = () => {
       query: searchQuery,
       sort: sortQuery,
       priceListId: "3",
-      brand: brandFilter, // 👈 se pasa el filtro de marca
-      item: itemFilter,   // 👈 se pasa el filtro de ítem
+      brand: brandFilter,
+      item: itemFilter,
     },
     {
       refetchOnMountOrArgChange: false,
@@ -85,11 +83,9 @@ const Page = () => {
       let newSortQuery = "";
 
       if (currentField === field) {
-        // Alternar asc/desc
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo => asc por defecto
         newSortQuery = `${field}:asc`;
       }
 
@@ -111,7 +107,7 @@ const Page = () => {
     []
   );
 
-  // Cuando cambie brandFilter o itemFilter, se resetea la paginación y artículos
+  // Cuando cambie el filtro de marca o ítem, se resetea la paginación
   const handleBrandChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setBrandFilter(e.target.value);
     setPage(1);
@@ -124,7 +120,7 @@ const Page = () => {
     setArticles([]);
   }, []);
 
-  // Efecto para cargar artículos
+  // Efecto para cargar artículos (llamado al refetch)
   useEffect(() => {
     const loadItems = async () => {
       if (isLoading) return;
@@ -154,24 +150,25 @@ const Page = () => {
     searchQuery,
     sortQuery,
     brandFilter,
-    itemFilter, // 👈 se incluye en las dependencias
+    itemFilter,
     refetch,
     isLoading,
     t,
   ]);
 
-  // Intersection Observer para infinite scroll
+  // Intersection Observer para implementar el infinite scroll
   useEffect(() => {
     if (!observerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
+        // Cuando el div observador es visible, hay más datos y no se está cargando, se incrementa la página
         if (firstEntry.isIntersecting && hasMore && !isLoading) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 1 }
+      { threshold: 0.5 } // Umbral ajustado similar a la lógica del CRM
     );
 
     observer.observe(observerRef.current);
@@ -194,7 +191,7 @@ const Page = () => {
   const handleModalClose = useCallback(
     async (type: "update" | "delete" | "info") => {
       setModalState({ type: null, articleId: null });
-      // Esperar un poco para asegurar actualización
+      // Espera breve para asegurar la actualización
       setTimeout(async () => {
         try {
           await refetch();
@@ -415,6 +412,7 @@ const Page = () => {
           </>
         )}
 
+        {/* Div para el Intersection Observer */}
         <div ref={observerRef} className="h-10" />
 
         {/* Modal para actualizar artículo */}
