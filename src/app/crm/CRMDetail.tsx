@@ -1,6 +1,7 @@
 import React from "react";
 import { FaTimes } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import { useGetOrderByIdQuery, useGetOrdersQuery } from "@/redux/services/ordersApi";
 
 interface CRMDetailProps {
   data: any;
@@ -9,7 +10,16 @@ interface CRMDetailProps {
 
 const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
   const { t } = useTranslation();
-  console.log(data);
+  const { data: orderData } = useGetOrderByIdQuery({id: data.order_id});
+
+  const formatCurrency = (value: any) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
   return (
     <div className="p-4">
       {/* Encabezado con título y botón para cerrar */}
@@ -26,15 +36,11 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
       <div className="space-y-2">
         <p>
           <span className="font-semibold">{t("seller")}:</span>{" "}
-          {data.seller || t("notAvailable")}
+          {data.seller_id || t("notAvailable")}
         </p>
         <p>
           <span className="font-semibold">{t("customer")}:</span>{" "}
-          {data.customer || t("notAvailable")}
-        </p>
-        <p>
-          <span className="font-semibold">{t("user")}:</span>{" "}
-          {data.user || t("notAvailable")}
+          {data.customer_id || t("notAvailable")}
         </p>
         <p>
           <span className="font-semibold">{t("date")}:</span>{" "}
@@ -46,11 +52,12 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
         </p>
         <p>
           <span className="font-semibold">{t("number")}:</span>{" "}
-          {data.number || t("notAvailable")}
+          {orderData?.multisoft_id || t("notAvailable")}
         </p>
         <p>
           <span className="font-semibold">{t("amount")}:</span>{" "}
-          {data.amount || t("notAvailable")}
+          {formatCurrency(orderData?.total) || t("notAvailable")}
+
         </p>
         <p>
           <span className="font-semibold">{t("notes")}:</span>{" "}

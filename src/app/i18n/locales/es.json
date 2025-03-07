@@ -1268,5 +1268,6 @@
   "mark_all_as_read": "Marcar todas como leidas",
   "allItems": "Todos los rubros",
   "allBrands": "Todos las marcas",
-  "articleId": "ID del Articulo:"
+  "articleId": "ID del Articulo:",
+  "crmDetailTitle": "Detalle de CRM"
 }

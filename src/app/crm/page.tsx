@@ -7,15 +7,9 @@ import { IoMdPin } from "react-icons/io";
 import { FaInfoCircle, FaPlus } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import { format } from "date-fns";
-import {
-  useGetCrmPagQuery,
-  useUpdateCrmMutation,
-  ActionType,
-  StatusType,
-} from "@/redux/services/crmApi";
+import { useGetCrmPagQuery } from "@/redux/services/crmApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetCollectionsQuery } from "@/redux/services/collectionsApi";
 import PrivateRoute from "../context/PrivateRoutes";
 import Modal from "../components/components/Modal";
 import CreateCRMComponent from "./CreateCRM";
@@ -42,10 +36,7 @@ const Page = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [sellerFilter, setSellerFilter] = useState("");
-  const [userFilter, setUserFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
   const [isViewGPSModalOpen, setViewGPSModalOpen] = useState(false);
@@ -70,8 +61,10 @@ const Page = () => {
   // ---------- Queries para datos relacionados ----------
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const { data: collectionData } = useGetOrdersQuery(null);
+  const { data: ordersData } = useGetOrdersQuery(null);
+  // const { data: usersData } = useGetUsersQuery(null);
 
+  console.log(ordersData);
   // ---------- Query principal para CRM ----------
   const {
     data,
@@ -90,12 +83,12 @@ const Page = () => {
         ? format(endDate, "yyyy-MM-dd") + "T23:59:59.999Z"
         : undefined,
       type: typeFilter,
-      status: statusFilter,
+      // status: statusFilter,
       insitu: "",
       customer_id,
       seller_id: sellerFilter,
-      user_id: userFilter,
-      action: actionFilter,
+      // user_id: userFilter,
+      // action: actionFilter,
       search: searchQuery,
       sort: sortQuery,
     },
@@ -103,8 +96,6 @@ const Page = () => {
       refetchOnMountOrArgChange: true,
     }
   );
-
-  const [updateCrm] = useUpdateCrmMutation();
 
   // ---------- Actualiza el customer_id al cambiar selectedClientId ----------
   useEffect(() => {
@@ -250,7 +241,14 @@ const Page = () => {
     },
     [refetch, t]
   );
-
+  const formatCurrency = (value: any) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
   // ---------- Memoización del mapeo de datos para la tabla ----------
   const tableData = React.useMemo(
     () =>
@@ -259,10 +257,7 @@ const Page = () => {
           (data) => data.id === crm.customer_id
         );
         const seller = sellersData?.find((data) => data.id === crm.seller_id);
-        const collection = collectionData?.orders?.find(
-          (data) => String(data.tmp_id) === String(crm.order_id)
-        );
-        console.log("crm.order_id:", crm.order_id, "collection:", collection);
+        const order = ordersData?.find((data) => data.tmp_id === crm.order_id);
 
         return {
           key: crm._id,
@@ -281,8 +276,8 @@ const Page = () => {
             ? format(new Date(crm.date), "yyyy-MM-dd")
             : t("notAvailable"),
           type: crm.type || t("notAvailable"),
-          number: crm.number || t("notAvailable"),
-          amount: collection?.total || t("notAvailable"),
+          number: order?.multisoft_id || t("notAvailable"),
+          amount: formatCurrency(order?.total) || t("notAvailable"),
           notes: crm.notes || t("notAvailable"),
           gps: crm.gps ? (
             <FiMapPin
@@ -294,7 +289,7 @@ const Page = () => {
           ),
         };
       }) || [],
-    [items, customersData, sellersData, collectionData, t]
+    [items, customersData, sellersData, ordersData, t]
   );
 
   // ---------- Definición de columnas ----------
@@ -368,34 +363,6 @@ const Page = () => {
             </select>
           ),
         },
-        // Filtro por Usuario
-        {
-          content: (
-            <input
-              type="text"
-              placeholder={t("user")}
-              value={userFilter}
-              onChange={handleFilterChange(setUserFilter)}
-              className="border border-gray-300 rounded p-2"
-              style={{ width: "100px" }}
-            />
-          ),
-        },
-        // Filtro por Estado
-        {
-          content: (
-            <select
-              value={statusFilter}
-              onChange={handleFilterChange(setStatusFilter)}
-              className="border border-gray-300 rounded p-2"
-            >
-              <option value="">{t("status")}</option>
-              <option value="PENDING">PENDING</option>
-              <option value="CHARGED">CHARGED</option>
-            </select>
-          ),
-        },
-        // Filtro por Tipo
         {
           content: (
             <select
@@ -410,20 +377,6 @@ const Page = () => {
             </select>
           ),
         },
-        // Filtro "Estadístico de pedidos" (actionFilter)
-        {
-          content: (
-            <select
-              value={actionFilter}
-              onChange={handleFilterChange(setActionFilter)}
-              className="border border-gray-300 rounded p-2"
-            >
-              <option value="">{t("orderStats")}</option>
-              <option value="ORDER_STATS">{t("someOption")}</option>
-            </select>
-          ),
-        },
-        // Filtro de búsqueda general
         {
           content: (
             <input
@@ -444,10 +397,7 @@ const Page = () => {
       startDate,
       endDate,
       sellerFilter,
-      userFilter,
-      statusFilter,
       typeFilter,
-      actionFilter,
       searchQuery,
       data?.total,
       sellersData,

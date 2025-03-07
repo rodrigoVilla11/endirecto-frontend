@@ -40,6 +40,7 @@ interface Order {
   date: string;
   created_at: string;
   details: OrderDetails[];
+  multisoft_id?: string;
 }
 
 type CreateOrderPayload = {
@@ -71,15 +72,8 @@ export const ordersApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    getOrders: builder.query<Orders, null>({
-      query: () => `/orders?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: Orders) => {
-        if (!response || !response.orders) {
-          console.error("No se recibieron pedidos en la respuesta");
-          return { orders: [], total: 0 };
-        }
-        return response;
-      },
+    getOrders: builder.query<Order[], null>({
+      query: () => `/orders/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getOrdersPag: builder.query<
       { orders: Order[]; total: number },
