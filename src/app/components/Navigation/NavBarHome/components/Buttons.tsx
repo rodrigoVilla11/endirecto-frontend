@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,11 @@ const Buttons = () => {
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
 
+  // Sincronizamos el estado con el idioma actual de i18n al montar el componente
+  useEffect(() => {
+    setCurrentLanguage(i18n.language);
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 640);
@@ -33,7 +39,6 @@ const Buttons = () => {
   ) => {
     e.preventDefault();
     const element = document.getElementById(id);
-
     if (element) {
       const navbarHeight = document.querySelector("nav")?.clientHeight || 0;
       element.scrollIntoView({
@@ -66,6 +71,8 @@ const Buttons = () => {
     i18n.changeLanguage(newLanguage);
   };
 
+  console.log(currentLanguage);
+
   return (
     <>
       {isMobile ? (
@@ -73,36 +80,33 @@ const Buttons = () => {
           <button className="text-xl" onClick={handleSearchToggle}>
             <BiSearchAlt />
           </button>
-
           {isSearchOpen && (
             <div className="w-full flex justify-center sm:my-2 absolute top-16 p-4 right-0 sm:static bg-header-color">
               <Search />
             </div>
           )}
-
           <button onClick={() => setMenuOpen(!isMenuOpen)}>
             <IoMenu className="text-white text-2xl" />
           </button>
-
           {isMenuOpen && (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
               <div className="absolute right-0 top-0 h-full w-3/4 bg-header-color p-6">
                 <div className="flex justify-between items-center mb-8">
                   {/* Botón de bandera con funcionalidad i18n */}
                   <button onClick={handleLanguageToggle} className="text-xl">
-                    {currentLanguage === "es" ? (
-                      <ReactCountryFlag
-                        countryCode="AR"
-                        svg
-                        style={{ width: "1em", height: "1em" }}
-                        title="Argentina"
-                      />
-                    ) : (
+                    {currentLanguage === "en" ? (
                       <ReactCountryFlag
                         countryCode="US"
                         svg
                         style={{ width: "1em", height: "1em" }}
                         title="Estados Unidos"
+                      />
+                    ) : (
+                      <ReactCountryFlag
+                        countryCode="AR"
+                        svg
+                        style={{ width: "1em", height: "1em" }}
+                        title="Argentina"
                       />
                     )}
                   </button>
@@ -113,7 +117,6 @@ const Buttons = () => {
                     <IoClose />
                   </button>
                 </div>
-
                 <div className="flex flex-col gap-6 text-white">
                   <a href="/" onClick={(e) => handleRedirect("/")}>
                     {t("home")}
@@ -136,7 +139,6 @@ const Buttons = () => {
                   >
                     {t("contact")}
                   </a>
-
                   <div className="border-t pt-6 mt-6">
                     {isAuthenticated ? (
                       <button

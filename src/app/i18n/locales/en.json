@@ -1274,6 +1274,9 @@
   "allItems": "All Items",
   "allBrands": "All Brands",
   "articleId": "Article ID:",
-  "crmDetailTitle": "CRM Detail"
+  "crmDetailTitle": "CRM Detail",
+  "selectStatus": "Select Status",
+  "charged": "Charged",
+  "sended": "Sended"
 
 }

@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { IoInformationCircleOutline } from "react-icons/io5";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
@@ -14,7 +13,6 @@ import { FaInfoCircle, FaPlus, FaTimes } from "react-icons/fa";
 import Modal from "@/app/components/components/Modal";
 import CRM from "./CRM";
 import DocumentDetails from "./DocumentDetails";
-import debounce from "@/app/context/debounce";
 import {
   useGetCustomerInformationByCustomerIdQuery,
   useGetLookupDocumentsQuery,
@@ -293,6 +291,17 @@ const Page = () => {
     return `${formattedNumber}`;
   }
 
+  // Filtra los documentos según el filtro de cliente (u otros filtros si aplican)
+  const filteredDocuments = items.filter((document) => {
+    return !customer_id || document.customer_id === customer_id;
+  });
+
+  // Calcula la suma de los montos de los documentos filtrados
+  const filteredTotal = filteredDocuments.reduce(
+    (acc, doc) => acc + Number(doc.amount),
+    0
+  );
+
   const headerBody = {
     buttons: [
       { logo: <AiOutlineDownload />, title: t("download") },
@@ -331,13 +340,15 @@ const Page = () => {
     ],
     secondSection: {
       title: t("totalOwed"),
+      // Si hay facturas seleccionadas, se muestra su suma, sino se muestra la suma de los documentos filtrados
       amount:
         selectedDocs.length > 0
           ? `${formatPriceWithCurrency(selectedSum)}`
-          : `${formatPriceWithCurrency(finalSumAmount)}`,
+          : `${formatPriceWithCurrency(filteredTotal)}`,
     },
     results: t("results", { count: data?.totalData || 0 }),
   };
+  
 
   return (
     <PrivateRoute

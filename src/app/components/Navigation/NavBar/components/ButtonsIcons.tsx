@@ -43,12 +43,16 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
 
+  // Sincronizamos el idioma actual con i18n al montar el componente
+  useEffect(() => {
+    setCurrentLanguage(i18n.language);
+  }, []);
+
   const currentUserId = selectedClientId || userQuery.data?._id || "";
 
   const sortedNotifications = notifications
-  .slice()
-  .sort((a, b) => b.schedule_to - a.schedule_to);
-
+    .slice()
+    .sort((a, b) => b.schedule_to - a.schedule_to);
 
   const cartItemCount = customer?.shopping_cart
     ? new Set(customer.shopping_cart).size
@@ -139,23 +143,25 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     handleRedirect("/notifications");
   };
 
+  console.log(currentLanguage);
+
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-evenly text-2xl text-white relative">
       {!isMobile && (
         <button onClick={handleLanguageToggle} className="cursor-pointer">
-          {currentLanguage === "es" ? (
-            <ReactCountryFlag
-              countryCode="AR"
-              svg
-              style={{ width: "1em", height: "1em" }}
-              title="Argentina"
-            />
-          ) : (
+          {currentLanguage === "en" ? (
             <ReactCountryFlag
               countryCode="US"
               svg
               style={{ width: "1em", height: "1em" }}
               title="Estados Unidos"
+            />
+          ) : (
+            <ReactCountryFlag
+              countryCode="AR"
+              svg
+              style={{ width: "1em", height: "1em" }}
+              title="Argentina"
             />
           )}
         </button>
@@ -213,28 +219,32 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                       <AnimatePresence>
                         {notifications.slice(0, 5).length > 0 ? (
                           <motion.ul className="divide-y divide-gray-100">
-                            {sortedNotifications.slice(0, 5).map((notification: any) => (
-                              <motion.li
-                                key={notification._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.2 }}
-                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
-                                  !notification.read
-                                    ? "bg-yellow-100"
-                                    : "hover:bg-gray-50"
-                                }`}
-                                onClick={() => handleNotificationClick(notification)}
-                              >
-                                <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                  {notification.title}
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  {notification.description}
-                                </p>
-                              </motion.li>
-                            ))}
+                            {sortedNotifications
+                              .slice(0, 5)
+                              .map((notification: any) => (
+                                <motion.li
+                                  key={notification._id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -20 }}
+                                  transition={{ duration: 0.2 }}
+                                  className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                    !notification.read
+                                      ? "bg-yellow-100"
+                                      : "hover:bg-gray-50"
+                                  }`}
+                                  onClick={() =>
+                                    handleNotificationClick(notification)
+                                  }
+                                >
+                                  <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-gray-600 text-xs">
+                                    {notification.description}
+                                  </p>
+                                </motion.li>
+                              ))}
                           </motion.ul>
                         ) : (
                           <motion.div
@@ -290,28 +300,32 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                     <AnimatePresence>
                       {notifications.slice(0, 5).length > 0 ? (
                         <motion.ul className="divide-y divide-gray-100">
-                          {notifications.slice(0, 5).map((notification: any) => (
-                            <motion.li
-                              key={notification._id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -20 }}
-                              transition={{ duration: 0.2 }}
-                              className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
-                                !notification.read
-                                  ? "bg-yellow-100"
-                                  : "hover:bg-gray-50"
-                              }`}
-                              onClick={() => handleNotificationClick(notification)}
-                            >
-                              <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                {notification.title}
-                              </p>
-                              <p className="text-gray-600 text-xs">
-                                {notification.description}
-                              </p>
-                            </motion.li>
-                          ))}
+                          {notifications
+                            .slice(0, 5)
+                            .map((notification: any) => (
+                              <motion.li
+                                key={notification._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.2 }}
+                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                  !notification.read
+                                    ? "bg-yellow-100"
+                                    : "hover:bg-gray-50"
+                                }`}
+                                onClick={() =>
+                                  handleNotificationClick(notification)
+                                }
+                              >
+                                <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                  {notification.title}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  {notification.description}
+                                </p>
+                              </motion.li>
+                            ))}
                         </motion.ul>
                       ) : (
                         <motion.div

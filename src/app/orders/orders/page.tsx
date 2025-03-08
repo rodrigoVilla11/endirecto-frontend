@@ -1,20 +1,18 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
-import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { FaRegFilePdf } from "react-icons/fa6";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import { useClient } from "@/app/context/ClientContext";
-import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import { useGetOrdersPagQuery } from "@/redux/services/ordersApi";
 import DatePicker from "react-datepicker";
 import { FaTimes } from "react-icons/fa";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { useGetOrdersPagQuery } from "@/redux/services/ordersApi";
+import { useClient } from "@/app/context/ClientContext";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -31,6 +29,7 @@ const Page = () => {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [statusFilter, setStatusFilter] = useState(""); // Nuevo estado para status
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
@@ -38,7 +37,6 @@ const Page = () => {
 
   // Referencias para el Intersection Observer
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Función para formatear la fecha en "yyyy-MM-dd"
   function formatDate(date: Date) {
@@ -48,7 +46,7 @@ const Page = () => {
     return `${year}-${month}-${day}`;
   }
 
-  // Redux query para obtener órdenes paginadas
+  // Redux query para obtener órdenes paginadas, ahora incluyendo el filtro de status
   const {
     data,
     error,
@@ -62,6 +60,7 @@ const Page = () => {
       endDate: endDate ? formatDate(endDate) : undefined,
       customer_id,
       sort: sortQuery,
+      status: statusFilter || undefined,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -92,13 +91,11 @@ const Page = () => {
           const newDocuments = Array.isArray(result)
             ? result
             : result.orders || [];
-
           if (page === 1) {
             setItems(newDocuments);
           } else {
             setItems((prev) => [...prev, ...newDocuments]);
           }
-
           setHasMore(newDocuments.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error("Error loading documents:", error);
@@ -109,7 +106,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, statusFilter]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {
@@ -122,12 +119,10 @@ const Page = () => {
       },
       { threshold: 0.5 }
     );
-
     const currentObserver = observerRef.current;
     if (currentObserver) {
       observer.observe(currentObserver);
     }
-
     return () => {
       if (currentObserver) {
         observer.unobserve(currentObserver);
@@ -149,7 +144,6 @@ const Page = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-
       if (currentField === field) {
         // Alterna entre ascendente y descendente
         newSortQuery =
@@ -158,7 +152,6 @@ const Page = () => {
         // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
-
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
@@ -191,7 +184,6 @@ const Page = () => {
         (data) => data.id == order.customer.id
       );
       const seller = sellersData?.find((data) => data.id == order.seller?.id);
-
       return {
         key: order.id, // Se asume que el nuevo modelo usa "id" en lugar de "_id"
         info: (
@@ -224,6 +216,14 @@ const Page = () => {
     { name: t("totalWithoutTaxes"), key: "total-without-taxes", important: true },
     { name: t("status"), key: "status" },
   ];
+
+  // Handler para el cambio de status en el select
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  };
 
   const headerBody = {
     buttons: [
@@ -268,16 +268,16 @@ const Page = () => {
       },
       {
         content: (
-          <select>
-            <option value="status" disabled>
+          <select
+            className="border border-gray-300 rounded p-2"
+            defaultValue=""
+            onChange={(e) => handleStatusChange(e.target.value)}
+          >
+            <option value="" disabled>
               {t("selectStatus")}
             </option>
-            <option value="charged" disabled>
-              {t("charged")}
-            </option>
-            <option value="sendend" disabled>
-              {t("sendend")}
-            </option>
+            <option value="charged">{t("charged")}</option>
+            <option value="sendend">{t("sendend")}</option>
           </select>
         ),
       },

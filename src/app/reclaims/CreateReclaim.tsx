@@ -33,7 +33,6 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
 
   const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery(null);
   const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
-  const { data: customersData, isLoading: isLoadingCustomers } = useGetCustomersQuery(null);
   const { data: articlesData, isLoading: isLoadingArticles } = useGetAllArticlesQuery(null);
 
   const handleChange = (
@@ -150,7 +149,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             {!isLoadingArticles &&
               articlesData?.map((article: { id: string; name: string }) => (
                 <option key={article.id} value={article.id}>
-                  {article.name}
+                  {article.id}
                 </option>
               ))}
           </select>

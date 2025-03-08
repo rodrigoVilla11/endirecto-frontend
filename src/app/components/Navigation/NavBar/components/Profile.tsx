@@ -9,6 +9,7 @@ import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { SlLogout } from "react-icons/sl";
 import { useTranslation } from "react-i18next";
+import { MdPercent } from "react-icons/md";
 
 const Profile = ({ isMobile }: any) => {
   const { t } = useTranslation();
@@ -104,6 +105,18 @@ const Profile = ({ isMobile }: any) => {
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
             >
               <IoPersonOutline /> {t("myProfile")}
+            </li>
+            <li
+              onClick={() => handleRedirect("/profile/brands-margins")}
+              className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <MdPercent  /> {t("brandMargins")}
+            </li>
+            <li
+              onClick={() => handleRedirect("/profile/items-margins")}
+              className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <MdPercent /> {t("itemMargins")}
             </li>
             {selectedClientId && role !== "CUSTOMER" && (
               <>

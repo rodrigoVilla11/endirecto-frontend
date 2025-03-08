@@ -26,7 +26,7 @@ const Header = ({ headerBody }: any) => {
       )}
 
       {/* Filtros */}
-      <div className="flex flex-wrap justify-start items-center w-full gap-2 p-2 rounded">
+      <div className="flex flex-wrap justify-start items-center w-full gap-2 p-2 rounded z-20">
         {headerBody.filters.map((filter: any, index: any) => (
           <div key={index} className="w-full sm:w-auto">
             {filter.content}

@@ -39,7 +39,7 @@ export default function Table({
       >
         {/* Clave destacada arriba */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-primary font-bold bg-gray-100 px-2 py-1 rounded-md border-l-4 border-primary text-xs">
+          <span className="text-primary font-bold bg-gray-100 px-2 py-1 rounded-md border-l-4 border-primary text-xs z-20">
             {row.key}
           </span>
         </div>

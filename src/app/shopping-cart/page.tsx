@@ -151,7 +151,13 @@ const ShoppingCart = () => {
     );
 
     setCartItems(items);
-    setOrderItems(items.map((item) => ({ ...item, selected: true })));
+    setOrderItems((prevOrderItems) =>
+      items.map((item) => {
+        const prevItem = prevOrderItems.find((orderItem) => orderItem.id === item.id);
+        return { ...item, selected: prevItem ? prevItem.selected : true };
+      })
+    );
+    
   }, [customer, articles, brands, prices, stock, articlesBonuses, paymentsConditions]);
 
 

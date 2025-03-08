@@ -1269,5 +1269,8 @@
   "allItems": "Todos los rubros",
   "allBrands": "Todos las marcas",
   "articleId": "ID del Articulo:",
-  "crmDetailTitle": "Detalle de CRM"
+  "crmDetailTitle": "Detalle de CRM",
+  "selectStatus": "Seleccionar Estado",
+  "charged": "Cargado",
+  "sended": "Enviado"
 }

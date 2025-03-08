@@ -3,8 +3,9 @@ import React, { useState } from "react";
 import ArticleName from "./Articles/components/ArticleName";
 import { useRouter } from "next/navigation";
 import { useArticleId } from "@/app/context/AritlceIdContext";
+import StripeStock from "./Articles/components/StripeStock";
 
-const CardSearch = ({ article, setSearchQuery,handleOpenModal }: any) => {
+const CardSearch = ({ article, setSearchQuery, handleOpenModal }: any) => {
   const { setArticleId } = useArticleId();
 
   const router = useRouter();
@@ -12,7 +13,7 @@ const CardSearch = ({ article, setSearchQuery,handleOpenModal }: any) => {
   const handleRedirect = (path: string) => {
     if (path) {
       router.push(path);
-      handleOpenModal(article.id)
+      handleOpenModal(article.id);
     }
   };
   return (
@@ -27,8 +28,16 @@ const CardSearch = ({ article, setSearchQuery,handleOpenModal }: any) => {
           alt={article.name}
           className="w-32 h-40 object-contain rounded-lg"
         />
+        <div className="w-full">
+          <StripeStock articleId={article.id} />
+        </div>
         <div className="bg-gray-100 px-4 py-2 w-full text-center rounded-lg">
-          <ArticleName name={article.name} id={article.id} code={article.supplier_code} noName={true} />
+          <ArticleName
+            name={article.name}
+            id={article.id}
+            code={article.supplier_code}
+            noName={true}
+          />
         </div>
       </div>
     </div>

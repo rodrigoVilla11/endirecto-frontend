@@ -106,7 +106,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       </div>
 
       {icon.subCategories && showSubCategories && (
-        <div className="bg-header-color rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto">
+        <div className="bg-header-color rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto hide-scrollbar"> 
           <ul>
             {icon.subCategories.map((subcategory, index) => (
              <li
