@@ -6,13 +6,15 @@ import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
-import { FaTimes } from "react-icons/fa";
+import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetOrdersPagQuery } from "@/redux/services/ordersApi";
 import { useClient } from "@/app/context/ClientContext";
+import Modal from "@/app/components/components/Modal";
+import OrderDetail from "./OrderDetail";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -30,6 +32,8 @@ const Page = () => {
   const [customer_id, setCustomer_id] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
   const [statusFilter, setStatusFilter] = useState(""); // Nuevo estado para status
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<any>(null);
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
@@ -106,7 +110,15 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, statusFilter]);
+  }, [
+    page,
+    searchQuery,
+    startDate,
+    endDate,
+    customer_id,
+    sortQuery,
+    statusFilter,
+  ]);
 
   // Intersection Observer para scroll infinito
   useEffect(() => {
@@ -173,6 +185,16 @@ const Page = () => {
     return `${formattedNumber}`;
   }
 
+  const openDetailModal = (order: any) => {
+    setCurrentOrder(order);
+    setIsDetailOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailOpen(false);
+    setCurrentOrder(null);
+  };
+
   // Construcción de datos para la tabla
   const tableData = items
     ?.filter((order) => {
@@ -188,7 +210,10 @@ const Page = () => {
         key: order.id, // Se asume que el nuevo modelo usa "id" en lugar de "_id"
         info: (
           <div className="flex justify-center items-center">
-            <IoInformationCircleOutline className="text-center text-xl" />
+            <FaInfoCircle
+              className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
+              onClick={() => openDetailModal(order)}
+            />
           </div>
         ),
         seller: seller?.name || t("notFound"),
@@ -213,7 +238,11 @@ const Page = () => {
     { name: t("customer"), key: "customer", important: true },
     { name: t("number"), key: "number" },
     { name: t("date"), key: "date" },
-    { name: t("totalWithoutTaxes"), key: "total-without-taxes", important: true },
+    {
+      name: t("totalWithoutTaxes"),
+      key: "total-without-taxes",
+      important: true,
+    },
     { name: t("status"), key: "status" },
   ];
 
@@ -307,6 +336,13 @@ const Page = () => {
         />
         <div ref={observerRef} className="h-10" />
       </div>
+
+      <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>
+        <OrderDetail
+          order={currentOrder}
+          closeModal={closeDetailModal}
+        />
+      </Modal>
     </PrivateRoute>
   );
 };

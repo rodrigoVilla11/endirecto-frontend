@@ -37,6 +37,8 @@ const ArticleSearchResults = ({
   const { setSearch } = useFilters();
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
+  // Estado para mostrar mensaje temporal si no hay cliente seleccionado
+  const [showAlert, setShowAlert] = useState(false);
 
   // Referencia al contenedor del componente (si la necesitás para otros usos)
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,6 +67,12 @@ const ArticleSearchResults = ({
   }, [handleRedirect, searchResults]);
 
   const handleOpenModal = (id: string) => {
+    if (!selectedClientId) {
+      // Si no hay cliente seleccionado, mostrar mensaje temporal
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      return;
+    }
     setModalOpen(true);
     setArticleId(id);
   };
@@ -85,6 +93,13 @@ const ArticleSearchResults = ({
           {t("resultsFor", { query })}
         </h3>
       </div>
+
+      {/* Mensaje temporal si no hay cliente seleccionado */}
+      {showAlert && (
+        <div className="bg-red-200 text-red-600 p-2 rounded mb-4">
+          {t("pleaseSelectClient", "Por favor, seleccione un cliente.")}
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex justify-center items-center w-full h-40">
