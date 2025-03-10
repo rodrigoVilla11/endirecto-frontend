@@ -122,8 +122,37 @@ export const documentsApi = createApi({
         return 0;
       },
     }),
-    sumAmounts: builder.query<number, null>({
-      query: () => `/documents/sum-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    sumAmounts: builder.query<
+      number,
+      {
+        startDate?: string;
+        endDate?: string;
+        type?: string;
+        seller_id?: string;
+        customer_id?: string;
+      }
+    >({
+      query: ({ startDate, endDate, type, seller_id, customer_id } = {}) => {
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+        if (customer_id) {
+          params.append("customer_id", customer_id);
+        }
+        if (type) {
+          params.append("type", type);
+        }
+        if (seller_id) {
+          params.append("seller_id", seller_id);
+        }
+        return `/documents/sum-amounts?${params.toString()}`;
+      },
       transformResponse: (response: { totalAmount?: string }) => {
         const totalAmount = response?.totalAmount;
         if (totalAmount && !isNaN(parseFloat(totalAmount))) {

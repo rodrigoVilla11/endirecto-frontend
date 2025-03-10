@@ -76,15 +76,18 @@ const Tables = ({ article }: any) => {
               <FaCar />
             </button>
           )}
-        <button
-          className={`w-1/4 flex justify-center items-center rounded-sm ${
-            activeTable === "equivalences" ? "bg-gray-300" : ""
-          }`}
-          onClick={() => setActiveTable("equivalences")}
-          title={t("equivalencesButton")}
-        >
-          <GoTag />
-        </button>
+        {Array.isArray(article.article_equivalence) &&
+          article.article_equivalence.length > 0 && (
+            <button
+              className={`w-1/4 flex justify-center items-center rounded-sm ${
+                activeTable === "equivalences" ? "bg-gray-300" : ""
+              }`}
+              onClick={() => setActiveTable("equivalences")}
+              title={t("equivalencesButton")}
+            >
+              <GoTag />
+            </button>
+          )}
       </div>
       <div className="p-4">{renderTable()}</div>
     </div>

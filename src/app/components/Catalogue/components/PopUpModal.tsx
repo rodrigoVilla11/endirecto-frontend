@@ -37,7 +37,7 @@ const PopUpModal = ({
         {marketingData?.popups?.web && (
           <div
             onClick={() => handleRedirect(marketingData.popups.url)}
-            className="cursor-pointer"
+            className="cursor-pointer pt-4" 
           >
             <img
               src={marketingData.popups.web}

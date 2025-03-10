@@ -145,7 +145,7 @@ const Page = () => {
           )}
         </div>
       ),
-      article: article?.name || t("notFound"),
+      article: article?.supplier_code || t("notFound"),
       brand: item?.brand || t("notFound"),
       code: item?.code || t("notFound"),
     };

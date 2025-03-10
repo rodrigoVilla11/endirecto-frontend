@@ -35,6 +35,10 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
   const [observations, setObservations] = useState("");
   const [showPredefinedComments, setShowPredefinedComments] = useState(false);
 
+  // Estados para el loading y éxito en el envío
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
   // Estado para el formulario que se enviará
   const [form, setForm] = useState({
     date: currentDate,
@@ -100,12 +104,20 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
       ...prev,
       notes: observations,
     }));
-
+    setIsSubmitting(true);
+    setSubmitted(false);
     try {
       const newCrm = await createCrm(form).unwrap();
-      onClose(); // Cerramos el modal al enviar
+      setSubmitted(true);
+      // Mostramos el tick durante 1 segundo antes de cerrar el modal
+      setTimeout(() => {
+        onClose();
+        setSubmitted(false);
+      }, 1000);
     } catch (error) {
       console.error("Error al enviar la visita:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -141,7 +153,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                   className="flex items-center gap-2"
                   onClick={handleGetLocation}
                 >
-                  {t("visitModal.info.gps")} 
+                  {t("visitModal.info.gps")}
                   <span className="text-emerald-500">📍</span>
                   <span className="text-white">🌐</span>
                 </div>
@@ -210,9 +222,17 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
         <div className="p-4 mt-auto border-t border-zinc-800">
           <button
             onClick={handleSubmit}
+            disabled={isSubmitting}
             className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
           >
-            {t("visitModal.send")}
+            {isSubmitting ? (
+              // Puedes personalizar el spinner o usar un componente de loading si lo tienes
+              <span>{t("visitModal.loading") || "Cargando..."}</span>
+            ) : submitted ? (
+              <span>✓</span>
+            ) : (
+              t("visitModal.send")
+            )}
           </button>
         </div>
       </div>

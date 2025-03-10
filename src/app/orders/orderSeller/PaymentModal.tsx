@@ -40,6 +40,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     { amount: string; selectedReason: string; currency: string }[]
   >([]);
 
+  // Estados para el proceso del pago
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [submittedPayment, setSubmittedPayment] = useState(false);
+
   function sumSaldoAPagar(documents: { saldo_a_pagar: string }[]): number {
     return documents.reduce(
       (total, doc) => total + parseFloat(doc.saldo_a_pagar || "0"),
@@ -122,10 +126,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <InfoRow
               label={
                 <div className="flex items-center gap-2">
-                  {t("paymentModal.gps")} <span className="text-red-500">📍</span>
+                  {t("paymentModal.gps")}{" "}
+                  <span className="text-red-500">📍</span>
                 </div>
               }
-              value={<span className="text-yellow-500">{t("paymentModal.noInsitu")}</span>}
+              value={
+                <span className="text-yellow-500">
+                  {t("paymentModal.noInsitu")}
+                </span>
+              }
             />
             <InfoRow label={t("paymentModal.grossAmount")} value={formattedTotal} />
             <InfoRow label={t("paymentModal.netAmount")} value={formattedTotal} />
@@ -238,8 +247,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               className="w-full p-2 mb-4 bg-zinc-700 text-white rounded"
             >
               <option value="">{t("paymentModal.selectPaymentMethod")}</option>
-              <option value="efectivo">{t("paymentModal.paymentMethods.cash")}</option>
-              <option value="tarjeta">{t("paymentModal.paymentMethods.card")}</option>
+              <option value="efectivo">
+                {t("paymentModal.paymentMethods.cash")}
+              </option>
+              <option value="tarjeta">
+                {t("paymentModal.paymentMethods.card")}
+              </option>
               <option value="transferencia">
                 {t("paymentModal.paymentMethods.transfer")}
               </option>
@@ -252,15 +265,33 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 {t("paymentModal.cancel")}
               </button>
               <button
-                onClick={() => {
-                  // Aquí iría la lógica para procesar el pago
-                  console.log("Pago confirmado:", { amount, paymentMethod });
-                  setIsConfirmModalOpen(false);
-                  onClose();
+                onClick={async () => {
+                  setIsSubmittingPayment(true);
+                  setSubmittedPayment(false);
+                  try {
+                    // Simular el proceso asíncrono del pago
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    setSubmittedPayment(true);
+                    // Mostramos el tick durante 1 segundo antes de cerrar
+                    setTimeout(() => {
+                      setIsSubmittingPayment(false);
+                      setSubmittedPayment(false);
+                      setIsConfirmModalOpen(false);
+                      onClose();
+                    }, 1000);
+                  } catch (error) {
+                    console.error("Error procesando el pago:", error);
+                    setIsSubmittingPayment(false);
+                  }
                 }}
+                disabled={isSubmittingPayment}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
-                {t("paymentModal.confirm")}
+                {isSubmittingPayment
+                  ? t("paymentModal.loading") || "Cargando..."
+                  : submittedPayment
+                  ? "✓"
+                  : t("paymentModal.confirm")}
               </button>
             </div>
           </div>

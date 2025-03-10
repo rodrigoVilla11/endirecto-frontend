@@ -9,7 +9,10 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetDocumentsPagQuery } from "@/redux/services/documentsApi";
+import {
+  useGetDocumentsPagQuery,
+  useSumAmountsQuery,
+} from "@/redux/services/documentsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
 import debounce from "@/app/context/debounce";
@@ -38,14 +41,12 @@ const VouchersComponent = () => {
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
-  // Referencia para Intersection Observer y Loading
+  // Referencias para Intersection Observer
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Queries de Redux
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  // Se espera que useGetDocumentsPagQuery retorne { documents, total }
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
     limit,
@@ -55,6 +56,23 @@ const VouchersComponent = () => {
     customer_id,
     sort: sortQuery,
   });
+
+  // Hook para obtener la suma de montos según los filtros
+  const {
+    data: totalAmount,
+    isLoading: isTotalLoading,
+    error: totalAmountError,
+    refetch: refetchTotal,
+  } = useSumAmountsQuery({
+    startDate: startDate ? startDate.toISOString() : undefined,
+    endDate: endDate ? endDate.toISOString() : undefined,
+    customer_id, // Se asume que el endpoint ahora filtra por customer_id
+  });
+
+  // Efecto para refetchTotal cuando cambien los filtros relevantes
+  useEffect(() => {
+    refetchTotal();
+  }, [startDate, endDate, customer_id, refetchTotal]);
 
   // Actualiza customer_id según selectedClientId
   useEffect(() => {
@@ -192,9 +210,7 @@ const VouchersComponent = () => {
 
   // Configuración del header
   const headerBody = {
-    buttons: [
-      { logo: <AiOutlineDownload />, title: t("download") },
-    ],
+    buttons: [{ logo: <AiOutlineDownload />, title: t("download") }],
     filters: [
       {
         content: (
@@ -230,14 +246,24 @@ const VouchersComponent = () => {
           <>
             <DatePicker
               selected={startDate}
-              onChange={(date) => setStartDate(date)}
+              onChange={(date) => {
+                setStartDate(date);
+                setPage(1);
+                setItems([]);
+                refetch();
+              }}
               placeholderText={t("dateFrom")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
             />
             <DatePicker
               selected={endDate}
-              onChange={(date) => setEndDate(date)}
+              onChange={(date) => {
+                setEndDate(date);
+                setPage(1);
+                setItems([]);
+                refetch();
+              }}
               placeholderText={t("dateTo")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
@@ -259,17 +285,24 @@ const VouchersComponent = () => {
     );
   }
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        {t("errorLoadingDocuments")}
-      </div>
-    );
+    return <div className="p-4 text-red-500">{t("errorLoadingDocuments")}</div>;
   }
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("statusHeader")}</h3>
+        {/* Se muestra el total según los filtros */}
+        <div className="p-4">
+          <span className="font-bold">{t("totalAmount")}: </span>
+          {isTotalLoading ? (
+            <span>{t("loading")}</span>
+          ) : totalAmountError ? (
+            <span className="text-red-500">{t("errorLoadingTotal")}</span>
+          ) : (
+            <span>{totalAmount}</span>
+          )}
+        </div>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}

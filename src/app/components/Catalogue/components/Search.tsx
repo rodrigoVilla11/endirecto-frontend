@@ -40,7 +40,7 @@ const ArticleSearchResults = ({
   // Estado para mostrar mensaje temporal si no hay cliente seleccionado
   const [showAlert, setShowAlert] = useState(false);
 
-  // Referencia al contenedor del componente (si la necesitás para otros usos)
+  // Referencia al contenedor del componente
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleRedirect = useCallback(
@@ -65,6 +65,21 @@ const ArticleSearchResults = ({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
+
+  // Listener para detectar clics fuera del contenedor y limpiar el query
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setSearchQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, [setSearchQuery]);
 
   const handleOpenModal = (id: string) => {
     if (!selectedClientId) {
