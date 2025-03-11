@@ -20,6 +20,7 @@ export interface LookupDocument {
 export interface LookupDocumentsResponse {
   totalData: number;
   data: LookupDocument[];
+  totalAmount: number;
 }
 
 // (Si ya tienes definidos otros tipos, puedes ajustarlos o incluirlos aquí según corresponda)

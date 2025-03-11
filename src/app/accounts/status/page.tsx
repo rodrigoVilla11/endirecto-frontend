@@ -341,14 +341,10 @@ const Page = () => {
     secondSection: {
       title: t("totalOwed"),
       // Si hay facturas seleccionadas, se muestra su suma, sino se muestra la suma de los documentos filtrados
-      amount:
-        selectedDocs.length > 0
-          ? `${formatPriceWithCurrency(selectedSum)}`
-          : `${formatPriceWithCurrency(filteredTotal)}`,
+      amount: `${formatPriceWithCurrency(data?.totalAmount || 0)}`,
     },
     results: t("results", { count: data?.totalData || 0 }),
   };
-  
 
   return (
     <PrivateRoute

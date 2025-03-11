@@ -9,10 +9,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import {
-  useGetDocumentsPagQuery,
-  useSumAmountsQuery,
-} from "@/redux/services/documentsApi";
+import { useGetDocumentsPagQuery } from "@/redux/services/documentsApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
 import debounce from "@/app/context/debounce";
@@ -39,7 +36,9 @@ const VouchersComponent = () => {
 
   // Estados para modales y documento seleccionado
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
 
   // Referencias para Intersection Observer
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -56,23 +55,6 @@ const VouchersComponent = () => {
     customer_id,
     sort: sortQuery,
   });
-
-  // Hook para obtener la suma de montos según los filtros
-  const {
-    data: totalAmount,
-    isLoading: isTotalLoading,
-    error: totalAmountError,
-    refetch: refetchTotal,
-  } = useSumAmountsQuery({
-    startDate: startDate ? startDate.toISOString() : undefined,
-    endDate: endDate ? endDate.toISOString() : undefined,
-    customer_id, // Se asume que el endpoint ahora filtra por customer_id
-  });
-
-  // Efecto para refetchTotal cuando cambien los filtros relevantes
-  useEffect(() => {
-    refetchTotal();
-  }, [startDate, endDate, customer_id, refetchTotal]);
 
   // Actualiza customer_id según selectedClientId
   useEffect(() => {
@@ -119,7 +101,17 @@ const VouchersComponent = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, refetch, isFetching, t]);
+  }, [
+    page,
+    searchQuery,
+    startDate,
+    endDate,
+    customer_id,
+    sortQuery,
+    refetch,
+    isFetching,
+    t,
+  ]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {
@@ -155,7 +147,8 @@ const VouchersComponent = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
@@ -168,7 +161,9 @@ const VouchersComponent = () => {
 
   // Mapeo de los documentos para la tabla
   const tableData = items?.map((document) => {
-    const customer = customersData?.find((data) => data.id === document.customer_id);
+    const customer = customersData?.find(
+      (data) => data.id === document.customer_id
+    );
     const seller = sellersData?.find((data) => data.id === document.seller_id);
     return {
       key: document.id,
@@ -196,7 +191,10 @@ const VouchersComponent = () => {
   });
 
   const tableHeader = [
-    { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
+    {
+      component: <IoInformationCircleOutline className="text-center text-xl" />,
+      key: "info",
+    },
     { name: t("customer"), key: "customer", important: true },
     { name: t("type"), key: "type" },
     { name: t("number"), key: "number", important: true },
@@ -289,20 +287,19 @@ const VouchersComponent = () => {
   }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("statusHeader")}</h3>
         {/* Se muestra el total según los filtros */}
-        <div className="p-4">
-          <span className="font-bold">{t("totalAmount")}: </span>
-          {isTotalLoading ? (
-            <span>{t("loading")}</span>
-          ) : totalAmountError ? (
-            <span className="text-red-500">{t("errorLoadingTotal")}</span>
-          ) : (
-            <span>{totalAmount}</span>
-          )}
-        </div>
+        <div className="p-4"></div>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
