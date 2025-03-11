@@ -52,6 +52,9 @@ export const documentsApi = createApi({
         expirationStatus?: string;
         customer_id?: string;
         sort?: string;
+        type?: string;
+        seller_id?: string;
+
       }
     >({
       query: ({
@@ -63,6 +66,8 @@ export const documentsApi = createApi({
         expirationStatus,
         customer_id,
         sort = "",
+        type,
+        seller_id
       } = {}) => {
         const url = `/documents`;
         const params = new URLSearchParams({
@@ -78,6 +83,12 @@ export const documentsApi = createApi({
         if (sort) {
           params.append("sort", sort);
         }
+        if (seller_id) {
+          params.append("seller_id", seller_id);
+        }
+        if (type) {
+          params.append("type", type);
+        }
         if (startDate) {
           params.append("startDate", startDate);
         }
@@ -87,6 +98,7 @@ export const documentsApi = createApi({
         if (expirationStatus) {
           params.append("status", expirationStatus);
         }
+
     
         return `${url}?${params.toString()}`;
       },

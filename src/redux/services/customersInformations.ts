@@ -36,10 +36,7 @@ export const customersInformationsApi = createApi({
         `/customers-informations?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     // Permitiendo que id sea opcional
-    getCustomerInformationByCustomerId: builder.query<
-      any,
-      { id?: string }
-    >({
+    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>({
       query: ({ id }) =>
         id
           ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
@@ -62,6 +59,7 @@ export const customersInformationsApi = createApi({
         sellerId?: string;
         page?: number;
         limit?: number;
+        type?: string;
       }
     >({
       query: ({
@@ -73,9 +71,11 @@ export const customersInformationsApi = createApi({
         sellerId,
         page,
         limit,
+        type,
       }) => {
         let queryString = `/customers-informations/lookup-documents?token=${process.env.NEXT_PUBLIC_TOKEN}`;
         if (sortField) queryString += `&sortField=${sortField}`;
+        if (type) queryString += `&type=${type}`;
         if (sortOrder) queryString += `&sortOrder=${sortOrder}`;
         if (startDate) queryString += `&startDate=${startDate}`;
         if (endDate) queryString += `&endDate=${endDate}`;

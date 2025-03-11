@@ -17,13 +17,18 @@ import {
   useGetCustomerInformationByCustomerIdQuery,
   useGetLookupDocumentsQuery,
 } from "@/redux/services/customersInformations";
+import { useSumAmountsQuery } from "@/redux/services/documentsApi";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/app/context/AuthContext";
 
 // Constante para la paginación
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const { t } = useTranslation();
+  const { userData } = useAuth();
+  const userRole = userData?.role ? userData.role.toUpperCase() : "";
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
@@ -32,16 +37,36 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  // Para el filtro de cliente, se utiliza selectedClientId si existe
+  const { selectedClientId } = useClient();
   const [customer_id, setCustomer_id] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
   const [selectedDocs, setSelectedDocs] = useState<any[]>([]);
+  // Estados para los nuevos filtros
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sellerFilter, setSellerFilter] = useState("");
 
-  // Estados para los modales y documentos
+  
+  // Estados para los modales y documento seleccionado
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
+  
+  // Si existe un selectedClientId, se utiliza para filtrar y se asigna a customer_id
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+    }
+  }, [selectedClientId]);
+
+  // Si el rol es VENDEDOR, forzamos el filtro de vendedor con el seller_id del usuario y deshabilitamos el select
+  useEffect(() => {
+    if (userRole === "VENDEDOR" && userData?.seller_id) {
+      setSellerFilter(userData.seller_id);
+    }
+  }, [userRole, userData]);
 
   // Definición de la función para abrir el modal de creación
   const openCreateModal = () => setCreateModalOpen(true);
@@ -53,18 +78,17 @@ const Page = () => {
   );
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const { selectedClientId } = useClient();
 
-  // Consulta para obtener información del cliente
+  // Consulta para obtener información del cliente (usamos customer_id, que ya será selectedClientId si existe)
   const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
-    id: selectedClientId ?? undefined,
+    id: customer_id || undefined,
   });
 
   // Referencia para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   // Función para formatear fechas (YYYY-MM-DD)
-  function formatDate(date: any) {
+  function formatDate(date: Date): string | undefined {
     if (!date) return undefined;
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -90,9 +114,7 @@ const Page = () => {
     : [undefined, undefined];
   const sortField = rawSortField;
   const sortOrder =
-    rawSortOrder === "asc" || rawSortOrder === "desc"
-      ? rawSortOrder
-      : undefined;
+    rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : undefined;
 
   // Consulta RTK Query para documentos
   const {
@@ -106,9 +128,11 @@ const Page = () => {
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
-      customerId: selectedClientId || "",
+      customerId: customer_id, // Se utiliza customer_id que viene de selectedClientId o select manual
       sortField: sortField,
       sortOrder: sortOrder,
+      type: typeFilter,
+      sellerId: userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -140,17 +164,7 @@ const Page = () => {
     };
 
     loadDocuments();
-  }, [
-    page,
-    searchQuery,
-    startDate,
-    endDate,
-    customer_id,
-    sortQuery,
-    isLoading,
-    refetch,
-    t,
-  ]);
+  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch, t]);
 
   // Intersection Observer para infinite scroll
   useEffect(() => {
@@ -263,21 +277,13 @@ const Page = () => {
       };
     });
 
-  const isClient = totalDebt && "documents_balance" in totalDebt;
-  const isSummary = totalDebt && "total_documents_balance" in totalDebt;
+  // Calcula la suma de los montos de los documentos cargados
+  const filteredTotal = items.reduce(
+    (acc, doc) => acc + Number(doc.amount),
+    0
+  );
 
-  const rawDocumentsBalance = isClient
-    ? parseFloat(totalDebt.documents_balance)
-    : isSummary
-    ? totalDebt.total_documents_balance
-    : 0;
-  const rawDocumentsBalanceExpired = isClient
-    ? parseFloat(totalDebt.documents_balance_expired)
-    : isSummary
-    ? totalDebt.total_documents_balance_expired
-    : 0;
-  const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
-
+  // Función para formatear precios con moneda
   function formatPriceWithCurrency(price: number): string {
     const formattedNumber = new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -291,16 +297,98 @@ const Page = () => {
     return `${formattedNumber}`;
   }
 
-  // Filtra los documentos según el filtro de cliente (u otros filtros si aplican)
-  const filteredDocuments = items.filter((document) => {
-    return !customer_id || document.customer_id === customer_id;
-  });
-
-  // Calcula la suma de los montos de los documentos filtrados
-  const filteredTotal = filteredDocuments.reduce(
-    (acc, doc) => acc + Number(doc.amount),
-    0
+  // Variable que determina si se aplicó algún filtro (incluye nuevos)
+  const filterApplied = Boolean(
+    startDate ||
+      endDate ||
+      searchQuery ||
+      sortQuery ||
+      typeFilter ||
+      sellerFilter ||
+      customer_id
   );
+
+  // Se asume que el endpoint de suma retorna totalAmount en data.totalAmount.
+  // Solo se usará cuando haya filtros aplicados; de lo contrario se usa el total calculado localmente.
+  const headerTotal =
+    selectedDocs.length > 0
+      ? formatPriceWithCurrency(selectedSum)
+      : filterApplied
+      ? formatPriceWithCurrency((data && (data.totalAmount as number)) || 0)
+      : formatPriceWithCurrency(filteredTotal);
+
+  // Agregar nuevos filtros al header (select para type, seller y customer)
+  const headerFilters = [
+    {
+      // Filtro para tipo de documento
+      content: (
+        <select
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+            setItems([]);
+          }}
+          className="border border-gray-300 rounded p-2"
+        >
+          <option value="">{t("allTypes")}</option>
+          <option value="FACTURA A">FACTURA A</option>
+          <option value="FACTURA B">FACTURA B</option>
+          <option value="Nota de Crédito A">Nota de Crédito A</option>
+          <option value="Nota de Crédito B">Nota de Crédito B</option>
+          <option value="Recibo de cobranza">Recibo de cobranza</option>
+        </select>
+      ),
+    },
+    {
+      // Filtro para vendedor. Si el rol es VENDEDOR, se usa el seller del usuario y se deshabilita el select.
+      content: (
+        <select
+          value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
+          onChange={(e) => {
+            if (userRole !== "VENDEDOR") {
+              setSellerFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+            }
+          }}
+          className="border border-gray-300 rounded p-2"
+          disabled={userRole === "VENDEDOR"}
+        >
+          <option value="">{t("allSellers")}</option>
+          {sellersData &&
+            sellersData.map((seller: any) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.name}
+              </option>
+            ))}
+        </select>
+      ),
+    },
+    {
+      // Filtro para cliente. Si existe selectedClientId se utiliza y se deshabilita el select.
+      content: (
+        <select
+          value={selectedClientId || customer_id}
+          onChange={(e) => {
+            setCustomer_id(e.target.value);
+            setPage(1);
+            setItems([]);
+          }}
+          className="border border-gray-300 rounded p-2"
+          disabled={Boolean(selectedClientId)}
+        >
+          <option value="">{t("allCustomers")}</option>
+          {customersData &&
+            customersData.map((customer: any) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+        </select>
+      ),
+    },
+  ];
 
   const headerBody = {
     buttons: [
@@ -313,7 +401,11 @@ const Page = () => {
           <div className="relative">
             <DatePicker
               selected={startDate}
-              onChange={(date) => setStartDate(date)}
+              onChange={(date) => {
+                setStartDate(date);
+                setPage(1);
+                setItems([]);
+              }}
               placeholderText={t("dateFrom")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
@@ -330,18 +422,22 @@ const Page = () => {
         content: (
           <DatePicker
             selected={endDate}
-            onChange={(date) => setEndDate(date)}
+            onChange={(date) => {
+              setEndDate(date);
+              setPage(1);
+              setItems([]);
+            }}
             placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
         ),
       },
+      ...headerFilters,
     ],
     secondSection: {
       title: t("totalOwed"),
-      // Si hay facturas seleccionadas, se muestra su suma, sino se muestra la suma de los documentos filtrados
-      amount: `${formatPriceWithCurrency(data?.totalAmount || 0)}`,
+      amount: headerTotal,
     },
     results: t("results", { count: data?.totalData || 0 }),
   };
@@ -362,10 +458,7 @@ const Page = () => {
         <Table
           headers={[
             { name: t("action"), key: "action" },
-            {
-              component: <FaInfoCircle className="text-center text-xl" />,
-              key: "info",
-            },
+            { component: <FaInfoCircle className="text-center text-xl" />, key: "info" },
             { name: t("customer"), key: "customer" },
             { name: t("type"), key: "type" },
             { name: t("number"), key: "number", important: true },
