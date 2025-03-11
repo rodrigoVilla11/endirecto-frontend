@@ -254,7 +254,7 @@ const SelectCustomer = () => {
     if (role === "VENDEDOR") {
       router.push("/orders/orderSeller");
     } else {
-      router.push("/catalogue");
+      router.push("/dashboard");
     }
   };
 
