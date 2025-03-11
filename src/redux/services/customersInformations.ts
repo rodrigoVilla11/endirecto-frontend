@@ -16,11 +16,33 @@ export interface LookupDocument {
   type: string;
 }
 
+export interface Document {
+  id: string;
+  document_balance: string;
+  customer_id: string;
+  date: string;
+  seller_id: string;
+  type: string;
+  balance: string;
+  amount: string;
+  expiration_date: string;
+  expiration_status: string;
+  netamount: string;
+  number: string;
+  payment_condition_id: string;
+}
+
 // Interfaz para la respuesta del endpoint lookup
 export interface LookupDocumentsResponse {
   totalData: number;
   data: LookupDocument[];
   totalAmount: number;
+}
+
+export interface DocumentsResponse {
+  totalData: number;
+  data: Document[];
+  totalDocumentBalance: number;
 }
 
 // (Si ya tienes definidos otros tipos, puedes ajustarlos o incluirlos aquí según corresponda)
@@ -86,6 +108,45 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
+    // Nuevo endpoint para obtener todos los documentos (lookup)
+    getAllDocuments: builder.query<
+      DocumentsResponse,
+      {
+        sortField?: string;
+        sortOrder?: "asc" | "desc";
+        startDate?: string;
+        endDate?: string;
+        customerId?: string;
+        sellerId?: string;
+        page?: number;
+        limit?: number;
+        type?: string;
+      }
+    >({
+      query: ({
+        sortField,
+        sortOrder,
+        startDate,
+        endDate,
+        customerId,
+        sellerId,
+        page,
+        limit,
+        type,
+      }) => {
+        let queryString = `/customers-informations/customers-documents?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        if (sortField) queryString += `&sortField=${sortField}`;
+        if (type) queryString += `&type=${type}`;
+        if (sortOrder) queryString += `&sortOrder=${sortOrder}`;
+        if (startDate) queryString += `&startDate=${startDate}`;
+        if (endDate) queryString += `&endDate=${endDate}`;
+        if (customerId) queryString += `&customerId=${customerId}`;
+        if (sellerId) queryString += `&sellerId=${sellerId}`;
+        if (page !== undefined) queryString += `&page=${page}`;
+        if (limit !== undefined) queryString += `&limit=${limit}`;
+        return queryString;
+      },
+    }),
   }),
 });
 
@@ -94,4 +155,5 @@ export const {
   useGetCustomerInformationByCustomerIdQuery,
   useGetCustomerWithDocumentsQuery,
   useGetLookupDocumentsQuery,
+  useGetAllDocumentsQuery,
 } = customersInformationsApi;

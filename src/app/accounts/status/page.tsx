@@ -14,6 +14,7 @@ import Modal from "@/app/components/components/Modal";
 import CRM from "./CRM";
 import DocumentDetails from "./DocumentDetails";
 import {
+  useGetAllDocumentsQuery,
   useGetCustomerInformationByCustomerIdQuery,
   useGetLookupDocumentsQuery,
 } from "@/redux/services/customersInformations";
@@ -79,10 +80,6 @@ const Page = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
 
-  // Consulta para obtener información del cliente (usamos customer_id, que ya será selectedClientId si existe)
-  const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
-    id: customer_id || undefined,
-  });
 
   // Referencia para el infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -122,7 +119,7 @@ const Page = () => {
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetLookupDocumentsQuery(
+  } = useGetAllDocumentsQuery(
     {
       page,
       limit: ITEMS_PER_PAGE,
@@ -308,14 +305,6 @@ const Page = () => {
       customer_id
   );
 
-  // Se asume que el endpoint de suma retorna totalAmount en data.totalAmount.
-  // Solo se usará cuando haya filtros aplicados; de lo contrario se usa el total calculado localmente.
-  const headerTotal =
-    selectedDocs.length > 0
-      ? formatPriceWithCurrency(selectedSum)
-      : filterApplied
-      ? formatPriceWithCurrency((data && (data.totalAmount as number)) || 0)
-      : formatPriceWithCurrency(filteredTotal);
 
   // Agregar nuevos filtros al header (select para type, seller y customer)
   const headerFilters = [
@@ -437,7 +426,7 @@ const Page = () => {
     ],
     secondSection: {
       title: t("totalOwed"),
-      amount: headerTotal,
+      amount: formatPriceWithCurrency(data?.totalDocumentBalance || 0),
     },
     results: t("results", { count: data?.totalData || 0 }),
   };
