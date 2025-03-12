@@ -1,6 +1,6 @@
 "use client";
 import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
-import React from "react";
+import React, { useEffect } from "react";
 import { IoMdClose } from "react-icons/io";
 
 const PopUpModal = ({
@@ -16,7 +16,13 @@ const PopUpModal = ({
   const marketingData =
     Array.isArray(marketing) && marketing.length > 0 ? marketing[0] : null;
 
-  // Si la propiedad "enable" es false, no se renderiza el modal
+  // Si la data ya se cargó y el popup no está habilitado, se cierra automáticamente
+  useEffect(() => {
+    if (!isLoading && marketingData?.popups && !marketingData.popups.enable) {
+      closeModal();
+    }
+  }, [isLoading, marketingData, closeModal]);
+
   if (marketingData?.popups && !marketingData.popups.enable) {
     return null;
   }
