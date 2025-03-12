@@ -74,6 +74,7 @@ const ArticleSearchResults = ({
         !containerRef.current.contains(e.target as Node)
       ) {
         setSearchQuery("");
+        setArticleId("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
