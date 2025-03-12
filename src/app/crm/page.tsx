@@ -6,7 +6,7 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdPin } from "react-icons/io";
 import { FaInfoCircle, FaPlus } from "react-icons/fa";
 import DatePicker from "react-datepicker";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { useGetCrmPagQuery } from "@/redux/services/crmApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
@@ -62,9 +62,7 @@ const Page = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: ordersData } = useGetOrdersQuery(null);
-  // const { data: usersData } = useGetUsersQuery(null);
 
-  console.log(ordersData);
   // ---------- Query principal para CRM ----------
   const {
     data,
@@ -76,19 +74,12 @@ const Page = () => {
     {
       page,
       limit: ITEMS_PER_PAGE,
-      startDate: startDate
-        ? format(startDate, "yyyy-MM-dd") + "T00:00:00.000Z"
-        : undefined,
-      endDate: endDate
-        ? format(endDate, "yyyy-MM-dd") + "T23:59:59.999Z"
-        : undefined,
+      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
+      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
       type: typeFilter,
-      // status: statusFilter,
       insitu: "",
       customer_id,
       seller_id: sellerFilter,
-      // user_id: userFilter,
-      // action: actionFilter,
       search: searchQuery,
       sort: sortQuery,
     },
@@ -140,7 +131,6 @@ const Page = () => {
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const openViewGPSModal = (gps: string) => {
-    console.log("Abriendo modal...", gps);
     setCurrentGPS(gps);
     setViewGPSModalOpen(true);
   };
@@ -230,7 +220,6 @@ const Page = () => {
   const handleModalClose = useCallback(
     async (type: "update" | "delete" | "info") => {
       setModalState({ type: null, crm: null });
-      // Esperar un poco para asegurar actualización
       setTimeout(async () => {
         try {
           await refetch();
@@ -249,6 +238,7 @@ const Page = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
+
   // ---------- Memoización del mapeo de datos para la tabla ----------
   const tableData = React.useMemo(
     () =>
@@ -273,7 +263,7 @@ const Page = () => {
           customer: customer?.name || t("notAvailable"),
           user: crm.user_id || t("notAvailable"),
           date: crm.date
-            ? format(new Date(crm.date), "yyyy-MM-dd")
+            ? format(new Date(crm.date), "yyyy-MM-dd HH:mm")
             : t("notAvailable"),
           type: crm.type || t("notAvailable"),
           number: order?.multisoft_id || t("notAvailable"),
