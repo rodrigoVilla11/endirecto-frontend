@@ -154,15 +154,17 @@ const Page = () => {
           setHasMore(newDocuments.length === ITEMS_PER_PAGE);
         } catch (error) {
           console.error(t("errorLoadingDocuments"), error);
+          // En caso de error, asignamos un array vacío
+          setItems([]);
         } finally {
           setIsLoading(false);
         }
       }
     };
-
+  
     loadDocuments();
   }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch, t]);
-
+  
   // Intersection Observer para infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
