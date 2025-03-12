@@ -12,7 +12,7 @@ import {
   useGetCustomersQuery,
 } from "@/redux/services/customersApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
-import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
+import { ReclaimType, useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
 import Select from "react-select";
 import { IoMdClose } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
@@ -56,7 +56,7 @@ const UpdateReclaimComponent = ({
     user_solved_id: userData?._id || "",
   });
 
-  const { data: reclaimTypesData } = useGetReclaimsTypesQuery(null);
+  const { data: reclaimTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery();
   const { data: branchesData } = useGetBranchesQuery(null);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: articlesData } = useGetAllArticlesQuery(null);
@@ -115,11 +115,14 @@ const UpdateReclaimComponent = ({
     }
   };
 
-  const reclaimTypeOptions =
-    reclaimTypesData?.map((type: { id: string; name: string }) => ({
-      value: type.id,
-      label: type.name,
-    })) || [];
+    const handleChangeReclaim = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+      setForm((prevForm) => ({
+        ...prevForm,
+        [e.target.name]: e.target.value,
+      }));
+    };
 
   const branchOptions =
     branchesData?.map((branch: { id: string; name: string }) => ({
@@ -168,16 +171,25 @@ const UpdateReclaimComponent = ({
             <label className="block text-sm font-medium text-gray-700">
               {t("updateReclaimComponent.reclaimType")}:
             </label>
-            <Select
-              value={reclaimTypeOptions.find(
-                (option) => option.value === form.reclaims_type_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "reclaims_type_id")
-              }
-              options={reclaimTypeOptions}
-              className="mt-1 border-gray-300 rounded-lg shadow-sm"
-            />
+            <select
+              name="reclaims_type_id"
+              value={form.reclaims_type_id}
+              onChange={handleChangeReclaim}
+              className="border border-black rounded-md p-2"
+            >
+              <option value="">{t("createReclaim.selectReclaimType")}</option>
+              {!isLoadingReclaimsTypes &&
+                reclaimTypesData
+                  ?.filter(
+                    (reclaimType: ReclaimType) => !reclaimType.deleted_at
+                  )
+                  .map((reclaimType: ReclaimType) => (
+                    <option key={reclaimType.id} value={reclaimType.id}>
+                      {reclaimType.categoria}
+                      {reclaimType.tipo ? ` - ${reclaimType.tipo}` : ""}
+                    </option>
+                  ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
