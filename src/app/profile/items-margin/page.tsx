@@ -176,7 +176,7 @@ const Page = () => {
     }) || [];
 
   if (!selectedClientId) {
-    return <div>{t("page1.selectClient")}</div>;
+    return <div className="flex justify-center items-center">{t("page1.selectClient")}</div>;
   }
 
   return (

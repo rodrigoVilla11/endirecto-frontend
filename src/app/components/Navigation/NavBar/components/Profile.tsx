@@ -107,13 +107,13 @@ const Profile = ({ isMobile }: any) => {
               <IoPersonOutline /> {t("myProfile")}
             </li>
             <li
-              onClick={() => handleRedirect("/profile/brands-margins")}
+              onClick={() => handleRedirect("/profile/brands-margin")}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
             >
               <MdPercent  /> {t("brandMargins")}
             </li>
             <li
-              onClick={() => handleRedirect("/profile/items-margins")}
+              onClick={() => handleRedirect("/profile/items-margin")}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
             >
               <MdPercent /> {t("itemMargins")}
