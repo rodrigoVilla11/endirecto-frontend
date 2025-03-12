@@ -22,6 +22,7 @@ const MobileTable: React.FC<MobileTableProps> = ({
   const { t } = useTranslation();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
+  console.log(data)
   return (
     <div className="flex-grow m-5 flex flex-col text-xs">
       <div className="w-full h-full space-y-4">
@@ -77,7 +78,7 @@ const MobileTable: React.FC<MobileTableProps> = ({
                     <span className="text-gray-400">{t("quantityLabel")}:</span>
                     <input
                       type="number"
-                      value={item.quantity.props.value}
+                      value={item.quantity}
                       className="w-16 text-center border rounded-md text-xs p-1"
                       min={1}
                       onChange={(e) =>
