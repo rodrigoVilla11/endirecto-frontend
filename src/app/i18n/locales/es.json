@@ -1272,5 +1272,6 @@
   "crmDetailTitle": "Detalle de CRM",
   "selectStatus": "Seleccionar Estado",
   "charged": "Cargado",
-  "sended": "Enviado"
+  "sended": "Enviado",
+  "reclaims-types": "Tipos de Reclamos"
 }

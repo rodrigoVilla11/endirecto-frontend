@@ -1,41 +1,63 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-type ReclaimsType = {
-  id: string; // ID
-  name: string; // Nombre
-  email: string; // Email
-  required_information: string; // Información requerida
-  procedure: string; // Procedimiento
-  days_control: number; // Período en días para envío de recordatorio
-  article_required: boolean; // Requiere artículo
-  document_required: boolean; // Requiere comprobante
-  file_required: boolean; // Requiere archivo
-  available_for_customer: boolean; // Disponible para el cliente
-  notice_customer: boolean; // Notificar al cliente
-  parent_id: string; // Tipo de reclamo ID
-  deleted_at: Date; // Fecha de eliminación
+export type ReclaimType = {
+  id: string;
+  categoria: string;
+  tipo?: string;
+  deleted_at?: Date | null;
 };
 
 export const reclaimsTypesApi = createApi({
   reducerPath: "reclaimsTypesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    getReclaimsTypes: builder.query<ReclaimsType[], null>({
+    // Obtener todos los tipos de reclamo
+    getReclaimsTypes: builder.query<ReclaimType[], void>({
       query: () => `/reclaims-types?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: ReclaimsType[]) => {
+      transformResponse: (response: ReclaimType[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron clientes en la respuesta");
+          console.error("No se recibieron tipos de reclamo en la respuesta");
           return [];
         }
         return response;
       },
     }),
-    getReclaimsTypeById: builder.query<ReclaimsType, { id: string }>({
-      query: ({ id }) => `/reclaims-types/${id}`,
+    // Obtener un tipo de reclamo por ID
+    getReclaimTypeById: builder.query<ReclaimType, { id: string }>({
+      query: ({ id }) => `/reclaims-types/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
+    // Crear un nuevo tipo de reclamo
+    createReclaimType: builder.mutation<ReclaimType, Partial<ReclaimType>>({
+      query: (body) => ({
+        url: `/reclaims-types?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body,
+      }),
+    }),
+    // Actualizar un tipo de reclamo
+    updateReclaimType: builder.mutation<ReclaimType, Partial<ReclaimType> & { id: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/reclaims-types/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PATCH",
+        body,
+      }),
+    }),
+    // Eliminar un tipo de reclamo
+    deleteReclaimType: builder.mutation<ReclaimType, { id: string }>({
+      query: ({ id }) => ({
+        url: `/reclaims-types/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
     }),
   }),
 });
 
-export const { useGetReclaimsTypesQuery, useGetReclaimsTypeByIdQuery } = reclaimsTypesApi;
+export const { 
+  useGetReclaimsTypesQuery, 
+  useGetReclaimTypeByIdQuery, 
+  useCreateReclaimTypeMutation, 
+  useUpdateReclaimTypeMutation, 
+  useDeleteReclaimTypeMutation 
+} = reclaimsTypesApi;

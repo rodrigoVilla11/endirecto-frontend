@@ -6,11 +6,10 @@ import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { Status, useCreateReclaimMutation, Valid } from "@/redux/services/reclaimsApi";
-import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
+import { useGetReclaimsTypesQuery, ReclaimType } from "@/redux/services/reclaimsTypes";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useClient } from "../context/ClientContext";
-// Importar el hook de CRM
 import { ActionType, StatusType, useCreateCrmMutation } from "@/redux/services/crmApi";
 
 const CreateReclaimComponent = ({ closeModal }: any) => {
@@ -31,7 +30,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
     user_id: userData?._id,
   });
 
-  const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery(null);
+  const { data: reclaimsTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery();
   const { data: branchsData, isLoading: isLoadingBranchs } = useGetBranchesQuery(null);
   const { data: articlesData, isLoading: isLoadingArticles } = useGetAllArticlesQuery(null);
 
@@ -45,7 +44,6 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
   };
 
   const [createReclaim, { isLoading: isLoadingCreate, isSuccess, isError }] = useCreateReclaimMutation();
-  // Hook para crear CRM
   const [createCrm] = useCreateCrmMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,19 +55,19 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
       };
 
       // 1. Crear el reclaim
-      const createdReclaim = await createReclaim(formattedData).unwrap();
+      await createReclaim(formattedData).unwrap();
 
       // 2. Crear el registro en CRM de tipo "RECLAIM"
       const crmDate = getLocalISOStringWithOffset();
       await createCrm({
         date: crmDate,
         type: ActionType.RECLAIM,
-        insitu: false, // No aplica para reclamación
-        status: StatusType.PENDING, // O el status que corresponda
+        insitu: false,
+        status: StatusType.PENDING,
         notes: `Reclaim creado. Descripción: ${form.description}`,
         collection_id: "",
         customer_id: form.customer_id,
-        order_id: "", // No aplica para reclamación
+        order_id: "",
         seller_id: userData?._id || "",
       }).unwrap();
 
@@ -118,11 +116,14 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
           >
             <option value="">{t("createReclaim.selectReclaimType")}</option>
             {!isLoadingReclaimsTypes &&
-              reclaimsTypesData?.map((reclaimType: { id: string; name: string }) => (
-                <option key={reclaimType.id} value={reclaimType.id}>
-                  {reclaimType.name}
-                </option>
-              ))}
+              reclaimsTypesData
+                ?.filter((reclaimType: ReclaimType) => !reclaimType.deleted_at)
+                .map((reclaimType: ReclaimType) => (
+                  <option key={reclaimType.id} value={reclaimType.id}>
+                    {reclaimType.categoria}
+                    {reclaimType.tipo ? ` - ${reclaimType.tipo}` : ""}
+                  </option>
+                ))}
           </select>
         </label>
 

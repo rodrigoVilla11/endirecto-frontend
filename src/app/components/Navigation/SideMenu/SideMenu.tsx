@@ -78,6 +78,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           name: t("searchesWithoutResults"),
           path: "/system/searches",
         },
+        { name: t("reclaims-types"), path: "/system/reclaims-types" },
       ],
     },
     {
