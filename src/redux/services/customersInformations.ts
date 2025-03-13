@@ -152,7 +152,7 @@ export const customersInformationsApi = createApi({
       { customerId?: string; sellerId?: string }
     >({
       query: ({ customerId, sellerId }) => {
-        console.log(customerId)
+
         let queryString = `/customers-informations/balances-summary?token=${process.env.NEXT_PUBLIC_TOKEN}`;
         if (customerId) queryString += `&customerId=${customerId}`;
         if (sellerId) queryString += `&sellerId=${sellerId}`;

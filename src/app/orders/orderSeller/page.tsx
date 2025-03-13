@@ -17,9 +17,10 @@ import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
 import { useState } from "react";
 import VisitModal from "./VisitModal";
-import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import { useGetBalancesSummaryQuery, useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface CustomerDashboardProps {
   customer: {
@@ -37,6 +38,7 @@ export default function CustomerDashboard() {
   const { selectedClientId } = useClient();
   const { isMobile } = useMobile();
   const { t } = useTranslation();
+  const { userData } = useAuth();
 
   const {
     data: customer,
@@ -53,20 +55,21 @@ export default function CustomerDashboard() {
   } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
   });
-  const isClient = data && "documents_balance" in data;
+   const queryParams =
+     selectedClientId && selectedClientId !== ""
+       ? { customerId: selectedClientId }
+       : userData?.role === "VENDEDOR"
+       ? { sellerId: userData.seller_id }
+       : {};
+ 
+   const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
-  const documentsBalance = isClient ? data.documents_balance : "0";
-  const documentsBalanceExpired = isClient
-    ? data.documents_balance_expired
-    : "0";
-
-  const sum = Number(documentsBalanceExpired) + Number(documentsBalance);
-  const formatedSumAmount = Number(sum)?.toLocaleString("es-ES", {
+  const formatedSumAmount = Number(totalDebt?.documents_balance)?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  const formatedExpiredSumAmount = Number(documentsBalance)?.toLocaleString(
+  const formatedExpiredSumAmount = Number(totalDebt?.documents_balance_expired)?.toLocaleString(
     "es-ES",
     {
       minimumFractionDigits: 2,

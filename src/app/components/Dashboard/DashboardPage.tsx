@@ -44,14 +44,15 @@ const DashboardPage = () => {
   // Datos de clientes y estado de cuenta
   const { data: countCustomersData } = useCountCustomersQuery({});
 
-  const queryParams = {
-    sellerId: userData?.role === "VENDEDOR" ? userData.seller_id : undefined,
-    customerId: selectedClientId && selectedClientId !== "" ? selectedClientId : undefined,
-  };
-  
+  const queryParams =
+    selectedClientId && selectedClientId !== ""
+      ? { customerId: selectedClientId }
+      : userData?.role === "VENDEDOR"
+      ? { sellerId: userData.seller_id }
+      : {};
 
   const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
-  
+
   function formatPriceWithCurrency(price: any) {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -95,7 +96,7 @@ const DashboardPage = () => {
     startDate: `${currentYear}-01-01`,
     endDate: `${currentYear}-12-31`,
   });
-  
+
   // Extraemos datos del mes actual y anteriores para ventas
   const currentMonthSalesData = currentYearSalesData?.find(
     (d) => d.month === currentMonth
@@ -171,10 +172,16 @@ const DashboardPage = () => {
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
-      logo: <MdTextSnippet className={`${totalDebt?.documents_balance ? "text-red-500" : ""}`}/>,
+      logo: (
+        <MdTextSnippet
+          className={`${totalDebt?.documents_balance ? "text-red-500" : ""}`}
+        />
+      ),
       title: t("statusAccount"),
       subtitle: `${formatPriceWithCurrency(totalDebt?.documents_balance)}`,
-      text: `${t("expired")}: ${formatPriceWithCurrency(totalDebt?.documents_balance_expired)}`,
+      text: `${t("expired")}: ${formatPriceWithCurrency(
+        totalDebt?.documents_balance_expired
+      )}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -183,7 +190,7 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-      color: totalDebt?.documents_balance ? "red" : ""
+      color: totalDebt?.documents_balance ? "red" : "",
     },
     // Venta interanual
     {
@@ -202,7 +209,8 @@ const DashboardPage = () => {
       subtitle: `${interannualPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}:{" "}
+          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
           {t("lastYearMonth")}:{" "}
           {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
@@ -217,7 +225,7 @@ const DashboardPage = () => {
           : interannualPercentage < 100
           ? "yellow"
           : "green",
-    },    
+    },
     // Venta mensual
     {
       logo: (
@@ -235,7 +243,8 @@ const DashboardPage = () => {
       subtitle: `${monthlyPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}:{" "}
+          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
           {t("lastMonth")}:{" "}
           {formatCurrency(previousMonthSalesData?.totalSales || 0)}
@@ -249,7 +258,7 @@ const DashboardPage = () => {
           : monthlyPercentage < 100
           ? "yellow"
           : "green",
-    },    
+    },
     // Pedidos mensuales
     {
       logo: <IoIosPaper />,
@@ -274,7 +283,8 @@ const DashboardPage = () => {
           className={
             ((selectedClientId
               ? data?.notifications.filter((n: any) => !n.read).length
-              : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
+              : userQuery.data?.notifications.filter((n: any) => !n.read)
+                  .length) || 0) > 0
               ? "text-red-500"
               : "text-green-500"
           }
@@ -287,7 +297,8 @@ const DashboardPage = () => {
       text: `${t("unreadNotifications")}: ${
         (selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
+        0
       }`,
       href: "/notifications",
       allowedRoles: [
@@ -300,11 +311,11 @@ const DashboardPage = () => {
       color:
         ((selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
+          0) > 0
           ? "red"
           : "green",
-    }
-    
+    },
   ];
 
   const itemsShortcuts = [
@@ -427,7 +438,7 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-      logout: true
+      logout: true,
     },
   ];
 

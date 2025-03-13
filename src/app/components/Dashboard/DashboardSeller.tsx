@@ -27,7 +27,7 @@ import {
   useSumExpiredAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useAuth } from "@/app/context/AuthContext";
-import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import { useGetBalancesSummaryQuery, useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
 import { useClient } from "@/app/context/ClientContext";
 import { useTranslation } from "react-i18next";
 
@@ -44,26 +44,21 @@ const DashboardSeller = () => {
     id: selectedClientId ?? undefined,
   });
 
-  // Determinar si data es de un cliente o un resumen
-  const isClient = data && "documents_balance" in data;
-  const isSummary = data && "total_documents_balance" in data;
 
-  const documentsBalance = isClient
-    ? data.documents_balance
-    : isSummary
-    ? data.total_documents_balance
-    : "0";
-  const documentsBalanceExpired = isClient
-    ? data.documents_balance_expired
-    : isSummary
-    ? data.total_documents_balance_expired
-    : "0";
+  const queryParams =
+    selectedClientId && selectedClientId !== ""
+      ? { customerId: selectedClientId }
+      : userData?.role === "VENDEDOR"
+      ? { sellerId: userData.seller_id }
+      : {};
 
-  const formatedSumAmount = documentsBalance?.toLocaleString("es-ES", {
+  const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
+
+  const formatedSumAmount = totalDebt?.documents_balance?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const formatedExpiredSumAmount = documentsBalanceExpired?.toLocaleString("es-ES", {
+  const formatedExpiredSumAmount = totalDebt?.documents_balance_expired?.toLocaleString("es-ES", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

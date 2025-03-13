@@ -420,6 +420,7 @@ const SelectCustomer = () => {
               setSearchParams({ ...searchParams, seller_id: e.target.value })
             }
             className="border border-gray-300 rounded p-2"
+            disabled={role === "VENDEDOR"}
           >
             <option value="">Seller...</option>
             {sellersData?.map((seller) => (
@@ -429,7 +430,7 @@ const SelectCustomer = () => {
             ))}
           </select>
         ),
-      },
+      },      
       {
         content: (
           <div className="relative">
