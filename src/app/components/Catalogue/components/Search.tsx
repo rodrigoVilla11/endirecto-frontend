@@ -58,14 +58,16 @@ const ArticleSearchResults = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && searchResults && searchResults.length > 0) {
-        handleRedirect(`/catalogue`);
+        if (containerRef.current && containerRef.current.contains(document.activeElement)) {
+          handleRedirect(`/catalogue`);
+        }
       }
     };
-
+  
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
-
+  
   // Listener para detectar clics fuera del contenedor y limpiar el query
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
