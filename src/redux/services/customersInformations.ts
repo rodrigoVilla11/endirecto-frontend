@@ -45,31 +45,29 @@ export interface DocumentsResponse {
   totalDocumentBalance: number;
 }
 
-// (Si ya tienes definidos otros tipos, puedes ajustarlos o incluirlos aquí según corresponda)
 export const customersInformationsApi = createApi({
   reducerPath: "customersInformationsApi",
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    // Otros endpoints que ya tengas definidos...
+    // Otros endpoints ya existentes
     getCustomersInformations: builder.query<any, null>({
       query: () =>
         `/customers-informations?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    // Permitiendo que id sea opcional
-    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>({
-      query: ({ id }) =>
-        id
-          ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
-          : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-    }),
-
+    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>(
+      {
+        query: ({ id }) =>
+          id
+            ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
+            : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      }
+    ),
     getCustomerWithDocuments: builder.query<any, { id: string }>({
       query: ({ id }) =>
         `/customers-informations/${id}/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    // Nuevo endpoint para obtener todos los documentos (lookup)
     getLookupDocuments: builder.query<
       LookupDocumentsResponse,
       {
@@ -108,7 +106,6 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
-    // Nuevo endpoint para obtener todos los documentos (lookup)
     getAllDocuments: builder.query<
       DocumentsResponse,
       {
@@ -147,6 +144,21 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
+    // Nuevo endpoint para obtener el resumen de balances
+    // Suma de documents_balance = documents_balance + documents_balance_expired
+    // Suma de documents_balance_expired = documents_balance_expired
+    getBalancesSummary: builder.query<
+      { documents_balance: number; documents_balance_expired: number },
+      { customerId?: string; sellerId?: string }
+    >({
+      query: ({ customerId, sellerId }) => {
+        console.log(customerId)
+        let queryString = `/customers-informations/balances-summary?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        if (customerId) queryString += `&customerId=${customerId}`;
+        if (sellerId) queryString += `&sellerId=${sellerId}`;
+        return queryString;
+      },
+    }),
   }),
 });
 
@@ -156,4 +168,5 @@ export const {
   useGetCustomerWithDocumentsQuery,
   useGetLookupDocumentsQuery,
   useGetAllDocumentsQuery,
+  useGetBalancesSummaryQuery,
 } = customersInformationsApi;

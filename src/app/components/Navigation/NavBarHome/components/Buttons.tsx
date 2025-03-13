@@ -71,7 +71,6 @@ const Buttons = () => {
     i18n.changeLanguage(newLanguage);
   };
 
-  console.log(currentLanguage);
 
   return (
     <>

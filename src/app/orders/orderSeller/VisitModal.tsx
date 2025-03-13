@@ -5,8 +5,7 @@ import {
   useCreateCrmMutation,
   useCheckInsituVisitMutation,
 } from "@/redux/services/crmApi";
-import { useState } from "react";
-import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetCrmPrenotesQuery } from "@/redux/services/crmPrenotes";
@@ -24,8 +23,8 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
   const [insituVisit] = useCheckInsituVisitMutation();
   const { data, error, isLoading, refetch } = useGetCrmPrenotesQuery(null);
 
-  // Fecha actual en formato "yyyy-MM-dd"
-  const currentDate = format(new Date(), "yyyy-MM-dd");
+  // Fecha actual con hora en formato ISO (incluye tiempo)
+  const currentDateTime = new Date().toISOString();
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
 
@@ -41,7 +40,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
   // Estado para el formulario que se enviará
   const [form, setForm] = useState({
-    date: currentDate,
+    date: currentDateTime,
     type: ActionType.VISIT,
     status: StatusType.SENDED,
     notes: observations,
@@ -51,6 +50,16 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
     gps: "",
     insitu: false,
   });
+
+  // Actualiza la fecha cada vez que se abre el modal para tener la fecha y hora actual
+  useEffect(() => {
+    if (isOpen) {
+      setForm((prev) => ({
+        ...prev,
+        date: new Date().toISOString(),
+      }));
+    }
+  }, [isOpen]);
 
   // Función para obtener la ubicación y llamar al backend para verificar si está insitu
   const handleGetLocation = () => {
@@ -146,7 +155,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label={t("visitModal.info.date")} value={currentDate} />
+            <InfoRow label={t("visitModal.info.date")} value={currentDateTime} />
             <InfoRow
               label={
                 <div
@@ -226,7 +235,6 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
           >
             {isSubmitting ? (
-              // Puedes personalizar el spinner o usar un componente de loading si lo tienes
               <span>{t("visitModal.loading") || "Cargando..."}</span>
             ) : submitted ? (
               <span>✓</span>

@@ -22,7 +22,6 @@ const MobileTable: React.FC<MobileTableProps> = ({
   const { t } = useTranslation();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
-  console.log(data)
   return (
     <div className="flex-grow m-5 flex flex-col text-xs">
       <div className="w-full h-full space-y-4">

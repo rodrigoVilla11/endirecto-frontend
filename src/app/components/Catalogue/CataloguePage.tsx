@@ -46,6 +46,7 @@ const CataloguePage = () => {
     sort: order,
   });
 
+
   const filterBy = "popups";
   const { data: marketing } = useGetMarketingByFilterQuery({ filterBy });
 

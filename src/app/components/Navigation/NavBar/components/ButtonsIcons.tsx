@@ -143,7 +143,6 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     handleRedirect("/notifications");
   };
 
-  console.log(currentLanguage);
 
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-evenly text-2xl text-white relative">

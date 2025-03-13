@@ -4,10 +4,7 @@ import Header from "./components/Header";
 import Card from "./components/Card";
 import CardShortcuts from "./components/CardShortcuts";
 import { MdOutlineShoppingBag, MdTextSnippet } from "react-icons/md";
-import { TbClockExclamation } from "react-icons/tb";
 import {
-  FaInfo,
-  FaShoppingBag,
   FaPowerOff,
   FaShoppingCart,
   FaPhone,
@@ -17,7 +14,6 @@ import { CgProfile } from "react-icons/cg";
 import { BsCash } from "react-icons/bs";
 import { IoIosPaper } from "react-icons/io";
 import { IoNotificationsOutline, IoCalculatorSharp } from "react-icons/io5";
-import { GoGraph } from "react-icons/go";
 import { ImStatsDots } from "react-icons/im";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
@@ -27,7 +23,7 @@ import {
 } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import { useGetBalancesSummaryQuery } from "@/redux/services/customersInformations";
 import { useTranslation } from "react-i18next";
 
 // Hooks para ventas y facturación (facturas)
@@ -47,30 +43,15 @@ const DashboardPage = () => {
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
   // Datos de clientes y estado de cuenta
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data: totalDebt } = useGetCustomerInformationByCustomerIdQuery({
-    id: selectedClientId ?? undefined,
-  });
 
-  // Determinamos si es un cliente o un resumen global
-  const isClient = totalDebt && "documents_balance" in totalDebt;
-  const isSummary = totalDebt && "total_documents_balance" in totalDebt;
+  const queryParams = {
+    sellerId: userData?.role === "VENDEDOR" ? userData.seller_id : undefined,
+    customerId: selectedClientId && selectedClientId !== "" ? selectedClientId : undefined,
+  };
+  
 
-  const rawDocumentsBalance = isClient
-    ? parseFloat(totalDebt.documents_balance)
-    : isSummary
-    ? parseFloat(totalDebt.total_documents_balance)
-    : 0;
-  const rawDocumentsBalanceExpired = isClient
-    ? parseFloat(totalDebt.documents_balance_expired)
-    : isSummary
-    ? parseFloat(totalDebt.total_documents_balance_expired)
-    : 0;
-  const finalSumAmount = rawDocumentsBalance + rawDocumentsBalanceExpired;
-  const formattedFinalSumAmount = finalSumAmount.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
+  const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
+  
   function formatPriceWithCurrency(price: any) {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -190,10 +171,10 @@ const DashboardPage = () => {
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
-      logo: <MdTextSnippet className={`${rawDocumentsBalance ? "text-red-500" : ""}`}/>,
+      logo: <MdTextSnippet className={`${totalDebt?.documents_balance ? "text-red-500" : ""}`}/>,
       title: t("statusAccount"),
-      subtitle: `${formatPriceWithCurrency(finalSumAmount)}`,
-      text: `${t("expired")}: ${formatPriceWithCurrency(rawDocumentsBalance)}`,
+      subtitle: `${formatPriceWithCurrency(totalDebt?.documents_balance)}`,
+      text: `${t("expired")}: ${formatPriceWithCurrency(totalDebt?.documents_balance_expired)}`,
       href: "/accounts/status",
       allowedRoles: [
         "ADMINISTRADOR",
@@ -202,7 +183,7 @@ const DashboardPage = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-      color: rawDocumentsBalance ? "red" : ""
+      color: totalDebt?.documents_balance ? "red" : ""
     },
     // Venta interanual
     {
