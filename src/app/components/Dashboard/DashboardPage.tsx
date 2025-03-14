@@ -85,16 +85,20 @@ const DashboardPage = () => {
   const { data: currentYearSalesData } = useGetMonthlySalesQuery({
     startDate: `${currentYear}-01-01`,
     endDate: `${currentYear}-12-31`,
+    ...queryParams
   });
   const { data: lastYearSalesData } = useGetMonthlySalesQuery({
     startDate: `${lastYear}-01-01`,
     endDate: `${lastYear}-12-31`,
+    ...queryParams
   });
 
   // Consultamos facturación mensual (facturas) del año actual
   const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery({
     startDate: `${currentYear}-01-01`,
     endDate: `${currentYear}-12-31`,
+    ...queryParams
+
   });
 
   // Extraemos datos del mes actual y anteriores para ventas

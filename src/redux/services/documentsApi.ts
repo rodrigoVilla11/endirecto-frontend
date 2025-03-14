@@ -54,7 +54,6 @@ export const documentsApi = createApi({
         sort?: string;
         type?: string;
         seller_id?: string;
-
       }
     >({
       query: ({
@@ -67,7 +66,7 @@ export const documentsApi = createApi({
         customer_id,
         sort = "",
         type,
-        seller_id
+        seller_id,
       } = {}) => {
         const url = `/documents`;
         const params = new URLSearchParams({
@@ -76,7 +75,7 @@ export const documentsApi = createApi({
           q: query,
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
-    
+
         if (customer_id) {
           params.append("customer_id", customer_id);
         }
@@ -99,7 +98,6 @@ export const documentsApi = createApi({
           params.append("status", expirationStatus);
         }
 
-    
         return `${url}?${params.toString()}`;
       },
       transformResponse: (
@@ -113,7 +111,9 @@ export const documentsApi = createApi({
         }
         let docs = response.documents;
         if (arg?.expirationStatus) {
-          docs = docs.filter((doc: Document) => doc.expiration_status === arg.expirationStatus);
+          docs = docs.filter(
+            (doc: Document) => doc.expiration_status === arg.expirationStatus
+          );
         }
         return { documents: docs, total: response.total || 0 };
       },
@@ -122,10 +122,12 @@ export const documentsApi = createApi({
       query: () => `/documents/count?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getDocumentById: builder.query<Document, { id: string }>({
-      query: ({ id }) => `/documents/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/documents/findOne/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     sumExpiredAmounts: builder.query<number, null>({
-      query: () => `/documents/sum-expired-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () =>
+        `/documents/sum-expired-amounts?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: { totalExpiredAmount?: string }) => {
         const totalExpiredAmount = response?.totalExpiredAmount;
         if (totalExpiredAmount && !isNaN(parseFloat(totalExpiredAmount))) {
@@ -176,9 +178,16 @@ export const documentsApi = createApi({
     // Nuevo endpoint para obtener la facturación mensual (invoices)
     getMonthlyInvoices: builder.query<
       InvoiceMonthly[],
-      { startDate: string; endDate: string; brand?: string; item?: string }
+      {
+        startDate: string;
+        endDate: string;
+        brand?: string;
+        item?: string;
+        customer_id?: string;
+        seller_id?: string;
+      }
     >({
-      query: ({ startDate, endDate, brand, item }) => {
+      query: ({ startDate, endDate, brand, item, customer_id, seller_id }) => {
         const params = new URLSearchParams({
           token: process.env.NEXT_PUBLIC_TOKEN || "",
           startDate,
@@ -186,11 +195,16 @@ export const documentsApi = createApi({
         });
         if (brand) params.append("brand", brand);
         if (item) params.append("item", item);
+        if (customer_id) params.append("customer_id", customer_id);
+        if (seller_id) params.append("seller_id", seller_id);
         return `/documents/monthly-invoices?${params.toString()}`;
       },
       transformResponse: (response: any): InvoiceMonthly[] => {
         if (!response || !Array.isArray(response)) {
-          console.error("Respuesta inesperada para getMonthlyInvoices", response);
+          console.error(
+            "Respuesta inesperada para getMonthlyInvoices",
+            response
+          );
           return [];
         }
         return response.map((d: any) => ({
