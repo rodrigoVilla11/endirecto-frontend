@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
@@ -27,21 +26,16 @@ const ArticleSearchResults = ({
     id: selectedClientId || "",
   });
 
-  // Endpoint para buscar artículos por query
-  const {
-    data: searchResults,
-    error,
-    isLoading,
-  } = useSearchArticlesQuery({ query, page: 1, limit: 6 });
-
+  const { data: searchResults, error, isLoading } = useSearchArticlesQuery({ query, page: 1, limit: 6 });
   const { setSearch } = useFilters();
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
-  // Estado para mostrar mensaje temporal si no hay cliente seleccionado
   const [showAlert, setShowAlert] = useState(false);
 
-  // Referencia al contenedor del componente
+  // Ref para el contenedor de la búsqueda
   const containerRef = useRef<HTMLDivElement>(null);
+  // Ref para el contenido del modal
+  const modalContentRef = useRef<HTMLDivElement>(null);
 
   const handleRedirect = useCallback(
     (path: string) => {
@@ -63,30 +57,32 @@ const ArticleSearchResults = ({
         }
       }
     };
-  
+
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
-  
-  // Listener para detectar clics fuera del contenedor y limpiar el query
+
+  // Listener para detectar clics fuera del contenedor y del modal
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      // Verifica si el clic está fuera del contenedor de búsqueda y fuera del modal
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(target) &&
+        (!modalContentRef.current || !modalContentRef.current.contains(target))
       ) {
         setSearchQuery("");
         setArticleId("");
+        closeModal();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setSearchQuery]);
 
   const handleOpenModal = (id: string) => {
     if (!selectedClientId) {
-      // Si no hay cliente seleccionado, mostrar mensaje temporal
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
@@ -98,7 +94,7 @@ const ArticleSearchResults = ({
   const closeModal = () => setModalOpen(false);
 
   if (!query) {
-    return null; // Si no hay texto en la búsqueda, no mostramos nada
+    return null;
   }
 
   return (
@@ -112,7 +108,6 @@ const ArticleSearchResults = ({
         </h3>
       </div>
 
-      {/* Mensaje temporal si no hay cliente seleccionado */}
       {showAlert && (
         <div className="bg-red-200 text-red-600 p-2 rounded mb-4">
           {t("pleaseSelectClient", "Por favor, seleccione un cliente.")}
@@ -121,7 +116,6 @@ const ArticleSearchResults = ({
 
       {isLoading && (
         <div className="flex justify-center items-center w-full h-40">
-          {/* Spinner de carga */}
           <svg
             className="animate-spin h-10 w-10 text-white"
             xmlns="http://www.w3.org/2000/svg"
@@ -145,10 +139,7 @@ const ArticleSearchResults = ({
         </div>
       )}
 
-      {error && (
-        <p className="text-red-500">{t("errorLoadingArticles")}</p>
-      )}
-
+      {error && <p className="text-red-500">{t("errorLoadingArticles")}</p>}
       {searchResults && searchResults.length === 0 && (
         <p className="text-gray-300">{t("noResultsFound")}</p>
       )}
@@ -177,7 +168,10 @@ const ArticleSearchResults = ({
       )}
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails closeModal={closeModal} />
+        {/* Envuelve el contenido del modal y asigna el ref */}
+        <div ref={modalContentRef}>
+          <ArticleDetails closeModal={closeModal} />
+        </div>
       </Modal>
     </div>
   );
