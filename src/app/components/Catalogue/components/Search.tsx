@@ -52,15 +52,14 @@ const ArticleSearchResults = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && searchResults && searchResults.length > 0) {
-        if (containerRef.current && containerRef.current.contains(document.activeElement)) {
-          handleRedirect(`/catalogue`);
-        }
+        handleRedirect(`/catalogue`);
       }
     };
-
+  
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
+  
 
   // Listener para detectar clics fuera del contenedor y del modal
   useEffect(() => {
