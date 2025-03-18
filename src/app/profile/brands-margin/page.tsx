@@ -24,7 +24,7 @@ const Page = () => {
   const [limit] = useState(15);
   const { selectedClientId } = useClient();
   const { data: brands } = useGetBrandsQuery(null);
-  const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);  
+  const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [
     createCustomersBrands,
     { isLoading: isLoadingCreate, isSuccess, isError },
@@ -33,7 +33,9 @@ const Page = () => {
     useUpdateCustomersBrandsMutation();
 
   // Estado para controlar la animación de "guardado" por cada registro
-  const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>({});
+  const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
   const openUpdateModal = () => {
     setUpdateModalOpen(true);
@@ -82,31 +84,41 @@ const Page = () => {
   };
 
   useEffect(() => {
-    if (
-      !isLoading &&
-      customersBrands.length === 0 &&
-      brands &&
-      selectedClientId
-    ) {
-      brands.forEach((brand) => {
-        const existingBrand = customersBrands.find(
-          (item) => item.brand_id === brand.id
+    const addMissingBrands = async () => {
+      if (
+        !isLoading &&
+        customersBrands.length === 0 &&
+        brands &&
+        selectedClientId
+      ) {
+        const brandsToCreate = brands.filter(
+          (brand) => !customersBrands.some((item) => item.brand_id === brand.id)
         );
-        if (!existingBrand) {
-          createCustomersBrands({
-            margin: 50,
-            brand_id: brand.id,
-            customer_id: selectedClientId,
-          });
+
+        if (brandsToCreate.length > 0) {
+          await Promise.all(
+            brandsToCreate.map((brand) =>
+              createCustomersBrands({
+                margin: 50,
+                brand_id: brand.id,
+                customer_id: selectedClientId,
+              })
+            )
+          );
+
+          // Espera que se creen antes de hacer el refetch
+          refetch();
         }
-      });
-    }
+      }
+    };
+
+    addMissingBrands();
   }, [
-    customersBrands,
+    isLoading,
+    customersBrands.length,
     brands,
     selectedClientId,
     createCustomersBrands,
-    isLoading,
   ]);
 
   const handleMarginChange = (id: string, value: number) => {
@@ -232,4 +244,3 @@ const Page = () => {
 };
 
 export default Page;
-  
