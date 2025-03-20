@@ -26,12 +26,14 @@ const Page = () => {
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // Se puede usar para búsquedas en la tabla, si lo deseas
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
+  const [seller_id, setSeller_id] = useState(""); // Nuevo filtro por seller_id
+  const [searchFilter, setSearchFilter] = useState(""); // Nuevo filtro para búsqueda en el backend
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  const [statusFilter, setStatusFilter] = useState(""); // Nuevo estado para status
+  const [statusFilter, setStatusFilter] = useState(""); // Filtro para status
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
 
@@ -50,7 +52,7 @@ const Page = () => {
     return `${year}-${month}-${day}`;
   }
 
-  // Redux query para obtener órdenes paginadas, ahora incluyendo el filtro de status
+  // Query para obtener órdenes paginadas, incluyendo los nuevos filtros
   const {
     data,
     error,
@@ -63,8 +65,10 @@ const Page = () => {
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
       customer_id,
+      seller_id, // se envía el seller_id
       sort: sortQuery,
       status: statusFilter || undefined,
+      search: searchFilter || undefined, // se envía el filtro de búsqueda
     },
     {
       refetchOnMountOrArgChange: true,
@@ -73,7 +77,7 @@ const Page = () => {
     }
   );
 
-  // Actualizar customer_id y refetch cuando cambie selectedClientId
+  // Actualizar customer_id cuando cambie selectedClientId
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
@@ -116,8 +120,10 @@ const Page = () => {
     startDate,
     endDate,
     customer_id,
+    seller_id,
     sortQuery,
     statusFilter,
+    searchFilter,
   ]);
 
   // Intersection Observer para scroll infinito
@@ -142,7 +148,7 @@ const Page = () => {
     };
   }, [hasMore, isLoading]);
 
-  // Reiniciar las fechas y reiniciar la paginación
+  // Reiniciar fechas y paginación
   const handleResetDate = () => {
     setEndDate(null);
     setStartDate(null);
@@ -220,7 +226,7 @@ const Page = () => {
         customer: customer
           ? `${customer.id} - ${customer.name}`
           : t("notFound"),
-        number: order.multisoft_id, // Si usas camelCase, quizá "multisoftId"
+        number: order.multisoft_id,
         date: order.date
           ? format(new Date(order.date), "dd/MM/yyyy HH:mm")
           : "N/A",
@@ -254,6 +260,7 @@ const Page = () => {
     setHasMore(true);
   };
 
+  // Header con filtros adicionales para fechas, status, seller_id y búsqueda
   const headerBody = {
     buttons: [
       {
@@ -264,7 +271,7 @@ const Page = () => {
     filters: [
       {
         content: (
-          <div>
+          <div className="flex items-center gap-2">
             <DatePicker
               selected={startDate}
               onChange={(date) => setStartDate(date)}
@@ -274,7 +281,6 @@ const Page = () => {
             />
             {startDate && (
               <button
-                className="-translate-y-1/2"
                 onClick={handleResetDate}
                 aria-label={t("clearDate")}
               >
@@ -310,6 +316,38 @@ const Page = () => {
           </select>
         ),
       },
+      {
+        content: (
+          <input
+            type="text"
+            value={seller_id}
+            onChange={(e) => {
+              setSeller_id(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            placeholder={t("sellerIdFilter")}
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
+      {
+        content: (
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => {
+              setSearchFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            placeholder={t("searchFilter")}
+            className="border border-gray-300 rounded p-2"
+          />
+        ),
+      },
     ],
     results: `${data?.total || 0} ${t("results")}`,
   };
@@ -338,10 +376,7 @@ const Page = () => {
       </div>
 
       <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>
-        <OrderDetail
-          order={currentOrder}
-          closeModal={closeDetailModal}
-        />
+        <OrderDetail order={currentOrder} closeModal={closeDetailModal} />
       </Modal>
     </PrivateRoute>
   );

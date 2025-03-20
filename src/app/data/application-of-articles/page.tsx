@@ -182,19 +182,6 @@ const Page = () => {
     const article = articlesData?.find((data) => data.id === item.article_id);
     return {
       key: `${index}`,
-      image: (
-        <div className="flex justify-center items-center">
-          {article?.images ? (
-            <img
-              src={article.images[0]}
-              alt={article.name}
-              className="h-10 w-auto object-contain"
-            />
-          ) : (
-            <span className="text-gray-400">{t("noImage")}</span>
-          )}
-        </div>
-      ),
       article: article?.name || t("notFound", { defaultValue: "Not found" }),
       brand: item?.brand || t("notFound", { defaultValue: "Not found" }),
       model: item?.model || t("notFound", { defaultValue: "Not found" }),
@@ -204,10 +191,6 @@ const Page = () => {
   });
 
   const tableHeader = [
-    {
-      component: <FaImage className="text-center text-xl" />,
-      key: "image",
-    },
     { name: t("article"), key: "article", important: true, sortable: true },
     { name: t("brand"), key: "brand", important: true, sortable: true },
     { name: t("model"), key: "model", important: true , sortable: true},

@@ -109,14 +109,14 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           path: "/data/payment-conditions",
         },
         { name: t("stock"), path: "/data/stock" },
-        {
-          name: t("branches"),
-          path: "/data/branches",
-        },
-        {
-          name: t("transports"),
-          path: "/data/transports",
-        },
+        // {
+        //   name: t("branches"),
+        //   path: "/data/branches",
+        // },
+        // {
+        //   name: t("transports"),
+        //   path: "/data/transports",
+        // },
         {
           name: t("sellers"),
           path: "/data/sellers",

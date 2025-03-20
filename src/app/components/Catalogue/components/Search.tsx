@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchArticlesQuery } from "@/redux/services/articlesApi";
 import CardSearch from "./CardSearch";
@@ -8,6 +9,7 @@ import ArticleDetails from "./Articles/components/ArticleDetails";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useTranslation } from "react-i18next";
+import { useCreateSearchMutation } from "@/redux/services/searchesApi";
 
 interface ArticleSearchResultsProps {
   query: string;
@@ -26,11 +28,25 @@ const ArticleSearchResults = ({
     id: selectedClientId || "",
   });
 
-  const { data: searchResults, error, isLoading } = useSearchArticlesQuery({ query, page: 1, limit: 6 });
+  const { data: searchResults, error, isLoading } = useSearchArticlesQuery({
+    query,
+    page: 1,
+    limit: 6,
+  });
   const { setSearch } = useFilters();
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+
+  // Hook para enviar un nuevo search si no hay resultados
+  const [createSearch] = useCreateSearchMutation();
+  // Flag para evitar enviar varias veces para la misma query
+  const [searchSent, setSearchSent] = useState(false);
+
+  // Reiniciamos el flag cuando la query cambia
+  useEffect(() => {
+    setSearchSent(false);
+  }, [query]);
 
   // Ref para el contenedor de la búsqueda
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,21 +71,20 @@ const ArticleSearchResults = ({
         handleRedirect(`/catalogue`);
       }
     };
-  
+
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
-  
 
   // Listener para detectar clics fuera del contenedor y del modal
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      // Verifica si el clic está fuera del contenedor de búsqueda y fuera del modal
       if (
         containerRef.current &&
         !containerRef.current.contains(target) &&
-        (!modalContentRef.current || !modalContentRef.current.contains(target))
+        (!modalContentRef.current ||
+          !modalContentRef.current.contains(target))
       ) {
         setSearchQuery("");
         setArticleId("");
@@ -78,7 +93,7 @@ const ArticleSearchResults = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setSearchQuery]);
+  }, [setSearchQuery, setArticleId]);
 
   const handleOpenModal = (id: string) => {
     if (!selectedClientId) {
@@ -92,8 +107,26 @@ const ArticleSearchResults = ({
 
   const closeModal = () => setModalOpen(false);
 
+  // Efecto para enviar un nuevo search si no hay resultados y no se ha enviado ya
+  useEffect(() => {
+    // Agregamos logs para ver los valores
+    console.log("useEffect createSearch:", { query, searchResults, isLoading, searchSent });
+    if (query && !isLoading && searchResults && searchResults.length === 0 && !searchSent) {
+      createSearch({ search: query, quantity: 1 })
+        .unwrap()
+        .then((res) => {
+          console.log("Search created:", res);
+        })
+        .catch((err) => {
+          console.error("Error creating search:", err);
+        });
+      setSearchSent(true);
+    }
+  }, [query, searchResults, isLoading, searchSent, createSearch]);
+
+  // Si no hay query, renderizamos un contenedor vacío para mantener el orden de los Hooks
   if (!query) {
-    return null;
+    return <div />;
   }
 
   return (
@@ -138,7 +171,9 @@ const ArticleSearchResults = ({
         </div>
       )}
 
-      {error && <p className="text-red-500">{t("errorLoadingArticles")}</p>}
+      {error && (
+        <p className="text-red-500">{t("errorLoadingArticles")}</p>
+      )}
       {searchResults && searchResults.length === 0 && (
         <p className="text-gray-300">{t("noResultsFound")}</p>
       )}
@@ -167,7 +202,6 @@ const ArticleSearchResults = ({
       )}
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {/* Envuelve el contenido del modal y asigna el ref */}
         <div ref={modalContentRef}>
           <ArticleDetails closeModal={closeModal} />
         </div>
