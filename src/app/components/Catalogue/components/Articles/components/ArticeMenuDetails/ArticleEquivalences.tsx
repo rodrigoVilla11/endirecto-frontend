@@ -32,8 +32,6 @@ const ArticleEquivalence = ({
       <table className="min-w-full bg-white">
         <thead>
           <tr className="text-xs">
-            <th className="py-2 px-4 bg-gray-200 text-left">{t("articleId")}</th>
-
             <th className="py-2 px-4 bg-gray-200 text-left">{t("brand")}</th>
             <th className="py-2 px-4 bg-gray-200 text-left">
               {t("equivalenceCode")}
@@ -45,7 +43,6 @@ const ArticleEquivalence = ({
             Array.isArray(data) &&
             data.map((equivalence: any, index) => (
               <tr key={index}>
-                <td className="border-t py-2 px-4">{articleId}</td>
                 <td className="border-t py-2 px-4">{equivalence.brand}</td>
                 <td className="border-t py-2 px-4 max-w-44">
                   {equivalence.code}

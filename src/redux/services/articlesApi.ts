@@ -94,6 +94,9 @@ export const articlesApi = createApi({
         tags?: string;
         stock?: string;
         vehicle_brand?: string;
+        engine?: string;
+        model?: string;
+        year?: string;
         sort?: string;
         priceListId?: string; // Ahora es obligatorio porque el backend lo requiere
         articleId?: string; // Permite filtrar por uno o varios IDs
@@ -108,6 +111,9 @@ export const articlesApi = createApi({
         tags,
         stock,
         vehicle_brand,
+        engine,
+        model,
+        year,
         sort,
         priceListId,
         articleId,
@@ -121,21 +127,31 @@ export const articlesApi = createApi({
         if (query) params.append("q", query);
         if (brand) params.append("brand", brand);
         if (item) params.append("item", item);
-        if (tags) params.append("tag", tags);
+        if (tags && Array.isArray(tags) && tags.length > 0) {
+          params.append("tag", tags.join(","));
+        } else if (typeof tags === "string" && tags.trim() !== "") {
+          params.append("tag", tags);
+        }
         if (stock) params.append("sort", stock);
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
+        if (engine) params.append("engine", engine);
+        if (model) params.append("model", model);
+        if (year) params.append("year", year);
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
-        
+
+        console.log(`/articles/?${params.toString()}`)
         return `/articles/?${params.toString()}`;
       },
-      transformResponse: (response: {
+      transformResponse: (
+        response: any
+      ): {
         totalItems: number;
         totalPages: number;
         currentPage: number;
         perPage: number;
         articles: Article[];
-      }) => {
+      } => {
         if (!response || !response.articles || response.articles.length === 0) {
           console.error("No se recibieron artículos en la respuesta");
           return {
@@ -149,6 +165,7 @@ export const articlesApi = createApi({
         return response;
       },
     }),
+
     updateArticle: builder.mutation<Article, UpdateArticlesPayload>({
       query: ({ id, ...updatedArticle }) => ({
         url: `/articles/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -183,19 +200,22 @@ export const articlesApi = createApi({
     // Nuevo endpoint para buscar artículos por query y obtener solo id e images
     searchArticles: builder.query<
       Pick<Article, "id" | "images">[],
-      { query: string, page: number, limit: number }
+      { query: string; page: number; limit: number }
     >({
       query: ({ query, page, limit }) =>
-        `/articles/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response:  Pick<Article, "id" | "images">[] ) => {
+        `/articles/search?query=${encodeURIComponent(
+          query
+        )}&page=${page}&limit=${limit}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      transformResponse: (response: Pick<Article, "id" | "images">[]) => {
         if (!response) {
-          console.error("No se recibieron datos en la respuesta de searchArticles");
+          console.error(
+            "No se recibieron datos en la respuesta de searchArticles"
+          );
           return [];
         }
         return response;
       },
     }),
-    
   }),
 });
 

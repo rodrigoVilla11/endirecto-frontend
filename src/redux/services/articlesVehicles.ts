@@ -6,16 +6,16 @@ interface ArticlesVehiclesPagResponse {
 }
 
 export type ArticleVehicle = {
-  id: string; // ID
-  brand: string; // Marca vehículo
-  model: string; // Modelo vehículo
-  engine?: string; // Motor vehículo
-  year?: string; // Año vehículo
-  year_from?: number; // Año desde vehículo
-  year_to?: number; // Año hasta vehículo
-  article_id: string; // Artículo ID
-  articles_group_id: string; // Artículo grupo ID
-  deleted_at: Date; // Fecha de eliminación
+  id: string;
+  brand: string;
+  model: string;
+  engine?: string;
+  year?: string;
+  year_from?: number;
+  year_to?: number;
+  article_id: string;
+  articles_group_id: string;
+  deleted_at: Date;
 };
 
 export type CreateArticleVehiclePayload = {
@@ -27,23 +27,33 @@ export type CreateArticleVehiclePayload = {
   year: string;
 };
 
+// Definición de tipos para cada consulta separada
+export interface VehicleBrandsResponse {
+  brands: string[];
+}
+
+export interface VehicleModelsResponse {
+  models: string[];
+}
+
+export interface VehicleEnginesResponse {
+  engines: string[];
+}
+
+export interface VehicleYearsResponse {
+  years: string[];
+}
+
 export const articlesVehiclesApi = createApi({
   reducerPath: "articlesVehiclesApi",
   baseQuery: fetchBaseQuery({
     baseUrl:
-      process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+      process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getArticlesVehicles: builder.query<ArticleVehicle[], null>({
       query: () =>
         `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      transformResponse: (response: ArticleVehicle[]) => {
-        if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
-          return [];
-        }
-        return response;
-      },
     }),
     getArticlesVehiclesPag: builder.query<
       ArticlesVehiclesPagResponse,
@@ -52,23 +62,39 @@ export const articlesVehiclesApi = createApi({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
         return `/articles-vehicles?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
-      transformResponse: (response: any): ArticlesVehiclesPagResponse => {
-        // Asumiendo que el backend retorna la estructura correcta
-        return {
-          vehicles: response.vehicles,
-          total: response.total,
-        };
-      },
+      transformResponse: (response: any): ArticlesVehiclesPagResponse => ({
+        vehicles: response.vehicles,
+        total: response.total,
+      }),
     }),
     getArticleVehicleById: builder.query<ArticleVehicle, { id: string }>({
       query: ({ id }) => `/articles-vehicles/${id}`,
     }),
-    getArticleVehicleBrands: builder.query<any, null>({
-      query: () => `/articles-vehicles/unique-brands?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+
+    // ✅ Obtener solo marcas de vehículos
+    getArticleVehicleBrands: builder.query<string[], null>({
+      query: () => `/articles-vehicles/brands?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+
+    // ✅ Obtener modelos según la marca seleccionada
+    getArticleVehicleModels: builder.query<string[], { brand: string }>({
+      query: ({ brand }) => `/articles-vehicles/models?brand=${brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
+
+    // ✅ Obtener motores según la marca seleccionada
+    getArticleVehicleEngines: builder.query<string[], { brand: string }>({
+      query: ({ brand }) => `/articles-vehicles/engines?brand=${brand}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
+
+    // ✅ Obtener años según la marca y modelo seleccionados
+    getArticleVehicleYears: builder.query<string[], { brand: string; model: string }>({
+      query: ({ brand, model }) => `/articles-vehicles/years?brand=${brand}&model=${model}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
+
     countArticleVehicle: builder.query<number, null>({
       query: () => `/articles-vehicles/count?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+
     createArticleVehicle: builder.mutation<ArticleVehicle, CreateArticleVehiclePayload>({
       query: (newArticleVehicle) => ({
         url: `/articles-vehicles?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -76,6 +102,7 @@ export const articlesVehiclesApi = createApi({
         body: newArticleVehicle,
       }),
     }),
+
     updateArticleVehicle: builder.mutation<
       ArticleVehicle,
       { id: string } & Partial<CreateArticleVehiclePayload>
@@ -86,12 +113,14 @@ export const articlesVehiclesApi = createApi({
         body: patch,
       }),
     }),
+
     deleteArticleVehicle: builder.mutation<{ success: boolean }, { id: string }>({
       query: ({ id }) => ({
         url: `/articles-vehicles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "DELETE",
       }),
     }),
+
     importArticleVehiclesExcel: builder.mutation<
       { totalProcessed: number; successful: number; errors: any[] },
       FormData
@@ -102,6 +131,7 @@ export const articlesVehiclesApi = createApi({
         body: formData,
       }),
     }),
+
     exportArticleVehiclesExcel: builder.query<Blob, void>({
       query: () => ({
         url: `/articles-vehicles/export?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -125,5 +155,8 @@ export const {
   useImportArticleVehiclesExcelMutation,
   useExportArticleVehiclesExcelQuery,
   useLazyExportArticleVehiclesExcelQuery,
-  useGetArticleVehicleBrandsQuery
+  useGetArticleVehicleBrandsQuery,  // ✅ Obtener marcas
+  useGetArticleVehicleModelsQuery,  // ✅ Obtener modelos según marca
+  useGetArticleVehicleEnginesQuery, // ✅ Obtener motores según marca
+  useGetArticleVehicleYearsQuery,   // ✅ Obtener años según marca y modelo
 } = articlesVehiclesApi;

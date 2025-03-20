@@ -28,7 +28,7 @@ const SliderLogos = () => {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error loading logos</p>;
   if (!logos || logos.length === 0) {
-    return <p>No logos available</p>;
+    return <p></p>;
   }
 
   return (

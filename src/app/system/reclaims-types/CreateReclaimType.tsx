@@ -1,12 +1,15 @@
 "use client";
 import { useCreateReclaimTypeMutation } from "@/redux/services/reclaimsTypes";
 import React, { useState } from "react";
+import { FaXmark } from "react-icons/fa6";
 
 type CreateReclaimTypeComponentProps = {
   closeModal: () => void;
 };
 
-const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({ closeModal }) => {
+const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
+  closeModal,
+}) => {
   const [id, setId] = useState("");
   const [categoria, setCategoria] = useState("STOCK");
   const [tipo, setTipo] = useState("");
@@ -18,11 +21,17 @@ const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
     e.preventDefault();
     // Para categorías diferentes a STOCK se requiere un "tipo"
     if (categoria !== "STOCK" && !tipo) {
-      setError(`Para la categoría ${categoria} se requiere un "tipo" de reclamo.`);
+      setError(
+        `Para la categoría ${categoria} se requiere un "tipo" de reclamo.`
+      );
       return;
     }
     try {
-      await createReclaimType({ id, categoria, tipo: tipo || undefined }).unwrap();
+      await createReclaimType({
+        id,
+        categoria,
+        tipo: tipo || undefined,
+      }).unwrap();
       closeModal();
     } catch (err) {
       setError("Error al crear el tipo de reclamo.");
@@ -32,11 +41,22 @@ const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
 
   return (
     <div className="p-4">
+      <div className="absolute border-b sticky top-0 right-0 bg-white z-10">
+        <button
+          onClick={closeModal}
+          className=" hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <FaXmark className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
       <h2 className="text-xl font-bold mb-4">Crear Tipo de Reclamo</h2>
       {error && <p className="text-red-500 mb-2">{error}</p>}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="id" className="block">ID:</label>
+          <label htmlFor="id" className="block">
+            ID:
+          </label>
           <input
             id="id"
             type="text"
@@ -47,7 +67,9 @@ const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="categoria" className="block">Categoría:</label>
+          <label htmlFor="categoria" className="block">
+            Categoría:
+          </label>
           <select
             id="categoria"
             value={categoria}
@@ -65,7 +87,9 @@ const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
         </div>
         {categoria !== "STOCK" && (
           <div>
-            <label htmlFor="tipo" className="block">Tipo:</label>
+            <label htmlFor="tipo" className="block">
+              Tipo:
+            </label>
             <input
               id="tipo"
               type="text"
@@ -76,7 +100,11 @@ const CreateReclaimTypeComponent: React.FC<CreateReclaimTypeComponentProps> = ({
             />
           </div>
         )}
-        <button type="submit" disabled={isLoading} className="bg-blue-500 text-white p-2 rounded">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="bg-blue-500 text-white p-2 rounded"
+        >
           {isLoading ? "Creando..." : "Crear"}
         </button>
       </form>

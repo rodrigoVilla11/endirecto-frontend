@@ -120,14 +120,14 @@ const CataloguePage = () => {
           >
             <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
           </button>
-          <button
+          {/* <button
             onClick={() => toggleShowArticles("list")}
             className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
               showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
             } text-white rounded`}
           >
             <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-          </button>
+          </button> */}
         </div>
       )}
 
@@ -157,14 +157,14 @@ const CataloguePage = () => {
                 >
                   <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
                 </button>
-                <button
+                {/* <button
                   onClick={() => toggleShowArticles("list")}
                   className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
                     showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
                   } text-white rounded`}
                 >
                   <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-                </button>
+                </button> */}
               </div>
             </div>
           )}

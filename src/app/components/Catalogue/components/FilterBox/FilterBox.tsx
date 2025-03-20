@@ -36,6 +36,12 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     vehicleBrand,
     setSearch,
     search,
+    setModel,
+    model,
+    setEngine,
+    engine,
+    setYear,
+    year,
   } = useFilters();
   const { isMobile } = useMobile();
 
@@ -102,7 +108,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                       {tags}
                       <button
                         className="ml-2 text-red-500 opacity-90 hover:opacity-100"
-                        onClick={() => setTags([])}
+                        onClick={() => setTags("")}
                       >
                         <FaTrashCan className="w-3 h-3" />
                       </button>
@@ -143,15 +149,21 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                   )}
                   {vehicleBrand && vehicleBrand !== "" && (
                     <div className="bg-gray-100 rounded-full py-1 px-3 text-xs relative group">
-                      {vehicleBrand}
+                      {vehicleBrand}, {model}, {engine}, {year}
                       <button
                         className="ml-2 text-red-500 opacity-90 hover:opacity-100"
-                        onClick={() => setVehicleBrand("")}
+                        onClick={() => {
+                          setVehicleBrand("");
+                          setEngine("");
+                          setModel("");
+                          setYear("");
+                        }}
                       >
                         <FaTrashCan className="w-3 h-3" />
                       </button>
                     </div>
                   )}
+
                   {stock && stock !== "" && (
                     <div className="bg-gray-100 rounded-full py-1 px-3 text-xs relative group">
                       {formattedStock}
@@ -176,8 +188,6 @@ const FilterBox = ({ isVisible, onClose }: any) => {
               <Brands onChange={setBrand} brand={brand} />
               <Items onChange={setItem} item={item} />
               <VehiclesBrands
-                onChange={setVehicleBrand}
-                vehicleBrand={vehicleBrand}
               />
             </div>
           </div>

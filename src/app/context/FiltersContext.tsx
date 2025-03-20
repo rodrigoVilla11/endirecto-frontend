@@ -14,8 +14,8 @@ interface FiltersContextProps {
   setCart: (value: string) => void;
   showPurchasePrice: boolean;
   setShowPurchasePrice: (value: boolean) => void;
-  tags: string[];
-  setTags: (value: string[]) => void;
+  tags: string;
+  setTags: (value: string) => void;
   stock: string;
   setStock: (value: string) => void;
   brand: string;
@@ -24,6 +24,12 @@ interface FiltersContextProps {
   setItem: (value: string) => void;
   vehicleBrand: string;
   setVehicleBrand: (value: string) => void;
+  engine: string;
+  setEngine: (value: string) => void;
+  model: string;
+  setModel: (value: string) => void;
+  year: string;
+  setYear: (value: string) => void;
   search: string;
   setSearch: (value: string) => void;
 }
@@ -38,11 +44,14 @@ export const FiltersProvider: React.FC<{ children: ReactNode }> = ({
   const [order, setOrder] = useState("");
   const [cart, setCart] = useState("");
   const [showPurchasePrice, setShowPurchasePrice] = useState(true);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState("");
   const [stock, setStock] = useState("");
   const [brand, setBrand] = useState("");
   const [item, setItem] = useState("");
   const [vehicleBrand, setVehicleBrand] = useState("");
+  const [engine, setEngine] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
   const [search, setSearch] = useState("");
 
   // Memorizamos el valor para evitar renders innecesarios
@@ -64,10 +73,16 @@ export const FiltersProvider: React.FC<{ children: ReactNode }> = ({
       setItem,
       vehicleBrand,
       setVehicleBrand,
+      engine,
+      setEngine,
+      model,
+      setModel,
+      year,
+      setYear,
       search,
       setSearch,
     }),
-    [order, cart, showPurchasePrice, tags, stock, brand, item, vehicleBrand, search]
+    [order, cart, showPurchasePrice, tags, stock, brand, item, vehicleBrand, engine, model, year, search]
   );
 
   return (

@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import Image from "next/image";
 import CardArticles from "./components/CardArticles";
 import ListArticle from "./components/ListArticle";
@@ -6,6 +12,7 @@ import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useFilters } from "@/app/context/FiltersContext";
 
 interface ArticlesProps {
   brand?: string;
@@ -38,22 +45,42 @@ const Articles: React.FC<ArticlesProps> = ({
   const { selectedClientId } = useClient();
   const { isOpen } = useSideMenu();
 
+  // Extraemos los nuevos filtros desde el contexto
+  const { engine, model, year } = useFilters();
+
   // Ref para manejar el IntersectionObserver
   const observerRef = useRef<IntersectionObserver | null>(null);
   const prevFiltersRef = useRef<string>("");
 
-  const filters = useMemo(
-    () => ({
-      brand,
-      item,
-      vehicle_brand: vehicleBrand,
-      stock,
-      tags,
-      query,
-      sort: order,
-    }),
-    [brand, item, vehicleBrand, stock, tags, query, order]
-  );
+  // Agregamos engine, model y year a los filtros
+  const filters = useMemo(() => {
+    const f: Record<string, any> = {};
+    if (brand) f.brand = brand;
+    if (item) f.item = item;
+    // Solo agregamos vehicle_brand si tiene contenido (no es una cadena vacía)
+    if (vehicleBrand && vehicleBrand.trim() !== "") {
+      f.vehicle_brand = vehicleBrand;
+    }
+    if (stock) f.stock = stock;
+    if (tags) f.tags = tags;
+    if (query) f.query = query;
+    if (order) f.sort = order;
+    if (engine) f.engine = engine;
+    if (model) f.model = model;
+    if (year) f.year = year;
+    return f;
+  }, [
+    brand,
+    item,
+    vehicleBrand,
+    stock,
+    tags,
+    query,
+    order,
+    engine,
+    model,
+    year,
+  ]);
 
   const filtersString = JSON.stringify(filters);
 
@@ -62,12 +89,20 @@ const Articles: React.FC<ArticlesProps> = ({
     { skip: !selectedClientId }
   );
 
-  const { data, isLoading, isFetching } = useGetArticlesQuery({
-    page,
-    limit: 20,
-    priceListId: customer?.price_list_id,
-    ...filters,
-  });
+  console.log("Filters changed:", filters);
+
+  const skipArticles = !customer?.price_list_id;
+  const { data, isLoading, isFetching } = useGetArticlesQuery(
+    {
+      page,
+      limit: 20,
+      priceListId: customer?.price_list_id,
+      ...filters,
+    },
+    { skip: skipArticles, refetchOnMountOrArgChange: true }
+  );
+
+  console.log(data);
 
   // Reinicia los artículos si los filtros cambian
   useEffect(() => {
@@ -131,7 +166,6 @@ const Articles: React.FC<ArticlesProps> = ({
       {/* Pantalla de carga inicial con logo */}
       {showLoading && page === 1 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-50 p-10">
-          {/* Se usa priority para asegurar su carga */}
           <Image
             src="/dma.png"
             alt="Loading..."
@@ -185,30 +219,32 @@ const Articles: React.FC<ArticlesProps> = ({
             </div>
           ) : (
             <div className="w-full max-w-4xl mx-auto p-4">
-            {items.map((article, index) => {
-              const isLast = index === items.length - 1;
-              return (
-                <div
-                  key={index}
-                  ref={isLast ? lastArticleRef : null}
-                  className="mb-4"
-                >
-                  <ListArticle
-                    article={article}
-                    showPurchasePrice={showPurchasePrice}
-                  />
-                </div>
-              );
-            })}
-          </div>
-          
+              {items.map((article, index) => {
+                const isLast = index === items.length - 1;
+                return (
+                  <div
+                    key={index}
+                    ref={isLast ? lastArticleRef : null}
+                    className="mb-4"
+                  >
+                    <ListArticle
+                      article={article}
+                      showPurchasePrice={showPurchasePrice}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {/* Indicador de carga para artículos adicionales */}
           {isFetching && page > 1 && (
             <div className="h-20 flex items-center justify-center w-full">
               <div className="flex justify-center items-center">
-                <svg className="animate-spin h-6 w-6 text-black" viewBox="0 0 24 24">
+                <svg
+                  className="animate-spin h-6 w-6 text-black"
+                  viewBox="0 0 24 24"
+                >
                   <circle
                     className="opacity-25"
                     cx="12"

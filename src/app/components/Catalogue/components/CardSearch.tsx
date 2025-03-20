@@ -23,6 +23,11 @@ const CardSearch = ({ article, setSearchQuery, handleOpenModal }: any) => {
     >
       {/* Contenido del artículo */}
       <div className="relative flex flex-col justify-center items-center shadow-lg bg-white cursor-pointer rounded-lg hover:shadow-xl transition-all duration-300">
+        {article.foundEquivalence && (
+          <div className="absolute top-32 left-2 bg-gray-300 text-black text-xs font-bold px-1 py-0.5 rounded z-20">
+            EQUIVALENCIA
+          </div>
+        )}
         <img
           src={article.images ? article.images[0] : ""}
           alt={article.name}

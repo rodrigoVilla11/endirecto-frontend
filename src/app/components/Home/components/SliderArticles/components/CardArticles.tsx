@@ -22,34 +22,48 @@ const CardArticles = ({ article }: any) => {
   const { t } = useTranslation();
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
-  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] =
-    useState(false);
+  const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] = useState(false);
+  const [preventRedirect, setPreventRedirect] = useState(false);
 
   const openEquivalencesModal = (id: string) => {
     setCurrentArticleId(id);
     setEquivalencesModalOpen(true);
+    setPreventRedirect(true);
   };
 
-  const closeEquivalencesModal = () => {
+  const closeEquivalencesModal = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setEquivalencesModalOpen(false);
     setCurrentArticleId(null);
+    
+    // Use setTimeout to reset preventRedirect flag after the click event has fully propagated
+    setTimeout(() => {
+      setPreventRedirect(false);
+    }, 100);
   };
 
   const openArticleVehicleModal = (id: string) => {
     setCurrentArticleId(id);
     setArticleVehicleModalOpen(true);
+    setPreventRedirect(true);
   };
 
-  const closeArticleVehicleModal = () => {
+  const closeArticleVehicleModal = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setArticleVehicleModalOpen(false);
     setCurrentArticleId(null);
+    
+    // Use setTimeout to reset preventRedirect flag after the click event has fully propagated
+    setTimeout(() => {
+      setPreventRedirect(false);
+    }, 100);
   };
+  
   const { setArticleId } = useArticleId();
-
   const router = useRouter();
 
   const handleRedirect = (path: string) => {
-    if (path) {
+    if (path && !preventRedirect) {
       setArticleId(article.id);
       router.push(path);
     }
@@ -60,8 +74,8 @@ const CardArticles = ({ article }: any) => {
       className="flex flex-col justify-between h-[400px] w-44 sm:w-56 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
       onClick={
         isAuthenticated
-          ? () => handleRedirect(`/catalogue`)
-          : () => handleRedirect(`/catalogues`)
+          ? () => handleRedirect("/catalogue")
+          : () => handleRedirect("/catalogues")
       }
     >
       {/* Top Icons */}
@@ -133,7 +147,10 @@ const CardArticles = ({ article }: any) => {
           />
         )}
       </div>
-      <Modal isOpen={isEquivalencesModalOpen} onClose={closeEquivalencesModal}>
+      <Modal 
+        isOpen={isEquivalencesModalOpen} 
+        onClose={closeEquivalencesModal}
+      >
         {currentArticleId && (
           <ArticleEquivalence
             articleId={currentArticleId}
