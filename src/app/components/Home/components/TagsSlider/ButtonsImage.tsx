@@ -16,7 +16,7 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
   const handleRedirect = (path: string, id: string) => {
     if (path) {
       router.push(path);
-      setTags([id]);
+      setTags(id);
     }
   };
 
