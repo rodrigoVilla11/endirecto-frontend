@@ -85,7 +85,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
 
           <Brands onChange={setBrand} brand={brand} />
           <Items onChange={setItem} item={item} />
-          <VehiclesBrands onChange={setVehicleBrand} vehicleBrand={vehicleBrand} />
+          <VehiclesBrands />
         </div>
       )}
     </>
