@@ -26,18 +26,29 @@ const Page = () => {
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // Referencias para Observer y Loading
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Queries de Redux
   const { data: branchData } = useGetBranchesQuery(null);
   // Se espera que useGetStockPagQuery retorne { stocks, total }
-  const { data, error, isLoading: isQueryLoading, refetch } = useGetStockPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetStockPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      sort: sortQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
   // Debounced search para optimizar la búsqueda
   const debouncedSearch = debounce((query: string) => {
@@ -47,57 +58,45 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para cargar la data (infinite scroll y búsquedas)
-  useEffect(() => {
-    const loadStock = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          // Se espera que el resultado tenga la forma: { stocks, total }
-          const result = await refetch().unwrap();
-          const newStock = Array.isArray(result.stocks) ? result.stocks : [];
-          setTotalStock(result.total || 0);
-          if (page === 1) {
-            setStock(newStock);
-          } else {
-            setStock((prev) => [...prev, ...newStock]);
-          }
-          setHasMore(newStock.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading stock:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadStock();
-  }, [page, searchQuery, sortQuery, refetch, isLoading]);
-
-  // Intersection Observer para el infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
-
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
-
+   // ======================================================
+   // Efectos
+   // ======================================================
+   // Actualizar lista de artículos y evitar duplicados
+   useEffect(() => {
+     if (data?.stocks) {
+       setStock((prev) => {
+         if (page === 1) {
+           return data.stocks;
+         }
+         const newArticles = data.stocks.filter(
+           (article) => !prev.some((item) => item.id === article.id)
+         );
+         return [...prev, ...newArticles];
+       });
+       setHasMore(data.stocks.length === ITEMS_PER_PAGE);
+     }
+   }, [data?.stocks, page]);
+ 
+   // ======================================================
+   // Infinite Scroll (Intersection Observer)
+   // ======================================================
+   const lastArticleRef = useCallback(
+     (node: HTMLDivElement | null) => {
+       if (observerRef.current) observerRef.current.disconnect();
+ 
+       observerRef.current = new IntersectionObserver(
+         (entries) => {
+           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+             setPage((prev) => prev + 1);
+           }
+         },
+         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+       );
+ 
+       if (node) observerRef.current.observe(node);
+     },
+     [hasMore, isQueryLoading]
+   );
   // Reset de búsqueda
   const handleResetSearch = () => {
     setSearchQuery("");
@@ -141,8 +140,18 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("table.id"), key: "id", important: true },
-    { name: t("table.article"), key: "article_id", important: true, sortable: true  },
-    { name: t("table.quantity"), key: "quantity", important: true, sortable: true  },
+    {
+      name: t("table.article"),
+      key: "article_id",
+      important: true,
+      sortable: true,
+    },
+    {
+      name: t("table.quantity"),
+      key: "quantity",
+      important: true,
+      sortable: true,
+    },
     { name: t("table.branch"), key: "branch" },
     { name: t("table.nextEntry"), key: "quantity_next" },
     { name: t("table.dateNextEntry"), key: "quantity_next_date" },
@@ -176,7 +185,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("page.results", { count: totalStock }),
+    results: t("page.results", { count: data?.total }),
   };
 
   if (isQueryLoading && stock.length === 0) {
@@ -188,9 +197,7 @@ const Page = () => {
   }
   if (error) {
     return (
-      <div className="p-4 text-red-500">
-        {t("page.errorLoadingStock")}
-      </div>
+      <div className="p-4 text-red-500">{t("page.errorLoadingStock")}</div>
     );
   }
 
@@ -200,7 +207,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("page.stockTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && stock.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : stock.length === 0 ? (
@@ -217,13 +224,13 @@ const Page = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

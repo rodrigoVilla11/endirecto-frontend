@@ -20,73 +20,67 @@ const Page = () => {
   const [limit] = useState(ITEMS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
   const [technicalDetails, setTechnicalDetails] = useState<any[]>([]);
-  const [totalTechnicalDetails, setTotalTechnicalDetails] = useState<number>(0);
   const [hasMore, setHasMore] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   // Referencia para el Intersection Observer
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+ 
 
   // Se espera que useGetTechnicalDetailsQuery retorne un objeto con { technicalDetails, total }
-  const { data, error, isLoading, refetch } = useGetTechnicalDetailsQuery({
+  const { data, error, isLoading: isQueryLoading, refetch } = useGetTechnicalDetailsQuery({
     page,
     limit,
     query: searchQuery,
+  },
+  {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
   });
 
-  // Efecto para cargar la data (infinite scroll y búsqueda)
-  useEffect(() => {
-    const loadTechnicalDetails = async () => {
-      if (!isFetching) {
-        setIsFetching(true);
-        try {
-          // Se espera que el resultado tenga la forma: 
-          // { technicalDetails: TechnicalDetail[], total: number }
-          const result = await refetch().unwrap();
-          const fetched = result || { technicalDetails: [], total: 0 };
-          const newItems = Array.isArray(fetched.technicalDetails)
-            ? fetched.technicalDetails
-            : [];
-          setTotalTechnicalDetails(fetched.total || 0);
-          if (page === 1) {
-            setTechnicalDetails(newItems);
-          } else {
-            setTechnicalDetails((prev) => [...prev, ...newItems]);
-          }
-          setHasMore(newItems.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error fetching technical details:", error);
-        } finally {
-          setIsFetching(false);
-        }
-      }
-    };
-
-    loadTechnicalDetails();
-  }, [page, searchQuery, refetch, isFetching]);
-
-  // Intersection Observer para el infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !isFetching) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isFetching]);
-
+  // ======================================================
+   // Efectos
+   // ======================================================
+   // Actualizar lista de artículos y evitar duplicados
+   useEffect(() => {
+     if (data?.technicalDetails) {
+       setTechnicalDetails((prev) => {
+         if (page === 1) {
+           return data.technicalDetails;
+         }
+         const newArticles = data.technicalDetails.filter(
+           (article) => !prev.some((item) => item.id === article.id)
+         );
+         return [...prev, ...newArticles];
+       });
+       setHasMore(data.technicalDetails.length === ITEMS_PER_PAGE);
+     }
+   }, [data?.technicalDetails, page]);
+ 
+   // ======================================================
+   // Infinite Scroll (Intersection Observer)
+   // ======================================================
+   const lastArticleRef = useCallback(
+     (node: HTMLDivElement | null) => {
+       if (observerRef.current) observerRef.current.disconnect();
+ 
+       observerRef.current = new IntersectionObserver(
+         (entries) => {
+           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+             setPage((prev) => prev + 1);
+           }
+         },
+         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+       );
+ 
+       if (node) observerRef.current.observe(node);
+     },
+     [hasMore, isQueryLoading]
+   );
+ 
   // Handler para resetear la búsqueda
   const handleResetSearch = () => {
     setSearchQuery("");
@@ -150,7 +144,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("page.results", { count: totalTechnicalDetails }),
+    results: t("page.results", { count: data?.total }),
   };
 
   if (isLoading && technicalDetails.length === 0) {
@@ -174,7 +168,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("page.technicalDetailsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateTechnicalDetailsModal closeModal={closeCreateModal} />
         </Modal>

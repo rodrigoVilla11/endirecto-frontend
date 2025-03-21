@@ -1,29 +1,41 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import Header from "@/app/components/components/Header";
 import Input from "@/app/components/components/Input";
-import Modal from "@/app/components/components/Modal";
 import Table from "@/app/components/components/Table";
+import Modal from "@/app/components/components/Modal";
+import PrivateRoute from "@/app/context/PrivateRoutes";
+import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
+
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import {
   useCountUsersQuery,
   useGetUsersPagQuery,
 } from "@/redux/services/usersApi";
-import { FaPlus, FaPencil, FaTrashCan } from "react-icons/fa6";
-import UpdateUserComponent from "./UpdateUser";
-import DeleteUserComponent from "./DeleteUser";
-import CreateUserComponent from "./CreateUser";
-import PrivateRoute from "@/app/context/PrivateRoutes";
-import debounce from "@/app/context/debounce";
-import { FaTimes } from "react-icons/fa";
+
+import { FaPlus, FaTimes } from "react-icons/fa";
 import { GoPencil } from "react-icons/go";
 import { IoIosTrash } from "react-icons/io";
+
+import CreateUserComponent from "./CreateUser";
+import UpdateUserComponent from "./UpdateUser";
+import DeleteUserComponent from "./DeleteUser";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
-  // Estados básicos
+  const { t } = useTranslation();
+
+  // ======================================================
+  // Estados Principales
+  // ======================================================
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -32,17 +44,20 @@ const Page = () => {
   const [sortField, setSortField] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "">("");
 
-  // Estados para modales
+  // Estados para modales y usuario seleccionado
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Referencias
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  // ======================================================
+  // Referencias (Infinite Scroll)
+  // ======================================================
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Queries de Redux
+  // ======================================================
+  // Consultas a APIs (Redux)
+  // ======================================================
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: countUsersData } = useCountUsersQuery(null);
   const {
@@ -57,208 +72,227 @@ const Page = () => {
     sort: sortField && sortOrder ? `${sortField}:${sortOrder}` : "",
   });
 
-  // Función para manejar cuando se hace click en un header
-  const handleSort = (field: string) => {
-    // Si el campo es el mismo, togglear entre asc y desc
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      // Si es uno diferente, lo seteamos a asc por defecto
-      setSortField(field);
-      setSortOrder("asc");
-    }
-    // Reiniciar la paginación, etc
-    setPage(1);
-    setUsers([]);
-    setHasMore(true);
-  };
+  // ======================================================
+  // Handlers y Funciones de Utilidad
+  // ======================================================
 
-  // Búsqueda con debounce
-  const debouncedSearch = debounce((query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-    setUsers([]);
-    setHasMore(true);
-  }, 100);
-
-  // Efecto para cargar usuarios
-  useEffect(() => {
-    const loadUsers = async () => {
-      if (!isLoading && data && branchData) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newUsers =
-            result?.map((user: any) => {
-              const branch = branchData?.find(
-                (data) => data.id === user.branch
-              );
-              return {
-                key: user._id,
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                branch: branch?.name || "No Branch",
-                zone: user.zone || "No Zone",
-                edit: (
-                  <div className="flex justify-center items-center ">
-                    <GoPencil
-                      className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400  p-1.5 rounded-sm"
-                      onClick={() => handleModalOpen("update", user._id)}
-                    />
-                  </div>
-                ),
-                erase: (
-                  <div className="flex justify-center items-center">
-                    <IoIosTrash
-                      className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400  p-1.5 rounded-sm"
-                      onClick={() => handleModalOpen("delete", user._id)}
-                    />
-                  </div>
-                ),
-              };
-            }) || [];
-
-          if (page === 1) {
-            setUsers(newUsers);
-          } else {
-            // Filtrar duplicados
-            const uniqueUsers = newUsers.filter(
-              (newUser: any) =>
-                !users.some((existingUser) => existingUser.id === newUser.id)
-            );
-            setUsers((prev) => [...prev, ...uniqueUsers]);
-          }
-
-          setHasMore(newUsers.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading users:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadUsers();
-  }, [page, searchQuery, data, branchData, isLoading, refetch, users]);
-
-  // Intersection Observer para scroll infinito
-  useEffect(() => {
-    // Evitamos observar si estamos en la página 1,
-    // porque eso dispara la carga del page=2 innecesariamente
-    if (page === 1) return;
-  
-    const observer = new IntersectionObserver((entries) => {
-      const firstEntry = entries[0];
-      if (firstEntry.isIntersecting && hasMore && !isLoading) {
-        setPage((prev) => prev + 1);
-      }
-    }, { threshold: 0.5 });
-  
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
-  
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading, page]);
-  
-
-  // Manejadores de modales
-  const handleModalOpen = (
-    type: "create" | "update" | "delete",
-    id?: string
-  ) => {
-    if (type === "create") {
-      setCreateModalOpen(true);
-      return;
-    }
-
-    if (id) {
-      const encodedId = encodeURIComponent(id);
-      setCurrentUserId(encodedId);
-      if (type === "update") {
-        setUpdateModalOpen(true);
+  // Ordenar la tabla: si se hace click en el mismo campo se alterna la dirección;
+  // si se selecciona otro campo, se inicia en asc.
+  const handleSort = useCallback(
+    (field: string) => {
+      if (sortField === field) {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
       } else {
-        setDeleteModalOpen(true);
+        setSortField(field);
+        setSortOrder("asc");
       }
-    }
-  };
+      setPage(1);
+      setUsers([]);
+      setHasMore(true);
+    },
+    [sortField]
+  );
 
-  const handleModalClose = (type: "create" | "update" | "delete") => {
-    if (type === "create") {
-      setCreateModalOpen(false);
-    } else if (type === "update") {
-      setUpdateModalOpen(false);
-    } else {
-      setDeleteModalOpen(false);
-    }
-    setCurrentUserId(null);
-    refetch();
-  };
+  // Búsqueda optimizada con debounce (delay de 300ms)
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setSearchQuery(query);
+      setPage(1);
+      setUsers([]);
+      setHasMore(true);
+    }, 300),
+    []
+  );
 
-  // Reset de búsqueda
-  const handleResetSearch = () => {
+  // Reiniciar la búsqueda
+  const handleResetSearch = useCallback(() => {
     setSearchQuery("");
     setPage(1);
     setUsers([]);
     setHasMore(true);
-  };
+  }, []);
 
-  const tableHeader = [
-    { name: "Id", key: "id" },
-    { name: "User", key: "username", important: true, sortable: true },
-    { name: "Email", key: "email" },
-    { name: "Role", key: "role", important: true,  sortable: true },
-    { name: "Branch", key: "branch" },
-    { name: "Zone", key: "zone" },
-    { component: <GoPencil className="text-center text-lg" />, key: "edit" },
-    { component: <IoIosTrash className="text-center text-lg" />, key: "erase" },
-  ];
+  // Abrir modales: para crear, actualizar o eliminar. Para update/delete se codifica el id.
+  const handleModalOpen = useCallback(
+    (type: "create" | "update" | "delete", id?: string) => {
+      if (type === "create") {
+        setCreateModalOpen(true);
+      } else if (id) {
+        setCurrentUserId(encodeURIComponent(id));
+        if (type === "update") {
+          setUpdateModalOpen(true);
+        } else {
+          setDeleteModalOpen(true);
+        }
+      }
+    },
+    []
+  );
 
-  const headerBody = {
-    buttons: [
+  // Cerrar modales y refrescar datos
+  const handleModalClose = useCallback(
+    (type: "create" | "update" | "delete") => {
+      if (type === "create") {
+        setCreateModalOpen(false);
+      } else if (type === "update") {
+        setUpdateModalOpen(false);
+      } else {
+        setDeleteModalOpen(false);
+      }
+      setCurrentUserId(null);
+      refetch();
+    },
+    [refetch]
+  );
+
+  // ======================================================
+  // Efectos
+  // ======================================================
+
+  // Actualizar la lista de usuarios y evitar duplicados (similar al de articles)
+  useEffect(() => {
+    if (data) {
+      setUsers((prev) => {
+        if (page === 1) {
+          return data;
+        }
+        const newUsers = data.filter(
+          (user: any) => !prev.some((item) => item.id === user.id)
+        );
+        return [...prev, ...newUsers];
+      });
+      setHasMore(data.length === ITEMS_PER_PAGE);
+    }
+  }, [data, page]);
+
+  // Configurar el Intersection Observer para el infinite scroll
+  const lastUserRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" }
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
+
+  // ======================================================
+  // Datos Memorizados para la Tabla y Encabezado
+  // ======================================================
+
+  // Definición de tableData, separada en un useMemo
+  const tableData = useMemo(
+    () =>
+      users.map((user) => {
+        const branch = branchData?.find((b: any) => b.id === user.branch);
+        return {
+          key: user._id,
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          branch: branch?.name || t("noBranch"),
+          zone: user.zone || t("noZone"),
+          edit: (
+            <div className="flex justify-center items-center">
+              <GoPencil
+                className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400 p-1.5 rounded-sm"
+                onClick={() => handleModalOpen("update", user._id)}
+              />
+            </div>
+          ),
+          erase: (
+            <div className="flex justify-center items-center">
+              <IoIosTrash
+                className="text-center text-3xl text-white hover:cursor-pointer hover:text-black bg-red-400 p-1.5 rounded-sm"
+                onClick={() => handleModalOpen("delete", user._id)}
+              />
+            </div>
+          ),
+        };
+      }),
+    [users, branchData, t, handleModalOpen]
+  );
+
+  // Definición del encabezado de la tabla
+  const tableHeader = useMemo(
+    () => [
+      { name: t("id"), key: "id" },
+      { name: t("user"), key: "username", important: true, sortable: true },
+      { name: t("email"), key: "email" },
+      { name: t("role"), key: "role", important: true, sortable: true },
+      { name: t("branch"), key: "branch" },
+      { name: t("zone"), key: "zone" },
+      { component: <GoPencil className="text-center text-lg" />, key: "edit" },
       {
-        logo: <FaPlus />,
-        title: "New",
-        onClick: () => handleModalOpen("create"),
+        component: <IoIosTrash className="text-center text-lg" />,
+        key: "erase",
       },
     ],
-    filters: [
-      {
-        content: (
-          <div className="relative">
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                debouncedSearch(e.target.value)
-              }
-              className="pr-8"
-            />
-            {searchQuery && (
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={handleResetSearch}
-                aria-label="Clear search"
-              >
-                <FaTimes className="text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
-        ),
-      },
-    ],
-    results: searchQuery
-      ? `${users.length} Results`
-      : `${countUsersData || 0} Results`,
-  };
+    [t]
+  );
 
+  // Encabezado y filtros de la página
+  const headerBody = useMemo(
+    () => ({
+      buttons: [
+        {
+          logo: <FaPlus />,
+          title: t("new"),
+          onClick: () => handleModalOpen("create"),
+        },
+      ],
+      filters: [
+        {
+          content: (
+            <div className="relative">
+              <Input
+                placeholder={t("searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  debouncedSearch(e.target.value)
+                }
+                className="pr-8"
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={handleResetSearch}
+                  aria-label={t("clearSearch")}
+                >
+                  <FaTimes className="text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
+            </div>
+          ),
+        },
+      ],
+      results: searchQuery
+        ? `${t("results", { count: users.length })}`
+        : `${t("results", { count: countUsersData })}`,
+    }),
+    [
+      searchQuery,
+      users.length,
+      countUsersData,
+      debouncedSearch,
+      handleResetSearch,
+      handleModalOpen,
+      t,
+    ]
+  );
+
+  // ======================================================
+  // Renderizado Condicional
+  // ======================================================
   if (isQueryLoading && users.length === 0) {
     return (
       <div className="flex justify-center py-8">
@@ -268,44 +302,40 @@ const Page = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        Error loading users. Please try again later.
-      </div>
-    );
+    return <div className="p-4 text-red-500">{t("errorLoadingUsers")}</div>;
   }
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold pt-5 px-4">USERS</h3>
+        <h3 className="font-bold pt-5 px-4">{t("users")}</h3>
         <Header headerBody={headerBody} />
 
-        {isLoading && users.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        {users.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {t("noUsersFound")}
           </div>
-        ) : users.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No users found</div>
         ) : (
           <>
             <Table
               headers={tableHeader}
-              data={users}
+              data={tableData}
               onSort={handleSort}
               sortField={sortField}
               sortOrder={sortOrder}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
 
-        <div ref={observerRef} className="h-10" />
+        {/* Sentinel para Infinite Scroll */}
+        <div ref={lastUserRef} className="h-10" />
 
+        {/* Modal de Creación */}
         <Modal
           isOpen={isCreateModalOpen}
           onClose={() => handleModalClose("create")}
@@ -313,6 +343,7 @@ const Page = () => {
           <CreateUserComponent closeModal={() => handleModalClose("create")} />
         </Modal>
 
+        {/* Modal de Actualización */}
         <Modal
           isOpen={isUpdateModalOpen}
           onClose={() => handleModalClose("update")}
@@ -325,6 +356,7 @@ const Page = () => {
           )}
         </Modal>
 
+        {/* Modal de Eliminación */}
         <Modal
           isOpen={isDeleteModalOpen}
           onClose={() => handleModalClose("delete")}

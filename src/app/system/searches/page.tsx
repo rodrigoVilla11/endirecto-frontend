@@ -1,11 +1,13 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { useGetSearchesPagQuery } from "@/redux/services/searchesApi";
 import { useTranslation } from "react-i18next";
 import PrivateRoute from "@/app/context/PrivateRoutes";
+
+const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const { t } = useTranslation();
@@ -22,60 +24,56 @@ const Page = () => {
     page,
     limit,
     query: searchQuery,
+  },
+  {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Ref para el Intersection Observer (infinite scroll)
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  // Efecto para cargar searches y acumular los resultados
-  useEffect(() => {
-    const loadSearches = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          console.log("API result:", result);
-          const newSearches = result.searches || result;
-          console.log("New searches:", newSearches);
-          if (page === 1) {
-            setItems(newSearches);
-          } else {
-            setItems((prev) => [...prev, ...newSearches]);
-          }
-          setHasMore(Array.isArray(newSearches) && newSearches.length === limit);
-        } catch (err) {
-          console.error("Error loading searches:", err);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadSearches();
-  }, [page, searchQuery, refetch, limit]);
+    const observerRef = useRef<IntersectionObserver | null>(null);
   
 
-  // Efecto para implementar infinite scroll con Intersection Observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+   // ======================================================
+   // Efectos
+   // ======================================================
+   // Actualizar lista de artículos y evitar duplicados
+   useEffect(() => {
+     if (data?.searches) {
+       setItems((prev) => {
+         if (page === 1) {
+           return data.searches;
+         }
+         const newArticles = data.searches.filter(
+           (article) => !prev.some((item: any) => item.id === article._id)
+         );
+         return [...prev, ...newArticles];
+       });
+       setHasMore(data.searches.length === ITEMS_PER_PAGE);
+     }
+   }, [data?.searches, page]);
+ 
+   // ======================================================
+   // Infinite Scroll (Intersection Observer)
+   // ======================================================
+   const lastArticleRef = useCallback(
+     (node: HTMLDivElement | null) => {
+       if (observerRef.current) observerRef.current.disconnect();
+ 
+       observerRef.current = new IntersectionObserver(
+         (entries) => {
+           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+             setPage((prev) => prev + 1);
+           }
+         },
+         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+       );
+ 
+       if (node) observerRef.current.observe(node);
+     },
+     [hasMore, isQueryLoading]
+   );
 
   // Mapear los searches para la tabla (asegurándonos de que items sea un arreglo)
   const tableData = Array.isArray(items) ? items.map((search) => ({
@@ -136,7 +134,7 @@ const Page = () => {
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         {/* Elemento observado para disparar la carga de la siguiente página */}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

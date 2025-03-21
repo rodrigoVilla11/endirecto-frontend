@@ -20,6 +20,7 @@ import { FiMapPin } from "react-icons/fi";
 import MapComponent from "./Map";
 import CRMDetail from "./CRMDetail";
 import { useGetOrdersQuery } from "@/redux/services/ordersApi";
+import { useAuth } from "../context/AuthContext";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -31,7 +32,8 @@ const Page = () => {
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-
+  const { userData } = useAuth();
+  const userRole = userData?.role ? userData.role.toUpperCase() : "";
   // ---------- Estados para los filtros ----------
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -63,6 +65,20 @@ const Page = () => {
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: ordersData } = useGetOrdersQuery(null);
 
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+    }
+  }, [selectedClientId]);
+
+
+
+  useEffect(() => {
+    if (userRole === "VENDEDOR" && userData?.seller_id) {
+      setSellerFilter(userData.seller_id);
+    }
+  }, [userRole, userData]);
+
   // ---------- Query principal para CRM ----------
   const {
     data,
@@ -87,7 +103,16 @@ const Page = () => {
       refetchOnMountOrArgChange: true,
     }
   );
-
+  // Actualizar customer_id cuando cambie selectedClientId
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+      refetch();
+    } else {
+      setCustomer_id("");
+      refetch();
+    }
+  }, [selectedClientId]);
   // ---------- Actualiza el customer_id al cambiar selectedClientId ----------
   useEffect(() => {
     if (selectedClientId !== undefined) {
@@ -100,16 +125,19 @@ const Page = () => {
 
   // ---------- Manejo de la carga inicial y actualización de datos ----------
   useEffect(() => {
-    if (!isFetching && data?.crms) {
-      if (page === 1) {
-        setItems(data.crms);
-      } else {
-        setItems((prevItems) => [...prevItems, ...data.crms]);
-      }
+    if (data?.crms) {
+      setItems((prev) => {
+        if (page === 1) {
+          return data.crms;
+        }
+        const newArticles = data.crms.filter(
+          (article) => !prev.some((item) => item._id === article._id)
+        );
+        return [...prev, ...newArticles];
+      });
       setHasMore(data.crms.length === ITEMS_PER_PAGE);
-      setIsLoadingMore(false);
     }
-  }, [data, isFetching, page]);
+  }, [data?.crms, page]);
 
   // ---------- Función para resetear la paginación y filtros ----------
   const resetPagination = useCallback(() => {
@@ -128,7 +156,7 @@ const Page = () => {
   );
 
   // ---------- IntersectionObserver para scroll infinito ----------
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const openViewGPSModal = (gps: string) => {
     setCurrentGPS(gps);
@@ -139,30 +167,23 @@ const Page = () => {
     setCurrentGPS(null);
   };
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (
-          firstEntry.isIntersecting &&
-          hasMore &&
-          !isFetching &&
-          !isLoadingMore
-        ) {
-          setIsLoadingMore(true);
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
 
-    const currentObserver = observerRef.current;
-    if (currentObserver) observer.observe(currentObserver);
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
 
-    return () => {
-      if (currentObserver) observer.unobserve(currentObserver);
-    };
-  }, [hasMore, isFetching, isLoadingMore]);
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // ---------- Manejo de ordenamiento ----------
   const handleSort = useCallback(
@@ -307,10 +328,7 @@ const Page = () => {
   // ---------- Filtros en la cabecera (Header) ----------
   const headerBody = React.useMemo(
     () => ({
-      buttons: [
-        { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
-        { logo: <IoMdPin />, title: t("viewOnMap") },
-      ],
+      buttons: [{ logo: <IoMdPin />, title: t("viewOnMap") }],
       filters: [
         // Fecha desde
         {
@@ -340,16 +358,24 @@ const Page = () => {
         {
           content: (
             <select
-              value={sellerFilter}
-              onChange={handleFilterChange(setSellerFilter)}
+              value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
+              onChange={(e) => {
+                if (userRole !== "VENDEDOR") {
+                  setSellerFilter(e.target.value);
+                  setPage(1);
+                  setItems([]);
+                }
+              }}
               className="border border-gray-300 rounded p-2"
+              disabled={userRole === "VENDEDOR"}
             >
-              <option value="">{t("seller")}</option>
-              {sellersData?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+              <option value="">{t("allSellers")}</option>
+              {sellersData &&
+                sellersData.map((seller: any) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.name}
+                  </option>
+                ))}
             </select>
           ),
         },
@@ -367,20 +393,20 @@ const Page = () => {
             </select>
           ),
         },
-        {
-          content: (
-            <input
-              type="text"
-              placeholder={t("searchPlaceholder")}
-              defaultValue={searchQuery}
-              onChange={handleSearchChange}
-              className="border border-gray-300 rounded p-2"
-              style={{ width: "120px" }}
-            />
-          ),
-        },
+        // {
+        //   content: (
+        //     <input
+        //       type="text"
+        //       placeholder={t("searchPlaceholder")}
+        //       defaultValue={searchQuery}
+        //       onChange={handleSearchChange}
+        //       className="border border-gray-300 rounded p-2"
+        //       style={{ width: "120px" }}
+        //     />
+        //   ),
+        // },
       ],
-      results: `${data?.total || 0} ${t("results")}`,
+      results: `${t("results", { count: data?.total || 0 })}`,
     }),
     [
       t,
@@ -430,7 +456,7 @@ const Page = () => {
       </div>
 
       {/* Intersection Observer div */}
-      <div ref={observerRef} className="h-10" />
+      <div ref={lastArticleRef} className="h-10" />
 
       {/* Modal de creación */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>

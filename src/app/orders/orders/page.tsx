@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -15,34 +21,37 @@ import { useGetOrdersPagQuery } from "@/redux/services/ordersApi";
 import { useClient } from "@/app/context/ClientContext";
 import Modal from "@/app/components/components/Modal";
 import OrderDetail from "./OrderDetail";
+import { useAuth } from "@/app/context/AuthContext";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
   const { t } = useTranslation();
-
+  const { userData } = useAuth();
+  const userRole = userData?.role ? userData.role.toUpperCase() : "";
   // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // Se puede usar para búsquedas en la tabla, si lo deseas
+  const [searchQuery, setSearchQuery] = useState(""); // Para búsqueda en la tabla
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
-  const [seller_id, setSeller_id] = useState(""); // Nuevo filtro por seller_id
-  const [searchFilter, setSearchFilter] = useState(""); // Nuevo filtro para búsqueda en el backend
+  const [seller_id, setSeller_id] = useState(""); // Filtro por seller_id
+  const [searchFilter, setSearchFilter] = useState(""); // Filtro para búsqueda en el backend
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
   const [statusFilter, setStatusFilter] = useState(""); // Filtro para status
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
+  const [sellerFilter, setSellerFilter] = useState("");
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { selectedClientId } = useClient();
 
   // Referencias para el Intersection Observer
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Función para formatear la fecha en "yyyy-MM-dd"
   function formatDate(date: Date) {
@@ -52,30 +61,48 @@ const Page = () => {
     return `${year}-${month}-${day}`;
   }
 
-  // Query para obtener órdenes paginadas, incluyendo los nuevos filtros
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-  } = useGetOrdersPagQuery(
-    {
+  useEffect(() => {
+    if (selectedClientId) {
+      setCustomer_id(selectedClientId);
+    }
+  }, [selectedClientId]);
+
+
+  // Usamos useMemo para agrupar los parámetros de la query.
+  const queryParams = useMemo(() => {
+    return {
       page,
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? formatDate(startDate) : undefined,
       endDate: endDate ? formatDate(endDate) : undefined,
       customer_id,
-      seller_id, // se envía el seller_id
+      seller_id: sellerFilter,
       sort: sortQuery,
       status: statusFilter || undefined,
-      search: searchFilter || undefined, // se envía el filtro de búsqueda
-    },
-    {
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
+      search: searchFilter || undefined,
+    };
+  }, [
+    page,
+    startDate,
+    endDate,
+    customer_id,
+    seller_id,
+    sortQuery,
+    statusFilter,
+    searchFilter,
+  ]);
+
+  // Query para obtener órdenes paginadas
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetOrdersPagQuery(queryParams, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   // Actualizar customer_id cuando cambie selectedClientId
   useEffect(() => {
@@ -88,65 +115,44 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  // Efecto para cargar órdenes (documentos) y manejar la paginación
+  // ======================================================
+  // Efecto para Actualizar la Lista y Evitar Duplicados
+  // ======================================================
   useEffect(() => {
-    const loadDocuments = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          // Verificamos si la respuesta es un array o un objeto con la propiedad 'orders'
-          const newDocuments = Array.isArray(result)
-            ? result
-            : result.orders || [];
-          if (page === 1) {
-            setItems(newDocuments);
-          } else {
-            setItems((prev) => [...prev, ...newDocuments]);
-          }
-          setHasMore(newDocuments.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading documents:", error);
-        } finally {
-          setIsLoading(false);
+    if (data?.orders) {
+      setItems((prev) => {
+        if (page === 1) {
+          return data.orders;
         }
-      }
-    };
-
-    loadDocuments();
-  }, [
-    page,
-    searchQuery,
-    startDate,
-    endDate,
-    customer_id,
-    seller_id,
-    sortQuery,
-    statusFilter,
-    searchFilter,
-  ]);
-
-  // Intersection Observer para scroll infinito
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+        const newItems = data.orders.filter(
+          (order) => !prev.some((item) => item._id === order._id)
+        );
+        return [...prev, ...newItems];
+      });
+      setHasMore(data.orders.length === ITEMS_PER_PAGE);
     }
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+  }, [data?.orders, page]);
+
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" }
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // Reiniciar fechas y paginación
   const handleResetDate = () => {
@@ -155,6 +161,8 @@ const Page = () => {
     setItems([]);
     setPage(1);
     setHasMore(true);
+    // Opcionalmente, llamar a refetch() aquí
+    refetch();
   };
 
   // Manejo de ordenamiento
@@ -163,17 +171,16 @@ const Page = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        // Alterna entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
       setSortQuery(newSortQuery);
       setPage(1);
       setItems([]);
       setHasMore(true);
+      // Con cambio de queryParams (por dependencia) se reejecuta la consulta
     },
     [sortQuery]
   );
@@ -201,6 +208,12 @@ const Page = () => {
     setCurrentOrder(null);
   };
 
+  useEffect(() => {
+    if (userRole === "VENDEDOR" && userData?.seller_id) {
+      setSellerFilter(userData.seller_id);
+    }
+  }, [userRole, userData]);
+
   // Construcción de datos para la tabla
   const tableData = items
     ?.filter((order) => {
@@ -209,11 +222,11 @@ const Page = () => {
     })
     ?.map((order) => {
       const customer = customersData?.find(
-        (data) => data.id == order.customer.id
+        (data) => data.id === order.customer.id
       );
-      const seller = sellersData?.find((data) => data.id == order.seller?.id);
+      const seller = sellersData?.find((data) => data.id === order.seller?.id);
       return {
-        key: order.id, // Se asume que el nuevo modelo usa "id" en lugar de "_id"
+        key: order._id, // Se asume que el modelo usa "id" en lugar de "_id"
         info: (
           <div className="flex justify-center items-center">
             <FaInfoCircle
@@ -252,14 +265,6 @@ const Page = () => {
     { name: t("status"), key: "status" },
   ];
 
-  // Handler para el cambio de status en el select
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-  };
-
   // Header con filtros adicionales para fechas, status, seller_id y búsqueda
   const headerBody = {
     buttons: [
@@ -280,10 +285,7 @@ const Page = () => {
               className="border border-gray-300 rounded p-2"
             />
             {startDate && (
-              <button
-                onClick={handleResetDate}
-                aria-label={t("clearDate")}
-              >
+              <button onClick={handleResetDate} aria-label={t("clearDate")}>
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
               </button>
             )}
@@ -306,7 +308,12 @@ const Page = () => {
           <select
             className="border border-gray-300 rounded p-2"
             defaultValue=""
-            onChange={(e) => handleStatusChange(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
           >
             <option value="" disabled>
               {t("selectStatus")}
@@ -317,19 +324,28 @@ const Page = () => {
         ),
       },
       {
+        // Filtro para vendedor. Si el rol es VENDEDOR, se usa el seller del usuario y se deshabilita el select.
         content: (
-          <input
-            type="text"
-            value={seller_id}
+          <select
+            value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
             onChange={(e) => {
-              setSeller_id(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
+              if (userRole !== "VENDEDOR") {
+                setSellerFilter(e.target.value);
+                setPage(1);
+                setItems([]);
+              }
             }}
-            placeholder={t("sellerIdFilter")}
             className="border border-gray-300 rounded p-2"
-          />
+            disabled={userRole === "VENDEDOR"}
+          >
+            <option value="">{t("allSellers")}</option>
+            {sellersData &&
+              sellersData.map((seller: any) => (
+                <option key={seller.id} value={seller.id}>
+                  {seller.name}
+                </option>
+              ))}
+          </select>
         ),
       },
       {
@@ -349,7 +365,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${data?.total || 0} ${t("results")}`,
+    results: `${t("results", { count: data?.total || 0 })}`,
   };
 
   return (
@@ -372,7 +388,7 @@ const Page = () => {
           sortField={sortQuery.split(":")[0]}
           sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
         />
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
 
       <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>

@@ -9,10 +9,17 @@ type MapComponentProps = {
   closeModal: () => void;
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeModal }) => {
+const MapComponent: React.FC<MapComponentProps> = ({
+  currentCustomerId,
+  closeModal,
+}) => {
   // All hooks are called unconditionally
   const { t } = useTranslation();
-  const { data: customer, error, isLoading } = useGetCustomerByIdQuery(
+  const {
+    data: customer,
+    error,
+    isLoading,
+  } = useGetCustomerByIdQuery(
     { id: currentCustomerId },
     { refetchOnMountOrArgChange: true }
   );
@@ -34,8 +41,36 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentCustomerId, closeMod
   }
   if (isLoading) return <div>{t("map.loading")}</div>;
   if (error) return <div>{t("map.errorLoadingCustomer")}</div>;
-  if (!customer?.gps) return <div>{t("map.noGPSData")}</div>;
-  if (!center) return <div>{t("map.invalidGPSFormat")}</div>;
+  if (!customer?.gps)
+    return (
+      <div>
+        <p className="p-8"> {t("map.noGPSData")}</p>
+
+        <button
+          type="button"
+          onClick={closeModal}
+          aria-label={t("map.close")}
+          className="absolute top-2 right-2 bg-gray-400 rounded-md px-4 py-2 text-white hover:bg-gray-500"
+        >
+          X
+        </button>
+      </div>
+    );
+  if (!center)
+    return (
+      <div>
+        <p className="p-8"> {t("map.invalidGPSFormat")}</p>
+
+        <button
+          type="button"
+          onClick={closeModal}
+          aria-label={t("map.close")}
+          className="absolute top-2 right-2 bg-gray-400 rounded-md px-4 py-2 text-white hover:bg-gray-500"
+        >
+          X
+        </button>
+      </div>
+    );
 
   // Style for the map container
   const containerStyle = { width: "600px", height: "300px" };

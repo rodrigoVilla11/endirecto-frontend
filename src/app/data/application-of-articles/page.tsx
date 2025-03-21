@@ -30,7 +30,9 @@ const Page = () => {
 
   // Estados básicos
   const [page, setPage] = useState(1);
-  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>([]);
+  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>(
+    []
+  );
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,7 +42,8 @@ const Page = () => {
   const [isExportModalOpen, setExportModalOpen] = useState(false);
 
   // Referencias para infinite scroll
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Queries de Redux
@@ -51,12 +54,20 @@ const Page = () => {
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetArticlesVehiclesPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
+  } = useGetArticlesVehiclesPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      sort: sortQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
+
   const [
     syncArticleVehicles,
     { isLoading: isLoadingSync, isSuccess, isError },
@@ -81,55 +92,38 @@ const Page = () => {
     []
   );
 
-  // Efecto para cargar los artículos (infinite scroll y búsquedas)
   useEffect(() => {
-    const loadApplications = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          // Se espera que el resultado tenga la forma { vehicles, totalVehicles }
-          const result = await refetch().unwrap();
-          const newApplications = result.vehicles || [];
-          if (page === 1) {
-            setApplicationsOfArticles(newApplications);
-          } else {
-            setApplicationsOfArticles((prev) => [...prev, ...newApplications]);
-          }
-          setHasMore(newApplications.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading applications:", error);
-        } finally {
-          setIsLoading(false);
+    if (data?.vehicles) {
+      setApplicationsOfArticles((prev) => {
+        if (page === 1) {
+          return data.vehicles;
         }
-      }
-    };
-
-    loadApplications();
-  }, [page, searchQuery, sortQuery, refetch, isLoading]);
-
-  // Intersection Observer para el infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+        const newArticles = data.vehicles.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.vehicles.length === ITEMS_PER_PAGE);
     }
+  }, [data?.vehicles, page]);
 
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // Reset de búsqueda
   const handleResetSearch = () => {
@@ -193,7 +187,7 @@ const Page = () => {
   const tableHeader = [
     { name: t("article"), key: "article", important: true, sortable: true },
     { name: t("brand"), key: "brand", important: true, sortable: true },
-    { name: t("model"), key: "model", important: true , sortable: true},
+    { name: t("model"), key: "model", important: true, sortable: true },
     { name: t("engine"), key: "engine", important: true, sortable: true },
     { name: t("year"), key: "year", important: true },
   ];
@@ -255,11 +249,7 @@ const Page = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500">
-        {t("errorLoading")}
-      </div>
-    );
+    return <div className="p-4 text-red-500">{t("errorLoading")}</div>;
   }
 
   return (
@@ -294,7 +284,7 @@ const Page = () => {
         )}
 
         {/* Elemento observador para infinite scroll */}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
 
         {/* Modales */}
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>

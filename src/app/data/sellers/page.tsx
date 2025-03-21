@@ -25,8 +25,8 @@ const Page = () => {
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // Referencias para observer y loading
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+   const observerRef = useRef<IntersectionObserver | null>(null);
+ 
 
   // Queries de Redux
   const { data: branchsData } = useGetBranchesQuery(null);
@@ -41,6 +41,11 @@ const Page = () => {
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
     sort: sortQuery,
+  },
+  {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Debounced search
@@ -51,55 +56,46 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para cargar los sellers (paginación, búsqueda, infinite scroll)
-  useEffect(() => {
-    const loadSellers = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          // Se espera que el resultado tenga la forma: { sellers: Seller[], total: number }
-          const result = await refetch().unwrap();
-          const newSellers = Array.isArray(result.sellers)
-            ? result.sellers
-            : [];
-          setTotalSellers(result.total || 0);
-          if (page === 1) {
-            setSellers(newSellers);
-          } else {
-            setSellers((prev) => [...prev, ...newSellers]);
-          }
-          setHasMore(newSellers.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading sellers:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadSellers();
-  }, [page, searchQuery, sortQuery, refetch, isLoading]);
-
-  // Intersection Observer para infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isLoading]);
-
+   // ======================================================
+   // Efectos
+   // ======================================================
+   // Actualizar lista de artículos y evitar duplicados
+   useEffect(() => {
+     if (data?.sellers) {
+       setSellers((prev) => {
+         if (page === 1) {
+           return data.sellers;
+         }
+         const newArticles = data.sellers.filter(
+           (article) => !prev.some((item) => item.id === article.id)
+         );
+         return [...prev, ...newArticles];
+       });
+       setHasMore(data.sellers.length === ITEMS_PER_PAGE);
+     }
+   }, [data?.sellers, page]);
+ 
+   // ======================================================
+   // Infinite Scroll (Intersection Observer)
+   // ======================================================
+   const lastArticleRef = useCallback(
+     (node: HTMLDivElement | null) => {
+       if (observerRef.current) observerRef.current.disconnect();
+ 
+       observerRef.current = new IntersectionObserver(
+         (entries) => {
+           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+             setPage((prev) => prev + 1);
+           }
+         },
+         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+       );
+ 
+       if (node) observerRef.current.observe(node);
+     },
+     [hasMore, isQueryLoading]
+   );
+ 
   // Reset de búsqueda
   const handleResetSearch = () => {
     setSearchQuery("");
@@ -172,7 +168,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("page.results", { count: totalSellers }),
+    results: t("page.results", { count: data?.total }),
   };
 
   if (isQueryLoading && sellers.length === 0) {
@@ -196,7 +192,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("page.sellersTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && sellers.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : sellers.length === 0 ? (
@@ -213,13 +209,13 @@ const Page = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

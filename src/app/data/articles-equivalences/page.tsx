@@ -1,11 +1,14 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { FaImage, FaPlus, FaTimes } from "react-icons/fa";
 import { useGetArticlesEquivalencesQuery } from "@/redux/services/articlesEquivalences";
-import { useGetAllArticlesQuery, useSyncEquivalencesMutation } from "@/redux/services/articlesApi";
+import {
+  useGetAllArticlesQuery,
+  useSyncEquivalencesMutation,
+} from "@/redux/services/articlesApi";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import Modal from "@/app/components/components/Modal";
 import { AiFillFileExcel } from "react-icons/ai";
@@ -15,6 +18,8 @@ import ExportExcelModal from "../application-of-articles/ExportExcelButton";
 import { IoSync } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 
+const ITEMS_PER_PAGE = 15;
+
 const Page = () => {
   const { t } = useTranslation();
 
@@ -23,8 +28,8 @@ const Page = () => {
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const [equivalences, setEquivalences] = useState<any[]>([]);
-  const [totalEquivalences, setTotalEquivalences] = useState<number>(0);
-  const [isFetching, setIsFetching] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [syncEquivalences, { isLoading: isLoadingSync, isSuccess, isError }] =
     useSyncEquivalencesMutation();
@@ -34,61 +39,63 @@ const Page = () => {
   const [isExportModalOpen, setExportModalOpen] = useState(false);
 
   // Referencia para el IntersectionObserver (infinite scroll)
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const { data: articlesData } = useGetAllArticlesQuery(null);
   // Se espera que useGetArticlesEquivalencesQuery retorne { equivalences, total }
-  const { data, error, isLoading, refetch } = useGetArticlesEquivalencesQuery({
-    page,
-    limit,
-    query: searchQuery,
-  });
-
-  // Efecto para cargar equivalences (incluye infinite scroll y búsqueda)
-  useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const fetchedData = result.data || { equivalences: [], total: 0 };
-          const newEquivalences = Array.isArray(fetchedData.equivalences)
-            ? fetchedData.equivalences
-            : [];
-          setTotalEquivalences(fetchedData.total || 0);
-          setEquivalences((prev) =>
-            page === 1 ? newEquivalences : [...prev, ...newEquivalences]
-          );
-        })
-        .catch((error) => {
-          console.error(t("errorLoadingEquivalences"), error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetArticlesEquivalencesQuery(
+    {
+      page,
+      limit,
+      query: searchQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
     }
-  }, [page, refetch, isFetching, searchQuery, t]);
+  );
 
-  // Intersection Observer para el infinite scroll
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
-          setPage((prev) => prev + 1);
+    if (data?.equivalences) {
+      setEquivalences((prev) => {
+        if (page === 1) {
+          return data.equivalences;
         }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+        const newArticles = data.equivalences.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.equivalences.length === ITEMS_PER_PAGE);
     }
+  }, [data?.equivalences, page]);
 
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [isFetching]);
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // Handler para resetear la búsqueda
   const handleResetSearch = () => {
@@ -126,10 +133,11 @@ const Page = () => {
 
   // Configuración de la tabla: mapeamos cada equivalence a un objeto para la tabla
   const tableData = equivalences?.map((item) => {
-    const article = articlesData?.find((data) =>
-      data.id.trim().toLowerCase() === item.article_id.trim().toLowerCase()
+    const article = articlesData?.find(
+      (data) =>
+        data.id.trim().toLowerCase() === item.article_id.trim().toLowerCase()
     );
-    
+
     return {
       key: `${item.article_id}-${item.brand}-${item.code}`,
       article: article?.supplier_code || t("notFound"),
@@ -137,11 +145,10 @@ const Page = () => {
       code: item?.code || t("notFound"),
     };
   });
-  
 
   const tableHeader = [
-    { name: t("article"), key: "article", important: true, sortable: true  },
-    { name: t("brand"), key: "brand", important: true , sortable: true },
+    { name: t("article"), key: "article", important: true, sortable: true },
+    { name: t("brand"), key: "brand", important: true, sortable: true },
     { name: t("code"), key: "code", important: true },
   ];
 
@@ -149,9 +156,21 @@ const Page = () => {
   const headerBody = {
     buttons: [
       { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
-      { logo: <AiFillFileExcel />, title: t("importExcel"), onClick: openImportModal },
-      { logo: <AiFillFileExcel />, title: t("exportExcel"), onClick: openExportModal },
-      { logo: <IoSync />, title: t("syncEquivalences"), onClick: handleSyncEquivalences },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("importExcel"),
+        onClick: openImportModal,
+      },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+      {
+        logo: <IoSync />,
+        title: t("syncEquivalences"),
+        onClick: handleSyncEquivalences,
+      },
     ],
     filters: [
       {
@@ -185,7 +204,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("results", { count: totalEquivalences || 0 }),
+    results: t("results", { count: data?.total || 0 }),
   };
 
   if (isLoading && equivalences.length === 0) {
@@ -198,9 +217,7 @@ const Page = () => {
 
   if (error) {
     return (
-      <div className="p-4 text-red-500">
-        {t("errorLoadingEquivalences")}
-      </div>
+      <div className="p-4 text-red-500">{t("errorLoadingEquivalences")}</div>
     );
   }
 
@@ -210,7 +227,7 @@ const Page = () => {
         <h3 className="font-bold pt-4 px-4">{t("articlesEquivalences")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateArticlesEquivalencesModal closeModal={closeCreateModal} />
         </Modal>

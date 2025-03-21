@@ -36,8 +36,7 @@ const Page = () => {
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
 
   // Referencias
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Consultas Redux
   const { data: countItemsData } = useCountItemsQuery(null);
@@ -46,12 +45,19 @@ const Page = () => {
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetItemsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
+  } = useGetItemsPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      sort: sortQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
   // Búsqueda debounced
   const debouncedSearch = debounce((query: string) => {
@@ -61,55 +67,45 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para carga inicial y búsquedas
+ // ======================================================
+  // Efectos
+  // ======================================================
+  // Actualizar lista de artículos y evitar duplicados
   useEffect(() => {
-    const loadItems = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newItems = result || [];
-          if (page === 1) {
-            setItems(newItems);
-          } else {
-            setItems((prev) => [...prev, ...newItems]);
-          }
-          setHasMore(newItems.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading items:", error);
-        } finally {
-          setIsLoading(false);
+    if (data) {
+      setItems((prev) => {
+        if (page === 1) {
+          return data;
         }
-      }
-    };
-
-    loadItems();
-  }, [page, searchQuery, sortQuery, isLoading, refetch]);
-
-  // Intersection Observer para scroll infinito
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+        const newArticles = data.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.length === ITEMS_PER_PAGE);
     }
+  }, [data, page]);
 
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
 
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
   // Handlers de modales
   const handleUpdateModalOpen = (id: string) => {
     const encodedId = encodeURIComponent(id);
@@ -261,7 +257,7 @@ const Page = () => {
         <Header headerBody={headerBody} />
 
         {isLoading && items.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : items.length === 0 ? (
@@ -278,13 +274,13 @@ const Page = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
 
         {/* Modal para actualizar ítem */}
         <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>

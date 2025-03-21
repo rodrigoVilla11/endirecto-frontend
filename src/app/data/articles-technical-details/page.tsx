@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -9,80 +9,90 @@ import { FaPlus, FaTimes } from "react-icons/fa";
 import { AiFillFileExcel } from "react-icons/ai";
 import { IoSync } from "react-icons/io5";
 import { useGetArticlesTechnicalDetailsQuery } from "@/redux/services/articlesTechnicalDetailsApi";
-import { useGetAllArticlesQuery, useSyncEquivalencesMutation } from "@/redux/services/articlesApi";
+import {
+  useGetAllArticlesQuery,
+  useSyncEquivalencesMutation,
+} from "@/redux/services/articlesApi";
 import CreateArticlesTechnicalDetailsModal from "./CreateArticleTD";
 import ImportArticlesTDModal from "./ImportExcel";
 import ExportArticlesTDModal from "./ExportExcel";
 import { useTranslation } from "react-i18next";
 
+const ITEMS_PER_PAGE = 15;
+
 const Page = () => {
   const { t } = useTranslation();
-  
+
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<any[]>([]);
-  const [totalEquivalences, setTotalEquivalences] = useState<number>(0);
-  const [isFetching, setIsFetching] = useState(false);
-
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
 
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const { data: articlesData } = useGetAllArticlesQuery(null);
   // Expecting useGetArticlesTechnicalDetailsQuery to return { technical_details, total }
-  const { data, error, isLoading, refetch } = useGetArticlesTechnicalDetailsQuery({
-    page,
-    limit,
-    query: searchQuery,
-  });
-  const [syncEquivalences, { isLoading: isLoadingSync }] = useSyncEquivalencesMutation();
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useGetArticlesTechnicalDetailsQuery(
+    {
+      page,
+      limit,
+      query: searchQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
+  const [syncEquivalences, { isLoading: isLoadingSync }] =
+    useSyncEquivalencesMutation();
 
   // Load data and update items and total
   useEffect(() => {
-    if (!isFetching) {
-      setIsFetching(true);
-      refetch()
-        .then((result) => {
-          const fetchedData = result.data || { technical_details: [], total: 0 };
-          const newItems = Array.isArray(fetchedData.technical_details)
-            ? fetchedData.technical_details
-            : [];
-          setTotalEquivalences(fetchedData.total || 0);
-          setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
-        })
-        .catch((error) => {
-          console.error(t("errorFetchingTechnicalDetails"), error);
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [page, searchQuery, refetch, isFetching, t]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetching) {
-          setPage((prev) => prev + 1);
+    if (data?.technical_details) {
+      setItems((prev) => {
+        if (page === 1) {
+          return data.technical_details;
         }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
+        const newArticles = data.technical_details.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.technical_details.length === ITEMS_PER_PAGE);
     }
+  }, [data?.technical_details, page]);
 
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [isFetching]);
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // Reset search handler
   const handleResetSearch = () => {
@@ -135,7 +145,11 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("article"), key: "article", important: true, sortable: true },
-    { name: t("technicalDetail"), key: "technical_detail_name", important: true },
+    {
+      name: t("technicalDetail"),
+      key: "technical_detail_name",
+      important: true,
+    },
     { name: t("value"), key: "value", important: true },
   ];
 
@@ -143,9 +157,21 @@ const Page = () => {
   const headerBody = {
     buttons: [
       { logo: <FaPlus />, title: t("new"), onClick: openCreateModal },
-      { logo: <AiFillFileExcel />, title: t("importExcel"), onClick: openImportModal },
-      { logo: <AiFillFileExcel />, title: t("exportExcel"), onClick: openExportModal },
-      { logo: <IoSync />, title: t("syncEquivalences"), onClick: handleSyncEquivalences },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("importExcel"),
+        onClick: openImportModal,
+      },
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+      {
+        logo: <IoSync />,
+        title: t("syncEquivalences"),
+        onClick: handleSyncEquivalences,
+      },
     ],
     filters: [
       {
@@ -167,7 +193,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("results", { count: totalEquivalences || 0 }),
+    results: t("results", { count: data?.total || 0 }),
   };
 
   if (isLoading && items.length === 0) {
@@ -191,7 +217,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("articlesTechnicalDetails")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateArticlesTechnicalDetailsModal closeModal={closeCreateModal} />
         </Modal>

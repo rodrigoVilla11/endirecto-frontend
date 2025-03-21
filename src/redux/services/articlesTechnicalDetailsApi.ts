@@ -9,7 +9,7 @@ type ArticleTechnicalDetail = {
   deleted_at: Date; // Fecha de eliminación
 };
 type ArticleTechnicalDetailPagResponse = {
-  technical_details: ArticleTechnicalDetail;
+  technical_details: ArticleTechnicalDetail[];
   total: number;
 };
 type CreateArticleTechnicalDetailPayload = {

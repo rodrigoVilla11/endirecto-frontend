@@ -26,8 +26,7 @@ const Page = () => {
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
 
   // Referencias para Observer y Loading
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Query de Redux
   // Se asume que useGetPaymentConditionsPagQuery retorna un objeto { paymentConditions, total }
@@ -36,12 +35,19 @@ const Page = () => {
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetPaymentConditionsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
+  } = useGetPaymentConditionsPagQuery(
+    {
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      sort: sortQuery,
+    },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
   // Debounced search para evitar disparar la búsqueda con cada tecla
   const debouncedSearch = debounce((query: string) => {
@@ -51,57 +57,46 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
-  // Efecto para cargar la data e ir actualizando los estados: tanto la lista paginada como el total global
-  useEffect(() => {
-    const loadPaymentConditions = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          // Se espera que el resultado tenga la forma { paymentConditions, total }
-          const result = await refetch().unwrap();
-          const fetchedData = result || { paymentConditions: [], total: 0 };
-          const newPaymentConditions = Array.isArray(
-            fetchedData.paymentConditions
-          )
-            ? fetchedData.paymentConditions
-            : [];
-          setTotalPaymentConditions(fetchedData.total || 0);
+  // ======================================================
+    // Efectos
+    // ======================================================
+    // Actualizar lista de artículos y evitar duplicados
+    useEffect(() => {
+      if (data?.paymentConditions) {
+        setPaymentConditions((prev) => {
           if (page === 1) {
-            setPaymentConditions(newPaymentConditions);
-          } else {
-            setPaymentConditions((prev) => [...prev, ...newPaymentConditions]);
+            return data.paymentConditions;
           }
-          setHasMore(newPaymentConditions.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading payment conditions:", error);
-        } finally {
-          setIsLoading(false);
-        }
+          const newArticles = data.paymentConditions.filter(
+            (article) => !prev.some((item: any) => item.id === article.id)
+          );
+          return [...prev, ...newArticles];
+        });
+        setHasMore(data.paymentConditions.length === ITEMS_PER_PAGE);
       }
-    };
-    loadPaymentConditions();
-  }, [page, searchQuery, sortQuery, refetch, isLoading]);
-
-  // Intersection Observer para infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
+    }, [data?.paymentConditions, page]);
+  
+    // ======================================================
+    // Infinite Scroll (Intersection Observer)
+    // ======================================================
+    const lastArticleRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        if (observerRef.current) observerRef.current.disconnect();
+  
+        observerRef.current = new IntersectionObserver(
+          (entries) => {
+            if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+              setPage((prev) => prev + 1);
+            }
+          },
+          { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+        );
+  
+        if (node) observerRef.current.observe(node);
       },
-      { threshold: 0.5 }
+      [hasMore, isQueryLoading]
     );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isLoading]);
+  
 
   // Reset de búsqueda
   const handleResetSearch = () => {
@@ -141,8 +136,13 @@ const Page = () => {
 
   const tableHeader = [
     { name: t("table.id"), key: "id", important: true },
-    { name: t("table.name"), key: "name", important: true , sortable: true },
-    { name: t("table.percentage"), key: "percentage", important: true , sortable: true },
+    { name: t("table.name"), key: "name", important: true, sortable: true },
+    {
+      name: t("table.percentage"),
+      key: "percentage",
+      important: true,
+      sortable: true,
+    },
     { name: t("table.default"), key: "default" },
   ];
 
@@ -174,7 +174,7 @@ const Page = () => {
         ),
       },
     ],
-    results: t("page.results", { count: totalPaymentConditions }),
+    results: t("page.results", { count: data?.total }),
   };
 
   if (isQueryLoading && paymentConditions.length === 0) {
@@ -198,7 +198,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("page.paymentConditionsTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && paymentConditions.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : paymentConditions.length === 0 ? (
@@ -215,13 +215,13 @@ const Page = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
     </PrivateRoute>
   );

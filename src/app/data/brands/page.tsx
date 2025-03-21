@@ -3,142 +3,134 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
-import { FaInfoCircle, FaTimes } from "react-icons/fa";
+import Modal from "@/app/components/components/Modal";
+import UpdateBrandComponent from "./UpdateBrand";
+import BrandDetail from "./BrandDetail";
+import PrivateRoute from "@/app/context/PrivateRoutes";
+import debounce from "@/app/context/debounce";
+import { useTranslation } from "react-i18next";
+import { FaImage, FaInfoCircle, FaTimes } from "react-icons/fa";
+import { GoPencil } from "react-icons/go";
 import {
   useCountBrandsQuery,
   useGetBrandsPagQuery,
 } from "@/redux/services/brandsApi";
-import Modal from "@/app/components/components/Modal";
-import UpdateBrandComponent from "./UpdateBrand";
-import PrivateRoute from "@/app/context/PrivateRoutes";
-import debounce from "@/app/context/debounce";
-import { useTranslation } from "react-i18next";
-import BrandDetail from "./BrandDetail";
-import { GoPencil } from "react-icons/go";
 
 const ITEMS_PER_PAGE = 20;
 
 const Page = () => {
   const { t } = useTranslation();
 
-  // Estados básicos
+  // Estados principales
   const [page, setPage] = useState(1);
   const [brands, setBrands] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [sortQuery, setSortQuery] = useState<string>(""); // Ejemplo: "campo:asc" o "campo:desc"
 
-  // Estados de los modales
+  // Estados de modales y marca seleccionada
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(null);
 
-  // Referencias
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  // Referencia para el IntersectionObserver (scroll infinito)
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Consultas Redux
+  // Consultas con Redux
   const { data: countBrandsData } = useCountBrandsQuery(null);
   const {
     data,
     error,
     isLoading: isQueryLoading,
     refetch,
-  } = useGetBrandsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    sort: sortQuery,
-  });
-
-  // Búsqueda debounced
-  const debouncedSearch = debounce((query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-    setBrands([]);
-    setHasMore(true);
-  }, 100);
-
-  // Efecto para carga inicial y búsquedas
-  useEffect(() => {
-    const loadBrands = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newBrands = result || [];
-          if (page === 1) {
-            setBrands(newBrands);
-          } else {
-            setBrands((prev) => [...prev, ...newBrands]);
-          }
-          setHasMore(newBrands.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error("Error loading brands:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadBrands();
-  }, [page, searchQuery, sortQuery, isLoading, refetch]);
-
-  // Intersection Observer para scroll infinito
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+  } = useGetBrandsPagQuery(
+    { page, limit: ITEMS_PER_PAGE, query: searchQuery, sort: sortQuery },
+    {
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
     }
+  );
 
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+  // Función debounced para actualizar el searchQuery
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setSearchQuery(query);
+      setPage(1);
+      setBrands([]); // Reinicia la lista de marcas al buscar
+      setHasMore(true);
+    }, 300), // Puedes ajustar el tiempo de espera aquí (300ms recomendado)
+    []
+  );
 
-  // Handlers de modales
-  const handleUpdateModalOpen = (id: string) => {
+  // Efecto para actualizar la lista de marcas cuando llegan nuevos datos
+  useEffect(() => {
+    if (data) {
+      setBrands((prevBrands) => {
+        // Si estamos en la primera página, reemplazamos la lista
+        if (page === 1) {
+          return data;
+        }
+        // Filtramos marcas nuevas que no existan en la lista actual
+        const newBrands = data.filter(
+          (brand) => !prevBrands.some((prev) => prev.id === brand.id)
+        );
+        return [...prevBrands, ...newBrands];
+      });
+      setHasMore(data.length === ITEMS_PER_PAGE);
+    }
+  }, [data, page]);
+
+  // Configuración del IntersectionObserver para scroll infinito
+  const lastBrandRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prevPage) => prevPage + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" }
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
+
+  // Handlers para abrir modales
+  const openUpdateModal = (id: string) => {
     setCurrentBrandId(encodeURIComponent(id));
     setUpdateModalOpen(true);
   };
 
-  const handleDetailModalOpen = (id: string) => {
+  const openDetailModal = (id: string) => {
     setCurrentBrandId(id);
     setDetailModalOpen(true);
   };
 
-  const handleModalClose = () => {
+  // Cierra modales y refetch de datos
+  const closeModal = () => {
     setUpdateModalOpen(false);
     setDetailModalOpen(false);
     setCurrentBrandId(null);
     refetch();
   };
 
+  // Handler para ordenar la tabla
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
-      let newSortQuery = "";
+      let newSort = "";
       if (currentField === field) {
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSort = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        newSortQuery = `${field}:asc`;
+        newSort = `${field}:asc`;
       }
-      setSortQuery(newSortQuery);
+      setSortQuery(newSort);
       setPage(1);
       setBrands([]);
       setHasMore(true);
@@ -146,23 +138,22 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Reiniciar búsqueda
-  const handleResetSearch = () => {
+  // Reinicia el search
+  const resetSearch = () => {
     setSearchQuery("");
     setPage(1);
     setBrands([]);
     setHasMore(true);
   };
 
-  // Configuración de la tabla
-  const tableData = brands?.map((brand) => ({
+  // Datos formateados para la tabla
+  const tableData = brands.map((brand) => ({
     key: brand.id,
-    // Nueva columna de info
     info: (
       <div className="flex justify-center items-center">
         <FaInfoCircle
-         className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
-         onClick={() => handleDetailModalOpen(brand.id)}
+          className="text-center text-xl hover:cursor-pointer hover:text-blue-500 text-green-500"
+          onClick={() => openDetailModal(brand.id)}
         />
       </div>
     ),
@@ -186,12 +177,13 @@ const Page = () => {
       <div className="flex justify-center items-center">
         <GoPencil
           className="text-center font-bold text-3xl text-white hover:cursor-pointer hover:text-black bg-green-400 p-1.5 rounded-sm"
-          onClick={() => handleUpdateModalOpen(brand.id)}
+          onClick={() => openUpdateModal(brand.id)}
         />
       </div>
     ),
   }));
 
+  // Encabezado de la tabla
   const tableHeader = [
     {
       component: <FaInfoCircle className="text-center text-xl" />,
@@ -212,6 +204,7 @@ const Page = () => {
     },
   ];
 
+  // Encabezado y filtros de la página
   const headerBody = {
     buttons: [],
     filters: [
@@ -220,7 +213,7 @@ const Page = () => {
           <div className="relative">
             <Input
               placeholder={t("page.searchPlaceholder")}
-              value={searchQuery}
+              defaultValue={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
               }
@@ -229,7 +222,7 @@ const Page = () => {
             {searchQuery && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={handleResetSearch}
+                onClick={resetSearch}
                 aria-label={t("page.clearSearch")}
               >
                 <FaTimes className="text-gray-400 hover:text-gray-600" />
@@ -244,6 +237,7 @@ const Page = () => {
       : t("page.results", { count: countBrandsData || 0 }),
   };
 
+  // Muestra spinner si se está cargando la consulta y aún no hay datos
   if (isQueryLoading && brands.length === 0) {
     return (
       <div className="flex justify-center py-8">
@@ -252,6 +246,7 @@ const Page = () => {
     );
   }
 
+  // Muestra error en caso de que la consulta falle
   if (error) {
     return (
       <div className="p-4 text-red-500">{t("page.errorLoadingBrands")}</div>
@@ -265,7 +260,7 @@ const Page = () => {
         <Header headerBody={headerBody} />
 
         {isLoading && brands.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : brands.length === 0 ? (
@@ -282,30 +277,30 @@ const Page = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastBrandRef} className="h-10" />
 
         {/* Modal para actualizar marca */}
-        <Modal isOpen={isUpdateModalOpen} onClose={handleModalClose}>
+        <Modal isOpen={isUpdateModalOpen} onClose={closeModal}>
           {currentBrandId && (
             <UpdateBrandComponent
               brandId={currentBrandId}
-              closeModal={handleModalClose}
+              closeModal={closeModal}
             />
           )}
         </Modal>
 
         {/* Modal para ver detalle de la marca */}
-        <Modal isOpen={isDetailModalOpen} onClose={handleModalClose}>
+        <Modal isOpen={isDetailModalOpen} onClose={closeModal}>
           {currentBrandId && (
             <BrandDetail
               data={brands.find((brand) => brand.id === currentBrandId)}
-              onClose={handleModalClose}
+              onClose={closeModal}
             />
           )}
         </Modal>
