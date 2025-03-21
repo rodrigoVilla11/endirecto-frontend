@@ -21,6 +21,7 @@ import MapComponent from "./Map";
 import CRMDetail from "./CRMDetail";
 import { useGetOrdersQuery } from "@/redux/services/ordersApi";
 import { useAuth } from "../context/AuthContext";
+import MapModal from "./MapModal";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -47,6 +48,7 @@ const Page = () => {
     type: "update" | "delete" | "info" | null;
     crm: any | null;
   }>({ type: null, crm: null });
+  const [isViewAllMapModalOpen, setViewAllMapModalOpen] = useState(false);
 
   // ---------- Estados y lógica para modal de creación ----------
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -70,8 +72,6 @@ const Page = () => {
       setCustomer_id(selectedClientId);
     }
   }, [selectedClientId]);
-
-
 
   useEffect(() => {
     if (userRole === "VENDEDOR" && userData?.seller_id) {
@@ -103,6 +103,25 @@ const Page = () => {
       refetchOnMountOrArgChange: true,
     }
   );
+  const { data: allVisitsData } = useGetCrmPagQuery(
+    {
+      page,
+      limit: 1000,
+      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
+      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
+      type: "VISIT",
+      insitu: "",
+      customer_id,
+      seller_id: sellerFilter,
+      search: searchQuery,
+      sort: sortQuery,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    }
+  );
+  const markersVisits = allVisitsData?.crms || [];
+
   // Actualizar customer_id cuando cambie selectedClientId
   useEffect(() => {
     if (selectedClientId) {
@@ -328,7 +347,13 @@ const Page = () => {
   // ---------- Filtros en la cabecera (Header) ----------
   const headerBody = React.useMemo(
     () => ({
-      buttons: [{ logo: <IoMdPin />, title: t("viewOnMap") }],
+      buttons: [
+        {
+          logo: <IoMdPin />,
+          title: t("viewOnMap"),
+          onClick: () => setViewAllMapModalOpen(true),
+        },
+      ],
       filters: [
         // Fecha desde
         {
@@ -358,7 +383,9 @@ const Page = () => {
         {
           content: (
             <select
-              value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
+              value={
+                userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter
+              }
               onChange={(e) => {
                 if (userRole !== "VENDEDOR") {
                   setSellerFilter(e.target.value);
@@ -468,6 +495,18 @@ const Page = () => {
           <MapComponent
             currentGPS={currentGPS}
             closeModal={closeViewGPSModal}
+          />
+        </Modal>
+      )}
+
+      {isViewAllMapModalOpen && (
+        <Modal
+          isOpen={isViewAllMapModalOpen}
+          onClose={() => setViewAllMapModalOpen(false)}
+        >
+          <MapModal
+            visit={markersVisits}
+            onClose={() => setViewAllMapModalOpen(false)}
           />
         </Modal>
       )}

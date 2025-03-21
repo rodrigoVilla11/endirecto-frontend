@@ -1,53 +1,59 @@
-"use client"
+"use client";
 
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api"
-import { X, Search, MapPin } from "lucide-react"
-import { useState } from "react"
-import { useTranslation } from "react-i18next"
-
-type Customer = {
-  id: string
-  name: string
-  gps?: string
-}
+import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { X, Search, MapPin } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type MapModalProps = {
-  customers: Customer[]
-  onClose: () => void
-}
+  visit: any;
+  onClose: () => void;
+};
 
-export default function MapModal({ customers, onClose }: MapModalProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const { t } = useTranslation()
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
-
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
+export default function MapModal({ visit, onClose }: MapModalProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { t } = useTranslation();
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+  const { data: customersData } = useGetCustomersQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
-  })
+  });
 
   if (!apiKey) {
-    return <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>
+    return (
+      <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>
+    );
   }
 
   if (loadError) {
-    return <div className="text-center text-red-500">Error al cargar la API de Google Maps</div>
+    return (
+      <div className="text-center text-red-500">
+        Error al cargar la API de Google Maps
+      </div>
+    );
   }
 
   // Filtrar clientes según la búsqueda
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredCustomers = visit.filter((visit: any) =>
+    visit.seller_id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Si la cantidad de clientes filtrados es mayor a 1000, se muestra un mensaje pidiendo filtrar antes
   if (filteredCustomers.length > 998) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
         <div className="rounded-xl bg-white p-6 shadow-2xl text-center">
-          <p className="text-xl font-semibold text-gray-800">Demasiados clientes</p>
+          <p className="text-xl font-semibold text-gray-800">
+            Demasiados clientes
+          </p>
           <p className="mt-2 text-gray-600">
-            Por favor, filtra antes de ver los resultados. No se pueden mostrar más de 1000 clientes.
+            Por favor, filtra antes de ver los resultados. No se pueden mostrar
+            más de 1000 clientes.
           </p>
           <button
             onClick={onClose}
@@ -57,27 +63,33 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   // Crear marcadores a partir de los clientes filtrados
   const markers = filteredCustomers
-    .map((c) => {
-      if (!c.gps) return null
-      const parts = c.gps.split(",").map((p) => Number.parseFloat(p.trim()))
+    .map((c: any) => {
+      if (!c.gps) return null;
+      const parts = c.gps
+        .split(",")
+        .map((p: any) => Number.parseFloat(p.trim()));
       if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
-        return null
+        return null;
       }
       return {
         id: c.id,
-        name: c.name,
+        seller: c.seller_id,
+        customer: c.customer_id,
         position: { lat: parts[0], lng: parts[1] },
-      }
+      };
     })
-    .filter((m) => m !== null)
+    .filter((m: any) => m !== null);
 
-  const containerStyle = { width: "100%", height: "100%" }
-  const center = markers.length > 0 ? markers[0]!.position : { lat: -34.6037, lng: -58.3816 }
+  const containerStyle = { width: "100%", height: "100%" };
+  const center =
+    markers.length > 0
+      ? markers[0]!.position
+      : { lat: -34.6037, lng: -58.3816 };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -120,15 +132,21 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
               <GoogleMap
                 mapContainerStyle={containerStyle}
                 onLoad={(map) => {
-                  setMapInstance(map)
-                  map.setCenter(center)
+                  setMapInstance(map);
+                  map.setCenter(center);
                 }}
                 zoom={10}
                 options={{
-                  styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }],
+                  styles: [
+                    {
+                      featureType: "poi",
+                      elementType: "labels",
+                      stylers: [{ visibility: "off" }],
+                    },
+                  ],
                 }}
               >
-                {markers.map((marker, index) => (
+                {markers.map((marker: any, index: any) => (
                   <Marker
                     key={marker!.id}
                     position={marker!.position}
@@ -138,7 +156,6 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
                       fontSize: "14px",
                       fontWeight: "bold",
                     }}
-                
                   />
                 ))}
               </GoogleMap>
@@ -160,29 +177,51 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredCustomers.map((customer, index) => (
-                    <tr
-                      key={customer.id}
-                      className="cursor-pointer transition-colors hover:bg-gray-50"
-                      onClick={() => {
-                        if (mapInstance && customer.gps) {
-                          const parts = customer.gps
-                            .split(",")
-                            .map((p) => Number.parseFloat(p.trim()))
-                          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                            mapInstance.panTo({ lat: parts[0], lng: parts[1] })
-                            mapInstance.setZoom(15)
+                  {filteredCustomers.map((customer: any, index: any) => {
+                    const sellerName =
+                      sellersData?.find(
+                        (seller: any) => seller.id === customer.seller_id
+                      )?.name || customer.seller_id;
+                    const customerName =
+                      customersData?.find(
+                        (cust: any) => cust.id === customer.customer_id
+                      )?.name || customer.customer_id;
+
+                    return (
+                      <tr
+                        key={customer.id}
+                        className="cursor-pointer transition-colors hover:bg-gray-50"
+                        onClick={() => {
+                          if (mapInstance && customer.gps) {
+                            const parts = customer.gps
+                              .split(",")
+                              .map((p: any) => Number.parseFloat(p.trim()));
+                            if (
+                              parts.length === 2 &&
+                              !isNaN(parts[0]) &&
+                              !isNaN(parts[1])
+                            ) {
+                              mapInstance.panTo({
+                                lat: parts[0],
+                                lng: parts[1],
+                              });
+                              mapInstance.setZoom(15);
+                            }
                           }
-                        }
-                      }}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                      <td className="flex items-center whitespace-nowrap px-4 py-3 text-sm">
-                        <MapPin className="mr-2 h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">{customer.name}</span>
-                      </td>
-                    </tr>
-                  ))}
+                        }}
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                          {index + 1}
+                        </td>
+                        <td className="flex items-center whitespace-nowrap px-4 py-3 text-sm">
+                          <MapPin className="mr-2 h-4 w-4 text-gray-400" />
+                          <span className="font-medium text-gray-900">
+                            {sellerName}, {customerName}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -190,5 +229,5 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

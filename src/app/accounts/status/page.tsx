@@ -47,14 +47,13 @@ const Page = () => {
   const [typeFilter, setTypeFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
 
-  
   // Estados para los modales y documento seleccionado
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
-  
+
   // Si existe un selectedClientId, se utiliza para filtrar y se asigna a customer_id
   useEffect(() => {
     if (selectedClientId) {
@@ -80,9 +79,8 @@ const Page = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
 
-
   // Referencia para el infinite scroll
-  const observerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Función para formatear fechas (YYYY-MM-DD)
   function formatDate(date: Date): string | undefined {
@@ -111,7 +109,9 @@ const Page = () => {
     : [undefined, undefined];
   const sortField = rawSortField;
   const sortOrder =
-    rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : undefined;
+    rawSortOrder === "asc" || rawSortOrder === "desc"
+      ? rawSortOrder
+      : undefined;
 
   // Consulta RTK Query para documentos
   const {
@@ -138,55 +138,45 @@ const Page = () => {
     }
   );
 
-  // Efecto para cargar documentos (paginación, búsqueda, orden, etc.)
-  useEffect(() => {
-    const loadDocuments = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newDocuments = result?.data || [];
-          if (page === 1) {
-            setItems(newDocuments);
-          } else {
-            setItems((prev) => [...prev, ...newDocuments]);
-          }
-          setHasMore(newDocuments.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error(t("errorLoadingDocuments"), error);
-          // En caso de error, asignamos un array vacío
-          setItems([]);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-  
-    loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, isLoading, refetch, t]);
-  
-  // Intersection Observer para infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
-    }
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+ // ======================================================
+   // Efectos
+   // ======================================================
+   // Actualizar lista de artículos y evitar duplicados
+   useEffect(() => {
+     if (data?.data) {
+       setItems((prev) => {
+         if (page === 1) {
+           return data.data;
+         }
+         const newArticles = data.data.filter(
+           (article) => !prev.some((item) => item.id === article.id)
+         );
+         return [...prev, ...newArticles];
+       });
+       setHasMore(data.data.length === ITEMS_PER_PAGE);
+     }
+   }, [data?.data, page]);
+ 
+   // ======================================================
+   // Infinite Scroll (Intersection Observer)
+   // ======================================================
+   const lastArticleRef = useCallback(
+     (node: HTMLDivElement | null) => {
+       if (observerRef.current) observerRef.current.disconnect();
+ 
+       observerRef.current = new IntersectionObserver(
+         (entries) => {
+           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+             setPage((prev) => prev + 1);
+           }
+         },
+         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+       );
+ 
+       if (node) observerRef.current.observe(node);
+     },
+     [hasMore, isQueryLoading]
+   );
 
   const handleResetSearch = () => {
     setSearchQuery("");
@@ -277,10 +267,7 @@ const Page = () => {
     });
 
   // Calcula la suma de los montos de los documentos cargados
-  const filteredTotal = items.reduce(
-    (acc, doc) => acc + Number(doc.amount),
-    0
-  );
+  const filteredTotal = items.reduce((acc, doc) => acc + Number(doc.amount), 0);
 
   // Función para formatear precios con moneda
   function formatPriceWithCurrency(price: number): string {
@@ -306,7 +293,6 @@ const Page = () => {
       sellerFilter ||
       customer_id
   );
-
 
   // Agregar nuevos filtros al header (select para type, seller y customer)
   const headerFilters = [
@@ -449,7 +435,10 @@ const Page = () => {
         <Table
           headers={[
             { name: t("action"), key: "action" },
-            { component: <FaInfoCircle className="text-center text-xl" />, key: "info" },
+            {
+              component: <FaInfoCircle className="text-center text-xl" />,
+              key: "info",
+            },
             { name: t("customer"), key: "customer" },
             { name: t("type"), key: "type" },
             { name: t("number"), key: "number", important: true },
@@ -465,7 +454,7 @@ const Page = () => {
           sortField={sortQuery.split(":")[0]}
           sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
         />
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
       </div>
       <Modal
         isOpen={isCreateModalOpen}
