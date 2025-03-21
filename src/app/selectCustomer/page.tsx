@@ -134,9 +134,10 @@ const SelectCustomer = () => {
       setPage(1);
       setItems([]);
       setHasMore(true);
-    }, 100),
+    }, 50), // Ajusta el delay a 300ms
     []
   );
+  
 
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
@@ -438,24 +439,23 @@ const SelectCustomer = () => {
         {
           content: (
             <div className="relative">
-              <Input
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  debouncedSearch(e.target.value)
-                }
-                className="pr-8"
-              />
-              {searchQuery && (
-                <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={handleResetSearch}
-                  aria-label="Clear search"
-                >
-                  <FaTimes className="text-gray-400 hover:text-gray-600" />
-                </button>
-              )}
-            </div>
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchQuery}
+              // Cambiar de setSearchQuery a debouncedSearch para un comportamiento consistente
+              onChange={(e) => debouncedSearch(e.target.value)}
+              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleResetSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
           ),
         },
         {
