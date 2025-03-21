@@ -40,7 +40,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
                     {tags}
                     <button
                       className="absolute top-0 right-0 text-red-500"
-                      onClick={() => setTags([])}
+                      onClick={() => setTags("")}
                     >
                       <FaTrashCan />
                     </button>
