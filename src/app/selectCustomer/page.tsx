@@ -542,7 +542,7 @@ const SelectCustomer = () => {
                 type="text"
                 placeholder="Buscar..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => debouncedSearch(e.target.value)}
                 className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
               />
               {searchQuery && (
