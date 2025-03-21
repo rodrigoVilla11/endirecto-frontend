@@ -18,11 +18,9 @@ import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
 import { AiOutlineDownload } from "react-icons/ai";
 import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import { GoPencil } from "react-icons/go";
-
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
-
 import { useTranslation } from "react-i18next";
 import ArticleDetail from "./ArticleDetail";
 
@@ -31,29 +29,34 @@ const ITEMS_PER_PAGE = 15;
 const Page = () => {
   const { t } = useTranslation();
 
-  // Estados de paginación, artículos, búsqueda y sort
+  // ======================================================
+  // Estados
+  // ======================================================
   const [page, setPage] = useState(1);
   const [articles, setArticles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc" o "campo:desc"
+  const [brandFilter, setBrandFilter] = useState("");
+  const [itemFilter, setItemFilter] = useState("");
+
+  // Estado para controlar la apertura de modales
   const [modalState, setModalState] = useState<{
     type: "update" | "delete" | "info" | null;
     articleId: string | null;
   }>({ type: null, articleId: null });
-  const [isLoading, setIsLoading] = useState(false);
-  const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc" o "campo:desc"
 
-  // Estados para filtrar por marca e ítem
-  const [brandFilter, setBrandFilter] = useState("");
-  const [itemFilter, setItemFilter] = useState("");
+  // ======================================================
+  // Refs
+  // ======================================================
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Referencia para el infinite scroll
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  // Llamadas a APIs
+  // ======================================================
+  // Consultas a APIs
+  // ======================================================
   const { data: brands } = useGetBrandsQuery(null);
   const { data: items } = useGetItemsQuery(null);
-
   const {
     data,
     error,
@@ -76,18 +79,19 @@ const Page = () => {
     }
   );
 
-  // Función para alternar el orden
+  // ======================================================
+  // Handlers
+  // ======================================================
+  // Alternar el orden de la tabla
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
-      let newSortQuery = "";
-
-      if (currentField === field) {
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
-      } else {
-        newSortQuery = `${field}:asc`;
-      }
+      const newSortQuery =
+        currentField === field
+          ? currentDirection === "asc"
+            ? `${field}:desc`
+            : `${field}:asc`
+          : `${field}:asc`;
 
       setSortQuery(newSortQuery);
       setPage(1);
@@ -107,80 +111,21 @@ const Page = () => {
     []
   );
 
-  // Cuando cambie el filtro de marca o ítem, se resetea la paginación
+  // Manejar cambios en el filtro de marca
   const handleBrandChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setBrandFilter(e.target.value);
     setPage(1);
     setArticles([]);
   }, []);
 
+  // Manejar cambios en el filtro de ítem
   const handleItemChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setItemFilter(e.target.value);
     setPage(1);
     setArticles([]);
   }, []);
 
-  // Efecto para cargar artículos (llamado al refetch)
-  useEffect(() => {
-    const loadItems = async () => {
-      if (isLoading) return;
-      setIsLoading(true);
-      try {
-        const result = await refetch().unwrap();
-        const newItems = result?.articles || [];
-
-        if (page === 1) {
-          setArticles(newItems);
-        } else {
-          setArticles((prev) => [...prev, ...newItems]);
-        }
-
-        // Si vienen menos artículos que el límite, no hay más
-        setHasMore(newItems.length === ITEMS_PER_PAGE);
-      } catch (error) {
-        console.error(t("errorLoadingArticles"), error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadItems();
-  }, [
-    page,
-    searchQuery,
-    sortQuery,
-    brandFilter,
-    itemFilter,
-    refetch,
-    isLoading,
-    t,
-  ]);
-
-  // Intersection Observer para implementar el infinite scroll
-  useEffect(() => {
-    if (!observerRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        // Cuando el div observador es visible, hay más datos y no se está cargando, se incrementa la página
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 } // Umbral ajustado similar a la lógica del CRM
-    );
-
-    observer.observe(observerRef.current);
-
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [hasMore, isLoading]);
-
-  // Manejadores para abrir/cerrar modales
+  // Abrir modal (para actualización, eliminación o detalle)
   const handleModalOpen = useCallback(
     (type: "update" | "delete" | "info", id: string) => {
       setModalState({ type, articleId: id });
@@ -188,10 +133,10 @@ const Page = () => {
     []
   );
 
+  // Cerrar modal y refrescar datos
   const handleModalClose = useCallback(
     async (type: "update" | "delete" | "info") => {
       setModalState({ type: null, articleId: null });
-      // Espera breve para asegurar la actualización
       setTimeout(async () => {
         try {
           await refetch();
@@ -203,13 +148,56 @@ const Page = () => {
     [refetch, t]
   );
 
+  // Reiniciar búsqueda
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
     setPage(1);
     setArticles([]);
   }, []);
 
-  // Datos que se mostrarán en la tabla
+  // ======================================================
+  // Efectos
+  // ======================================================
+  // Actualizar lista de artículos y evitar duplicados
+  useEffect(() => {
+    if (data?.articles) {
+      setArticles((prev) => {
+        if (page === 1) {
+          return data.articles;
+        }
+        const newArticles = data.articles.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.articles.length === ITEMS_PER_PAGE);
+    }
+  }, [data?.articles, page]);
+
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
+
+  // ======================================================
+  // Datos memorizados para la tabla y encabezado
+  // ======================================================
   const tableData = useMemo(
     () =>
       articles.map((article) => ({
@@ -253,46 +241,24 @@ const Page = () => {
     [articles, handleModalOpen, t]
   );
 
-  // Estructura de encabezados de tabla
   const tableHeader = useMemo(
     () => [
-      {
-        component: <FaInfoCircle className="text-center text-xl" />,
-        key: "info",
-        sortable: false,
-        important: true,
-      },
+      { component: <FaInfoCircle className="text-center text-xl" />, key: "info", sortable: false, important: true },
       { name: t("brand"), key: "brand", sortable: true, important: true },
-      {
-        component: <FaImage className="text-center text-xl" />,
-        key: "image",
-        sortable: false,
-        important: true,
-      },
+      { component: <FaImage className="text-center text-xl" />, key: "image", sortable: false, important: true },
       { name: t("item"), key: "item", sortable: true },
       { name: t("id"), key: "id", sortable: true, important: true },
       { name: t("supplierCode"), key: "supplier", sortable: true },
       { name: t("name"), key: "name", sortable: true },
-      {
-        component: <GoPencil className="text-center text-lg" />,
-        key: "edit",
-        sortable: false,
-      },
+      { component: <GoPencil className="text-center text-lg" />, key: "edit", sortable: false },
     ],
     [t]
   );
 
-  // Armado del Header (botones, filtros, etc.)
-  const headerBody = useMemo(() => {
-    return {
-      buttons: [
-        {
-          logo: <AiOutlineDownload />,
-          title: t("download"),
-        },
-      ],
+  const headerBody = useMemo(
+    () => ({
+      buttons: [{ logo: <AiOutlineDownload />, title: t("download") }],
       filters: [
-        // Filtro de búsqueda
         {
           content: (
             <div className="relative">
@@ -316,7 +282,6 @@ const Page = () => {
             </div>
           ),
         },
-        // Filtro por marca
         {
           content: (
             <select
@@ -333,7 +298,6 @@ const Page = () => {
             </select>
           ),
         },
-        // Filtro por ítem
         {
           content: (
             <select
@@ -352,21 +316,25 @@ const Page = () => {
         },
       ],
       results: t("results", { count: data?.totalItems || 0 }),
-    };
-  }, [
-    searchQuery,
-    brandFilter,
-    itemFilter,
-    data,
-    brands,
-    items,
-    debouncedSearch,
-    handleResetSearch,
-    handleBrandChange,
-    handleItemChange,
-    t,
-  ]);
+    }),
+    [
+      searchQuery,
+      brandFilter,
+      itemFilter,
+      data,
+      brands,
+      items,
+      debouncedSearch,
+      handleResetSearch,
+      handleBrandChange,
+      handleItemChange,
+      t,
+    ]
+  );
 
+  // ======================================================
+  // Renderizado condicional
+  // ======================================================
   if (isQueryLoading && articles.length === 0) {
     return (
       <div className="flex justify-center py-8">
@@ -388,9 +356,7 @@ const Page = () => {
         <Header headerBody={headerBody} />
 
         {articles.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            {t("noArticlesFound")}
-          </div>
+          <div className="text-center py-8 text-gray-500">{t("noArticlesFound")}</div>
         ) : (
           <>
             {isMobile ? (
@@ -412,35 +378,25 @@ const Page = () => {
           </>
         )}
 
-        {/* Div para el Intersection Observer */}
-        <div ref={observerRef} className="h-10" />
+        {/* Sentinel para Infinite Scroll */}
+        <div ref={lastArticleRef} className="h-10" />
 
-        {/* Modal para actualizar artículo */}
-        <Modal
-          isOpen={modalState.type === "update"}
-          onClose={() => handleModalClose("update")}
-        >
+        {/* Modal de actualización */}
+        <Modal isOpen={modalState.type === "update"} onClose={() => handleModalClose("update")}>
           {modalState.articleId && (
             <UpdateArticleComponent
               articleId={modalState.articleId}
-              onUpdateSuccess={() => {
-                handleModalClose("update");
-              }}
+              onUpdateSuccess={() => handleModalClose("update")}
               closeModal={() => handleModalClose("update")}
             />
           )}
         </Modal>
 
-        {/* Modal para ver detalle del artículo */}
-        <Modal
-          isOpen={modalState.type === "info"}
-          onClose={() => handleModalClose("info")}
-        >
+        {/* Modal de detalle del artículo */}
+        <Modal isOpen={modalState.type === "info"} onClose={() => handleModalClose("info")}>
           {modalState.articleId && (
             <ArticleDetail
-              data={articles.find(
-                (article) => article.id === modalState.articleId
-              )}
+              data={articles.find((article) => article.id === modalState.articleId)}
               onClose={() => handleModalClose("info")}
             />
           )}
