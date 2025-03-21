@@ -1,54 +1,175 @@
 "use client";
-import { useGetArticlesVehiclesQuery, useGetArticleVehicleBrandsQuery } from "@/redux/services/articlesVehicles";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { FaAngleDown } from "react-icons/fa6";
 import { useTranslation } from "react-i18next";
+import {
+  useGetArticleVehicleBrandsQuery,
+  useGetArticleVehicleModelsQuery,
+  useGetArticleVehicleEnginesQuery,
+  useGetArticleVehicleYearsQuery,
+} from "@/redux/services/articlesVehicles";
+import { useFilters } from "@/app/context/FiltersContext";
 
-const VehiclesBrands = ({ onChange, vehicleBrand }: any) => {
+const VehicleFilter = () => {
   const { t } = useTranslation();
-  const [selectedVehiclesBrand, setSelectedVehiclesBrand] = useState("");
-  const { data: vehiclesBrands } = useGetArticleVehicleBrandsQuery(null);
+  const {
+    vehicleBrand,
+    setVehicleBrand,
+    model,
+    setModel,
+    engine,
+    setEngine,
+    year,
+    setYear,
+  } = useFilters();
 
-  // Sincronizar el estado con la prop 'vehicleBrand'
-  useEffect(() => {
-    if (!vehicleBrand) {
-      setSelectedVehiclesBrand("");
-    } else {
-      setSelectedVehiclesBrand(vehicleBrand);
-    }
-  }, [vehicleBrand]);
+  // Consultas (dependen del contexto)
+  const { data: brandsData = [], isLoading: isLoadingBrands } = useGetArticleVehicleBrandsQuery(null);
+  const { data: modelsData = [], isLoading: isLoadingModels } = useGetArticleVehicleModelsQuery(
+    { brand: vehicleBrand },
+    { skip: !vehicleBrand }
+  );
+  const { data: enginesData = [], isLoading: isLoadingEngines } = useGetArticleVehicleEnginesQuery(
+    { brand: vehicleBrand },
+    { skip: !vehicleBrand }
+  );
+  const { data: yearsData = [], isLoading: isLoadingYears } = useGetArticleVehicleYearsQuery(
+    { brand: vehicleBrand, model },
+    { skip: !vehicleBrand || !model }
+  );
 
-  const handleVehiclesBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value;
-    setSelectedVehiclesBrand(selectedValue);
-    onChange(selectedValue);
+  // Cada vez que se actualice alguno de estos valores, se notifican (si fuera necesario)
+  // Aquí el componente es "controlado" por el contexto
+
+  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setVehicleBrand(value);
+    // Al cambiar la marca, se limpian los dependientes
+    setModel("");
+    setEngine("");
+    setYear("");
+  };
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setModel(value);
+    setYear("");
+  };
+
+  const handleEngineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setEngine(value);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setYear(value);
+  };
+
+  const handleClearFilters = () => {
+    setVehicleBrand("");
+    setModel("");
+    setEngine("");
+    setYear("");
   };
 
   return (
     <div className="text-xs font-semibold">
-      <div className="mb-4">
-        <label className="block text-gray-700 font-bold mb-2" htmlFor="vehiclesBrands">
-          {t("vehicleBrands")}
-        </label>
-        <div className="relative flex gap-1 justify-center items-center">
-          <select
-            id="vehiclesBrands"
-            value={selectedVehiclesBrand}
-            onChange={handleVehiclesBrandChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          >
-            <option value="">{t("selectVehicleBrands")}</option>
-            {vehiclesBrands?.brands.map((item: any) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <FaAngleDown className="absolute right-3 pointer-events-none" />
-        </div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-bold text-sm">{t("vehicleFilters")}</h3>
+        {(vehicleBrand || model || engine || year) && (
+          <button onClick={handleClearFilters} className="text-blue-600 hover:text-blue-800 text-xs">
+            {t("clearFilters")}
+          </button>
+        )}
       </div>
+
+      <FilterDropdown
+        label={t("vehicleBrands")}
+        value={vehicleBrand}
+        onChange={handleBrandChange}
+        options={brandsData}
+        placeholder={t("selectVehicleBrands")}
+        isLoading={isLoadingBrands}
+      />
+
+      <FilterDropdown
+        label={t("vehicleModels")}
+        value={model}
+        onChange={handleModelChange}
+        options={modelsData}
+        placeholder={t("selectVehicleModels")}
+        isLoading={isLoadingModels}
+        disabled={!vehicleBrand}
+      />
+
+      <FilterDropdown
+        label={t("vehicleEngines")}
+        value={engine}
+        onChange={handleEngineChange}
+        options={enginesData}
+        placeholder={t("selectVehicleEngines")}
+        isLoading={isLoadingEngines}
+        disabled={!vehicleBrand}
+      />
+
+      <FilterDropdown
+        label={t("vehicleYears")}
+        value={year}
+        onChange={handleYearChange}
+        options={yearsData}
+        placeholder={t("selectVehicleYears")}
+        isLoading={isLoadingYears}
+        disabled={!vehicleBrand || !model}
+      />
     </div>
   );
 };
 
-export default VehiclesBrands;
+const FilterDropdown = ({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  isLoading = false,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: string[];
+  placeholder: string;
+  isLoading?: boolean;
+  disabled?: boolean;
+}) => (
+  <div className="mb-4">
+    <label className="block text-gray-700 font-bold mb-2">{label}</label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled || isLoading}
+        className={`shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+          disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
+        }`}
+      >
+        <option value="">{isLoading ? "Cargando..." : placeholder}</option>
+        {options.map((option, index) => (
+          <option key={`${option}-${index}`} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <div className="absolute right-3 top-3 pointer-events-none">
+        {isLoading ? (
+          <div className="w-4 h-4 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+        ) : (
+          <FaAngleDown className="text-gray-400" />
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+export default VehicleFilter;
