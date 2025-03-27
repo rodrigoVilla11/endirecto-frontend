@@ -186,7 +186,7 @@
   "deleteButton": "Eliminar",
   "na": "N/D",
   "noDataFound": "No se encontraron datos",
-  "hello": "Hola {{username}} {{sellerId}}",
+  "hello": "Hola {{username}}",
   "expiredPrice": "Vencido: $ {{amount}}",
   "pendings": "Pendientes",
   "codes": "Códigos",

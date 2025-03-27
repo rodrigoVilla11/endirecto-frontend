@@ -1,49 +1,59 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import Header from "./components/Header";
 import Card from "./components/Card";
 import CardShortcuts from "./components/CardShortcuts";
+
+// Íconos
 import { MdOutlineShoppingBag, MdTextSnippet } from "react-icons/md";
-import {
-  FaPowerOff,
-  FaShoppingCart,
-  FaPhone,
-  FaFileDownload,
-} from "react-icons/fa";
+import { FaPowerOff, FaShoppingCart, FaPhone, FaFileDownload } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import { BsCash } from "react-icons/bs";
 import { IoIosPaper } from "react-icons/io";
 import { IoNotificationsOutline, IoCalculatorSharp } from "react-icons/io5";
 import { ImStatsDots } from "react-icons/im";
+
+// Contextos y hooks
 import { useSideMenu } from "@/app/context/SideMenuContext";
-import Link from "next/link";
-import {
-  useCountCustomersQuery,
-  useGetCustomerByIdQuery,
-} from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useClient } from "@/app/context/ClientContext";
-import { useGetBalancesSummaryQuery } from "@/redux/services/customersInformations";
-import { useTranslation } from "react-i18next";
 
-// Hooks para ventas y facturación (facturas)
+// Queries
+import {
+  useGetCustomerByIdQuery,
+  useGetCustomersPagQuery,
+} from "@/redux/services/customersApi";
+import { useGetBalancesSummaryQuery } from "@/redux/services/customersInformations";
 import { useGetMonthlySalesQuery } from "@/redux/services/ordersApi";
 import { useGetMonthlyInvoicesQuery } from "@/redux/services/documentsApi";
 import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
+import { useTranslation } from "react-i18next";
+
+const ITEMS_PER_PAGE = 15;
+
 const DashboardPage = () => {
+  // ------------------ Hooks y Contextos ------------------
   const { t } = useTranslation();
   const { isOpen } = useSideMenu();
   const { selectedClientId } = useClient();
-  const { role } = useAuth();
+  const { role, userData } = useAuth();
+
   const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  const { userData } = useAuth();
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
-  // Datos de clientes y estado de cuenta
-  const { data: countCustomersData } = useCountCustomersQuery({});
 
+  // ------------------ Filtro de vendedor ------------------
+  const [sellerFilter, setSellerFilter] = useState("");
+  useEffect(() => {
+    if (role === "VENDEDOR" && userData?.seller_id) {
+      setSellerFilter(userData.seller_id);
+    }
+  }, [role, userData]);
+
+  // ------------------ Query Params ------------------
   const queryParams =
     selectedClientId && selectedClientId !== ""
       ? { customerId: selectedClientId }
@@ -51,10 +61,17 @@ const DashboardPage = () => {
       ? { sellerId: userData.seller_id }
       : {};
 
+  const { data: totalCustomers } = useGetCustomersPagQuery({
+    page: 1,
+    limit: ITEMS_PER_PAGE,
+    seller_id: sellerFilter,
+  });
+
   const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
-  function formatPriceWithCurrency(price: any) {
-    return new Intl.NumberFormat("es-AR", {
+  // ------------------ Funciones de Formateo ------------------
+  const formatPriceWithCurrency = (price: any) =>
+    new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       minimumFractionDigits: 2,
@@ -63,61 +80,53 @@ const DashboardPage = () => {
       .format(price)
       .replace("ARS", "")
       .trim();
-  }
 
-  const formatCurrency = (value: any) => {
-    return new Intl.NumberFormat("es-AR", {
+  const formatCurrency = (value: any) =>
+    new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
-  };
 
-  // ------------------ LÓGICA PARA VENTAS Y FACTURACIÓN ------------------
+  // ------------------ Lógica para Ventas y Facturación ------------------
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1; // Mes 1-12
   const lastYear = currentYear - 1;
   const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
 
-  // Consultamos ventas mensuales del año actual y del año pasado
+  // Ventas mensuales del año actual y pasado
   const { data: currentYearSalesData } = useGetMonthlySalesQuery({
     startDate: `${currentYear}-01-01`,
     endDate: `${currentYear}-12-31`,
-    ...queryParams
+    ...queryParams,
   });
   const { data: lastYearSalesData } = useGetMonthlySalesQuery({
     startDate: `${lastYear}-01-01`,
     endDate: `${lastYear}-12-31`,
-    ...queryParams
+    ...queryParams,
   });
 
-  // Consultamos facturación mensual (facturas) del año actual
+  // Facturación mensual (facturas) del año actual
   const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery({
-    startDate: `${currentYear}-01-01`,
-    endDate: `${currentYear}-12-31`,
-    ...queryParams
-
+    startDate: `${currentYear}-${currentMonth}-01`,
+    endDate: `${currentYear}-${currentMonth}-31`,
+    ...queryParams,
   });
 
-  // Extraemos datos del mes actual y anteriores para ventas
+  // Extraer datos específicos para ventas e ingresos
   const currentMonthSalesData = currentYearSalesData?.find(
     (d) => d.month === currentMonth
   );
   const lastYearSameMonthSalesData = lastYearSalesData?.find(
     (d) => d.month === currentMonth
   );
-  let previousMonthSalesData;
-  if (currentMonth === 1) {
-    previousMonthSalesData = lastYearSalesData?.find((d) => d.month === 12);
-  } else {
-    previousMonthSalesData = currentYearSalesData?.find(
-      (d) => d.month === previousMonth
-    );
-  }
+  const previousMonthSalesData =
+    currentMonth === 1
+      ? lastYearSalesData?.find((d) => d.month === 12)
+      : currentYearSalesData?.find((d) => d.month === previousMonth);
 
-  // Datos de facturación mensual del mes actual
   const currentMonthInvoiceData = currentYearInvoicesData?.find(
     (d) => d.month === currentMonth
   );
@@ -125,8 +134,7 @@ const DashboardPage = () => {
   // Cálculo de porcentajes
   const interannualPercentage =
     lastYearSameMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
-      ? (currentMonthSalesData.totalSales /
-          lastYearSameMonthSalesData.totalSales) *
+      ? (currentMonthSalesData.totalSales / lastYearSameMonthSalesData.totalSales) *
         100
       : 0;
 
@@ -138,20 +146,21 @@ const DashboardPage = () => {
 
   const currentMonthOrdersTotal = currentMonthSalesData?.totalSales || 0;
   const currentMonthOrdersCount = currentMonthSalesData?.countOrders || 0;
-
   const currentMonthInvoiceTotal = currentMonthInvoiceData?.totalSales || 0;
   const currentMonthInvoiceCount = currentMonthInvoiceData?.totalQty || 0;
 
   // ------------------ Definición de Items para Cards ------------------
+  /** Tipo de Item para Card */
   interface CardItem {
     logo: React.ReactNode;
     title: any;
     subtitle?: any;
-    text?: any | undefined;
+    text?: any;
     href: string;
     allowedRoles: string[];
-    color?: string; // propiedad opcional
+    color?: string;
     className?: string;
+    logout?: boolean;
   }
 
   const itemsCard: CardItem[] = [
@@ -160,18 +169,12 @@ const DashboardPage = () => {
       title: t("catalogue"),
       text: t("accessCatalog"),
       href: "/catalogue",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       logo: <CgProfile />,
       title: t("selectCustomer"),
-      subtitle: countCustomersData,
+      subtitle: totalCustomers?.totalCustomers,
       href: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
@@ -187,13 +190,7 @@ const DashboardPage = () => {
         totalDebt?.documents_balance_expired
       )}`,
       href: "/accounts/status",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       color: totalDebt?.documents_balance ? "red" : "",
     },
     // Venta interanual
@@ -213,16 +210,13 @@ const DashboardPage = () => {
       subtitle: `${interannualPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}:{" "}
-          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
-          {t("lastYearMonth")}:{" "}
-          {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
+          {t("lastYearMonth")}: {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
         </>
       ),
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-      // Determinamos el color para el Card (borde inferior y texto) según el porcentaje
       color:
         interannualPercentage < 80
           ? "red"
@@ -247,11 +241,9 @@ const DashboardPage = () => {
       subtitle: `${monthlyPercentage.toFixed(0)}%`,
       text: (
         <>
-          {t("currentMonth")}:{" "}
-          {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
           <br />
-          {t("lastMonth")}:{" "}
-          {formatCurrency(previousMonthSalesData?.totalSales || 0)}
+          {t("lastMonth")}: {formatCurrency(previousMonthSalesData?.totalSales || 0)}
         </>
       ),
       href: "/orders/orders",
@@ -281,14 +273,14 @@ const DashboardPage = () => {
       href: "/accounts/vouchers",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
+    // Notificaciones
     {
       logo: (
         <IoNotificationsOutline
           className={
             ((selectedClientId
               ? data?.notifications.filter((n: any) => !n.read).length
-              : userQuery.data?.notifications.filter((n: any) => !n.read)
-                  .length) || 0) > 0
+              : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
               ? "text-red-500"
               : "text-green-500"
           }
@@ -301,17 +293,10 @@ const DashboardPage = () => {
       text: `${t("unreadNotifications")}: ${
         (selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
-        0
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0
       }`,
       href: "/notifications",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       color:
         ((selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
@@ -322,30 +307,19 @@ const DashboardPage = () => {
     },
   ];
 
-  const itemsShortcuts = [
+  // ------------------ Definición de Items para Shortcuts ------------------
+  const itemsShortcuts: CardItem[] = [
     {
       logo: <IoIosPaper />,
       title: t("documents"),
       href: "/accounts/vouchers",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       logo: <BsCash />,
       title: t("collections"),
       href: "/accounts/payments",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       logo: <BsCash />,
@@ -363,26 +337,8 @@ const DashboardPage = () => {
       logo: <IoCalculatorSharp />,
       title: t("orders"),
       href: "/orders/orders",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
-    // {
-    //   logo: <IoCalculatorSharp />,
-    //   title: t("budget"),
-    //   href: "/orders/budget",
-    //   allowedRoles: [
-    //     "ADMINISTRADOR",
-    //     "OPERADOR",
-    //     "MARKETING",
-    //     "VENDEDOR",
-    //     "CUSTOMER",
-    //   ],
-    // },
     {
       logo: <FaShoppingCart />,
       title: t("shoppingCart"),
@@ -411,13 +367,7 @@ const DashboardPage = () => {
       logo: <CgProfile />,
       title: t("myProfile"),
       href: "/profile/my-profile",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
     },
     {
       logo: <BsCash />,
@@ -435,17 +385,12 @@ const DashboardPage = () => {
       logo: <FaPowerOff />,
       title: t("logout"),
       href: "",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
       logout: true,
     },
   ];
 
+  // ------------------ Filtrado según roles ------------------
   const filteredItemsCard = role
     ? itemsCard.filter(
         (item) => !item.allowedRoles || item.allowedRoles.includes(role)
@@ -458,6 +403,7 @@ const DashboardPage = () => {
       )
     : itemsShortcuts;
 
+  // ------------------ Renderizado ------------------
   return (
     <div className="gap-4">
       <Header />
@@ -500,7 +446,7 @@ const DashboardPage = () => {
               <CardShortcuts
                 title={item.title}
                 logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 "
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
                 logout={item.logout}
               />
             </Link>

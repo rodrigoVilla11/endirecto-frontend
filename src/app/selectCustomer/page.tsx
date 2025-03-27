@@ -445,7 +445,7 @@ const SelectCustomer = () => {
               value={searchQuery}
               // Cambiar de setSearchQuery a debouncedSearch para un comportamiento consistente
               onChange={(e) => debouncedSearch(e.target.value)}
-              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
             />
             {searchQuery && (
               <button

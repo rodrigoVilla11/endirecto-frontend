@@ -28,6 +28,7 @@ type Crm = {
   collection_id?: string;
   customer_id?: string;
   order_id?: string;
+  user_id?: string;
   seller_id?: string;
   deleted_at: string;
 };
@@ -40,6 +41,7 @@ type CreateCrmPayload = {
   status: StatusType;
   notes: string;
   collection_id?: string;
+  user_id?: string;
   customer_id?: string;
   order_id?: string;
   seller_id?: string;

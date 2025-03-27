@@ -67,7 +67,6 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-
   // Usamos useMemo para agrupar los parámetros de la query.
   const queryParams = useMemo(() => {
     return {
@@ -226,7 +225,7 @@ const Page = () => {
       );
       const seller = sellersData?.find((data) => data.id === order.seller?.id);
       return {
-        key: order._id, // Se asume que el modelo usa "id" en lugar de "_id"
+        key: `${order.customer.id} ${order.date ? format(new Date(order.date), "dd/MM/yyyy HH:mm") : "N/A"}`,
         info: (
           <div className="flex justify-center items-center">
             <FaInfoCircle

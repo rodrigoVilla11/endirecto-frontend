@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { addMonths, format } from "date-fns";
 import { useAddNotificationToUserMutation } from "@/redux/services/usersApi";
+import { useAuth } from "../context/AuthContext";
 
 interface OrderItem {
   id: string;
@@ -83,6 +84,7 @@ export default function OrderConfirmation({
 }: OrderConfirmationProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { userData } = useAuth();
 
   const [createOrder, { isLoading: isLoadingCreate }] = useCreateOrderMutation();
   const [addNotificationToUser] = useAddNotificationToUserMutation();
@@ -252,7 +254,7 @@ export default function OrderConfirmation({
         .join(", ");
 
       // Construir título y descripción para la notificación
-      const notificationTitle = `Pedido Número ${createdOrder.tmp_id}, Cliente ${selectedClientId}`;
+      const notificationTitle = `Cliente ${selectedClientId}`;
       const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
 
       // 4. Enviar la notificación de tipo PEDIDO
@@ -275,11 +277,12 @@ export default function OrderConfirmation({
         type: ActionType.ORDER,
         insitu: updatedTransaction.insitu,
         status: StatusType.PENDING,
-        notes: `Pedido Nro. ${createdOrder.tmp_id}. Observaciones: ${observations}`,
+        notes: `Observaciones: ${observations}`,
         collection_id: "",
         customer_id: selectedClientId || "",
         order_id: createdOrder.tmp_id,
         seller_id: transaction.seller.id || "",
+        user_id: userData?.seller_id ? userData?.seller_id : userData?._id || "",
       }).unwrap();
 
       setShowSuccess(true);

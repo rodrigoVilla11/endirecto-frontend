@@ -40,7 +40,7 @@ const SliderImages = () => {
     );
   return (
     <div
-      className="relative w-full overflow-hidden shadow-lg bg-gray-200 mt-20 mb-8 sm:mt-0 sm:mb-0"
+      className="relative w-full overflow-hidden shadow-lg bg-gray-200  mb-8 sm:mt-0 sm:mb-0"
       id="home"
     >
       <Swiper

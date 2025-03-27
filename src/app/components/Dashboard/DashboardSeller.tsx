@@ -349,8 +349,8 @@ const DashboardSeller = () => {
 
   return (
     <div className="gap-4 bg-black">
-      <div className="mt-12 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
-        {t("hello", { username: userData?.username, sellerId: userData?.seller_id })}
+      <div className="mt-2 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
+        {t("hello", { username: userData?.username })}
       </div>
       <div className="overflow-x-auto h-auto">
       <div

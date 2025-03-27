@@ -43,7 +43,6 @@ const SliderArticles = () => {
         modules={[Navigation, Autoplay]}
         spaceBetween={4}
         slidesPerView={isMobile ? 2 : 5}
-        navigation
         pagination={{ clickable: true }}
         autoplay={{ delay: 5000 }}
         loop

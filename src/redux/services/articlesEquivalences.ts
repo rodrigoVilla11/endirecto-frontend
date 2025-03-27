@@ -18,6 +18,13 @@ type CreateArticleEquivalencePayload ={
   brand: string;
   article_id: string;
 }
+type UpdateArticleEquivalencePayload = {
+  id: string;
+  code?: string;
+  brand?: string;
+  article_id?: string;
+  articles_group_id?: string;
+};
 
 export const articlesEquivalencesApi = createApi({
   reducerPath: "articlesEquivalencesApi",
@@ -61,6 +68,13 @@ export const articlesEquivalencesApi = createApi({
         body: newArticleEquivalence,
       }),
     }),
+    updateArticleEquivalence: builder.mutation<ArticleEquivalence, UpdateArticleEquivalencePayload>({
+      query: (payload) => ({
+        url: `/articles-equivalences/${payload.id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
     importArticleEquivalenceExcel: builder.mutation<
       { totalProcessed: number; successful: number; errors: any[] },
       FormData
@@ -90,5 +104,6 @@ export const {
   useCreateArticleEquivalenceMutation,
   useExportArticleEquivalenceExcelQuery,
   useImportArticleEquivalenceExcelMutation,
-  useLazyExportArticleEquivalenceExcelQuery
+  useLazyExportArticleEquivalenceExcelQuery,
+  useUpdateArticleEquivalenceMutation
 } = articlesEquivalencesApi;

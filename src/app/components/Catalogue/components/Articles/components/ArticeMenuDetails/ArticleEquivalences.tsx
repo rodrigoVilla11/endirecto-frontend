@@ -21,7 +21,7 @@ const ArticleEquivalence = ({
   return (
     <div className="w-128 z-50">
       <div className="flex items-center justify-between p-4 bg-gray-100 rounded-t-lg">
-        <h2 className="text-lg font-medium">{t("equivalencesTitle")}</h2>
+        <h2 className="text-lg font-medium">{t("equivalencesTitle")}  {articleId}</h2>
         <button
           onClick={closeModal}
           className="p-1 hover:bg-gray-200 rounded-full"

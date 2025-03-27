@@ -173,7 +173,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails closeModal={closeModal} />
+        <ArticleDetails closeModal={closeModal} showPurchasePrice={showPurchasePrice}/>
       </Modal>
     </div>
   );

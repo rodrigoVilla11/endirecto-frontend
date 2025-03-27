@@ -24,7 +24,7 @@ interface FormState {
   shopping_cart: string[];
 }
 
-const ArticleDetails = ({ closeModal }: any) => {
+const ArticleDetails = ({ closeModal, showPurchasePrice }: any) => {
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
   const { articleId } = useArticleId();
@@ -130,12 +130,12 @@ const ArticleDetails = ({ closeModal }: any) => {
       </div>
       <div className="flex gap-4 flex-col sm:justify-center sm:items-start items-center sm:flex-row">
         <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between pb-2">
-        <div className="flex justify-end">
-          <ArticleMenu
-            onAddToFavourites={toggleFavourite}
-            isFavourite={isFavourite}
-            article={article}
-          />
+          <div className="flex justify-end">
+            <ArticleMenu
+              onAddToFavourites={toggleFavourite}
+              isFavourite={isFavourite}
+              article={article}
+            />
           </div>
           <ArticleImage img={article.images || [""]} />
           <StripeStock articleId={article.id} />
@@ -146,10 +146,12 @@ const ArticleDetails = ({ closeModal }: any) => {
               code={article.supplier_code}
             />
             <div className="pb-3">
-              <CostPrice
-                article={article}
-                selectedClientId={selectedClientId}
-              />
+              {showPurchasePrice && (
+                <CostPrice
+                  article={article}
+                  selectedClientId={selectedClientId}
+                />
+              )}
               <hr className="my-3" />
               <SuggestedPrice article={article} />
             </div>

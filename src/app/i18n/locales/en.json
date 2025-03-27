@@ -161,7 +161,7 @@
   "deleteButton": "Delete",
   "na": "N/A",
   "noDataFound": "No data found",
-  "hello": "Hello {{username}} {{sellerId}}",
+  "hello": "Hello {{username}}",
   "expiredPrice": "Expired: $ {{amount}}",
   "pendings": "Pendings",
   "codes": "Codes",

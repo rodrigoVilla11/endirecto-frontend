@@ -3,11 +3,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaImage } from "react-icons/fa6";
+import { FaImage, FaEdit } from "react-icons/fa"; // Se agrega FaEdit para la edición
 import { FaPlus, FaTimes } from "react-icons/fa";
 import {
   useGetArticlesVehiclesPagQuery,
-  useCountArticleVehicleQuery,
+  useUpdateArticleVehicleMutation, // Nuevo hook para actualizar
 } from "@/redux/services/articlesVehicles";
 import {
   useGetAllArticlesQuery,
@@ -22,6 +22,7 @@ import ImportExcelModal from "./ImportExcel";
 import ExportExcelButton from "./ExportExcelButton";
 import { IoSync } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
+import { IoMdClose } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -40,10 +41,12 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false); // Modal de edición
+  const [selectedArticleVehicle, setSelectedArticleVehicle] =
+    useState<any>(null); // Registro a editar
 
   // Referencias para infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
-
   const loadingRef = useRef<HTMLDivElement | null>(null);
 
   // Queries de Redux
@@ -72,6 +75,9 @@ const Page = () => {
     syncArticleVehicles,
     { isLoading: isLoadingSync, isSuccess, isError },
   ] = useSyncArticleVehiclesMutation();
+
+  // Handler para actualizar (se usa dentro del modal de edición)
+  // (El hook useUpdateArticleVehicleMutation se utilizará en el componente de edición)
 
   const handleSyncEquivalences = async () => {
     try {
@@ -152,6 +158,12 @@ const Page = () => {
     refetch();
   };
 
+  // Handler para abrir el modal de edición
+  const handleEditArticleVehicle = (articleVehicle: any) => {
+    setSelectedArticleVehicle(articleVehicle);
+    setEditModalOpen(true);
+  };
+
   // Handler para ordenamiento
   const handleSort = useCallback(
     (field: string) => {
@@ -181,15 +193,26 @@ const Page = () => {
       model: item?.model || t("notFound", { defaultValue: "Not found" }),
       engine: item?.engine || t("notFound", { defaultValue: "Not found" }),
       year: item?.year || t("notFound", { defaultValue: "Not found" }),
+      actions: (
+        <button
+          onClick={() => handleEditArticleVehicle(item)}
+          title="Editar"
+          className="text-blue-500 hover:text-blue-700"
+        >
+          <FaEdit />
+        </button>
+      ),
     };
   });
 
+  // Se agrega columna de acciones en el header
   const tableHeader = [
     { name: t("article"), key: "article", important: true, sortable: true },
     { name: t("brand"), key: "brand", important: true, sortable: true },
     { name: t("model"), key: "model", important: true, sortable: true },
     { name: t("engine"), key: "engine", important: true, sortable: true },
     { name: t("year"), key: "year", important: true },
+    { name: t("actions"), key: "actions", important: false },
   ];
 
   // Configuración del header (botones, filtros y resultados)
@@ -296,9 +319,134 @@ const Page = () => {
         <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
           <ExportExcelButton closeModal={closeExportModal} />
         </Modal>
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            refetch();
+          }}
+        >
+          <EditArticleVehicleComponent
+            articleVehicle={selectedArticleVehicle}
+            closeModal={() => {
+              setEditModalOpen(false);
+              refetch();
+            }}
+          />
+        </Modal>
       </div>
     </PrivateRoute>
   );
 };
 
 export default Page;
+
+// Componente para editar un Article Vehicle
+type EditArticleVehicleComponentProps = {
+  articleVehicle: any;
+  closeModal: () => void;
+};
+
+const EditArticleVehicleComponent: React.FC<
+  EditArticleVehicleComponentProps
+> = ({ articleVehicle, closeModal }) => {
+  const [formData, setFormData] = useState({
+    brand: articleVehicle?.brand || "",
+    model: articleVehicle?.model || "",
+    engine: articleVehicle?.engine || "",
+    year: articleVehicle?.year || "",
+  });
+
+  const [updateArticleVehicle, { isLoading: isUpdating, isError, isSuccess }] =
+    useUpdateArticleVehicleMutation();
+
+  useEffect(() => {
+    if (articleVehicle) {
+      setFormData({
+        brand: articleVehicle?.brand || "",
+        model: articleVehicle?.model || "",
+        engine: articleVehicle?.engine || "",
+        year: articleVehicle?.year || "",
+      });
+    }
+  }, [articleVehicle]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      // Se asume que articleVehicle tiene la propiedad id para identificar el registro
+      await updateArticleVehicle({
+        id: articleVehicle.id,
+        ...formData,
+      }).unwrap();
+      closeModal();
+    } catch (err) {
+      console.error("Error updating article vehicle:", err);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold mb-4">Editar Article Vehicle</h2>
+        <button
+          onClick={closeModal}
+          className="absolute top-1 right-1 bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
+        >
+          <IoMdClose className="text-sm" />
+        </button>
+      </div>
+      <div className="mb-2">
+        <label className="block mb-1">Brand:</label>
+        <input
+          type="text"
+          name="brand"
+          value={formData.brand}
+          onChange={handleChange}
+          className="w-full border p-1"
+        />
+      </div>
+      <div className="mb-2">
+        <label className="block mb-1">Model:</label>
+        <input
+          type="text"
+          name="model"
+          value={formData.model}
+          onChange={handleChange}
+          className="w-full border p-1"
+        />
+      </div>
+      <div className="mb-2">
+        <label className="block mb-1">Engine:</label>
+        <input
+          type="text"
+          name="engine"
+          value={formData.engine}
+          onChange={handleChange}
+          className="w-full border p-1"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block mb-1">Year:</label>
+        <input
+          type="text"
+          name="year"
+          value={formData.year}
+          onChange={handleChange}
+          className="w-full border p-1"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={isUpdating}
+        className="bg-blue-500 text-white px-4 py-2 rounded"
+      >
+        {isUpdating ? "Actualizando..." : "Actualizar"}
+      </button>
+    </form>
+  );
+};
