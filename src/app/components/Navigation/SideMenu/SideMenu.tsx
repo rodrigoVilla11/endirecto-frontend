@@ -18,7 +18,7 @@ import { ImStatsDots } from "react-icons/im";
 import ButtonsIcons from "./components/ButtonsIcons";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LucideMessageSquareShare } from "lucide-react";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useSideMenu } from "@/app/context/SideMenuContext";
@@ -30,6 +30,10 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
   const { setIsAuthenticated, setRole, role } = useAuth();
   const router = useRouter();
   const { isMobile } = useMobile();
+
+  const pathname = usePathname();
+  
+    const isSelectCustomers = pathname === "/selectCustomer";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -430,7 +434,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
               isMobile ? "bg-zinc-900" : "bg-header-color"
             } px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
-      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 mt-28`}
+      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${isSelectCustomers ? "mt-20" : "mt-28"} pt-4`}
     >
         {filteredIcons.map((icon: any, index: any) => (
           <ButtonsIcons

@@ -9,10 +9,13 @@ import { FaPlus, FaTimes } from "react-icons/fa";
 import { useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
 import debounce from "@/app/context/debounce";
 import CreatePaymentComponent from "./CreatePayment";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
 const Page = () => {
+    const { t } = useTranslation();
+  
   // Estados para paginación, búsqueda, ordenamiento y modales
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,14 +151,14 @@ const Page = () => {
   // Configuración del header: si hay búsqueda, muestra la cantidad local; de lo contrario, muestra el total global
   const headerBody = {
     buttons: [
-      { logo: <FaPlus />, title: "New", onClick: () => setCreateModalOpen(true) },
+      { logo: <FaPlus />, title: t("new"), onClick: () => setCreateModalOpen(true) },
     ],
     filters: [
       {
         content: (
           <div className="relative">
             <Input
-              placeholder="Search..."
+              placeholder={t("search")}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 debouncedSearch(e.target.value)
@@ -183,7 +186,7 @@ const Page = () => {
       },
       // Aquí se pueden agregar otros filtros (status, fechas, etc.) si lo deseas
     ],
-    results: `${totalCollections} Results`,
+    results: t("results", { count: totalCollections || 0 }),
   };
 
   if (isLoading && items.length === 0) {

@@ -13,7 +13,6 @@ import Header from "../components/components/Header";
 import Table from "../components/components/Table";
 import { FiMapPin } from "react-icons/fi";
 import { AiOutlineDownload } from "react-icons/ai";
-import Input from "../components/components/Input";
 import ButtonOnOff from "./ButtonOnOff";
 import PrivateRoute from "../context/PrivateRoutes";
 import Modal from "../components/components/Modal";
@@ -31,6 +30,7 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useClient } from "../context/ClientContext";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 
 // Helper para eliminar duplicados por `id`
 const removeDuplicates = (arr: any[]) => {
@@ -49,6 +49,7 @@ const SelectCustomer = () => {
   const { role, userData } = useAuth();
   const { isMobile } = useMobile();
   const { setSelectedClientId } = useClient();
+  const { t } = useTranslation();
 
   // ======================================================
   // Estados Principales
@@ -68,7 +69,9 @@ const SelectCustomer = () => {
 
   // Estados para modales y selección actual
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(null);
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
+    null
+  );
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isUpdateGPSModalOpen, setUpdateGPSModalOpen] = useState(false);
   const [isViewGPSModalOpen, setViewGPSModalOpen] = useState(false);
@@ -137,7 +140,6 @@ const SelectCustomer = () => {
     }, 50), // Ajusta el delay a 300ms
     []
   );
-  
 
   const handleResetSearch = useCallback(() => {
     setSearchQuery("");
@@ -146,46 +148,45 @@ const SelectCustomer = () => {
     setHasMore(true);
   }, []);
 
- // ======================================================
-   // Efectos
-   // ======================================================
-   // Actualizar lista de artículos y evitar duplicados
-   useEffect(() => {
-     if (data?.customers) {
-       setItems((prev) => {
-         if (page === 1) {
-           return data.customers;
-         }
-         const newArticles = data.customers.filter(
-           (article) => !prev.some((item) => item.id === article.id)
-         );
-         return [...prev, ...newArticles];
-       });
-       setHasMore(data.customers.length === ITEMS_PER_PAGE);
-     }
-   }, [data?.customers, page]);
- 
-   // ======================================================
-   // Infinite Scroll (Intersection Observer)
-   // ======================================================
-   const lastArticleRef = useCallback(
-     (node: HTMLDivElement | null) => {
-       if (observerRef.current) observerRef.current.disconnect();
- 
-       observerRef.current = new IntersectionObserver(
-         (entries) => {
-           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
-             setPage((prev) => prev + 1);
-           }
-         },
-         { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
-       );
- 
-       if (node) observerRef.current.observe(node);
-     },
-     [hasMore, isQueryLoading]
-   );
- 
+  // ======================================================
+  // Efectos
+  // ======================================================
+  // Actualizar lista de artículos y evitar duplicados
+  useEffect(() => {
+    if (data?.customers) {
+      setItems((prev) => {
+        if (page === 1) {
+          return data.customers;
+        }
+        const newArticles = data.customers.filter(
+          (article) => !prev.some((item) => item.id === article.id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.customers.length === ITEMS_PER_PAGE);
+    }
+  }, [data?.customers, page]);
+
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   // ======================================================
   // Handlers para Filtros y Ordenamiento
@@ -394,14 +395,18 @@ const SelectCustomer = () => {
     () => [
       { component: <CgProfile className="text-center text-xl" />, key: "icon" },
       { name: "Id", key: "id", important: true },
-      { name: "Customer", key: "customer", important: true, sortable: true },
-      { name: "Address", key: "address" },
-      { name: "Payment Condition", key: "payment-condition" },
-      { name: "Status Account", key: "status-account", sortable: true },
-      { name: "Expired Debt", key: "expired-debt", sortable: true },
-      { name: "Articles on Cart", key: "articles-on-cart", sortable: true },
+      { name: t("customer"), key: "customer", important: true, sortable: true },
+      { name: t("address"), key: "address" },
+      { name: t("paymentCondition"), key: "payment-condition" },
+      { name: t("statusAccount"), key: "status-account", sortable: true },
+      { name: t("expiredDebt"), key: "expired-debt", sortable: true },
+      { name: t("articlesOnCart"), key: "articles-on-cart", sortable: true },
       { name: "GPS", key: "gps", important: true },
-      { component: <CiMenuKebab className="text-center text-xl" />, key: "menu", important: true },
+      {
+        component: <CiMenuKebab className="text-center text-xl" />,
+        key: "menu",
+        important: true,
+      },
     ],
     []
   );
@@ -411,10 +416,10 @@ const SelectCustomer = () => {
       buttons: [
         {
           logo: <FiMapPin />,
-          title: "View On Map",
+          title: `${t("viewOnMap")}`,
           onClick: () => setViewAllMapModalOpen(true),
         },
-        { logo: <AiOutlineDownload />, title: "Download" },
+        { logo: <AiOutlineDownload />, title: `${t("download")}` },
       ],
       filters: [
         {
@@ -427,7 +432,7 @@ const SelectCustomer = () => {
               className="border border-gray-300 rounded p-2"
               disabled={role === "VENDEDOR"}
             >
-              <option value="">Seller...</option>
+              <option value="">{t("seller")}</option>
               {sellersData?.map((seller) => (
                 <option key={seller.id} value={seller.id}>
                   {seller.name}
@@ -439,29 +444,29 @@ const SelectCustomer = () => {
         {
           content: (
             <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchQuery}
-              // Cambiar de setSearchQuery a debouncedSearch para un comportamiento consistente
-              onChange={(e) => debouncedSearch(e.target.value)}
-              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
-            />
-            {searchQuery && (
-              <button
-                onClick={handleResetSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+              <input
+                type="text"
+                placeholder={t("search")}
+                value={searchQuery}
+                // Cambiar de setSearchQuery a debouncedSearch para un comportamiento consistente
+                onChange={(e) => debouncedSearch(e.target.value)}
+                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleResetSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ),
         },
         {
           content: (
             <ButtonOnOff
-              title="Debt"
+              title={t("debt")}
               onChange={handleDebtFilter}
               active={searchParams.hasDebt === "true"}
             />
@@ -470,7 +475,7 @@ const SelectCustomer = () => {
         {
           content: (
             <ButtonOnOff
-              title="Expired D."
+              title={t("expiredDebt")}
               onChange={handleExpiredDebtFilter}
               active={searchParams.hasDebtExpired === "true"}
             />
@@ -479,16 +484,22 @@ const SelectCustomer = () => {
         {
           content: (
             <ButtonOnOff
-              title="Art. En Carrito"
+              title={t("articlesOnCart")}
               onChange={handleHasArticlesOnSC}
               active={searchParams.hasArticlesOnSC === "true"}
             />
           ),
         },
       ],
-      results: `${data?.totalCustomers || 0} Results`,
+      results: `${t("results", { count: data?.totalCustomers || 0 })}`,
     }),
-    [searchQuery, data?.totalCustomers, debouncedSearch, handleResetSearch, searchParams]
+    [
+      searchQuery,
+      data?.totalCustomers,
+      debouncedSearch,
+      handleResetSearch,
+      searchParams,
+    ]
   );
 
   // ======================================================
@@ -510,28 +521,30 @@ const SelectCustomer = () => {
   }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
-        <h3 className="text-bold p-2">SELECT CUSTOMER</h3>
+        <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>{t("selectCustomerTitle")}</h3>
         {isMobile ? (
           <div className="bg-zinc-900 p-4 rounded-lg">
             {/* Versión móvil: filtros y búsqueda simplificada */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <ButtonOnOff
-                  title="Deuda"
+                  title={t("debt")}
                   onChange={handleDebtFilter}
                   active={searchParams.hasDebt === "true"}
                 />
                 <ButtonOnOff
-                  title="D. Vencida"
+                  title={t("expiredDebt")}
                   onChange={handleExpiredDebtFilter}
                   active={searchParams.hasDebtExpired === "true"}
                 />
               </div>
               <div>
                 <ButtonOnOff
-                  title="Art. En Carrito"
+                  title={t("articlesOnCart")}
                   onChange={handleHasArticlesOnSC}
                   active={searchParams.hasArticlesOnSC === "true"}
                 />
@@ -540,7 +553,7 @@ const SelectCustomer = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder={t("search")}
                 value={searchQuery}
                 onChange={(e) => debouncedSearch(e.target.value)}
                 className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
@@ -556,7 +569,7 @@ const SelectCustomer = () => {
             </div>
             {searchQuery && (
               <div className="mt-2 text-right text-sm text-zinc-400">
-                {data?.totalCustomers || 0} Results
+                {t("results", { count: data?.totalCustomers || 0 })}
               </div>
             )}
           </div>
@@ -606,7 +619,10 @@ const SelectCustomer = () => {
           </Modal>
         )}
         {isViewAllMapModalOpen && (
-          <Modal isOpen={isViewAllMapModalOpen} onClose={() => setViewAllMapModalOpen(false)}>
+          <Modal
+            isOpen={isViewAllMapModalOpen}
+            onClose={() => setViewAllMapModalOpen(false)}
+          >
             <MapModal
               customers={markersCustomers}
               onClose={() => setViewAllMapModalOpen(false)}

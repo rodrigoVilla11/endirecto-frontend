@@ -23,7 +23,7 @@ const VouchersComponent = () => {
   const { t } = useTranslation();
   const { userData } = useAuth();
   const userRole = userData?.role ? userData.role.toUpperCase() : "";
-  
+
   // Estados básicos
   const [page, setPage] = useState(1);
   const [limit] = useState(ITEMS_PER_PAGE);
@@ -37,14 +37,16 @@ const VouchersComponent = () => {
   const [items, setItems] = useState<any[]>([]);
   const [totalDocuments, setTotalDocuments] = useState<number>(0);
   const [isFetching, setIsFetching] = useState(false);
-  
+
   // Estados para los nuevos filtros
   const [typeFilter, setTypeFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
 
   // Estados para modales y documento seleccionado
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
 
   // Si existe un selectedClientId, se utiliza para filtrar y se asigna a customer_id
   useEffect(() => {
@@ -63,7 +65,7 @@ const VouchersComponent = () => {
   // Consulta de clientes y vendedores
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  
+
   // Consulta RTK Query para documentos
   const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
     page,
@@ -121,7 +123,19 @@ const VouchersComponent = () => {
     };
 
     loadDocuments();
-  }, [page, searchQuery, startDate, endDate, customer_id, sortQuery, typeFilter, sellerFilter, refetch, isFetching, t]);
+  }, [
+    page,
+    searchQuery,
+    startDate,
+    endDate,
+    customer_id,
+    sortQuery,
+    typeFilter,
+    sellerFilter,
+    refetch,
+    isFetching,
+    t,
+  ]);
 
   // Infinite scroll
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -188,8 +202,10 @@ const VouchersComponent = () => {
   };
 
   // Mapeo de documentos para la tabla
-  const tableData = items?.map((document,index) => {
-    const customer = customersData?.find((data) => data.id === document.customer_id);
+  const tableData = items?.map((document, index) => {
+    const customer = customersData?.find(
+      (data) => data.id === document.customer_id
+    );
     const seller = sellersData?.find((data) => data.id === document.seller_id);
     return {
       key: index,
@@ -355,10 +371,9 @@ const VouchersComponent = () => {
       ...headerFilters,
     ],
     results: searchQuery
-      ? `${items.length} ${t("results")}`
-      : `${totalDocuments || 0} ${t("results")}`,
+      ? `${t("results", { count: items.length || 0 })}`
+      : `${t("results", { count: totalDocuments || 0 })}`,
   };
-
   if (isLoading && page === 1) {
     return (
       <div className="flex justify-center py-8">
@@ -386,7 +401,12 @@ const VouchersComponent = () => {
         <Table
           headers={[
             { name: t("action"), key: "action" },
-            { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
+            {
+              component: (
+                <IoInformationCircleOutline className="text-center text-xl" />
+              ),
+              key: "info",
+            },
             { name: t("customer"), key: "customer" },
             { name: t("type"), key: "type" },
             { name: t("number"), key: "number", important: true },

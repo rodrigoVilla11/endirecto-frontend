@@ -12,7 +12,11 @@ import PrivateRoute from "../context/PrivateRoutes";
 import CreateReclaimComponent from "./CreateReclaim";
 import DeleteReclaim from "./DeleteReclaim";
 import UpdateReclaimComponent from "./UpdateReclaim";
-import { useGetReclaimsPagQuery, useCountReclaimsQuery, Status } from "@/redux/services/reclaimsApi";
+import {
+  useGetReclaimsPagQuery,
+  useCountReclaimsQuery,
+  Status,
+} from "@/redux/services/reclaimsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
@@ -40,8 +44,8 @@ const PageReclaims = () => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
   // References
-  const observerRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
   const [searchParams, setSearchParams] = useState({
     status: "",
     valid: "",
@@ -62,8 +66,12 @@ const PageReclaims = () => {
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
-    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
-    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
+    startDate: searchParams.startDate
+      ? searchParams.startDate.toISOString()
+      : undefined,
+    endDate: searchParams.endDate
+      ? searchParams.endDate.toISOString()
+      : undefined,
     valid: searchParams.valid,
     status: searchParams.status,
     document_type_number: searchParams.document_type_number,
@@ -90,51 +98,41 @@ const PageReclaims = () => {
     }
   }, [selectedClientId]);
 
-  // Effect for handling initial load and searches
   useEffect(() => {
-    const loadBrands = async () => {
-      if (!isLoading) {
-        setIsLoading(true);
-        try {
-          const result = await refetch().unwrap();
-          const newBrands = result || [];
-          if (page === 1) {
-            setBrands(newBrands);
-          } else {
-            setBrands((prev) => [...prev, ...newBrands]);
-          }
-          setHasMore(newBrands.length === ITEMS_PER_PAGE);
-        } catch (error) {
-          console.error(t("pageReclaims.errorLoadingBrands"), error);
-        } finally {
-          setIsLoading(false);
+    if (data) {
+      setBrands((prev) => {
+        if (page === 1) {
+          return data;
         }
-      }
-    };
-    loadBrands();
-  }, [page, searchQuery, sortQuery, searchParams, isLoading, refetch, t]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && hasMore && !isLoading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    const currentObserver = observerRef.current;
-    if (currentObserver) {
-      observer.observe(currentObserver);
+        const newArticles = data.filter(
+          (article) => !prev.some((item) => item.id === article._id)
+        );
+        return [...prev, ...newArticles];
+      });
+      setHasMore(data.length === ITEMS_PER_PAGE);
     }
-    return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
-      }
-    };
-  }, [hasMore, isLoading]);
+  }, [data, page]);
+
+  // ======================================================
+  // Infinite Scroll (Intersection Observer)
+  // ======================================================
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [hasMore, isQueryLoading]
+  );
 
   const openCreateModal = () => setCreateModalOpen(true);
   const closeCreateModal = () => {
@@ -168,7 +166,8 @@ const PageReclaims = () => {
       let newSortQuery = "";
       if (currentField === field) {
         // Alternar entre ascendente y descendente
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
@@ -231,7 +230,11 @@ const PageReclaims = () => {
     { name: t("pageReclaims.table.status"), key: "status", important: true },
     { name: t("pageReclaims.table.type"), key: "type", important: true },
     { name: t("pageReclaims.table.description"), key: "description" },
-    { name: t("pageReclaims.table.customer"), key: "customer", important: true },
+    {
+      name: t("pageReclaims.table.customer"),
+      key: "customer",
+      important: true,
+    },
     { name: t("pageReclaims.table.user"), key: "user" },
     { name: t("pageReclaims.table.branch"), key: "branch" },
     { name: t("pageReclaims.table.date"), key: "date" },
@@ -288,8 +291,11 @@ const PageReclaims = () => {
             onChange={(e) =>
               setSearchParams({ ...searchParams, status: e.target.value })
             }
+            className="w-full max-w-sm border border-gray-300 rounded-md p-2 md:p-3 text-xs outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           >
-            <option value="">{t("pageReclaims.header.statusPlaceholder")}</option>
+            <option value="">
+              {t("pageReclaims.header.statusPlaceholder")}
+            </option>
             {Object.values(Status).map((st) => (
               <option key={st} value={st}>
                 {st}
@@ -341,7 +347,9 @@ const PageReclaims = () => {
         ),
       },
     ],
-    results: t("pageReclaims.header.results", { count: countReclaimsData || 0 }),
+    results: t("pageReclaims.header.results", {
+      count: countReclaimsData || 0,
+    }),
   };
   if (isQueryLoading && brands.length === 0) {
     return (
@@ -371,11 +379,13 @@ const PageReclaims = () => {
         <h3 className="font-bold p-4">{t("pageReclaims.title")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && brands.length === 0 ? (
-          <div ref={loadingRef} className="flex justify-center py-4">
+          <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : brands.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">{t("pageReclaims.noReclaimsFound")}</div>
+          <div className="text-center py-8 text-gray-500">
+            {t("pageReclaims.noReclaimsFound")}
+          </div>
         ) : (
           <>
             <Table
@@ -386,13 +396,13 @@ const PageReclaims = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div ref={loadingRef} className="flex justify-center py-4">
+              <div  className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
           </>
         )}
-        <div ref={observerRef} className="h-10" />
+        <div ref={lastArticleRef} className="h-10" />
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateReclaimComponent closeModal={closeCreateModal} />
         </Modal>

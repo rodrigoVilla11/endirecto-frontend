@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clock, Calendar, Bell, Users, Store, UserCircle, ChevronDown } from 'lucide-react';
+import {
+  Check,
+  Clock,
+  Calendar,
+  Bell,
+  Users,
+  Store,
+  UserCircle,
+  ChevronDown,
+} from "lucide-react";
 import { useGetNotificationsQuery } from "@/redux/services/notificationsApi";
 import {
   useGetUsersQuery,
@@ -12,6 +21,7 @@ import {
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useAddNotificationToCustomersMutation } from "@/redux/services/customersApi";
 import { CreateUserNotificationDto } from "@/redux/services/usersApi";
+import { useTranslation } from "react-i18next";
 
 interface Section {
   id: string;
@@ -23,21 +33,42 @@ interface Section {
 }
 
 export default function NotificationForm() {
-  const { data: notifications, isLoading, error } = useGetNotificationsQuery(null);
-  const { data: usersData, isLoading: isLoadingUsers, error: errorUsers } = useGetUsersQuery(null);
-  const { data: sellersData, isLoading: isLoadingSellers, error: errorSellers } = useGetSellersQuery(null);
-  
+  const { t } = useTranslation();
+
+  const {
+    data: notifications,
+    isLoading,
+    error,
+  } = useGetNotificationsQuery(null);
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+    error: errorUsers,
+  } = useGetUsersQuery(null);
+  const {
+    data: sellersData,
+    isLoading: isLoadingSellers,
+    error: errorSellers,
+  } = useGetSellersQuery(null);
+
   const [addNotificationToCustomers] = useAddNotificationToCustomersMutation();
   const [addNotificationToUser] = useAddNotificationToUserMutation();
-  const [addNotificationToUsersByRoles] = useAddNotificationToUsersByRolesMutation();
+  const [addNotificationToUsersByRoles] =
+    useAddNotificationToUsersByRolesMutation();
 
-  if (error) console.error("Error al cargar notificaciones:", error);
-  if (errorUsers) console.error("Error al cargar usuarios:", errorUsers);
-  if (errorSellers) console.error("Error al cargar vendedores:", errorSellers);
+  if (error) console.error(t("loadingNotificationsError"), error);
+  if (errorUsers) console.error(t("loadingUsersError"), errorUsers);
+  if (errorSellers) console.error(t("loadingSellersError"), errorSellers);
 
   const [selectedRoles, setSelectedRoles] = useState<Roles[]>([]);
-  const [selectedItems, setSelectedItems] = useState<Record<string, string[]>>({});
-  const [formData, setFormData] = useState({ notification: "", date: "", time: "" });
+  const [selectedItems, setSelectedItems] = useState<Record<string, string[]>>(
+    {}
+  );
+  const [formData, setFormData] = useState({
+    notification: "",
+    date: "",
+    time: "",
+  });
   const [duration, setDuration] = useState<number>(24);
   const [notificationState, setNotificationState] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("roles");
@@ -48,21 +79,21 @@ export default function NotificationForm() {
   const sections: Section[] = [
     {
       id: "roles",
-      title: "Roles",
+      title: t("roles"),
       icon: <UserCircle className="h-5 w-5" />,
       isOptional: true,
       items: ["ADMINISTRADOR", "MARKETING", "OPERADOR", "VENDEDOR"],
     },
     {
       id: "sellers",
-      title: "Vendedores",
+      title: t("sellers"),
       icon: <Store className="h-5 w-5" />,
       isOptional: true,
       items: [],
     },
     {
       id: "customers",
-      title: "Clientes",
+      title: t("customers"),
       icon: <Users className="h-5 w-5" />,
       isOptional: true,
       items: [],
@@ -80,7 +111,10 @@ export default function NotificationForm() {
           setSelectedItems((prev) => ({ ...prev, [sectionId]: allSellerIds }));
         }
       } else {
-        setSelectedItems((prev) => ({ ...prev, [sectionId]: [...section.items] }));
+        setSelectedItems((prev) => ({
+          ...prev,
+          [sectionId]: [...section.items],
+        }));
       }
     }
   };
@@ -132,26 +166,29 @@ export default function NotificationForm() {
 
   const handleSubmit = async () => {
     if (!formData.date || !formData.time) {
-      alert("Por favor, complete la fecha y hora.");
+      alert(t("completeDateAndTimeAlert"));
       return;
     }
     if (!formData.notification) {
-      alert("Seleccione una notificación.");
+      alert(t("selectNotificationAlert"));
       return;
     }
     const [year, month, day] = formData.date.split("-").map(Number);
     const [hour, minute] = formData.time.split(":").map(Number);
     const scheduleFromLocal = new Date(year, month - 1, day, hour, minute);
     const scheduleFrom = new Date(
-      scheduleFromLocal.getTime() - scheduleFromLocal.getTimezoneOffset() * 60 * 1000
+      scheduleFromLocal.getTime() -
+        scheduleFromLocal.getTimezoneOffset() * 60 * 1000
     );
-    const scheduleTo = new Date(scheduleFrom.getTime() + duration * 60 * 60 * 1000);
+    const scheduleTo = new Date(
+      scheduleFrom.getTime() + duration * 60 * 60 * 1000
+    );
 
     const selectedNotification = notifications?.notifications.find(
       (n: any) => (n._id.$oid || n._id) === formData.notification
     );
     if (!selectedNotification) {
-      alert("Notificación no encontrada.");
+      alert(t("notificationNotFoundAlert"));
       return;
     }
 
@@ -216,11 +253,11 @@ export default function NotificationForm() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
-    
+
   if (error || errorUsers || errorSellers)
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md shadow-sm border border-red-200 text-center">
-        Error al cargar datos. Por favor, intente nuevamente.
+        {t("loadingDataError")}
       </div>
     );
 
@@ -244,29 +281,34 @@ export default function NotificationForm() {
       <div className="container mx-auto p-4 max-w-6xl">
         <div className="flex items-center gap-2 mb-6">
           <Bell className="h-6 w-6 text-blue-600" />
-          <h1 className="text-2xl font-bold">Publicación de Notificaciones</h1>
+          <h1 className="text-2xl font-bold">{t("notificationsPublication")}</h1>
         </div>
-        
+
         {/* Form Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
           <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold">Detalles de la Notificación</h2>
+            <h2 className="text-lg font-semibold">
+              {t("notificationDetails")}
+            </h2>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Bell className="h-4 w-4 text-gray-500" />
-                  Notificación
+                  {t("notification")}
                 </label>
                 <select
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   value={formData.notification}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, notification: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      notification: e.target.value,
+                    }))
                   }
                 >
-                  <option value="">Seleccione una notificación...</option>
+                  <option value="">{t("notificationPlaceholder")}</option>
                   {notifications?.notifications
                     .filter((notif: any) => notif.type === "NOVEDAD")
                     .map((notif: any) => (
@@ -279,11 +321,11 @@ export default function NotificationForm() {
                     ))}
                 </select>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  Fecha
+                  {t("date")}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -294,20 +336,20 @@ export default function NotificationForm() {
                       setFormData((prev) => ({ ...prev, date: e.target.value }))
                     }
                   />
-                  <button 
+                  <button
                     onClick={handleNow}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 transition-colors flex items-center text-sm whitespace-nowrap"
                   >
                     <Clock className="h-4 w-4 mr-1" />
-                    Ahora
+                    {t("now")}
                   </button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Clock className="h-4 w-4 text-gray-500" />
-                  Hora
+                  {t("time")}
                 </label>
                 <input
                   type="time"
@@ -318,34 +360,34 @@ export default function NotificationForm() {
                   }
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Clock className="h-4 w-4 text-gray-500" />
-                  Duración
+                  {t("duration")}
                 </label>
                 <select
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
                 >
-                  <option value={24}>24 horas</option>
-                  <option value={48}>48 horas</option>
-                  <option value={168}>1 semana</option>
-                  <option value={336}>2 semanas</option>
-                  <option value={720}>1 mes</option>
+                  <option value={24}> {t("duration24Hours")}</option>
+                  <option value={48}>{t("duration48Hours")}</option>
+                  <option value={168}>{t("duration1Week")}</option>
+                  <option value={336}>{t("duration2Weeks")}</option>
+                  <option value={720}>{t("duration1Month")}</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Secciones con Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold">Destinatarios</h2>
+            <h2 className="text-lg font-semibold">{t("recipients")}</h2>
           </div>
-          
+
           {/* Tabs */}
           <div className="border-b border-gray-200">
             <div className="flex">
@@ -353,10 +395,11 @@ export default function NotificationForm() {
                 <button
                   key={section.id}
                   onClick={() => setActiveTab(section.id)}
-                  className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative
-                    ${activeTab === section.id 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  className={`flex flex-col sm:flex-row items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative
+                    ${
+                      activeTab === section.id
+                        ? "text-blue-600 border-b-2 border-blue-600"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }
                   `}
                 >
@@ -371,13 +414,13 @@ export default function NotificationForm() {
               ))}
             </div>
           </div>
-          
+
           {/* Tab Content */}
           <div className="p-6">
             {sections.map((section) => (
-              <div 
-                key={section.id} 
-                className={`${activeTab === section.id ? 'block' : 'hidden'}`}
+              <div
+                key={section.id}
+                className={`${activeTab === section.id ? "block" : "hidden"}`}
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-medium flex items-center gap-2 text-gray-700">
@@ -385,66 +428,74 @@ export default function NotificationForm() {
                     {section.title}
                   </h3>
                   <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleSelectAll(section.id)} 
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 text-sm transition-colors"
+                    <button
+                      onClick={() => handleSelectAll(section.id)}
+                      className="px-1 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm border border-gray-300 transition-colors"
                     >
-                      Seleccionar Todo
+                      {t("selectAll")}
                     </button>
-                    <button 
-                      onClick={() => handleSelectNone(section.id)} 
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 text-sm transition-colors"
+                    <button
+                      onClick={() => handleSelectNone(section.id)}
+                      className="px-1 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm border border-gray-300 transition-colors"
                     >
-                      Deseleccionar Todo
+                      {t("selectNone")}
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="h-px bg-gray-200 my-4"></div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
-                  {section.id === "sellers" || section.id === "customers" ? (
-                    sellersData?.map((seller: any) => {
-                      const sellerId = seller.id;
-                      return (
-                        <label key={sellerId} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
+                  {section.id === "sellers" || section.id === "customers"
+                    ? sellersData?.map((seller: any) => {
+                        const sellerId = seller.id;
+                        return (
+                          <label
+                            key={sellerId}
+                            className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isItemSelected(section.id, sellerId)}
+                              onChange={() =>
+                                handleItemToggle(section.id, sellerId)
+                              }
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {seller.name}
+                            </span>
+                          </label>
+                        );
+                      })
+                    : section.items.map((item) => (
+                        <label
+                          key={item}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors"
+                        >
                           <input
                             type="checkbox"
-                            checked={isItemSelected(section.id, sellerId)}
-                            onChange={() => handleItemToggle(section.id, sellerId)}
+                            checked={isItemSelected(section.id, item)}
+                            onChange={() => handleItemToggle(section.id, item)}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">{seller.name}</span>
+                          <span className="text-sm text-gray-700">{item}</span>
                         </label>
-                      );
-                    })
-                  ) : (
-                    section.items.map((item) => (
-                      <label key={item} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={isItemSelected(section.id, item)}
-                          onChange={() => handleItemToggle(section.id, item)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{item}</span>
-                      </label>
-                    ))
-                  )}
+                      ))}
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
+
         {/* Botón de envío */}
         <div className="mt-6 flex justify-end">
-          <button 
+          <button
             onClick={handleSubmit}
             className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm transition-colors flex items-center gap-2 font-medium"
           >
             <Check className="h-5 w-5" />
-            Publicar Notificación
+           {t("publishNotification")}
           </button>
         </div>
       </div>

@@ -225,7 +225,7 @@ const Page = () => {
       );
       const seller = sellersData?.find((data) => data.id === order.seller?.id);
       return {
-        key: `${order.customer.id} ${order.date ? format(new Date(order.date), "dd/MM/yyyy HH:mm") : "N/A"}`,
+        key: `${customer?.name} ${order.date ? format(new Date(order.date), "dd/MM/yyyy") : "N/A"}`,
         info: (
           <div className="flex justify-center items-center">
             <FaInfoCircle

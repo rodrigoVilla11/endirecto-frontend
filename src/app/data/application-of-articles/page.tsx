@@ -188,7 +188,7 @@ const Page = () => {
     const article = articlesData?.find((data) => data.id === item.article_id);
     return {
       key: `${index}`,
-      article: article?.name || t("notFound", { defaultValue: "Not found" }),
+      article: article?.supplier_code || t("notFound", { defaultValue: "Not found" }),
       brand: item?.brand || t("notFound", { defaultValue: "Not found" }),
       model: item?.model || t("notFound", { defaultValue: "Not found" }),
       engine: item?.engine || t("notFound", { defaultValue: "Not found" }),

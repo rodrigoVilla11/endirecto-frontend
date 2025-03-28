@@ -22,6 +22,7 @@ import CRMDetail from "./CRMDetail";
 import { useGetOrdersQuery } from "@/redux/services/ordersApi";
 import { useAuth } from "../context/AuthContext";
 import MapModal from "./MapModal";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -66,6 +67,7 @@ const Page = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: ordersData } = useGetOrdersQuery(null);
+  const { data: usersData } = useGetUsersQuery(null);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -288,7 +290,7 @@ const Page = () => {
         );
         const seller = sellersData?.find((data) => data.id === crm.seller_id);
         const order = ordersData?.find((data) => data.tmp_id === crm.order_id);
-
+        const user = usersData?.find((data) => data._id === crm.user_id)
         return {
           key: crm._id,
           info: (
@@ -301,7 +303,7 @@ const Page = () => {
           ),
           seller: seller?.name || t("notAvailable"),
           customer: customer?.name || t("notAvailable"),
-          user: crm.user_id || t("notAvailable"),
+          user: user?.username || t("notAvailable"),
           date: crm.date
             ? format(new Date(crm.date), "yyyy-MM-dd HH:mm")
             : t("notAvailable"),
