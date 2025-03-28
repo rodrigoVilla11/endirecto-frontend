@@ -378,6 +378,8 @@
       "searchPlaceholder": "Search...",
       "results": "Results"
     },
+    "searchesTitle": "Searches",
+    "confirmDeleteMessage": "Are you sure you want to delete this search?",
     "errorLoadingNotifications": "Error loading notifications. Please try again later.",
     "notifications": "NOTIFICATIONS",
     "headers": "HEADERS",
@@ -428,11 +430,17 @@
 
     "tags": "Tags"
   },
+  "common": {
+    "delete": "Delete",
+    "cancel": "Cancel"
+  },
   "header": {
     "new": "New",
     "results": "Results"
   },
   "table": {
+    "search": "Search",
+    "actions": "Actions",
     "read": "Read",
     "margin": "Margin",
     "unknown": "Unknown",
@@ -1314,14 +1322,23 @@
   "duration1Month": "1 month",
   "recipients": "Recipients",
   "roles": "Roles",
-  "sellers": "Sellers",
-  "customers": "Customers",
   "selectAll": "Select All",
   "selectNone": "Deselect All",
   "publishNotification": "Publish Notification",
   "notification": "Notification",
-  "date": "Date",
   "now": "Now",
   "time": "Time",
-  "duration": "Duration"
+  "duration": "Duration",
+  "stats": "STATS",
+  "select_brand": "-- Select Brand --",
+  "select_item": "-- Select Item --",
+  "loading_data": "Loading data...",
+  "error_loading_data": "Error loading data",
+  "monthly_sales_by_amount": "Monthly Sales by Amount",
+  "current_month": "Current Month",
+  "previous_month": "Previous Month",
+  "last_12_months": "Last 12 months",
+  "sales_amount": "Sales Amount",
+  "monthly_sales_by_quantity": "Monthly Sales by Quantity",
+  "sales_quantity": "Sales Quantity"
 }

@@ -26,8 +26,8 @@ const ArticleVehicle = ({ articleVehicles, closeModal }: ArticleEquivalenceProps
           <thead>
             <tr className="text-xs">
               <th className="py-2 px-4 bg-gray-200 text-left">{t("brand")}</th>
-              <th className="py-2 px-4 bg-gray-200 text-left">{t("engine")}</th>
               <th className="py-2 px-4 bg-gray-200 text-left">{t("model")}</th>
+              <th className="py-2 px-4 bg-gray-200 text-left">{t("engine")}</th>
               <th className="py-2 px-4 bg-gray-200 text-left">{t("year")}</th>
             </tr>
           </thead>
@@ -37,8 +37,8 @@ const ArticleVehicle = ({ articleVehicles, closeModal }: ArticleEquivalenceProps
               articleVehicles.map((vehicle: any, index: any) => (
                 <tr key={index} className="border-b">
                   <td className="border-t py-2 px-4">{vehicle.brand}</td>
-                  <td className="border-t py-2 px-4">{vehicle.engine}</td>
                   <td className="border-t py-2 px-4">{vehicle.model}</td>
+                  <td className="border-t py-2 px-4">{vehicle.engine}</td>
                   <td className="border-t py-2 px-4">{vehicle.year}</td>
                 </tr>
               ))}

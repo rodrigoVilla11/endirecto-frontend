@@ -20,20 +20,17 @@ import { InfoIcon } from "lucide-react";
 import Modal from "../components/components/Modal";
 import NotificationsDetail from "./NotificationDetail";
 
-
 const Page = () => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const { userData } = useAuth();
 
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
-
   const customerQuery = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
 
-  // Efecto para hacer refetch al montar el componente
   useEffect(() => {
     if (selectedClientId) {
       customerQuery.refetch();
@@ -42,6 +39,7 @@ const Page = () => {
     }
   }, []);
 
+  // Obtenemos las notificaciones según el usuario o cliente seleccionado
   const notifications = selectedClientId
     ? customerQuery.data?.notifications || []
     : userQuery.data?.notifications || [];
@@ -51,35 +49,42 @@ const Page = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
   const [localNotifications, setLocalNotifications] = useState<any[]>([]);
-  
+
   // Estados para el modal
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<any>(null);
 
+  // Filtramos las notificaciones que tienen send === true
   useEffect(() => {
     if (notifications.length > 0) {
-      setLocalNotifications(notifications.filter((n: any) => n.send === true));
+      setLocalNotifications(
+        notifications.filter((n: any) => n.send === true)
+      );
     }
-  }, [JSON.stringify(notifications)]); // ✅ Usa stringify para prevenir cambios de referencia
+  }, [JSON.stringify(notifications)]);
 
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
   }, 100);
 
-  const filteredNotifications = localNotifications.filter(
-    (notification: any) => {
-      if (!searchQuery) return true;
-      const lowerSearch = searchQuery.toLowerCase();
-      return (
-        notification.title.toLowerCase().includes(lowerSearch) ||
-        notification.description.toLowerCase().includes(lowerSearch)
-      );
-    }
-  );
+  // Filtrado por búsqueda en título o descripción
+  const filteredNotifications = localNotifications.filter((notification: any) => {
+    if (!searchQuery) return true;
+    const lowerSearch = searchQuery.toLowerCase();
+    return (
+      notification.title.toLowerCase().includes(lowerSearch) ||
+      notification.description.toLowerCase().includes(lowerSearch)
+    );
+  });
 
+  // Ordenamos las notificaciones:
+  // Si no hay sortQuery, las ordenamos por schedule_from descendente
   const sortedNotifications = useMemo(() => {
-    if (!sortQuery) return filteredNotifications;
-
+    if (!sortQuery) {
+      return [...filteredNotifications].sort((a, b) => {
+        return new Date(b.schedule_from).getTime() - new Date(a.schedule_from).getTime();
+      });
+    }
     const [field, direction] = sortQuery.split(":");
     return [...filteredNotifications].sort((a, b) => {
       if (a[field] < b[field]) return direction === "asc" ? -1 : 1;
@@ -87,13 +92,13 @@ const Page = () => {
       return 0;
     });
   }, [filteredNotifications, sortQuery]);
+  
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: articleData } = useGetAllArticlesQuery(null);
 
   const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
-  const [markNotificationCustomerAsRead] =
-    useMarkNotificationAsReadCustomerMutation();
+  const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
 
   const handleMarkAsRead = async (notification: any) => {
     if (!notification.read && currentUserId) {
@@ -109,10 +114,9 @@ const Page = () => {
             title: notification.title,
           }).unwrap();
         }
-
         setLocalNotifications((prev) =>
           prev.map((n) =>
-            n.title === notification.title ? { ...n, read: true } : n
+            n._id === notification._id ? { ...n, read: true } : n
           )
         );
       } catch (err) {
@@ -132,6 +136,7 @@ const Page = () => {
     setCurrentNotification(null);
   };
 
+  // Construimos los datos de la tabla sin incluir el campo schedule_from
   const tableData = sortedNotifications.map((notification) => ({
     key: notification._id,
     info: (
@@ -158,6 +163,7 @@ const Page = () => {
     ),
   }));
 
+  // Configuración de los encabezados de la tabla sin la columna schedule_from
   const tableHeader = [
     { name: t("info"), key: "info" },
     { name: t("table.type"), key: "type", important: true },

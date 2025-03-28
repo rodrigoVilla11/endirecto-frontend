@@ -36,23 +36,27 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     { skip: !selectedClientId, refetchOnMountOrArgChange: true }
   );
 
-  // Asignamos todas las notificaciones sin filtrar
+  // Almacenamos todas las notificaciones sin filtrar
   const [notifications, setNotifications] = useState<any[]>([]);
   const [animateCart, setAnimateCart] = useState(false);
   const [showTick, setShowTick] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
 
-  // Sincronizamos el idioma actual con i18n al montar el componente
+  // Sincroniza el idioma al montar el componente
   useEffect(() => {
     setCurrentLanguage(i18n.language);
   }, []);
 
   const currentUserId = selectedClientId || userQuery.data?._id || "";
 
+  // Ordena las notificaciones usando el campo schedule_from (más recientes primero)
   const sortedNotifications = notifications
     .slice()
-    .sort((a, b) => b.schedule_to - a.schedule_to);
+    .sort(
+      (a, b) =>
+        new Date(b.schedule_from).getTime() - new Date(a.schedule_from).getTime()
+    );
 
   const cartItemCount = customer?.shopping_cart
     ? new Set(customer.shopping_cart).size
@@ -115,10 +119,9 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     }
   };
 
-  // Función para marcar todas las notificaciones (de las últimas 5) como leídas
+  // Marca todas las notificaciones (todas y no solo las 5)
   const handleMarkAllAsRead = async () => {
-    const latestNotifications = notifications.slice(0, 5);
-    for (const notification of latestNotifications) {
+    for (const notification of notifications) {
       if (!notification.read) {
         await handleMarkAsRead(notification);
       }
@@ -131,7 +134,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     setIsNotificationsMenuOpen(false);
   };
 
-  // Al hacer clic en una notificación se marca como leída, se refetch y se redirige a /notifications
+  // Al hacer clic en una notificación, la marca como leída, refetch y redirige
   const handleNotificationClick = async (notification: any) => {
     await handleMarkAsRead(notification);
     if (selectedClientId) {
@@ -142,7 +145,6 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     setIsNotificationsMenuOpen(false);
     handleRedirect("/notifications");
   };
-
 
   return (
     <div className="w-60 flex items-center justify-end gap-4 sm:justify-evenly text-2xl text-white relative">
@@ -216,34 +218,28 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                     </div>
                     <div className="max-h-96 overflow-y-auto">
                       <AnimatePresence>
-                        {notifications.slice(0, 5).length > 0 ? (
+                        {sortedNotifications.slice(0, 5).length > 0 ? (
                           <motion.ul className="divide-y divide-gray-100">
-                            {sortedNotifications
-                              .slice(0, 5)
-                              .map((notification: any) => (
-                                <motion.li
-                                  key={notification._id}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -20 }}
-                                  transition={{ duration: 0.2 }}
-                                  className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
-                                    !notification.read
-                                      ? "bg-yellow-100"
-                                      : "hover:bg-gray-50"
-                                  }`}
-                                  onClick={() =>
-                                    handleNotificationClick(notification)
-                                  }
-                                >
-                                  <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                    {notification.title}
-                                  </p>
-                                  <p className="text-gray-600 text-xs">
-                                    {notification.description}
-                                  </p>
-                                </motion.li>
-                              ))}
+                            {sortedNotifications.slice(0, 5).map((notification: any) => (
+                              <motion.li
+                                key={notification._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.2 }}
+                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                  !notification.read ? "bg-yellow-100" : "hover:bg-gray-50"
+                                }`}
+                                onClick={() => handleNotificationClick(notification)}
+                              >
+                                <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                  {notification.title}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  {notification.description}
+                                </p>
+                              </motion.li>
+                            ))}
                           </motion.ul>
                         ) : (
                           <motion.div
@@ -297,34 +293,28 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     <AnimatePresence>
-                      {notifications.slice(0, 5).length > 0 ? (
+                      {sortedNotifications.slice(0, 5).length > 0 ? (
                         <motion.ul className="divide-y divide-gray-100">
-                          {notifications
-                            .slice(0, 5)
-                            .map((notification: any) => (
-                              <motion.li
-                                key={notification._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.2 }}
-                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
-                                  !notification.read
-                                    ? "bg-yellow-100"
-                                    : "hover:bg-gray-50"
-                                }`}
-                                onClick={() =>
-                                  handleNotificationClick(notification)
-                                }
-                              >
-                                <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                  {notification.title}
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  {notification.description}
-                                </p>
-                              </motion.li>
-                            ))}
+                          {sortedNotifications.slice(0, 5).map((notification: any) => (
+                            <motion.li
+                              key={notification._id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -20 }}
+                              transition={{ duration: 0.2 }}
+                              className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                !notification.read ? "bg-yellow-100" : "hover:bg-gray-50"
+                              }`}
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <p className="font-semibold text-gray-800 mb-2 text-xs">
+                                {notification.title}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {notification.description}
+                              </p>
+                            </motion.li>
+                          ))}
                         </motion.ul>
                       ) : (
                         <motion.div

@@ -525,31 +525,30 @@ const SelectCustomer = () => {
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
       <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
-        <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>{t("selectCustomerTitle")}</h3>
+        <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>
+          {t("selectCustomerTitle")}
+        </h3>
         {isMobile ? (
           <div className="bg-zinc-900 p-4 rounded-lg">
             {/* Versión móvil: filtros y búsqueda simplificada */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="space-y-2">
-                <ButtonOnOff
-                  title={t("debt")}
-                  onChange={handleDebtFilter}
-                  active={searchParams.hasDebt === "true"}
-                />
-                <ButtonOnOff
-                  title={t("expiredDebt")}
-                  onChange={handleExpiredDebtFilter}
-                  active={searchParams.hasDebtExpired === "true"}
-                />
-              </div>
-              <div>
-                <ButtonOnOff
-                  title={t("articlesOnCart")}
-                  onChange={handleHasArticlesOnSC}
-                  active={searchParams.hasArticlesOnSC === "true"}
-                />
-              </div>
+            <div className="flex gap-2 mb-4">
+              <ButtonOnOff
+                title={t("debt")}
+                onChange={handleDebtFilter}
+                active={searchParams.hasDebt === "true"}
+              />
+              <ButtonOnOff
+                title={t("expiredDebt")}
+                onChange={handleExpiredDebtFilter}
+                active={searchParams.hasDebtExpired === "true"}
+              />
+              <ButtonOnOff
+                title={t("articlesOnCart")}
+                onChange={handleHasArticlesOnSC}
+                active={searchParams.hasArticlesOnSC === "true"}
+              />
             </div>
+
             <div className="relative">
               <input
                 type="text"

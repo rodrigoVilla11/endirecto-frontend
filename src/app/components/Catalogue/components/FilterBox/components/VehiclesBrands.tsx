@@ -150,7 +150,7 @@ const FilterDropdown = ({
         value={value}
         onChange={onChange}
         disabled={disabled || isLoading}
-        className={`shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        className={`appearance-none shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
           disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
         }`}
       >

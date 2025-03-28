@@ -396,6 +396,8 @@
       "margin": "Margen"
     },
     "title": "Márgenes por Marca",
+    "searchesTitle": "Búsquedas",
+    "confirmDeleteMessage": "¿Estás seguro de que deseas eliminar esta búsqueda?",
     "selectClient": "Por favor, seleccione un cliente",
     "header": {
       "massiveChange": "Cambio Masivo",
@@ -455,7 +457,13 @@
     "new": "Nuevo",
     "results": "Resultados"
   },
+  "common": {
+    "delete": "Eliminar",
+    "cancel": "Cancelar"
+  },
   "table": {
+    "search": "Búsqueda",
+    "actions": "Acciones",
     "read": "Leido",
     "margin": "Margen",
     "unknown": "Desconocido",
@@ -1316,6 +1324,18 @@
   "notification": "Notificación",
   "now": "Ahora",
   "time": "Hora",
-  "duration": "Duración"
+  "duration": "Duración",
+  "stats": "ESTADÍSTICAS",
+  "select_brand": "-- Seleccionar Marca --",
+  "select_item": "-- Seleccionar Artículo --",
+  "loading_data": "Cargando datos...",
+  "error_loading_data": "Error al cargar datos",
+  "monthly_sales_by_amount": "Ventas mensuales por importe",
+  "current_month": "Mes actual",
+  "previous_month": "Mes anterior",
+  "last_12_months": "Últimos 12 meses",
+  "sales_amount": "Importe de ventas",
+  "monthly_sales_by_quantity": "Ventas mensuales por cantidad",
+  "sales_quantity": "Cantidad vendida"
 
 }

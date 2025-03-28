@@ -28,7 +28,13 @@ const ArticleSearchResults = ({
     id: selectedClientId || "",
   });
 
-  const { data: searchResults, error, isLoading } = useSearchArticlesQuery({
+  const { showPurchasePrice } = useFilters();
+
+  const {
+    data: searchResults,
+    error,
+    isLoading,
+  } = useSearchArticlesQuery({
     query,
     page: 1,
     limit: 6,
@@ -83,8 +89,7 @@ const ArticleSearchResults = ({
       if (
         containerRef.current &&
         !containerRef.current.contains(target) &&
-        (!modalContentRef.current ||
-          !modalContentRef.current.contains(target))
+        (!modalContentRef.current || !modalContentRef.current.contains(target))
       ) {
         setSearchQuery("");
         setArticleId("");
@@ -110,8 +115,19 @@ const ArticleSearchResults = ({
   // Efecto para enviar un nuevo search si no hay resultados y no se ha enviado ya
   useEffect(() => {
     // Agregamos logs para ver los valores
-    console.log("useEffect createSearch:", { query, searchResults, isLoading, searchSent });
-    if (query && !isLoading && searchResults && searchResults.length === 0 && !searchSent) {
+    console.log("useEffect createSearch:", {
+      query,
+      searchResults,
+      isLoading,
+      searchSent,
+    });
+    if (
+      query &&
+      !isLoading &&
+      searchResults &&
+      searchResults.length === 0 &&
+      !searchSent
+    ) {
       createSearch({ search: query, quantity: 1 })
         .unwrap()
         .then((res) => {
@@ -171,9 +187,7 @@ const ArticleSearchResults = ({
         </div>
       )}
 
-      {error && (
-        <p className="text-red-500">{t("errorLoadingArticles")}</p>
-      )}
+      {error && <p className="text-red-500">{t("errorLoadingArticles")}</p>}
       {searchResults && searchResults.length === 0 && (
         <p className="text-gray-300">{t("noResultsFound")}</p>
       )}
@@ -203,7 +217,10 @@ const ArticleSearchResults = ({
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <div ref={modalContentRef}>
-          <ArticleDetails closeModal={closeModal} />
+          <ArticleDetails
+            closeModal={closeModal}
+            showPurchasePrice={showPurchasePrice}
+          />
         </div>
       </Modal>
     </div>

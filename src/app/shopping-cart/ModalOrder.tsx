@@ -254,8 +254,8 @@ export default function OrderConfirmation({
         .join(", ");
 
       // Construir título y descripción para la notificación
-      const notificationTitle = `Cliente ${selectedClientId}`;
-      const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}`;
+      const notificationTitle = `Nuevo pedido de cliente: ${selectedClientId} - ${customer?.name}`;
+      const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}. Fecha: ${transaction.date}`;
 
       // 4. Enviar la notificación de tipo PEDIDO
       await addNotificationToUser({
@@ -277,7 +277,7 @@ export default function OrderConfirmation({
         type: ActionType.ORDER,
         insitu: updatedTransaction.insitu,
         status: StatusType.PENDING,
-        notes: `Observaciones: ${observations}`,
+        notes: observations ? `Observaciones: ${observations}` : '-',
         collection_id: "",
         customer_id: selectedClientId || "",
         order_id: createdOrder.tmp_id,
