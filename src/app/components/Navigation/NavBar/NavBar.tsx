@@ -29,7 +29,7 @@ const NavBar = ({ setIsOpen, isOpen }: any) => {
             <ButtonsIcons isMobile={isMobile} />
             <Profile isMobile={isMobile} />
           </div>
-          {!isSelectCustomers && (
+          {isMobile && !isSelectCustomers && (
             <div className="w-full flex justify-center sm:my-2 absolute bottom-2 sm:static">
               <Search />
             </div>

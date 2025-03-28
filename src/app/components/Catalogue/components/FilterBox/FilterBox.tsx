@@ -182,7 +182,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
             {/* Filter Components */}
             <div className="space-y-2 p-4">
               <Order onChange={setOrder} />
-              <PurchasePrice onToggle={setShowPurchasePrice} />
+              <PurchasePrice show={showPurchasePrice} onToggle={setShowPurchasePrice} />
               <Tag onSelectTags={setTags} />
               <Stock onChange={handleStockChange} />
               <Brands onChange={setBrand} brand={brand} />

@@ -1,16 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 
-const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
-  const { t } = useTranslation();
-  const [showPrice, setShowPrice] = useState(true);
+interface PurchasePriceProps {
+  show: boolean;
+  onToggle: (show: boolean) => void;
+}
 
-  const handleShowPrice = (value: boolean) => {
-    setShowPrice(value);
-    onToggle(value);
-  };
+const PurchasePrice: React.FC<PurchasePriceProps> = ({ show, onToggle }) => {
+  const { t } = useTranslation();
 
   return (
     <div className="text-xs font-semibold">
@@ -20,17 +19,17 @@ const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
         </label>
         <div className="flex justify-between items-center gap-2">
           <button
-            onClick={() => handleShowPrice(true)}
+            onClick={() => onToggle(true)}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              showPrice ? "bg-primary text-white" : ""
+              show ? "bg-primary text-white" : ""
             }`}
           >
             <FaRegEye /> {t("show")}
           </button>
           <button
-            onClick={() => handleShowPrice(false)}
+            onClick={() => onToggle(false)}
             className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              !showPrice ? "bg-primary text-white" : ""
+              !show ? "bg-primary text-white" : ""
             }`}
           >
             <FaRegEyeSlash /> {t("hide")}
