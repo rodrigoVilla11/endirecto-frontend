@@ -503,6 +503,17 @@ const Page = () => {
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t("profile.seller")}
+                    </label>
+                    <input
+                      type="text"
+                      value={data?.seller_id}
+                      disabled
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"
+                    />
+                  </div>
                 </div>
                 <button
                   type="submit"

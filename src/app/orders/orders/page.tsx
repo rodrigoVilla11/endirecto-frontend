@@ -243,6 +243,7 @@ const Page = () => {
           ? format(new Date(order.date), "dd/MM/yyyy HH:mm")
           : "N/A",
         "total-without-taxes": formatPriceWithCurrency(order.total),
+        observations: order.notes ? order.notes : "-",
         status: order.status,
       };
     });
@@ -261,6 +262,7 @@ const Page = () => {
       key: "total-without-taxes",
       important: true,
     },
+    { name: t("observations.label"), key: "observations" },
     { name: t("status"), key: "status" },
   ];
 

@@ -991,6 +991,22 @@
     },
     "send": "SEND"
   },
+  "stats":{
+    "title": "Stats",
+    "filters": "Filters",
+    "selectBrand": "Brand",
+    "selectItem": "Item",
+    "placeholderBrand": "-- Select brand --",
+    "placeholderItem": "-- Select item --",
+    "loading": "Loading data...",
+    "error": "Error loading data",
+    "salesAmount": "Sales by Amount",
+    "salesQuantity": "Sales by Quantity",
+    "currentMonth": "Current Month",
+    "previousMonth": "Previous Month",
+    "last12Months": "Last 12 Months"
+  }
+  ,
   "updateMassive": {
     "title": "Massive Update",
     "description": "Enter a new margin for the Massive Update by Brand:",
@@ -1031,6 +1047,7 @@
   },
   "profile": {
     "title": "MY PROFILE",
+    "seller": "Seller:",
     "changePassword": "Change Password",
     "id": "Id:",
     "name": "Name:",
@@ -1329,7 +1346,6 @@
   "now": "Now",
   "time": "Time",
   "duration": "Duration",
-  "stats": "STATS",
   "select_brand": "-- Select Brand --",
   "select_item": "-- Select Item --",
   "loading_data": "Loading data...",

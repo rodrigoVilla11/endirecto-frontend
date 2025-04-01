@@ -8,7 +8,7 @@ import NavBarHome from "./NavBarHome/NavBarHome";
 import { usePathname } from "next/navigation";
 
 const NavBarAndSideMenu = () => {
-  const { isOpen, setIsOpen } = useSideMenu();
+  const { isOpen } = useSideMenu();
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
 
@@ -22,8 +22,8 @@ const NavBarAndSideMenu = () => {
       ) : (
         isAuthenticated && (
           <>
-            <NavBar setIsOpen={setIsOpen} isOpen={isOpen} />
-            <SideMenu isOpen={isOpen} setIsOpen={setIsOpen} />
+            <NavBar />
+            <SideMenu />
           </>
         )
       )}

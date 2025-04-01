@@ -8,7 +8,7 @@ import ButtonsIcons from "./components/ButtonsIcons";
 import Profile from "./components/Profile";
 import { usePathname } from "next/navigation";
 
-const NavBar = ({ setIsOpen, isOpen }: any) => {
+const NavBar = () => {
   const isMobile = window.innerWidth < 640;
   const pathname = usePathname();
 
@@ -25,7 +25,7 @@ const NavBar = ({ setIsOpen, isOpen }: any) => {
       {isMobile ? (
         <div className="w-full flex items-start justify-center sm:justify-between gap-4 mt-4 sm:mt-0">
           <div className="flex items-center gap-4">
-            <ButtonSideMenu setIsOpen={setIsOpen} isOpen={isOpen} />
+            <ButtonSideMenu />
             <ButtonsIcons isMobile={isMobile} />
             <Profile isMobile={isMobile} />
           </div>
@@ -39,7 +39,7 @@ const NavBar = ({ setIsOpen, isOpen }: any) => {
         <>
           <div className="flex items-center gap-4">
             <Logo />
-            <ButtonSideMenu setIsOpen={setIsOpen} isOpen={isOpen} />
+            <ButtonSideMenu/>
             {!isSelectCustomers && <Search />}
           </div>
           <div className="flex items-center">

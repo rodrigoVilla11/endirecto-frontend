@@ -24,7 +24,8 @@ import { useMobile } from "@/app/context/ResponsiveContext";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useTranslation } from "react-i18next";
 
-const SideMenu = ({ isOpen, setIsOpen }: any) => {
+const SideMenu = () => {
+  const { isOpen, setIsOpen, setOpenSubCategory } = useSideMenu();
   const { t } = useTranslation();
   const { selectedClientId, setSelectedClientId } = useClient();
   const { setIsAuthenticated, setRole, role } = useAuth();
@@ -373,7 +374,6 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
       ],
     },
   ];
-  const [openSubCategory, setOpenSubCategory] = useState<string | null>(null);
 
   const filteredIcons = React.useMemo(() => {
     return role
@@ -412,6 +412,7 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
         !(navBtn && navBtn.contains(event.target as Node))
       ) {
         setIsOpen(false);
+        setOpenSubCategory(null)
       }
     };
   
@@ -440,9 +441,6 @@ const SideMenu = ({ isOpen, setIsOpen }: any) => {
           <ButtonsIcons
             key={index}
             icon={icon}
-            isOpen={isOpen}
-            openSubCategory={openSubCategory}
-            setOpenSubCategory={setOpenSubCategory}
           />
         ))}
     </div>

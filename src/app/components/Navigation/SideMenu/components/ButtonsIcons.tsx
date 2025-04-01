@@ -15,41 +15,40 @@ interface Icon {
 
 interface ButtonsIconsProps {
   icon: Icon;
-  isOpen: boolean;
-  openSubCategory: string | null;
-  setOpenSubCategory: (name: string | null) => void;
 }
 
-const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
-  icon,
-  isOpen,
-  openSubCategory,
-  setOpenSubCategory,
-}) => {
-  const { setIsOpen } = useSideMenu();
+const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon }) => {
+  const {
+    isOpen,
+    setIsOpen,
+    openSubCategory,
+    setOpenSubCategory,
+  } = useSideMenu();
+
   const router = useRouter();
   const { isMobile } = useMobile();
 
-  // Ref para detectar clicks fuera del componente
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setOpenSubCategory(null);
-      }
-    };
+  // Cierre al hacer clic fuera
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (
+  //       containerRef.current &&
+  //       !containerRef.current.contains(event.target as Node)
+  //     ) {
+  //       setOpenSubCategory(null);
+  //     }
+  //   };
+  
+  //   document.addEventListener("click", handleClickOutside); // 👈 CAMBIADO a "click"
+  //   return () => {
+  //     document.removeEventListener("click", handleClickOutside);
+  //   };
+  // }, [setOpenSubCategory]);
+  
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [setOpenSubCategory]);
-
-  // Alterna la visibilidad de las subcategorías y abre el sideMenu.
+  // Alterna visibilidad de subcategorías
   const toggleSubCategories = () => {
     setIsOpen(true);
     if (openSubCategory === icon.name) {
@@ -59,26 +58,35 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
     }
   };
 
-  // Maneja la redirección y cierra el dropdown.
+  // Redirige y cierra menú
   const handleRedirect = (path: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (path) {
       router.push(path);
-      setTimeout(() => {
-        setIsOpen(false);
-        setOpenSubCategory(null);
-      }, 1000);
     }
+    setOpenSubCategory(null);
+    setIsOpen(false);
   };
-  
 
-  // Ejecuta onClick personalizado o alterna las subcategorías/redirige.
+  // Clic principal
   const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  
     if (icon.onClick) {
-      event.stopPropagation();
       icon.onClick();
-    } else if (icon.subCategories) {
-      toggleSubCategories();
+      return;
+    }
+  
+    // ⚠️ Si ya está abierta, solo cerramos (NO reabrimos)
+    if (openSubCategory === icon.name) {
+      setOpenSubCategory(null);
+      return;
+    }
+  
+    // 👇 Solo se ejecuta si no está abierta
+    if (icon.subCategories) {
+      setIsOpen(true);
+      setOpenSubCategory(icon.name);
     } else {
       handleRedirect(icon.path || "", event);
       if (isMobile) {
@@ -86,12 +94,13 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
       }
     }
   };
+  
 
-  // Indica si las subcategorías están abiertas para este ítem.
   const showSubCategories = openSubCategory === icon.name;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-2 text-white">
+      {/* Categoría principal */}
       <div className="flex items-center gap-2 cursor-pointer" onClick={handleClick}>
         <div className="text-left hover:cursor-pointer">{icon.icon}</div>
         {isOpen && <div className="text-xs hover:cursor-pointer">{icon.name}</div>}
@@ -105,23 +114,21 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({
         )}
       </div>
 
+      {/* Subcategorías */}
       {icon.subCategories && showSubCategories && (
-        <div className="rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto hide-scrollbar"> 
+        <div className="rounded-md px-1 w-48 transition-all duration-300 max-h-60 overflow-y-auto hide-scrollbar">
           <ul>
             {icon.subCategories.map((subcategory, index) => (
-             <li
-             key={index}
-             className="text-sm p-1 hover:cursor-pointer text-left"
-             onMouseDown={(event) => {
-               event.stopPropagation();
-               handleRedirect(subcategory.path, event);
-             }}
-           >
-             <div className="flex gap-1 text-xs">
-               {subcategory.name}
-             </div>
-           </li>
-           
+              <li
+                key={index}
+                className="text-sm p-1 hover:cursor-pointer text-left"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleRedirect(subcategory.path, event);
+                }}
+              >
+                <div className="flex gap-1 text-xs">{subcategory.name}</div>
+              </li>
             ))}
           </ul>
         </div>

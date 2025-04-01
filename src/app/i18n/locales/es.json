@@ -987,6 +987,22 @@
     },
     "send": "ENVIAR"
   },
+  "stats":{
+    "title": "Estadísticas",
+    "filters": "Filtros",
+    "selectBrand": "Marca",
+    "selectItem": "Ítem",
+    "placeholderBrand": "-- Seleccionar marca --",
+    "placeholderItem": "-- Seleccionar ítem --",
+    "loading": "Cargando datos...",
+    "error": "Error al cargar datos",
+    "salesAmount": "Ventas por monto",
+    "salesQuantity": "Ventas por cantidad",
+    "currentMonth": "Mes actual",
+    "previousMonth": "Mes anterior",
+    "last12Months": "Últimos 12 meses"
+  },
+  
   "updateMassive": {
     "title": "Actualización Masiva",
     "description": "Ingrese un nuevo margen para la actualización masiva por marca:",
@@ -1027,6 +1043,7 @@
   },
   "profile": {
     "title": "MI PERFIL",
+    "seller": "Vendedor:",
     "changePassword": "Cambiar Contraseña",
     "id": "Id:",
     "name": "Nombre:",
@@ -1325,7 +1342,6 @@
   "now": "Ahora",
   "time": "Hora",
   "duration": "Duración",
-  "stats": "ESTADÍSTICAS",
   "select_brand": "-- Seleccionar Marca --",
   "select_item": "-- Seleccionar Artículo --",
   "loading_data": "Cargando datos...",
