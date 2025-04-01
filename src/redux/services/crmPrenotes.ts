@@ -21,7 +21,6 @@ export const crmPrenotesApi = createApi({
       query: () => `/crm-prenotes?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: CrmPrenote[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;

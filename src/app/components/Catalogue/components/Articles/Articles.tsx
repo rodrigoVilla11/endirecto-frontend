@@ -89,7 +89,6 @@ const Articles: React.FC<ArticlesProps> = ({
     { skip: !selectedClientId }
   );
 
-  console.log("Filters changed:", filters);
 
   const skipArticles = !customer?.price_list_id;
   const { data, isLoading, isFetching } = useGetArticlesQuery(
@@ -102,7 +101,6 @@ const Articles: React.FC<ArticlesProps> = ({
     { skip: skipArticles, refetchOnMountOrArgChange: true }
   );
 
-  console.log(data);
 
   // Reinicia los artículos si los filtros cambian
   useEffect(() => {

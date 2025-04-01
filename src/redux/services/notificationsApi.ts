@@ -54,7 +54,6 @@ export const notificationsApi = createApi({
       query: () => `/notifications?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: AllNotifications) => {
         if (!response || !response.notifications || response.notifications.length === 0) {
-          console.error("No se recibieron notifications en la respuesta");
           return { notifications: [], total: 0 };
         }
         return response;
@@ -117,7 +116,6 @@ export const notificationsApi = createApi({
       },
       transformResponse: (response: any): { notifications: Notifications[]; total: number } => {
         if (!response || !response.notifications || response.notifications.length === 0) {
-          console.error("No se recibieron notifications en la respuesta");
           return { notifications: [], total: 0 };
         }
         return {
@@ -147,7 +145,6 @@ export const notificationsApi = createApi({
       },
       transformResponse: (response: any): { notifications: Notifications[]; total: number } => {
         if (!response || !response.notifications || response.notifications.length === 0) {
-          console.error("No se recibieron notifications en la respuesta");
           return { notifications: [], total: 0 };
         }
         return {

@@ -18,7 +18,6 @@ export const customersTransportsApi = createApi({
         `/customers-transports?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: CustomerTransport[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;

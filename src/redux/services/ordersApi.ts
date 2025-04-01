@@ -132,7 +132,6 @@ export const ordersApi = createApi({
   },
   transformResponse: (response: Orders) => {
     if (!response || !response.orders) {
-      console.error("No se recibieron pedidos en la respuesta");
       return { orders: [], total: 0 };
     }
     return response;

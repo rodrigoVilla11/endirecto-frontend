@@ -26,7 +26,6 @@ export const technicalDetailsApi = createApi({
         response: any
       ): { technicalDetails: TechnicalDetail[]; total: number } => {
         if (!response || !response.technicalDetails) {
-          console.error("No se recibieron technical details en la respuesta");
           return { technicalDetails: [], total: 0 };
         }
         return {

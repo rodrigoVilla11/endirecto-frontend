@@ -1,8 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import FilterBox from "./components/FilterBox/FilterBox";
-import { FaFilter, FaList } from "react-icons/fa";
-import { RxDashboard } from "react-icons/rx";
+import { FaFilter } from "react-icons/fa";
 import Articles from "./components/Articles/Articles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
@@ -45,7 +44,6 @@ const CataloguePage = () => {
     query: search,
     sort: order,
   });
-
 
   const filterBy = "popups";
   const { data: marketing } = useGetMarketingByFilterQuery({ filterBy });
@@ -112,29 +110,13 @@ const CataloguePage = () => {
             <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
             {t("filters")}
           </button>
-          {/* <button
-            onClick={() => toggleShowArticles("catalogue")}
-            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-              showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-            } text-white rounded`}
-          >
-            <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
-          </button> */}
-          {/* <button
-            onClick={() => toggleShowArticles("list")}
-            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-              showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-            } text-white rounded`}
-          >
-            <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-          </button> */}
         </div>
       )}
 
       {/* 🔹 Ajuste de ancho para evitar scroll horizontal */}
       <div className="flex gap-2 w-full sm:w-auto">
         <FilterBox isVisible={isFilterBoxVisible} onClose={() => setFilterBoxVisible(false)} />
-        
+
         <div className="w-full flex flex-col">
           {/* 🔹 Contenedor para pantallas grandes: botones en su lugar */}
           {!isMobile && (
@@ -149,38 +131,29 @@ const CataloguePage = () => {
                   <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
                   {t("filters")}
                 </button>
-                {/* <button
-                  onClick={() => toggleShowArticles("catalogue")}
-                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                    showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-                  } text-white rounded`}
-                >
-                  <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
-                </button> */}
-                {/* <button
-                  onClick={() => toggleShowArticles("list")}
-                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                    showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-                  } text-white rounded`}
-                >
-                  <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-                </button> */}
               </div>
             </div>
           )}
 
-          <Articles
-            brand={brand}
-            item={item}
-            vehicleBrand={vehicleBrand}
-            stock={stock}
-            tags={tags}
-            order={order}
-            cart={cart}
-            showPurchasePrice={showPurchasePrice}
-            showArticles={showArticles}
-            query={search}
-          />
+          {/* Mostrar spinner hasta tener los artículos */}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <Articles
+              brand={brand}
+              item={item}
+              vehicleBrand={vehicleBrand}
+              stock={stock}
+              tags={tags}
+              order={order}
+              cart={cart}
+              showPurchasePrice={showPurchasePrice}
+              showArticles={showArticles}
+              query={search}
+            />
+          )}
 
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect} />

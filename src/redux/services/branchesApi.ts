@@ -32,7 +32,6 @@ export const branchesApi = createApi({
       query: () => `/branches?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Branch[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;
@@ -51,7 +50,6 @@ export const branchesApi = createApi({
       },
       transformResponse: (response: Branch[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;

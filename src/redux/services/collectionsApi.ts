@@ -50,7 +50,6 @@ export const collectionsApi = createApi({
       query: () => `/collections/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Collections[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron pagos en la respuesta");
           return [];
         }
         return response;
@@ -100,7 +99,6 @@ export const collectionsApi = createApi({
     },
     transformResponse: (response: any): { collections: Collections[]; total: number } => {
       if (!response || !response.collections) {
-        console.error("No se recibieron documentos en la respuesta");
         return { collections: [], total: 0 };
       }
       return {

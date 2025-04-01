@@ -17,7 +17,6 @@ export const sellersApi = createApi({
       query: () => `/sellers?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Seller[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron vendedores en la respuesta");
           return [];
         }
         return response;
@@ -35,7 +34,6 @@ export const sellersApi = createApi({
     },
     transformResponse: (response: any): { sellers: Seller[]; total: number } => {
       if (!response || !response.sellers) {
-        console.error("No se recibieron vendedores en la respuesta");
         return { sellers: [], total: 0 };
       }
       return {

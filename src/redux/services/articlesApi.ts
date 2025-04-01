@@ -71,7 +71,6 @@ export const articlesApi = createApi({
       query: () => `/articles/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Article[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron usuarios en la respuesta");
           return [];
         }
         return response;
@@ -140,7 +139,6 @@ export const articlesApi = createApi({
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
 
-        console.log(`/articles/?${params.toString()}`)
         return `/articles/?${params.toString()}`;
       },
       transformResponse: (
@@ -153,7 +151,6 @@ export const articlesApi = createApi({
         articles: Article[];
       } => {
         if (!response || !response.articles || response.articles.length === 0) {
-          console.error("No se recibieron artículos en la respuesta");
           return {
             totalItems: 0,
             totalPages: 0,

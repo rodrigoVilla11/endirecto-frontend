@@ -82,7 +82,6 @@ export const customerApi = createApi({
       query: () => `/customers/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Customer[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron clientes en la respuesta");
           return [];
         }
         return response;

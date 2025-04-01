@@ -114,13 +114,6 @@ const ArticleSearchResults = ({
 
   // Efecto para enviar un nuevo search si no hay resultados y no se ha enviado ya
   useEffect(() => {
-    // Agregamos logs para ver los valores
-    console.log("useEffect createSearch:", {
-      query,
-      searchResults,
-      isLoading,
-      searchSent,
-    });
     if (
       query &&
       !isLoading &&
@@ -131,7 +124,6 @@ const ArticleSearchResults = ({
       createSearch({ search: query, quantity: 1 })
         .unwrap()
         .then((res) => {
-          console.log("Search created:", res);
         })
         .catch((err) => {
           console.error("Error creating search:", err);

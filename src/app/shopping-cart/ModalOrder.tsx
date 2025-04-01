@@ -282,7 +282,7 @@ export default function OrderConfirmation({
         customer_id: selectedClientId || "",
         order_id: createdOrder.tmp_id,
         seller_id: transaction.seller.id || "",
-        user_id: userData?.seller_id ? userData?.seller_id : userData?._id || "",
+        user_id: userData?.role !== "CUSTOMER" ? userData?.seller_id : (selectedClientId || ""),
       }).unwrap();
 
       setShowSuccess(true);

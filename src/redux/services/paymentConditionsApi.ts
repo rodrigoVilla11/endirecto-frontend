@@ -19,7 +19,6 @@ export const paymentConditionsApi = createApi({
       query: () => `/payment-conditions/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: PaymentCondition[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron condiciones de pago en la respuesta");
           return [];
         }
         return response;
@@ -34,11 +33,9 @@ export const paymentConditionsApi = createApi({
     },
     transformResponse: (response: any): { paymentConditions: PaymentCondition[]; total: number } => {
       if (!response) {
-        console.error("No se recibió respuesta del servidor");
         return { paymentConditions: [], total: 0 };
       }
       if (!response.paymentConditions || response.paymentConditions.length === 0) {
-        console.error("No se recibieron condiciones de pago en la respuesta");
       }
       return {
         paymentConditions: response.paymentConditions || [],

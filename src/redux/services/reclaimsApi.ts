@@ -88,7 +88,6 @@ export const reclaimsApi = createApi({
       query: () => `/reclaims?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Reclaims[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron reclamos en la respuesta");
           return [];
         }
         return response;
@@ -142,7 +141,6 @@ export const reclaimsApi = createApi({
       },
       transformResponse: (response: Reclaims[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron reclamos en la respuesta");
           return [];
         }
         return response;
