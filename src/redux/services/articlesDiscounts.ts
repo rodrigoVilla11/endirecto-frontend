@@ -17,7 +17,6 @@ export const articlesDiscountsApi = createApi({
       query: () => `/articles-discounts?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticleDiscount[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
           return [];
         }
         return response;

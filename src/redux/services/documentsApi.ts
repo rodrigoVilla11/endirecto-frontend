@@ -35,7 +35,6 @@ export const documentsApi = createApi({
       query: () => `/documents/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Document[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron documentos en la respuesta");
           return [];
         }
         return response;
@@ -106,7 +105,6 @@ export const documentsApi = createApi({
         arg
       ): { documents: Document[]; total: number } => {
         if (!response || !response.documents) {
-          console.error("No se recibieron documentos en la respuesta");
           return { documents: [], total: 0 };
         }
         let docs = response.documents;

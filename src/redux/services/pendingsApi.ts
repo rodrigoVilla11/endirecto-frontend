@@ -20,7 +20,6 @@ export const pendingsApi = createApi({
       query: () => `/pendings?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Pending[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron clientes en la respuesta");
           return [];
         }
         return response;

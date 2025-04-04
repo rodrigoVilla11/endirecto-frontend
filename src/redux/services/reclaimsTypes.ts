@@ -18,7 +18,6 @@ export const reclaimsTypesApi = createApi({
       query: () => `/reclaims-types?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ReclaimType[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron tipos de reclamo en la respuesta");
           return [];
         }
         return response;

@@ -72,7 +72,6 @@ export const crmApi = createApi({
       query: () => `/crm?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Crm[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron crm en la respuesta");
           return [];
         }
         return response;
@@ -133,7 +132,6 @@ export const crmApi = createApi({
   },
   transformResponse: (response: { crms: Crm[]; total: number }): { crms: Crm[]; total: number } => {
     if (!response || !response.crms || response.crms.length === 0) {
-      console.error("No se recibieron rubros en la respuesta");
       return { crms: [], total: 0 };
     }
     return response;

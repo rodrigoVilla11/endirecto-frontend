@@ -23,7 +23,6 @@ export const documentsDetailsApi = createApi({
         `/documents-details?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: DocumentsDetail[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;

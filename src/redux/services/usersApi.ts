@@ -62,7 +62,6 @@ export const usersApi = createApi({
       query: () => `/users?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron usuarios en la respuesta");
           return [];
         }
         return response;
@@ -77,7 +76,6 @@ export const usersApi = createApi({
       },
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron usuarios en la respuesta");
           return [];
         }
         return response;

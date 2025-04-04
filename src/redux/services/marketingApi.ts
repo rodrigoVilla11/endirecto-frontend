@@ -69,7 +69,6 @@ export const marketingApi = createApi({
       },
       transformResponse: (response: Marketing[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron datos de marketing en la respuesta");
           return [];
         }
         return response;
@@ -84,7 +83,6 @@ export const marketingApi = createApi({
       },
       transformResponse: (response: Marketing[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron datos de marketing en la respuesta");
           return [];
         }
         return response;

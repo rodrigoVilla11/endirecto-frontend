@@ -20,7 +20,6 @@ export const articlesPricesApi = createApi({
       query: () => `/articles-prices?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: ArticlePrice[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
           return [];
         }
         return response;

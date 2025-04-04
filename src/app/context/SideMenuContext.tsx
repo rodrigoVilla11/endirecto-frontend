@@ -16,13 +16,7 @@ const SideMenuContext = createContext<SideMenuContextProps | undefined>(
 export const SideMenuProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openSubCategory, setOpenSubCategory] = useState<string | null>(null); // 👉 agregado
-  useEffect(() => {
-    console.log("🎯 SideMenuContext initialized");
-  }, []);
 
-  useEffect(() => {
-    console.log("🔁 openSubCategory changed:", openSubCategory);
-  }, [openSubCategory]);
 
   return (
     <SideMenuContext.Provider

@@ -336,11 +336,7 @@ const SelectCustomer = () => {
       { name: t("expiredDebt"), key: "expired-debt", sortable: true },
       { name: t("articlesOnCart"), key: "articles-on-cart", sortable: true },
       { name: "GPS", key: "gps", important: true },
-      {
-        component: <CiMenuKebab className="text-center text-xl" />,
-        key: "menu",
-        important: true,
-      },
+      { component: <CiMenuKebab className="text-center text-xl" />, key: "menu", important: true },
     ],
     [t]
   );
@@ -352,7 +348,7 @@ const SelectCustomer = () => {
           title: `${t("viewOnMap")}`,
           onClick: () => setShowCustomersMapModal(true),
         },
-        { logo: <AiOutlineDownload />, title: `${t("download")}` },
+        { logo: <AiOutlineDownload />, title: t("download") },
       ],
       filters: [
         {
@@ -489,7 +485,7 @@ const SelectCustomer = () => {
         {showMapModal && currentCustomerId && (
           <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)}>
             <MapComponent
-              key={`${currentCustomerId}-${Date.now()}`}
+              key={currentCustomerId} // Se utiliza un key estable para evitar remounts innecesarios
               currentCustomerId={currentCustomerId}
               closeModal={() => setShowMapModal(false)}
             />

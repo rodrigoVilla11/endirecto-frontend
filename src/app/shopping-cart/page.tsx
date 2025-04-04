@@ -44,7 +44,6 @@ interface OrderItem extends CartItem {
 const ShoppingCart = () => {
   const { articleId, setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);
-
   const { selectedClientId } = useClient();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -58,25 +57,26 @@ const ShoppingCart = () => {
   });
   const { data: articles } = useGetAllArticlesQuery(null);
   const { data: paymentsConditions } = useGetPaymentConditionsQuery(null);
-
   const { data: brands } = useGetBrandsQuery(null);
   const { data: stock } = useGetStockQuery(null);
   const { data: prices } = useGetArticlesPricesQuery(null);
   const [updateCustomer] = useUpdateCustomerMutation();
-
   const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
-  // Inicializar carrito y orden
+  const { isMobile } = useMobile();
+
+  // Determinamos si ya se cargaron todos los datos necesarios
+  const isAllDataLoaded =
+    customer &&
+    articles &&
+    brands &&
+    prices &&
+    stock &&
+    paymentsConditions &&
+    articlesBonuses;
+
+  // Inicializar carrito y orden (este useEffect se ejecuta siempre, pero si los datos aún no están cargados, no hará nada)
   useEffect(() => {
-    if (
-      !customer ||
-      !articles ||
-      !brands ||
-      !prices ||
-      !stock ||
-      !paymentsConditions ||
-      !articlesBonuses
-    )
-      return;
+    if (!isAllDataLoaded) return;
 
     const items = customer.shopping_cart.reduce(
       (acc: CartItem[], articleId) => {
@@ -85,49 +85,41 @@ const ShoppingCart = () => {
         const paymentCondition = paymentsConditions.find(
           (p) => p.id === customer?.payment_condition_id
         );
-
         const percentagePaymentCondition = Math.abs(
           parseFloat(paymentCondition?.percentage || "0")
         );
-
-        // 🔹 Obtener el precio base
+        // Obtener el precio base
         const priceObj = prices.find(
           (p) =>
-            p.article_id === articleId && p.price_list_id === customer?.price_list_id
+            p.article_id === articleId &&
+            p.price_list_id === customer?.price_list_id
         );
-
-        // 🔹 Verificar si hay una oferta activa y usarla directamente si existe
-        let price = priceObj?.offer !== null && priceObj?.offer !== undefined
-          ? priceObj.offer
-          : priceObj?.price || 0;
-
-        // 🔹 Aplicar bonus solo si NO es una oferta
+        let price =
+          priceObj?.offer !== null && priceObj?.offer !== undefined
+            ? priceObj.offer
+            : priceObj?.price || 0;
+        // Aplicar bonus solo si NO es una oferta
         let discount = 0;
-        const bonus = articlesBonuses.find((b) => b.item_id === article?.item_id);
-
+        const bonus = articlesBonuses.find(
+          (b) => b.item_id === article?.item_id
+        );
         if (priceObj?.offer === null || priceObj?.offer === undefined) {
           if (bonus?.percentage_1 && typeof price === "number") {
             discount = (price * bonus.percentage_1) / 100;
             price -= discount;
           }
         }
-
-        // 🔹 Aplicar recargo de la condición de pago (siempre, independiente de oferta o no)
+        // Aplicar recargo de la condición de pago
         if (percentagePaymentCondition && typeof price === "number") {
           const recharge = (price * percentagePaymentCondition) / 100;
           price += recharge;
         }
-
         const stockItem = stock.find((s) => s.article_id === articleId);
         const existingItem = acc.find((item) => item.id === articleId);
-
-        // 🔹 Si el artículo ya está en el carrito, incrementar cantidad
         if (existingItem) {
           existingItem.quantity += 1;
           return acc;
         }
-
-        // 🔹 Agregar artículo al carrito si existe
         if (article) {
           acc.push({
             id: articleId,
@@ -144,56 +136,60 @@ const ShoppingCart = () => {
             supplier_code: article.supplier_code,
           });
         }
-
         return acc;
       },
       []
     );
-
     setCartItems(items);
     setOrderItems((prevOrderItems) =>
       items.map((item) => {
-        const prevItem = prevOrderItems.find((orderItem) => orderItem.id === item.id);
+        const prevItem = prevOrderItems.find(
+          (orderItem) => orderItem.id === item.id
+        );
         return { ...item, selected: prevItem ? prevItem.selected : true };
       })
     );
-    
-  }, [customer, articles, brands, prices, stock, articlesBonuses, paymentsConditions]);
+  }, [
+    isAllDataLoaded,
+    customer,
+    articles,
+    brands,
+    prices,
+    stock,
+    articlesBonuses,
+    paymentsConditions,
+  ]);
 
+  // Resto de funciones y handlers (handleQuantityChange, formatPriceWithCurrency, etc.)
+  // ...
+  // Por brevedad, se omiten en este ejemplo, pero se mantienen igual
 
   const handleQuantityChange = async (
     articleId: string,
     newQuantity: number
   ) => {
     if (newQuantity < 1) return;
-
     try {
-      // Actualizar cantidad en el carrito
       setCartItems((prevItems) =>
         prevItems.map((item) =>
           item.id === articleId ? { ...item, quantity: newQuantity } : item
         )
       );
-
-      // Actualizar cantidad en la orden
       setOrderItems((prevItems) =>
         prevItems.map((item) =>
           item.id === articleId ? { ...item, quantity: newQuantity } : item
         )
       );
-
       if (customer) {
         const updatedCart = cartItems.flatMap((item) =>
           item.id === articleId
             ? Array(newQuantity).fill(item.id)
             : Array(item.quantity).fill(item.id)
         );
-
         await updateCustomer({
           id: customer.id,
           shopping_cart: updatedCart,
         });
-
         refetchCustomer();
       }
     } catch (error) {
@@ -209,27 +205,23 @@ const ShoppingCart = () => {
       maximumFractionDigits: 2,
     })
       .format(price)
-      .replace("ARS", "") // Elimina "ARS" del formato.
-      .trim(); // Elimina espacios extra.
-
-    return `${formattedNumber}`; // Agrega el símbolo "$" con espacio al principio.
+      .replace("ARS", "")
+      .trim();
+    return `${formattedNumber}`;
   }
 
   const handleRemoveItem = async (articleId: string) => {
     try {
       setCartItems((prev) => prev.filter((item) => item.id !== articleId));
       setOrderItems((prev) => prev.filter((item) => item.id !== articleId));
-
       if (customer) {
         const updatedCart = cartItems
           .filter((item) => item.id !== articleId)
           .flatMap((item) => Array(item.quantity).fill(item.id));
-
         await updateCustomer({
           id: customer.id,
           shopping_cart: updatedCart,
         });
-
         refetchCustomer();
       }
     } catch (error) {
@@ -244,7 +236,6 @@ const ShoppingCart = () => {
           id: customer.id,
           shopping_cart: [],
         });
-
         setCartItems([]);
         setOrderItems([]);
         setConfirmModalOpen(false);
@@ -255,7 +246,6 @@ const ShoppingCart = () => {
     }
   };
 
-  // Manejador para toggle de selección individual
   const handleToggleSelect = (articleId: string) => {
     setOrderItems((prevItems) =>
       prevItems.map((item) =>
@@ -264,32 +254,22 @@ const ShoppingCart = () => {
     );
   };
 
-  // Manejador para select all
   const handleSelectAll = (selected: boolean) => {
     setOrderItems((prevItems) =>
       prevItems.map((item) => ({ ...item, selected }))
     );
   };
 
-  // Obtener solo los items seleccionados para la orden
-  const getSelectedItems = () => {
-    return orderItems.filter((item) => item.selected);
-  };
-
-  // Calcular totales solo de items seleccionados
+  const getSelectedItems = () => orderItems.filter((item) => item.selected);
   const totalAmount = orderItems
     .filter((item) => item.selected)
     .reduce((sum, item) => sum + item.price * item.quantity, 0);
-
   const totalItems = orderItems
     .filter((item) => item.selected)
     .reduce((sum, item) => sum + item.quantity, 0);
-
   const filteredItems = cartItems.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Verificar si todos los items están seleccionados
   const allSelected =
     orderItems.length > 0 && orderItems.every((item) => item.selected);
 
@@ -297,11 +277,10 @@ const ShoppingCart = () => {
     setModalOpen(true);
     setArticleId(id);
   };
-  const { isMobile } = useMobile();
 
+  // Preparar tableData y tableHeaders (igual que en tu código original)
   const tableData = filteredItems.map((item) => {
     const orderItem = orderItems.find((o) => o.id === item.id);
-
     return {
       key: item.id,
       included: (
@@ -387,7 +366,7 @@ const ShoppingCart = () => {
   const tableHeaders = [
     { name: "Incluir", key: "included", important: true },
     { name: "Marca", key: "brand" },
-    { component: <FaImage className="text-center text-xl" />, key: "image"},
+    { component: <FaImage className="text-center text-xl" />, key: "image" },
     { name: "Artículo", key: "name", important: true },
     { name: "Stock", key: "stock" },
     { name: "Precio", key: "price" },
@@ -411,7 +390,7 @@ const ShoppingCart = () => {
           const selectedOrder = getSelectedItems();
           setOrder(selectedOrder);
           setShowConfirmation(true);
-          // Aquí puedes agregar la lógica para procesar la orden
+          // Lógica para procesar la orden
         },
       },
     ],
@@ -450,35 +429,54 @@ const ShoppingCart = () => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4 max-w-[100vw] overflow-x-hidden">
         <h3 className="font-bold p-4 text-lg md:text-xl">Carrito de Compras</h3>
         <div className="px-2 md:px-4">
           <Header headerBody={headerConfig} />
         </div>
-
         <div className="overflow-x-auto px-2 md:px-4">
-          {cartItems.length > 0 ? (
+          {!isAllDataLoaded ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : cartItems.length > 0 ? (
             isMobile ? (
-              <MobileTable data={tableData} handleModalOpen={handleOpenModal} 
-              handleQuantityChange={handleQuantityChange} // 🔹 Permite cambiar la cantidad
-              handleRemoveItem={handleRemoveItem} />
-            ) : (
-              <Table
-                headers={tableHeaders}
+              <MobileTable
                 data={tableData}
+                handleModalOpen={handleOpenModal}
+                handleQuantityChange={handleQuantityChange}
+                handleRemoveItem={handleRemoveItem}
               />
+            ) : (
+              <Table headers={tableHeaders} data={tableData} />
             )
           ) : (
-            <div className="text-center py-8 text-gray-500">El carrito está vacío</div>
+            <div className="text-center py-8 text-gray-500">
+              El carrito está vacío
+            </div>
           )}
         </div>
 
-        <Modal isOpen={isConfirmModalOpen} onClose={() => setConfirmModalOpen(false)}>
+        <Modal
+          isOpen={isConfirmModalOpen}
+          onClose={() => setConfirmModalOpen(false)}
+        >
           <div className="p-4 md:p-6 w-[90vw] max-w-md mx-auto">
-            <h2 className="text-base md:text-lg font-semibold">Confirmar vaciado del carrito</h2>
+            <h2 className="text-base md:text-lg font-semibold">
+              Confirmar vaciado del carrito
+            </h2>
             <p className="mt-4 text-sm md:text-base">
-              ¿Estás seguro de que deseas vaciar el carrito? Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas vaciar el carrito? Esta acción no se
+              puede deshacer.
             </p>
             <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-4 mt-6">
               <button
@@ -496,8 +494,10 @@ const ShoppingCart = () => {
             </div>
           </div>
         </Modal>
-
-        <Modal isOpen={showConfirmation} onClose={() => setShowConfirmation(false)}>
+        <Modal
+          isOpen={showConfirmation}
+          onClose={() => setShowConfirmation(false)}
+        >
           <div className="w-[90vw] max-w-xl mx-auto">
             <OrderConfirmation
               total={totalAmount}
@@ -508,7 +508,6 @@ const ShoppingCart = () => {
             />
           </div>
         </Modal>
-
         <Modal isOpen={isModalOpen} onClose={closeModal}>
           <div className="w-[90vw] md:w-auto max-w-2xl mx-auto">
             <ArticleDetails closeModal={closeModal} />

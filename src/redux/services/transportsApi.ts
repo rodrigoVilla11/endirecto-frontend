@@ -16,7 +16,6 @@ export const transportsApi = createApi({
       query: () => `/transports?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Transport[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron sucursales en la respuesta");
           return [];
         }
         return response;
@@ -39,7 +38,6 @@ export const transportsApi = createApi({
       },
       transformResponse: (response: Transport[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron TRANSPORTISTAS en la respuesta");
           return [];
         }
         return response;

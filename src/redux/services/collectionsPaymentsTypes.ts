@@ -15,7 +15,6 @@ export const collectionsPaymentsTypesApi = createApi({
       query: () => `/collections-payments-types?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: CollectionPaymentsType[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron articulos en la respuesta");
           return [];
         }
         return response;

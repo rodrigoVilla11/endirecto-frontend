@@ -16,7 +16,6 @@ export const pricesListsApi = createApi({
       query: () => `/prices-lists?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: PricesList[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron clientes en la respuesta");
           return [];
         }
         return response;
@@ -34,7 +33,6 @@ export const pricesListsApi = createApi({
     },
     transformResponse: (response: PricesList[]) => {
       if (!response || response.length === 0) {
-        console.error("No se recibieron listas de precios en la respuesta");
         return [];
       }
       return response;

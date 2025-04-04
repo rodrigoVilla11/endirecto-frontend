@@ -20,7 +20,6 @@ export const stockApi = createApi({
       query: () => `/stocks/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Stock[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron stocks en la respuesta");
           return [];
         }
         return response;
@@ -42,7 +41,6 @@ export const stockApi = createApi({
     },
     transformResponse: (response: any): { stocks: Stock[]; total: number } => {
       if (!response) {
-        console.error("No se recibió respuesta del servidor");
         return { stocks: [], total: 0 };
       }
       // Se asume que la respuesta tiene la forma: { stocks: Stock[], total: number }

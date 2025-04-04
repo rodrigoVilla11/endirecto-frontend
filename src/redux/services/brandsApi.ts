@@ -23,7 +23,6 @@ export const brandsApi = createApi({
       query: () => `/brands/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Brands[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron usuarios en la respuesta");
           return [];
         }
         return response;
@@ -42,7 +41,6 @@ export const brandsApi = createApi({
       },
       transformResponse: (response: Brands[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron marcas en la respuesta");
           return [];
         }
         return response;

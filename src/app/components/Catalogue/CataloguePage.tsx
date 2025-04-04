@@ -45,7 +45,6 @@ const CataloguePage = () => {
     sort: order,
   });
 
-
   const filterBy = "popups";
   const { data: marketing } = useGetMarketingByFilterQuery({ filterBy });
 
@@ -117,7 +116,7 @@ const CataloguePage = () => {
       {/* 🔹 Ajuste de ancho para evitar scroll horizontal */}
       <div className="flex gap-2 w-full sm:w-auto">
         <FilterBox isVisible={isFilterBoxVisible} onClose={() => setFilterBoxVisible(false)} />
-        
+
         <div className="w-full flex flex-col">
           {/* 🔹 Contenedor para pantallas grandes: botones en su lugar */}
           {!isMobile && (
@@ -136,18 +135,25 @@ const CataloguePage = () => {
             </div>
           )}
 
-          <Articles
-            brand={brand}
-            item={item}
-            vehicleBrand={vehicleBrand}
-            stock={stock}
-            tags={tags}
-            order={order}
-            cart={cart}
-            showPurchasePrice={showPurchasePrice}
-            showArticles={showArticles}
-            query={search}
-          />
+          {/* Mostrar spinner hasta tener los artículos */}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <Articles
+              brand={brand}
+              item={item}
+              vehicleBrand={vehicleBrand}
+              stock={stock}
+              tags={tags}
+              order={order}
+              cart={cart}
+              showPurchasePrice={showPurchasePrice}
+              showArticles={showArticles}
+              query={search}
+            />
+          )}
 
           <Modal isOpen={isModalVisible} onClose={closeModal}>
             <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect} />

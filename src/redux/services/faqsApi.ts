@@ -26,7 +26,6 @@ export const faqsApi = createApi({
       query: () => `/faqs?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Faqs[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron faqs en la respuesta");
           return [];
         }
         return response;

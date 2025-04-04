@@ -23,7 +23,6 @@ export const itemsApi = createApi({
       query: () => `/items/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: Items[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron items en la respuesta");
           return [];
         }
         return response;
@@ -42,7 +41,6 @@ export const itemsApi = createApi({
       },
       transformResponse: (response: Items[]) => {
         if (!response || response.length === 0) {
-          console.error("No se recibieron rubros en la respuesta");
           return [];
         }
         return response;
