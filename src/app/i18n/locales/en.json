@@ -991,6 +991,10 @@
     },
     "send": "SEND"
   },
+  "observations": {
+    "label": "Observations",
+    "placeholder": "Enter your observations..."
+  },
   "stats":{
     "title": "Stats",
     "filters": "Filters",

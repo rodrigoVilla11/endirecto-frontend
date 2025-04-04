@@ -254,7 +254,7 @@ export default function OrderConfirmation({
         .join(", ");
 
       // Construir título y descripción para la notificación
-      const notificationTitle = `Nuevo pedido de cliente: ${selectedClientId} - ${customer?.name}`;
+      const notificationTitle = `Nuevo pedido de cliente: ${selectedClientId} - ${customer?.name} - ${schedule_from}`;
       const notificationDescription = `Se ha realizado un pedido con los siguientes artículos: ${articlesString}. Total: ${totalFormatted}. Fecha: ${transaction.date}`;
 
       // 4. Enviar la notificación de tipo PEDIDO
@@ -277,12 +277,12 @@ export default function OrderConfirmation({
         type: ActionType.ORDER,
         insitu: updatedTransaction.insitu,
         status: StatusType.PENDING,
-        notes: observations ? `Observaciones: ${observations}` : '-',
+        notes: observations ? `${observations}` : '-',
         collection_id: "",
         customer_id: selectedClientId || "",
         order_id: createdOrder.tmp_id,
         seller_id: transaction.seller.id || "",
-        user_id: userData?.role !== "CUSTOMER" ? userData?.seller_id : (selectedClientId || ""),
+        user_id: userData?.role !== "CUSTOMER" ? userData?._id : "",
       }).unwrap();
 
       setShowSuccess(true);

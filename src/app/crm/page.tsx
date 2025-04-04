@@ -281,6 +281,8 @@ const Page = () => {
     }).format(value);
   };
 
+  console.log(items)
+
   // ---------- Memoización del mapeo de datos para la tabla ----------
   const tableData = React.useMemo(
     () =>
@@ -303,7 +305,7 @@ const Page = () => {
           ),
           seller: seller?.name || t("notAvailable"),
           customer: customer?.name || t("notAvailable"),
-          user: user?.username || t("notAvailable"),
+          user: user?.username || customer?.name || t("notAvailable"),
           date: crm.date
             ? format(new Date(crm.date), "yyyy-MM-dd HH:mm")
             : t("notAvailable"),

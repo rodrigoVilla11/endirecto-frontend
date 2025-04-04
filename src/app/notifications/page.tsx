@@ -92,7 +92,6 @@ const Page = () => {
       return 0;
     });
   }, [filteredNotifications, sortQuery]);
-  
 
   const { data: branchData } = useGetBranchesQuery(null);
   const { data: articleData } = useGetAllArticlesQuery(null);
@@ -100,6 +99,7 @@ const Page = () => {
   const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
   const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
 
+  // Función para marcar la notificación como leída y actualizar el estado
   const handleMarkAsRead = async (notification: any) => {
     if (!notification.read && currentUserId) {
       try {
@@ -114,6 +114,7 @@ const Page = () => {
             title: notification.title,
           }).unwrap();
         }
+        // Actualizamos el estado local de forma optimista
         setLocalNotifications((prev) =>
           prev.map((n) =>
             n._id === notification._id ? { ...n, read: true } : n
@@ -122,6 +123,21 @@ const Page = () => {
       } catch (err) {
         console.error("Error al marcar notificación como leída", err);
       }
+    }
+  };
+
+  // Maneja el clic en el botón de notificación, evitando llamadas duplicadas
+  const handleNotificationClick = async (
+    notification: any,
+    event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+    await handleMarkAsRead(notification);
+    // Refetch para obtener el estado actualizado del backend
+    if (selectedClientId) {
+      await customerQuery.refetch();
+    } else {
+      await userQuery.refetch();
     }
   };
 
@@ -155,7 +171,7 @@ const Page = () => {
       t("table.noBrand"),
     read: (
       <button
-        onClick={() => handleMarkAsRead(notification)}
+        onClick={(e) => handleNotificationClick(notification, e)}
         disabled={notification.read}
       >
         {notification.read ? <MdVisibility /> : <MdVisibilityOff />}
@@ -171,7 +187,7 @@ const Page = () => {
     { name: t("table.description"), key: "description" },
     { name: t("table.brand"), key: "brand" },
     { name: t("table.article"), key: "article" },
-    { name: t("table.read"), key: "read", important: true },
+    { name: t("table.read"), key: "read" },
   ];
 
   return (

@@ -987,6 +987,10 @@
     },
     "send": "ENVIAR"
   },
+  "observations": {
+    "label": "Observaciones",
+    "placeholder": "Ingrese sus observaciones..."
+  },
   "stats":{
     "title": "Estadísticas",
     "filters": "Filtros",

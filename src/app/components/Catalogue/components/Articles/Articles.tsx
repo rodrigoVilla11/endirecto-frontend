@@ -1,25 +1,18 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
-import Image from "next/image";
-import CardArticles from "./components/CardArticles";
-import ListArticle from "./components/ListArticle";
-import { useSideMenu } from "@/app/context/SideMenuContext";
-import { useGetArticlesQuery } from "@/redux/services/articlesApi";
-import { useClient } from "@/app/context/ClientContext";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
-import { useFilters } from "@/app/context/FiltersContext";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import Image from 'next/image';
+import { useFilters } from '@/app/context/FiltersContext';
+import { useClient } from '@/app/context/ClientContext';
+import { useGetCustomerByIdQuery } from '@/redux/services/customersApi';
+import { useGetArticlesQuery } from '@/redux/services/articlesApi';
+import CardArticles from './components/CardArticles';
+import ListArticle from './components/ListArticle';
 
 interface ArticlesProps {
   brand?: string;
   item?: string;
   vehicleBrand?: string;
   stock?: string;
-  tags?: any;
+  tags?: string;
   cart?: any;
   order?: string;
   showPurchasePrice?: boolean;
@@ -39,20 +32,18 @@ const Articles: React.FC<ArticlesProps> = ({
   showArticles = "catalogue",
   query,
 }) => {
+  // Estados para paginación y artículos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const { selectedClientId } = useClient();
-  const { isOpen } = useSideMenu();
 
-  // Extraemos los nuevos filtros desde el contexto
-  const { engine, model, year } = useFilters();
-
-  // Ref para manejar el IntersectionObserver
+  // Referencia para el IntersectionObserver
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const prevFiltersRef = useRef<string>("");
+  // Guarda el string resultante de los filtros para detectar cambios
+  const filtersStringRef = useRef<string>('');
 
-  // Agregamos engine, model y year a los filtros
+  // Obtención de filtros desde el contexto y props
+  const { engine, model, year } = useFilters();
   const filters = useMemo(() => {
     const f: Record<string, any> = {};
     if (brand) f.brand = brand;
@@ -81,183 +72,125 @@ const Articles: React.FC<ArticlesProps> = ({
     model,
     year,
   ]);
+  const filtersString = useMemo(() => JSON.stringify(filters), [filters]);
 
-  const filtersString = JSON.stringify(filters);
+  // Obtención del cliente y sus datos
+  const { selectedClientId: clientId } = useClient();
+  const { data: customer } = useGetCustomerByIdQuery({ id: clientId || "" });
+  const priceListId = customer?.price_list_id;
 
-  const { data: customer } = useGetCustomerByIdQuery(
-    { id: selectedClientId || "" },
-    { skip: !selectedClientId }
-  );
-
-
-  const skipArticles = !customer?.price_list_id;
-  const { data, isLoading, isFetching } = useGetArticlesQuery(
+  // Consulta de artículos usando el priceListId y los filtros
+  const { data: articlesData, isFetching } = useGetArticlesQuery(
     {
       page,
       limit: 20,
-      priceListId: customer?.price_list_id,
-      ...filters,
+      priceListId,
+      ...filters
     },
-    { skip: skipArticles, refetchOnMountOrArgChange: true }
+    { skip: !priceListId }
   );
 
-
-  // Reinicia los artículos si los filtros cambian
+  // Reinicia la lista de artículos y la página cuando los filtros cambian
   useEffect(() => {
-    if (prevFiltersRef.current !== filtersString) {
-      setItems([]);
+    if (filtersStringRef.current !== filtersString) {
       setPage(1);
-      setIsLoadingMore(false);
-      prevFiltersRef.current = filtersString;
+      setItems([]);
+      filtersStringRef.current = filtersString;
     }
   }, [filtersString]);
 
-  // Agrega nuevos artículos y evita duplicados usando el id
+  // Agrega nuevos artículos evitando duplicados (por id)
   useEffect(() => {
-    if (data?.articles) {
-      setItems((prev) => {
-        if (page === 1) return data.articles;
-        const newArticles = data.articles.filter(
-          (article: any) => !prev.some((item: any) => item.id === article.id)
+    if (articlesData && articlesData.articles) {
+      setItems(prevItems => {
+        const newArticles = articlesData.articles.filter(
+          (article: any) => !prevItems.some(item => item.id === article.id)
         );
-        return [...prev, ...newArticles];
+        return [...prevItems, ...newArticles];
       });
+      setIsLoadingMore(false);
     }
-  }, [data?.articles, page]);
+  }, [articlesData]);
 
-  // Callback ref para el último elemento de la lista (scroll infinito)
+  // Callback ref para el IntersectionObserver (scroll infinito)
   const lastArticleRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (isLoading || isFetching) return;
+      if (isFetching) return;
       if (observerRef.current) observerRef.current.disconnect();
 
-      // Solo se adjunta el observer si hay datos en la respuesta
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            // Si la respuesta actual tiene artículos, se asume que puede haber más
-            if (data?.articles && data.articles.length > 0) {
-              setIsLoadingMore(true);
-              setPage((prevPage) => prevPage + 1);
-            }
+      observerRef.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          // Si se han cargado 20 artículos, se asume que hay más para paginar
+          if (articlesData && articlesData.articles && articlesData.articles.length === 20) {
+            setIsLoadingMore(true);
+            setPage(prevPage => prevPage + 1);
           }
-        },
-        { threshold: 0.5 }
-      );
+        }
+      });
 
       if (node) observerRef.current.observe(node);
     },
-    [isLoading, isFetching, data]
+    [isFetching, articlesData]
   );
 
-  // Cuando finaliza la carga, desactiva el indicador de "cargando más"
-  useEffect(() => {
-    if (!isFetching && isLoadingMore) {
-      setIsLoadingMore(false);
-    }
-  }, [isFetching, isLoadingMore]);
-
-  const showLoading = isLoading || (isFetching && page === 1);
+  // Pantalla de carga inicial (cover full screen) para la primera página
+  if (page === 1 && isFetching && items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <Image src="/dma.png" alt="Logo" width={150} height={150} />
+        <div className="mt-4 w-1/2 h-2 bg-gray-300">
+          <div className="h-full bg-blue-500 animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative m-4 flex flex-col text-sm w-full max-w-[100vw] overflow-x-hidden">
-      {/* Pantalla de carga inicial con logo */}
-      {showLoading && page === 1 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-50 p-10">
-          <Image
-            src="/dma.png"
-            alt="Loading..."
-            width={160}
-            height={96}
-            priority
-            className="h-24 w-40 sm:h-32 sm:w-48"
-          />
-          <div className="mt-4 w-2/3 sm:w-1/2 h-2 bg-gray-300 overflow-hidden rounded-md">
-            <div className="h-full bg-blue-500 loading-bar"></div>
-          </div>
-        </div>
-      )}
-
-      {/* Mensaje si no hay artículos */}
-      {!showLoading && items.length === 0 && (
-        <div className="flex justify-center items-center h-40 text-gray-600">
-          No se encontraron artículos
-        </div>
-      )}
-
-      {/* Contenedor de artículos */}
-      {items.length > 0 && (
+    <div className="p-4">
+      {items.length === 0 && !isFetching ? (
+        <div className="text-center text-gray-600">No se encontraron artículos</div>
+      ) : (
         <>
           {showArticles === "catalogue" ? (
             <div className="grid gap-4 p-2 w-full grid-cols-[repeat(auto-fit,_minmax(120px,_1fr))] sm:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))] place-items-center">
               {items.map((article, index) => {
+                // Asigna el ref al último artículo para activar el scroll infinito
                 if (index === items.length - 1) {
                   return (
-                    <div
-                      key={index}
-                      ref={lastArticleRef}
-                      className="max-w-xs w-full"
-                    >
-                      <CardArticles
-                        article={article}
-                        showPurchasePrice={showPurchasePrice}
-                      />
+                    <div key={article.id} ref={lastArticleRef}>
+                      <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
                     </div>
                   );
                 }
                 return (
-                  <div key={index} className="max-w-xs w-full">
-                    <CardArticles
-                      article={article}
-                      showPurchasePrice={showPurchasePrice}
-                    />
+                  <div key={article.id}>
+                    <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="w-full max-w-4xl mx-auto p-4">
+            <div className="flex flex-col gap-2">
               {items.map((article, index) => {
-                const isLast = index === items.length - 1;
+                if (index === items.length - 1) {
+                  return (
+                    <div key={article.id} ref={lastArticleRef}>
+                      <ListArticle article={article} showPurchasePrice={showPurchasePrice} />
+                    </div>
+                  );
+                }
                 return (
-                  <div
-                    key={index}
-                    ref={isLast ? lastArticleRef : null}
-                    className="mb-4"
-                  >
-                    <ListArticle
-                      article={article}
-                      showPurchasePrice={showPurchasePrice}
-                    />
+                  <div key={article.id}>
+                    <ListArticle article={article} showPurchasePrice={showPurchasePrice} />
                   </div>
                 );
               })}
             </div>
           )}
-
-          {/* Indicador de carga para artículos adicionales */}
+          {/* Indicador de carga para paginación (spinner) */}
           {isFetching && page > 1 && (
-            <div className="h-20 flex items-center justify-center w-full">
-              <div className="flex justify-center items-center">
-                <svg
-                  className="animate-spin h-6 w-6 text-black"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 0116 0"
-                  ></path>
-                </svg>
-              </div>
+            <div className="flex justify-center mt-4">
+              <Spinner />
             </div>
           )}
         </>
@@ -267,3 +200,9 @@ const Articles: React.FC<ArticlesProps> = ({
 };
 
 export default Articles;
+
+const Spinner = () => (
+  <div className="flex justify-center items-center p-4">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);

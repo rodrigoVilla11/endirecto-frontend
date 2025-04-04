@@ -59,7 +59,7 @@ export const usersApi = createApi({
   }),
   endpoints: (builder) => ({
     getUsers: builder.query<User[], null>({
-      query: () => `/users?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: () => `/users/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
       transformResponse: (response: User[]) => {
         if (!response || response.length === 0) {
           return [];
