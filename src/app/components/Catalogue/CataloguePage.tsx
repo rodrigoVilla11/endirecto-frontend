@@ -1,8 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import FilterBox from "./components/FilterBox/FilterBox";
-import { FaFilter, FaList } from "react-icons/fa";
-import { RxDashboard } from "react-icons/rx";
+import { FaFilter } from "react-icons/fa";
 import Articles from "./components/Articles/Articles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
@@ -112,22 +111,6 @@ const CataloguePage = () => {
             <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
             {t("filters")}
           </button>
-          {/* <button
-            onClick={() => toggleShowArticles("catalogue")}
-            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-              showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-            } text-white rounded`}
-          >
-            <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
-          </button> */}
-          {/* <button
-            onClick={() => toggleShowArticles("list")}
-            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-              showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-            } text-white rounded`}
-          >
-            <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-          </button> */}
         </div>
       )}
 
@@ -149,22 +132,6 @@ const CataloguePage = () => {
                   <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
                   {t("filters")}
                 </button>
-                {/* <button
-                  onClick={() => toggleShowArticles("catalogue")}
-                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                    showArticles === "catalogue" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-                  } text-white rounded`}
-                >
-                  <RxDashboard className={showArticles === "catalogue" ? "text-white" : "text-primary"} />
-                </button> */}
-                {/* <button
-                  onClick={() => toggleShowArticles("list")}
-                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                    showArticles === "list" ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-                  } text-white rounded`}
-                >
-                  <FaList className={showArticles === "list" ? "text-white" : "text-primary"} />
-                </button> */}
               </div>
             </div>
           )}
