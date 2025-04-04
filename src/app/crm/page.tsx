@@ -281,8 +281,6 @@ const Page = () => {
     }).format(value);
   };
 
-  console.log(items)
-
   // ---------- Memoización del mapeo de datos para la tabla ----------
   const tableData = React.useMemo(
     () =>

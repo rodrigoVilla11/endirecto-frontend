@@ -337,7 +337,6 @@ const SelectCustomer = () => {
     });
   }, [items, paymentConditions, activeMenu, handleSelectCustomer]);
 
-  console.log(items);
   // Configuración de encabezados de la tabla y filtros
   const tableHeader = useMemo(
     () => [
