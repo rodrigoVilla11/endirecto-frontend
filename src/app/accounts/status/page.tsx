@@ -258,8 +258,8 @@ const Page = () => {
         type: document.type,
         number: document.number,
         date: document.date,
-        amount: <div className="text-end">{document.amount}</div>,
-        balance: <div className="text-end">{document.amount}</div>,
+        amount: <div className="text-end">{formatPriceWithCurrency(document.amount)}</div>,
+        balance: <div className="text-end">{formatPriceWithCurrency(document.amount)}</div>,
         expiration_date: document.expiration_date,
         expiration_status: document.expiration_status || "",
         seller_id: seller?.name || t("notFound"),
@@ -414,7 +414,9 @@ const Page = () => {
     ],
     secondSection: {
       title: t("totalOwed"),
-      amount: formatPriceWithCurrency(data?.totalDocumentBalance || 0),
+      amount: formatPriceWithCurrency(
+        selectedSum > 0 ? selectedSum : data?.totalDocumentBalance || 0
+      ),
     },
     results: t("results", { count: data?.totalData || 0 }),
   };
