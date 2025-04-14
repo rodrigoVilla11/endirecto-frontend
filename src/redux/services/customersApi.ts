@@ -57,6 +57,7 @@ export type Customer = {
   password: string;
   profileImg: string;
   gps: string;
+  showCostPrice: boolean;
 };
 
 export type UpdateCustomersPayload = {
@@ -70,6 +71,7 @@ export type UpdateCustomersPayload = {
   password?: string;
   gps?: string;
   profileImg?: string;
+  showCostPrice?: boolean;
 };
 
 export const customerApi = createApi({
