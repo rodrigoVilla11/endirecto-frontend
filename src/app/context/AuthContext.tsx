@@ -16,7 +16,7 @@ interface UserData {
   branch: string;
   seller_id: string;
   notifications: any;
-  showCostPrice: boolean
+  showCostPrice?: boolean
 }
 
 interface AuthContextType {
