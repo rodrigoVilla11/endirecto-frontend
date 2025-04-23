@@ -6,7 +6,7 @@ const Header = ({ headerBody }: any) => {
       {/* Sección de Botones */}
       <div className="flex flex-wrap justify-end items-center w-full border-b border-gray-200 pb-3 gap-2">
         {headerBody.buttons.map((button: any, index: any) => (
-          <Buttons key={index} logo={button.logo} title={button.title} onClick={button.onClick} red={button.red} />
+          <Buttons key={index} logo={button.logo} title={button.title} onClick={button.onClick} red={button.red} disabled={button.disabled}/>
         ))}
       </div>
 

@@ -385,14 +385,16 @@ const ShoppingCart = () => {
       },
       {
         logo: <MdShoppingCart />,
-        title: "Cerrar Pedido",
+        title: isAllDataLoaded ? "Cerrar Pedido" : "Cargando...",
+        disabled: !isAllDataLoaded,
         onClick: () => {
+          if (!isAllDataLoaded) return;
           const selectedOrder = getSelectedItems();
           setOrder(selectedOrder);
           setShowConfirmation(true);
-          // Lógica para procesar la orden
         },
-      },
+      }
+      
     ],
     filters: [
       {
