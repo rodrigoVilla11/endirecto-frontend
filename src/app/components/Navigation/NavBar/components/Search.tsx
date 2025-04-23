@@ -1,16 +1,16 @@
 import ArticleSearchResults from "@/app/components/Catalogue/components/Search";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { BiSearchAlt, BiX } from "react-icons/bi";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
-
 
   const clearSearch = () => {
     setSearchQuery("");
@@ -21,6 +21,7 @@ const Search = () => {
       <div className="relative flex items-center flex-grow">
         <BiSearchAlt className="absolute left-1 text-2xl text-gray-400" />
         <input
+          data-ignore-click
           type="text"
           value={searchQuery}
           onChange={handleSearch}
@@ -37,6 +38,7 @@ const Search = () => {
           query={searchQuery}
           setSearchQuery={setSearchQuery}
           router={router}
+          inputRef={inputRef}
         />
       </div>
     </div>

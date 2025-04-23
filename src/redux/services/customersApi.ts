@@ -69,6 +69,12 @@ export type UpdateCustomersPayload = {
   favourites?: string[];
   instance?: Instance[];
   password?: string;
+  obs1?: string;
+  obs2?: string;
+  obs3?: string;
+  obs4?: string;
+  obs5?: string;
+  obs6?: string;
   gps?: string;
   profileImg?: string;
   showCostPrice?: boolean;

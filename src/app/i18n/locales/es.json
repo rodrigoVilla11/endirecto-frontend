@@ -313,6 +313,7 @@
   "errorImportingExcelFile": "Error al importar el archivo Excel",
   "newArticleVehicle": "Nuevo Vehículo de Artículo",
   "idLabel": "ID",
+  "idPlaceholderEquivalences": "Ej: 22181-PEUGEOT-986628",
   "idPlaceholder": "Ej: 22181-PEUGEOT-404-Nafta / Diesel-.../1982",
   "articleIdLabel": "ID de Artículo",
   "articleIdPlaceholder": "Ej: 22181",

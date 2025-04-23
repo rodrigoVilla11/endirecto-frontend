@@ -55,7 +55,7 @@ const CreateArticlesEquivalencesModal: React.FC<CreateArticlesEquivalencesModalP
               name="id"
               value={form.id}
               onChange={handleChange}
-              placeholder={t("idPlaceholder")}
+              placeholder={t("idPlaceholderEquivalences")}
               className="border border-gray-300 rounded-md p-1 text-sm w-full"
             />
           </div>

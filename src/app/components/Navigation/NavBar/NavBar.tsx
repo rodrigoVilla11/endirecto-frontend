@@ -39,7 +39,7 @@ const NavBar = () => {
         <>
           <div className="flex items-center gap-4">
             <Logo />
-            <ButtonSideMenu/>
+            <ButtonSideMenu />
             {!isSelectCustomers && <Search />}
           </div>
           <div className="flex items-center">

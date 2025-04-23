@@ -290,6 +290,7 @@
   "newArticleVehicle": "New Article Vehicle",
   "idLabel": "ID",
   "idPlaceholder": "Eg: 22181-PEUGEOT-404-Nafta / Diesel-.../1982",
+  "idPlaceholderEquivalences": "Eg: 22181-PEUGEOT-986628",
   "articleIdLabel": "Article ID",
   "articleIdPlaceholder": "Eg: 22181",
   "brandPlaceholder": "Eg: PEUGEOT",

@@ -15,12 +15,15 @@ interface ArticleSearchResultsProps {
   query: string;
   setSearchQuery: (value: string) => void;
   router: any;
+  inputRef: React.RefObject<HTMLInputElement>; 
 }
+
 
 const ArticleSearchResults = ({
   query,
   setSearchQuery,
   router,
+  inputRef
 }: ArticleSearchResultsProps) => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
@@ -82,24 +85,28 @@ const ArticleSearchResults = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleRedirect, searchResults]);
 
-  // Listener para detectar clics fuera del contenedor y del modal
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(target) &&
-        (!modalContentRef.current || !modalContentRef.current.contains(target))
-      ) {
-        setSearchQuery("");
-        setArticleId("");
-        closeModal();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setSearchQuery, setArticleId]);
+  const handleClickOutside = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
 
+    const clickedInsideContainer = containerRef.current?.contains(target);
+    const clickedInsideModal = modalContentRef.current?.contains(target);
+    const clickedIgnored = target.closest("[data-ignore-click]");
+
+    if (!clickedInsideContainer && !clickedInsideModal && !clickedIgnored) {
+      setSearchQuery("");
+      setArticleId("");
+      closeModal();
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [setSearchQuery, setArticleId]); // 🔒 sin inputRef
+
+  
+  
+  
   const handleOpenModal = (id: string) => {
     if (!selectedClientId) {
       setShowAlert(true);
