@@ -185,7 +185,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
         </button>
       </div>
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails
+        {/* <ArticleDetails
           closeModal={closeModal}
           toggleFavourite={toggleFavourite}
           isFavourite={isFavourite}
@@ -193,7 +193,7 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
           toggleShoppingCart={toggleShoppingCart}
           quantity={quantity}
           setQuantity={setQuantity}
-        />
+        /> */}
       </Modal>
     </div>
   );
