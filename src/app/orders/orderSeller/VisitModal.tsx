@@ -38,6 +38,8 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const isButtonDisabled = isSubmitting || observations.trim() === "";
+
   // Estado para el formulario que se enviará
   const [form, setForm] = useState({
     date: currentDateTime,
@@ -108,25 +110,25 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
   // Función para enviar el formulario (crear la visita)
   const handleSubmit = async () => {
-    // Actualizamos el formulario con las observaciones actuales (por si han cambiado)
-    setForm((prev) => ({
-      ...prev,
-      notes: observations,
-    }));
+    // 🔐 Bloqueo inmediato al primer click
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitted(false);
+
     try {
-      const newCrm = await createCrm(form).unwrap();
+      const newCrm = await createCrm({
+        ...form,
+        notes: observations, // Nos aseguramos de usar la última observación
+      }).unwrap();
       setSubmitted(true);
-      // Mostramos el tick durante 1 segundo antes de cerrar el modal
       setTimeout(() => {
-        onClose();
         setSubmitted(false);
+        onClose();
       }, 1000);
     } catch (error) {
       console.error("Error al enviar la visita:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // 🔓 Liberamos después del intento
     }
   };
 
@@ -155,7 +157,10 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="border-b border-zinc-800">
-            <InfoRow label={t("visitModal.info.date")} value={currentDateTime} />
+            <InfoRow
+              label={t("visitModal.info.date")}
+              value={currentDateTime}
+            />
             <InfoRow
               label={
                 <div
@@ -188,9 +193,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
           {/* Sección de Comentarios Predefinidos */}
           <div className="border-b border-zinc-800">
             <button
-              onClick={() =>
-                setShowPredefinedComments(!showPredefinedComments)
-              }
+              onClick={() => setShowPredefinedComments(!showPredefinedComments)}
               className="w-full p-4 flex justify-between items-center text-white"
             >
               <span>{t("visitModal.predefinedComments")}</span>
@@ -228,20 +231,34 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 mt-auto border-t border-zinc-800">
+        <div className="relative group">
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
+            disabled={isButtonDisabled}
+            className={`w-full py-3 rounded-md font-medium transition-colors duration-300 ${
+              isButtonDisabled
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600 text-white"
+            }`}
           >
             {isSubmitting ? (
-              <span>{t("visitModal.loading") || "Cargando..."}</span>
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {t("visitModal.loading") || "Cargando..."}
+              </span>
             ) : submitted ? (
-              <span>✓</span>
+              <span className="text-green-300 font-bold text-lg">✓</span>
             ) : (
               t("visitModal.send")
             )}
           </button>
+
+          {observations.trim() === "" && !isSubmitting && (
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-3 py-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+              {t("visitModal.tooltipObservationRequired") ||
+                "Debe ingresar una observación"}
+            </div>
+          )}
         </div>
       </div>
     </div>

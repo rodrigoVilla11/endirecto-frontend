@@ -974,6 +974,7 @@
   },
   "visitModal": {
     "headerTitle": "Visita",
+    "tooltipObservationRequired": "Debe ingresar una observación",
     "info": {
       "date": "Fecha",
       "gps": "GPS",

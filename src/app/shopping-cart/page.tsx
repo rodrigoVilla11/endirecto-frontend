@@ -381,20 +381,20 @@ const ShoppingCart = () => {
         logo: <FaTrashCan />,
         title: "Vaciar Carrito",
         red: true,
+        disabled: !isAllDataLoaded || cartItems.length === 0,
         onClick: () => setConfirmModalOpen(true),
       },
       {
         logo: <MdShoppingCart />,
         title: isAllDataLoaded ? "Cerrar Pedido" : "Cargando...",
-        disabled: !isAllDataLoaded,
+        disabled: !isAllDataLoaded || cartItems.length === 0,
         onClick: () => {
-          if (!isAllDataLoaded) return;
+          if (!isAllDataLoaded || cartItems.length === 0) return;
           const selectedOrder = getSelectedItems();
           setOrder(selectedOrder);
           setShowConfirmation(true);
         },
-      }
-      
+      },
     ],
     filters: [
       {
