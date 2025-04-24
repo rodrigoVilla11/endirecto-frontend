@@ -24,6 +24,7 @@ import { useArticleId } from "../context/AritlceIdContext";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
 import { useMobile } from "../context/ResponsiveContext";
 import MobileTable from "../components/components/MobileTable";
+import { useFilters } from "../context/FiltersContext";
 
 interface CartItem {
   id: string;
@@ -51,6 +52,7 @@ const ShoppingCart = () => {
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [order, setOrder] = useState<OrderItem[]>([]);
+  const { showPurchasePrice } = useFilters();
 
   const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -512,7 +514,7 @@ const ShoppingCart = () => {
         </Modal>
         <Modal isOpen={isModalOpen} onClose={closeModal}>
           <div className="w-[90vw] md:w-auto max-w-2xl mx-auto">
-            <ArticleDetails closeModal={closeModal} />
+            <ArticleDetails closeModal={closeModal} showPurchasePrice={showPurchasePrice}/>
           </div>
         </Modal>
       </div>

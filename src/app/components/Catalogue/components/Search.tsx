@@ -111,6 +111,7 @@ const ArticleSearchResults = ({
       return;
     }
     setSelectedArticle(article); // ✅ seteamos el artículo entero
+    setArticleId(article.id);
     setModalOpen(true);
   };
 
@@ -195,7 +196,7 @@ const ArticleSearchResults = ({
               <CardSearch
                 article={article}
                 setSearchQuery={setSearchQuery}
-                handleOpenModal={() => handleOpenModal(article)} // ✅ pasamos el artículo
+                handleOpenModal={() => handleOpenModal(article.id)} // ✅ pasamos el artículo
               />
             </div>
           ))}
@@ -212,13 +213,11 @@ const ArticleSearchResults = ({
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <div ref={modalContentRef}>
-          {selectedArticle && (
-            <ArticleDetails
-              article={selectedArticle}
-              closeModal={closeModal}
-              showPurchasePrice={showPurchasePrice}
-            />
-          )}
+          <ArticleDetails
+            article={selectedArticle}
+            closeModal={closeModal}
+            showPurchasePrice={showPurchasePrice}
+          />
         </div>
       </Modal>
     </div>

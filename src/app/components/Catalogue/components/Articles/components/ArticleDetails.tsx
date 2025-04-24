@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import ArticleMenu from "./ArticleMenu";
 import ArticleImage from "./ArticleImage";
@@ -24,15 +24,17 @@ interface FormState {
   shopping_cart: string[];
 }
 interface ArticleDetailsProps {
-  article: any;
+  article?: any; // Hacemos que sea opcional
   closeModal: () => void;
   showPurchasePrice: boolean;
 }
+
 
 const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetailsProps) => {
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
 
+  
   const { selectedClientId } = useClient();
   const {
     data: customer,
@@ -46,6 +48,31 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
 
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
+
+    const { articleId } = useArticleId();
+
+const {
+  data: fallbackArticles,
+  isLoading: isArticleLoading,
+  error: articleError,
+} = useGetArticlesQuery(
+  {
+    page: 1,
+    limit: 1,
+    articleId: articleId || "",
+    priceListId: customer?.price_list_id,
+  },
+  {
+    skip: !!article || !articleId,
+  }
+);
+
+// Elegir el artículo: prop primero, si no usar el cargado por articleId
+const resolvedArticle = useMemo(() => {
+  if (article) return article;
+  return fallbackArticles?.articles?.[0] || null;
+}, [article, fallbackArticles]);
+
 
   const [form, setForm] = useState<FormState>({
     id: "",
@@ -64,12 +91,12 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
   }, [customer]);
 
   const toggleFavourite = () => {
-    if (!article) return;
+    if (!resolvedArticle) return;
     setForm((prev) => {
-      const isFavourite = prev.favourites.includes(article.id);
+      const isFavourite = prev.favourites.includes(resolvedArticle.id);
       const updatedFavourites = isFavourite
-        ? prev.favourites.filter((id) => id !== article.id)
-        : [...prev.favourites, article.id];
+        ? prev.favourites.filter((id) => id !== resolvedArticle.id)
+        : [...prev.favourites, resolvedArticle.id];
 
       updateCustomer({ id: form.id, favourites: updatedFavourites }).then(() =>
         refetch()
@@ -80,11 +107,11 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
   };
 
   const toggleShoppingCart = () => {
-    if (!article || quantity < 1) return;
+    if (!resolvedArticle || quantity < 1) return;
     setForm((prev) => {
       const newShoppingCart = [...prev.shopping_cart];
       for (let i = 0; i < quantity; i++) {
-        newShoppingCart.push(article.id);
+        newShoppingCart.push(resolvedArticle.id);
       }
 
       updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).then(() =>
@@ -103,11 +130,11 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     return <div>{t("errorLoadingData")}</div>;
   }
 
-  if (!article) {
+  if (!resolvedArticle) {
     return <div>{t("noArticleSelected")}</div>;
   }
 
-  const isFavourite = form.favourites.includes(article.id);
+  const isFavourite = form.favourites.includes(resolvedArticle.id);
 
   return (
     <div className="z-50">
@@ -126,36 +153,36 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
             <ArticleMenu
               onAddToFavourites={toggleFavourite}
               isFavourite={isFavourite}
-              article={article}
+              article={resolvedArticle}
             />
           </div>
-          <ArticleImage img={article.images || [""]} />
-          <StripeStock articleId={article.id} />
+          <ArticleImage img={resolvedArticle.images || [""]} />
+          <StripeStock articleId={resolvedArticle.id} />
           <div className="p-3 bg-gray-50">
             <ArticleName
-              name={article.name}
-              id={article.id}
-              code={article.supplier_code}
+              name={resolvedArticle.name}
+              id={resolvedArticle.id}
+              code={resolvedArticle.supplier_code}
             />
             <div className="pb-3">
               {showPurchasePrice && (
                 <CostPrice
-                  article={article}
+                  article={resolvedArticle}
                   selectedClientId={selectedClientId}
                 />
               )}
               <hr className="my-3" />
-              <SuggestedPrice article={article} />
+              <SuggestedPrice article={resolvedArticle} />
             </div>
           </div>
           <AddToCart
-            articleId={article.id}
+            articleId={resolvedArticle.id}
             onAddToCart={toggleShoppingCart}
             quantity={quantity}
             setQuantity={(value) => setQuantity(Math.max(1, value))}
           />
         </div>
-        <Description article={article} description={article.description} />
+        <Description article={resolvedArticle} description={resolvedArticle.description} />
       </div>
     </div>
   );
