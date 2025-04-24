@@ -15,21 +15,21 @@ interface ArticleSearchResultsProps {
   query: string;
   setSearchQuery: (value: string) => void;
   router: any;
-  inputRef: React.RefObject<HTMLInputElement>; 
+  inputRef: React.RefObject<HTMLInputElement>;
 }
-
 
 const ArticleSearchResults = ({
   query,
   setSearchQuery,
   router,
-  inputRef
+  inputRef,
 }: ArticleSearchResultsProps) => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
 
   const { showPurchasePrice } = useFilters();
 
@@ -86,35 +86,32 @@ const ArticleSearchResults = ({
   }, [handleRedirect, searchResults]);
 
   useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
 
-    const clickedInsideContainer = containerRef.current?.contains(target);
-    const clickedInsideModal = modalContentRef.current?.contains(target);
-    const clickedIgnored = target.closest("[data-ignore-click]");
+      const clickedInsideContainer = containerRef.current?.contains(target);
+      const clickedInsideModal = modalContentRef.current?.contains(target);
+      const clickedIgnored = target.closest("[data-ignore-click]");
 
-    if (!clickedInsideContainer && !clickedInsideModal && !clickedIgnored) {
-      setSearchQuery("");
-      setArticleId("");
-      closeModal();
-    }
-  };
+      if (!clickedInsideContainer && !clickedInsideModal && !clickedIgnored) {
+        setSearchQuery("");
+        setArticleId("");
+        closeModal();
+      }
+    };
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [setSearchQuery, setArticleId]); // 🔒 sin inputRef
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [setSearchQuery, setArticleId]); // 🔒 sin inputRef
 
-  
-  
-  
-  const handleOpenModal = (id: string) => {
+  const handleOpenModal = (article: any) => {
     if (!selectedClientId) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       return;
     }
+    setSelectedArticle(article); // ✅ seteamos el artículo entero
     setModalOpen(true);
-    setArticleId(id);
   };
 
   const closeModal = () => setModalOpen(false);
@@ -130,8 +127,7 @@ const ArticleSearchResults = ({
     ) {
       createSearch({ search: query, quantity: 1 })
         .unwrap()
-        .then((res) => {
-        })
+        .then((res) => {})
         .catch((err) => {
           console.error("Error creating search:", err);
         });
@@ -199,7 +195,7 @@ const ArticleSearchResults = ({
               <CardSearch
                 article={article}
                 setSearchQuery={setSearchQuery}
-                handleOpenModal={handleOpenModal}
+                handleOpenModal={() => handleOpenModal(article)} // ✅ pasamos el artículo
               />
             </div>
           ))}
@@ -216,10 +212,13 @@ const ArticleSearchResults = ({
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <div ref={modalContentRef}>
-          <ArticleDetails
-            closeModal={closeModal}
-            showPurchasePrice={showPurchasePrice}
-          />
+          {selectedArticle && (
+            <ArticleDetails
+              article={selectedArticle}
+              closeModal={closeModal}
+              showPurchasePrice={showPurchasePrice}
+            />
+          )}
         </div>
       </Modal>
     </div>
