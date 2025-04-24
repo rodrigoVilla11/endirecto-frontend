@@ -152,7 +152,7 @@ const SelectCustomer = () => {
   const handleSelectCustomer = useCallback(
     (customerId: string) => {
       setSelectedClientId(customerId);
-      router.push("/catalogue");
+      router.push("/dashboard");
     },
     [setSelectedClientId, router, role]
   );

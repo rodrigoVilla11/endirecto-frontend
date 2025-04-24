@@ -1362,5 +1362,6 @@
   "last_12_months": "Last 12 months",
   "sales_amount": "Sales Amount",
   "monthly_sales_by_quantity": "Monthly Sales by Quantity",
-  "sales_quantity": "Sales Quantity"
+  "sales_quantity": "Sales Quantity",
+  "noDocumentsFound": "No Documents Found"
 }

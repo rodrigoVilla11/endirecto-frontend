@@ -146,7 +146,7 @@ const Articles: React.FC<ArticlesProps> = ({
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 h-[calc(120vh-150px)] overflow-y-auto">
       {items.length === 0 && !isFetching ? (
         <div className="text-center text-gray-600">No se encontraron artículos</div>
       ) : (

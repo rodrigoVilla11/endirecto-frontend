@@ -8,6 +8,19 @@ interface OrderDetailProps {
 const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
   if (!order) return null;
 
+   function formatPriceWithCurrency(price: number): string {
+      const formattedNumber = new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+        .format(price)
+        .replace("ARS", "")
+        .trim();
+      return `${formattedNumber}`;
+    }
+
   // Función para determinar el color del estado
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -80,10 +93,7 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
             <div>
               <p className="text-sm text-gray-500">Total</p>
               <p className="font-medium text-lg text-green-700">
-                {order.total.toLocaleString("es-ES", {
-                  style: "currency",
-                  currency: "USD",
-                })}
+                {formatPriceWithCurrency(order.total)}
               </p>
             </div>
           </div>

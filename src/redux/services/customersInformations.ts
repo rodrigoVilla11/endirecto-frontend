@@ -141,6 +141,7 @@ export const customersInformationsApi = createApi({
         if (sellerId) queryString += `&sellerId=${sellerId}`;
         if (page !== undefined) queryString += `&page=${page}`;
         if (limit !== undefined) queryString += `&limit=${limit}`;
+        console.log(queryString)
         return queryString;
       },
     }),

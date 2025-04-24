@@ -29,31 +29,27 @@ const Page = () => {
   const { t } = useTranslation();
   const { userData } = useAuth();
   const userRole = userData?.role ? userData.role.toUpperCase() : "";
-  // Estados básicos
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // Para búsqueda en la tabla
+  const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [customer_id, setCustomer_id] = useState("");
-  const [seller_id, setSeller_id] = useState(""); // Filtro por seller_id
-  const [searchFilter, setSearchFilter] = useState(""); // Filtro para búsqueda en el backend
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  const [statusFilter, setStatusFilter] = useState(""); // Filtro para status
+  const [seller_id, setSeller_id] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [sortQuery, setSortQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [sellerFilter, setSellerFilter] = useState("");
-
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
   const { selectedClientId } = useClient();
 
-  // Referencias para el Intersection Observer
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Función para formatear la fecha en "yyyy-MM-dd"
   function formatDate(date: Date) {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -67,7 +63,6 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  // Usamos useMemo para agrupar los parámetros de la query.
   const queryParams = useMemo(() => {
     return {
       page,
@@ -80,18 +75,8 @@ const Page = () => {
       status: statusFilter || undefined,
       search: searchFilter || undefined,
     };
-  }, [
-    page,
-    startDate,
-    endDate,
-    customer_id,
-    seller_id,
-    sortQuery,
-    statusFilter,
-    searchFilter,
-  ]);
+  }, [page, startDate, endDate, customer_id, seller_id, sortQuery, statusFilter, searchFilter]);
 
-  // Query para obtener órdenes paginadas
   const {
     data,
     error,
@@ -103,7 +88,6 @@ const Page = () => {
     refetchOnReconnect: true,
   });
 
-  // Actualizar customer_id cuando cambie selectedClientId
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
@@ -114,15 +98,10 @@ const Page = () => {
     }
   }, [selectedClientId]);
 
-  // ======================================================
-  // Efecto para Actualizar la Lista y Evitar Duplicados
-  // ======================================================
   useEffect(() => {
     if (data?.orders) {
       setItems((prev) => {
-        if (page === 1) {
-          return data.orders;
-        }
+        if (page === 1) return data.orders;
         const newItems = data.orders.filter(
           (order) => !prev.some((item) => item._id === order._id)
         );
@@ -132,13 +111,9 @@ const Page = () => {
     }
   }, [data?.orders, page]);
 
-  // ======================================================
-  // Infinite Scroll (Intersection Observer)
-  // ======================================================
   const lastArticleRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observerRef.current) observerRef.current.disconnect();
-
       observerRef.current = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
@@ -147,24 +122,20 @@ const Page = () => {
         },
         { threshold: 0.0, rootMargin: "200px" }
       );
-
       if (node) observerRef.current.observe(node);
     },
     [hasMore, isQueryLoading]
   );
 
-  // Reiniciar fechas y paginación
   const handleResetDate = () => {
     setEndDate(null);
     setStartDate(null);
     setItems([]);
     setPage(1);
     setHasMore(true);
-    // Opcionalmente, llamar a refetch() aquí
     refetch();
   };
 
-  // Manejo de ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
@@ -179,7 +150,6 @@ const Page = () => {
       setPage(1);
       setItems([]);
       setHasMore(true);
-      // Con cambio de queryParams (por dependencia) se reejecuta la consulta
     },
     [sortQuery]
   );
@@ -213,10 +183,8 @@ const Page = () => {
     }
   }, [userRole, userData]);
 
-  // Construcción de datos para la tabla
   const tableData = items
     ?.filter((order) => {
-      // Si se filtró por customer_id en el backend, este filtro es opcional
       return !customer_id || order.customer.id === customer_id;
     })
     ?.map((order) => {
@@ -266,7 +234,6 @@ const Page = () => {
     { name: t("status"), key: "status" },
   ];
 
-  // Header con filtros adicionales para fechas, status, seller_id y búsqueda
   const headerBody = {
     buttons: [
       {
@@ -325,7 +292,6 @@ const Page = () => {
         ),
       },
       {
-        // Filtro para vendedor. Si el rol es VENDEDOR, se usa el seller del usuario y se deshabilita el select.
         content: (
           <select
             value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
@@ -371,27 +337,26 @@ const Page = () => {
 
   return (
     <PrivateRoute
-      requiredRoles={[
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ]}
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
     >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("orders")}</h3>
         <Header headerBody={headerBody} />
-        <Table
-          headers={tableHeader}
-          data={tableData}
-          onSort={handleSort}
-          sortField={sortQuery.split(":")[0]}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
-        />
+        {isQueryLoading && page === 1 ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <Table
+            headers={tableHeader}
+            data={tableData}
+            onSort={handleSort}
+            sortField={sortQuery.split(":")[0]}
+            sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          />
+        )}
         <div ref={lastArticleRef} className="h-10" />
       </div>
-
       <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>
         <OrderDetail order={currentOrder} closeModal={closeDetailModal} />
       </Modal>
