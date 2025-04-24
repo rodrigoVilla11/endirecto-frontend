@@ -23,11 +23,15 @@ interface FormState {
   favourites: string[];
   shopping_cart: string[];
 }
+interface ArticleDetailsProps {
+  article: any;
+  closeModal: () => void;
+  showPurchasePrice: boolean;
+}
 
-const ArticleDetails = ({ closeModal, showPurchasePrice }: any) => {
+const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetailsProps) => {
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
-  const { articleId } = useArticleId();
 
   const { selectedClientId } = useClient();
   const {
@@ -39,18 +43,6 @@ const ArticleDetails = ({ closeModal, showPurchasePrice }: any) => {
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
-  const {
-    data: articles,
-    isLoading: isArticleLoading,
-    error: articleError,
-  } = useGetArticlesQuery({
-    page: 1,
-    limit: 1,
-    articleId: articleId || "",
-    priceListId: customer?.price_list_id,
-  });
-
-  const article = articles?.articles[0];
 
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
@@ -103,11 +95,11 @@ const ArticleDetails = ({ closeModal, showPurchasePrice }: any) => {
     });
   };
 
-  if (isCustomerLoading || isArticleLoading) {
+  if (isCustomerLoading) {
     return <div>{t("loading")}</div>;
   }
 
-  if (customerError || articleError) {
+  if (customerError) {
     return <div>{t("errorLoadingData")}</div>;
   }
 

@@ -30,6 +30,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
   const { articleId, setArticleId } = useArticleId();
+  const [modalArticle, setModalArticle] = useState(null);
 
   const {
     data: customer,
@@ -100,10 +101,12 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
   const isFavourite = form.favourites.includes(article.id);
   const closeModal = () => setModalOpen(false);
-  const handleOpenModal = (id: string) => {
+  const handleOpenModal = (article: any) => {
+    setArticleId(article.id); // si lo seguís usando en otros lugares
+    setModalArticle(article); // este lo pasás al modal
     setModalOpen(true);
-    setArticleId(id);
   };
+  
 
   return (
     <div>
@@ -123,7 +126,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
         )}
         {/* Main Content */}
         <div
-          onClick={() => handleOpenModal(article.id)}
+          onClick={() => handleOpenModal(article)}
           className="cursor-pointer"
         >
           {/* Tag and Image Section */}
@@ -173,7 +176,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails closeModal={closeModal} showPurchasePrice={showPurchasePrice}/>
+        <ArticleDetails closeModal={closeModal} article={modalArticle} showPurchasePrice={showPurchasePrice}/>
       </Modal>
     </div>
   );

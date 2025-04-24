@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 const Description = ({ article, description }: any) => {
   const { t } = useTranslation();
 
+  console.log(article)
   return (
     <div className="w-80">
       <h3 className="font-bold">{t("description")}</h3>
