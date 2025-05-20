@@ -290,7 +290,7 @@ const Page = () => {
         );
         const seller = sellersData?.find((data) => data.id === crm.seller_id);
         const order = ordersData?.find((data) => data.tmp_id === crm.order_id);
-        const user = usersData?.find((data) => data._id === crm.user_id)
+        const user = usersData?.find((data) => data._id === crm.user_id);
         return {
           key: crm._id,
           info: (
@@ -309,7 +309,10 @@ const Page = () => {
             : t("notAvailable"),
           type: crm.type || t("notAvailable"),
           number: order?.multisoft_id || t("notAvailable"),
-          amount: formatCurrency(order?.total) || t("notAvailable"),
+          amount:
+            order?.total != null && !isNaN(order.total)
+              ? formatCurrency(order.total)
+              : "-",
           notes: crm.notes || t("notAvailable"),
           gps: crm.gps ? (
             <FiMapPin

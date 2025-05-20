@@ -88,6 +88,7 @@ const Page = () => {
     refetchOnReconnect: true,
   });
 
+
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
