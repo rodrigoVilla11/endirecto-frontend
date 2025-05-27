@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-type Article = {
+export type Article = {
   id: string;
   name: string; // DESCRIPCION CORTA
   description: string; // DESCRIPCION LARGA
@@ -52,6 +52,9 @@ type Article = {
     name: string;
     images: string;
   };
+  prices?: any,
+  stock?: any,
+
 };
 
 type UpdateArticlesPayload = {
@@ -76,6 +79,57 @@ export const articlesApi = createApi({
         return response;
       },
     }),
+    getArticlesSummary: builder.query<
+      {
+        totalItems: number;
+        totalPages: number;
+        currentPage: number;
+        perPage: number;
+        articles: Array<{
+          id: string;
+          name: string;
+          supplier_code: string;
+          image: string;
+          stock: number;
+          price: number;
+        }>;
+      },
+      {
+        priceListId: string;
+        page?: number;
+        limit?: number;
+        sort?: string;
+        brand?: string;
+        item?: string;
+        tag?: string;
+        query?: string;
+      }
+    >({
+      query: ({
+        priceListId,
+        page = 1,
+        limit = 20,
+        sort,
+        brand,
+        item,
+        tag,
+        query,
+      }) => {
+        const params = new URLSearchParams({
+          priceListId,
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (sort) params.append("sort", sort);
+        if (brand) params.append("brand", brand);
+        if (item) params.append("item", item);
+        if (tag) params.append("tag", tag);
+        if (query) params.append("query", query);
+        console.log(`/articles/summary?${params.toString()}`);
+        return `/articles/summary?${params.toString()}`;
+      },
+    }),
     getArticles: builder.query<
       {
         totalItems: number;
@@ -97,8 +151,9 @@ export const articlesApi = createApi({
         model?: string;
         year?: string;
         sort?: string;
-        priceListId?: string; // Ahora es obligatorio porque el backend lo requiere
-        articleId?: string; // Permite filtrar por uno o varios IDs
+        priceListId?: string;
+        articleId?: string;
+        summary?: boolean; // <— aquí
       }
     >({
       query: ({
@@ -116,30 +171,30 @@ export const articlesApi = createApi({
         sort,
         priceListId,
         articleId,
+        summary = false, // <— desestructuras summary
       } = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
+
         if (priceListId) params.append("priceListId", priceListId);
         if (query) params.append("q", query);
         if (brand) params.append("brand", brand);
         if (item) params.append("item", item);
-        if (tags && Array.isArray(tags) && tags.length > 0) {
-          params.append("tag", tags.join(","));
-        } else if (typeof tags === "string" && tags.trim() !== "") {
-          params.append("tag", tags);
-        }
-        if (stock) params.append("sort", stock);
+        if (tags)
+          params.append("tag", Array.isArray(tags) ? tags.join(",") : tags);
+        if (stock) params.append("stock", stock);
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
         if (engine) params.append("engine", engine);
         if (model) params.append("model", model);
         if (year) params.append("year", year);
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
+        if (summary) params.append("summary", "true"); // <— agregas el parámetro
 
-        return `/articles/?${params.toString()}`;
+        return `/articles?${params.toString()}`;
       },
       transformResponse: (
         response: any
@@ -150,7 +205,7 @@ export const articlesApi = createApi({
         perPage: number;
         articles: Article[];
       } => {
-        if (!response || !response.articles || response.articles.length === 0) {
+        if (!response?.articles?.length) {
           return {
             totalItems: 0,
             totalPages: 0,
@@ -162,7 +217,6 @@ export const articlesApi = createApi({
         return response;
       },
     }),
-
     updateArticle: builder.mutation<Article, UpdateArticlesPayload>({
       query: ({ id, ...updatedArticle }) => ({
         url: `/articles/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -218,6 +272,7 @@ export const articlesApi = createApi({
 
 export const {
   useGetArticlesQuery,
+  useGetArticlesSummaryQuery,
   useGetAllArticlesQuery,
   useUpdateArticleMutation,
   useSyncEquivalencesMutation,

@@ -85,6 +85,7 @@ const Articles: React.FC<ArticlesProps> = ({
       page,
       limit: 20,
       priceListId,
+      summary: true,
       ...filters
     },
     { skip: !priceListId }
