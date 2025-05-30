@@ -308,7 +308,7 @@ const Page = () => {
             ? format(new Date(crm.date), "yyyy-MM-dd HH:mm")
             : t("notAvailable"),
           type: crm.type || t("notAvailable"),
-          number: order?.multisoft_id || t("notAvailable"),
+          number: order?.multisoft_id || t("-"),
           amount:
             order?.total != null && !isNaN(order.total)
               ? formatCurrency(order.total)

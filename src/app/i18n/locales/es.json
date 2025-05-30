@@ -1359,7 +1359,6 @@
   "sales_amount": "Importe de ventas",
   "monthly_sales_by_quantity": "Ventas mensuales por cantidad",
   "sales_quantity": "Cantidad vendida",
-  "noDocumentsFound": "No se encontraron documentos."
-
-
+  "noDocumentsFound": "No se encontraron documentos.",
+  "paymentConditions": "Condiciones de pago"
 }
