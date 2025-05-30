@@ -216,9 +216,20 @@ const ShoppingCart: React.FC = () => {
       .replace("ARS", "")
       .trim();
 
-  const filteredItems = cartItems.filter((i) =>
-    i.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = cartItems.filter(i => {
+  const term = searchTerm.toLowerCase()
+
+  const matchName = i.name?.toLowerCase().includes(term)
+  const matchSupplier = i.supplier_code
+    ? i.supplier_code.toLowerCase().includes(term)
+    : false
+  const matchBrand = i.brand
+    ? i.brand.toLowerCase().includes(term)
+    : false
+
+  return matchName || matchSupplier || matchBrand
+})
+
   const allSelected = orderItems.every((i) => i.selected);
   const selected = orderItems.filter((i) => i.selected);
   const totalAmount = selected.reduce((s, i) => s + i.price * i.quantity, 0);
