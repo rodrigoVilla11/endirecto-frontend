@@ -7,7 +7,12 @@ import CardShortcuts from "./components/CardShortcuts";
 
 // Íconos
 import { MdOutlineShoppingBag, MdTextSnippet } from "react-icons/md";
-import { FaPowerOff, FaShoppingCart, FaPhone, FaFileDownload } from "react-icons/fa";
+import {
+  FaPowerOff,
+  FaShoppingCart,
+  FaPhone,
+  FaFileDownload,
+} from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import { BsCash } from "react-icons/bs";
 import { IoIosPaper } from "react-icons/io";
@@ -134,7 +139,8 @@ const DashboardPage = () => {
   // Cálculo de porcentajes
   const interannualPercentage =
     lastYearSameMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
-      ? (currentMonthSalesData.totalSales / lastYearSameMonthSalesData.totalSales) *
+      ? (currentMonthSalesData.totalSales /
+          lastYearSameMonthSalesData.totalSales) *
         100
       : 0;
 
@@ -169,29 +175,60 @@ const DashboardPage = () => {
       title: t("catalogue"),
       text: t("accessCatalog"),
       href: "/catalogue",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <CgProfile />,
       title: t("selectCustomer"),
-      subtitle: totalCustomers?.totalCustomers,
+      subtitle: totalCustomers ? (
+        totalCustomers.totalCustomers
+      ) : (
+        <SkeletonText width="w-8" />
+      ),
       href: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
     {
       logo: (
         <MdTextSnippet
-          className={`${totalDebt?.documents_balance ? "text-red-500" : ""}`}
+          className={`${totalDebt?.documents_balance ? "text-red-500" : "text-green-600"}`}
         />
       ),
       title: t("statusAccount"),
-      subtitle: `${formatPriceWithCurrency(totalDebt?.documents_balance)}`,
-      text: `${t("expired")}: ${formatPriceWithCurrency(
-        totalDebt?.documents_balance_expired
-      )}`,
+      subtitle: totalDebt ? (
+        `${formatPriceWithCurrency(totalDebt?.documents_balance)}`
+      ) : (
+        <SkeletonText width="w-24" />
+      ),
+      text: (
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className={`${totalDebt?.documents_balance ? "text-red-600": "text-green-600"}`}>{t("expired")}:</span>
+            {totalDebt ? (
+              <span>
+                {formatPriceWithCurrency(totalDebt?.documents_balance_expired)}
+              </span>
+            ) : (
+              <SkeletonText width="w-24" />
+            )}
+          </div>
+        </div>
+      ),
       href: "/accounts/status",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
-      color: totalDebt?.documents_balance ? "red" : "",
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
+      color: totalDebt?.documents_balance ? "red" : "green",
     },
     // Venta interanual
     {
@@ -207,13 +244,36 @@ const DashboardPage = () => {
         />
       ),
       title: t("interannualSell"),
-      subtitle: `${interannualPercentage.toFixed(0)}%`,
+      subtitle:
+        interannualPercentage !== null ? (
+          `${interannualPercentage.toFixed(0)}%`
+        ) : (
+          <SkeletonText width="w-10" />
+        ),
+
       text: (
-        <>
-          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
-          <br />
-          {t("lastYearMonth")}: {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
-        </>
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-red-600">{t("currentMonth")}:</span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-red-600">{t("lastYearMonth")}:</span>
+            {lastYearSalesData ? (
+              <span>
+                {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+        </div>
       ),
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
@@ -238,14 +298,36 @@ const DashboardPage = () => {
         />
       ),
       title: t("monthlySell"),
-      subtitle: `${monthlyPercentage.toFixed(0)}%`,
-      text: (
-        <>
-          {t("currentMonth")}: {formatCurrency(currentMonthSalesData?.totalSales || 0)}
-          <br />
-          {t("lastMonth")}: {formatCurrency(previousMonthSalesData?.totalSales || 0)}
-        </>
+      subtitle: monthlyPercentage ? (
+        `${monthlyPercentage.toFixed(0)}%`
+      ) : (
+        <SkeletonText width="w-8" />
       ),
+      text: (
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-red-600">{t("currentMonth")}:</span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-red-600">{t("lastMonth")}:</span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(previousMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+        </div>
+      ),
+
       href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
       color:
@@ -259,8 +341,16 @@ const DashboardPage = () => {
     {
       logo: <IoIosPaper />,
       title: t("monthlyOrders"),
-      subtitle: formatCurrency(currentMonthOrdersTotal),
-      text: `${t("quantityOrders")}: ${currentMonthOrdersCount}`,
+      subtitle: currentMonthOrdersTotal ? (
+        formatCurrency(currentMonthOrdersTotal)
+      ) : (
+        <SkeletonText width="w-20" />
+      ),
+      text: currentMonthOrdersCount ? (
+        `${t("quantityOrders")}: ${currentMonthOrdersCount}`
+      ) : (
+        <SkeletonText width="w-24" />
+      ),
       href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
@@ -268,8 +358,16 @@ const DashboardPage = () => {
     {
       logo: <IoIosPaper />,
       title: t("monthlyInvoices"),
-      subtitle: formatCurrency(currentMonthInvoiceTotal),
-      text: `${t("numberInvoices")}: ${currentMonthInvoiceCount}`,
+      subtitle: currentMonthInvoiceTotal ? (
+        formatCurrency(currentMonthInvoiceTotal)
+      ) : (
+        <SkeletonText width="w-20" />
+      ),
+      text: currentMonthInvoiceCount ? (
+        `${t("numberInvoices")}: ${currentMonthInvoiceCount}`
+      ) : (
+        <SkeletonText width="w-20" />
+      ),
       href: "/accounts/vouchers",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
     },
@@ -280,7 +378,8 @@ const DashboardPage = () => {
           className={
             ((selectedClientId
               ? data?.notifications.filter((n: any) => !n.read).length
-              : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0) > 0
+              : userQuery.data?.notifications.filter((n: any) => !n.read)
+                  .length) || 0) > 0
               ? "text-red-500"
               : "text-green-500"
           }
@@ -293,10 +392,17 @@ const DashboardPage = () => {
       text: `${t("unreadNotifications")}: ${
         (selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) || 0
+          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
+        0
       }`,
       href: "/notifications",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       color:
         ((selectedClientId
           ? data?.notifications.filter((n: any) => !n.read).length
@@ -313,13 +419,25 @@ const DashboardPage = () => {
       logo: <IoIosPaper />,
       title: t("documents"),
       href: "/accounts/vouchers",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <BsCash />,
       title: t("collections"),
       href: "/accounts/payments",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <BsCash />,
@@ -337,7 +455,13 @@ const DashboardPage = () => {
       logo: <IoCalculatorSharp />,
       title: t("orders"),
       href: "/orders/orders",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <FaShoppingCart />,
@@ -367,7 +491,13 @@ const DashboardPage = () => {
       logo: <CgProfile />,
       title: t("myProfile"),
       href: "/profile/my-profile",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
     },
     {
       logo: <BsCash />,
@@ -385,7 +515,13 @@ const DashboardPage = () => {
       logo: <FaPowerOff />,
       title: t("logout"),
       href: "",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"],
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ],
       logout: true,
     },
   ];
@@ -458,3 +594,7 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+
+const SkeletonText = ({ width = "w-16" }) => (
+  <div className={`bg-gray-200 animate-pulse h-4 rounded ${width}`} />
+);

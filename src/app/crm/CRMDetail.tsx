@@ -1,5 +1,13 @@
 import React from "react";
-import { FaTimes, FaUser, FaCalendarAlt, FaFileInvoice, FaMapMarkerAlt, FaClipboardList, FaInfoCircle } from "react-icons/fa";
+import {
+  FaTimes,
+  FaUser,
+  FaCalendarAlt,
+  FaFileInvoice,
+  FaMapMarkerAlt,
+  FaClipboardList,
+  FaInfoCircle,
+} from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useGetOrderByIdQuery } from "@/redux/services/ordersApi";
 
@@ -10,11 +18,14 @@ interface CRMDetailProps {
 
 const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
   const { t } = useTranslation();
-  
+
   // Si hay un order_id definido y no es vacío, hacemos lookup para traer toda la info de la orden.
   const shouldLookupOrder = data.order_id && data.order_id.trim() !== "";
-  const { data: orderData } = useGetOrderByIdQuery({ id: data.order_id }, { skip: !shouldLookupOrder });
-  
+  const { data: orderData } = useGetOrderByIdQuery(
+    { id: data.order_id },
+    { skip: !shouldLookupOrder }
+  );
+
   // Función para determinar el color del estado
   const getStatusColor = (status: string) => {
     if (!status) return "bg-gray-100 text-gray-800";
@@ -56,7 +67,11 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
           {/* Estado */}
           {data.status && (
             <div className="mb-4">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(data.status)}`}>
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                  data.status
+                )}`}
+              >
                 {data.status}
               </span>
             </div>
@@ -67,10 +82,13 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
             <p className="text-sm text-gray-500">{t("date")}</p>
             <p className="font-medium">
               {data.date
-                ? new Date(data.date.$date || data.date).toLocaleString("es-ES", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })
+                ? new Date(data.date.$date || data.date).toLocaleString(
+                    "es-ES",
+                    {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }
+                  )
                 : t("notAvailable")}
             </p>
           </div>
@@ -120,7 +138,11 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
         {/* Estado */}
         {orderInfo.status && (
           <div className="mb-4">
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(orderInfo.status)}`}>
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                orderInfo.status
+              )}`}
+            >
               {orderInfo.status}
             </span>
           </div>
@@ -131,15 +153,21 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
           <div className="space-y-3">
             <div>
               <p className="text-sm text-gray-500">{t("seller")}</p>
-              <p className="font-medium">{orderInfo.seller?.id || t("notAvailable")}</p>
+              <p className="font-medium">
+                {orderInfo.seller?.id || t("notAvailable")}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">{t("customer")}</p>
-              <p className="font-medium">{orderInfo.customer?.id || t("notAvailable")}</p>
+              <p className="font-medium">
+                {orderInfo.customer?.id || t("notAvailable")}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">{t("paymentCondition")}</p>
-              <p className="font-medium">{orderInfo.payment_condition?.id || t("notAvailable")}</p>
+              <p className="font-medium">
+                {orderInfo.payment_condition?.id || t("notAvailable")}
+              </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -147,7 +175,9 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
               <p className="text-sm text-gray-500">{t("date")}</p>
               <p className="font-medium">
                 {orderInfo.date
-                  ? new Date(orderInfo.date.$date || orderInfo.date).toLocaleString("es-ES", {
+                  ? new Date(
+                      orderInfo.date.$date || orderInfo.date
+                    ).toLocaleString("es-ES", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })
@@ -158,7 +188,12 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
               <p className="text-sm text-gray-500">{t("total")}</p>
               <p className="font-medium text-lg text-green-700">
                 {orderInfo.total
-                  ? orderInfo.total.toLocaleString("es-ES", { style: "currency", currency: "USD" })
+                  ? orderInfo.total.toLocaleString("es-AR", {
+                      style: "currency",
+                      currency: "ARS",
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
                   : t("notAvailable")}
               </p>
             </div>
@@ -182,10 +217,15 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
             <div className="bg-gray-50 rounded-md overflow-hidden">
               <ul className="divide-y divide-gray-200">
                 {orderInfo.details.map((detail: any, index: number) => (
-                  <li key={index} className="p-3 hover:bg-gray-100 transition-colors">
+                  <li
+                    key={index}
+                    className="p-3 hover:bg-gray-100 transition-colors"
+                  >
                     <div className="flex justify-between items-center">
                       <span>{detail.tmp_id}</span>
-                      <span className="text-gray-500 text-sm">#{index + 1}</span>
+                      <span className="text-gray-500 text-sm">
+                        #{index + 1}
+                      </span>
                     </div>
                   </li>
                 ))}

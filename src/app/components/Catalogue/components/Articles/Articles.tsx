@@ -90,6 +90,7 @@ const Articles: React.FC<ArticlesProps> = ({
     { skip: !priceListId }
   );
 
+  console.log(articlesData)
   // Reinicia la lista de artículos y la página cuando los filtros cambian
   useEffect(() => {
     if (filtersStringRef.current !== filtersString) {
