@@ -193,7 +193,8 @@ export const articlesApi = createApi({
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
         if (summary) params.append("summary", "true"); // <— agregas el parámetro
-        console.log(`/articles?${params.toString()}`)
+        console.log(`/articles?${params.toString()}`);
+
         return `/articles?${params.toString()}`;
       },
       transformResponse: (
