@@ -15,7 +15,7 @@ const TablePrices = ({ article }: any) => {
   const { selectedClientId } = useClient();
 
   const { data: bonus } = useGetArticleBonusByItemIdQuery({
-    id: article?.item.id || "",
+    id: article?.item_id || "",
   });
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
@@ -46,7 +46,7 @@ const TablePrices = ({ article }: any) => {
   const [integerPartNoIva, decimalPartNoIva] = formatPrice(priceNoIva);
 
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
-    id: article?.brand.id || "",
+    id: article?.brand_id || "",
     customer: selectedClientId || "",
   });
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
