@@ -50,7 +50,7 @@ const TablePrices = ({ article }: any) => {
     customer: selectedClientId || "",
   });
   const { data: itemMargin } = useGetCustomersItemsByItemAndCustomerIdQuery({
-    id: article?.item.id || "",
+    id: article?.item_id || "",
     customer: selectedClientId || "",
   });
 

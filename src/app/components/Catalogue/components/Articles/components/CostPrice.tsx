@@ -19,7 +19,7 @@ const CostPrice = ({ article, onlyPrice }: any) => {
     id: selectedClientId || "",
   });
 
-  const articleIdForBonus = article?.item?.id;
+  const articleIdForBonus = article?.item_id;
 
 const { data: bonus } = useGetArticleBonusByItemIdQuery(
   articleIdForBonus ? { id: articleIdForBonus } : skipToken

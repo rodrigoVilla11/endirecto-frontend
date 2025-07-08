@@ -23,7 +23,7 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
   // Consultas de datos
 
-  const articleIdForBonus = article?.item?.id;
+  const articleIdForBonus = article?.item_id;
   
 
   const { data: bonus } = useGetArticleBonusByItemIdQuery(
