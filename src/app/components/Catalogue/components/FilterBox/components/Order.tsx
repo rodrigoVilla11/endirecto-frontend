@@ -10,7 +10,7 @@ const Order = ({ onChange }: any) => {
   const orderOptions = [
     { id: "stock:desc", name: t("bestSellers") },
     { id: "brand:asc", name: t("byBrands") },
-    { id: "code:asc", name: t("byCode") },
+    { id: "supplier_code:asc", name: t("byCode") },
     { id: "price:asc", name: t("lowerPrice") },
     { id: "price:desc", name: t("higherPrice") },
     { id: "stock:desc", name: t("stock") },

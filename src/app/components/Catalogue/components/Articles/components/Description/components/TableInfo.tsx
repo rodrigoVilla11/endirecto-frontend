@@ -18,13 +18,13 @@ const TableInfo = ({ article }: any) => {
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">{t("brand")}</p>
-        <p className="font-light">{article.brand.name || t("notAvailable")}</p>
+        <p className="font-light">{article.brand || t("notAvailable")}</p>
       </div>
       <hr />
       <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
         <p className="font-bold">{t("item")}</p>
         <p className="font-light max-w-40">
-          {article.item.name || t("notAvailable")}
+          {article.item || t("notAvailable")}
         </p>
       </div>
       <hr />
