@@ -30,7 +30,7 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
     articleIdForBonus ? { id: articleIdForBonus } : skipToken
   );
 
-  const articleIdForBrand = article?.brand?.id;
+  const articleIdForBrand = article?.brand_id;
 
   const { data: brandMargin } = useGetCustomersBrandsByBrandAndCustomerIdQuery({
     id: articleIdForBrand || "",
