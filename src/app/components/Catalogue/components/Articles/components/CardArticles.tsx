@@ -119,7 +119,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
             article={article}
           />
         </div>
-        {article.foundEquivalence && (
+         {article.foundEquivalence && (
           <div className="absolute top-44 left-2 bg-gray-300 text-black text-xs font-bold px-1 py-0.5 rounded z-20">
             EQUIVALENCIA
           </div>

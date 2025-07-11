@@ -47,11 +47,7 @@ export type Article = {
     name: string;
     image: string;
   };
-  brand: {
-    id: string;
-    name: string;
-    images: string;
-  };
+  brand: string;
   prices?: any,
   stock?: any,
 

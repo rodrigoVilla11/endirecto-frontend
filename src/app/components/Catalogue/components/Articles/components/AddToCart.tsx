@@ -7,8 +7,9 @@ import { useTranslation } from "react-i18next";
 interface AddToCartProps {
   articleId: string;
   onAddToCart: (quantity: number) => void;
-  quantity: number; // se mantiene como number para la base de datos
+  quantity: number;
   setQuantity: (quantity: number) => void;
+  disabled?: boolean; // Nueva prop opcional
 }
 
 const AddToCart: React.FC<AddToCartProps> = ({
@@ -16,6 +17,7 @@ const AddToCart: React.FC<AddToCartProps> = ({
   onAddToCart,
   quantity,
   setQuantity,
+  disabled = false, // Valor por defecto
 }) => {
   const { t } = useTranslation();
   const encodedId = encodeURIComponent(articleId);
@@ -46,8 +48,10 @@ const AddToCart: React.FC<AddToCartProps> = ({
     }
   }, [quantity]);
 
-  // Función para actualizar la cantidad: si el input está vacío, se interpreta como 1
+  // Función para actualizar la cantidad
   const updateQuantity = (value: string) => {
+    if (disabled) return; // No actualizar si está disabled
+    
     setInputValue(value);
     const parsed = Number(value);
     if (value.trim() !== "" && !isNaN(parsed) && parsed > 0) {
@@ -56,10 +60,13 @@ const AddToCart: React.FC<AddToCartProps> = ({
   };
 
   const handleAddToCart = () => {
+    if (disabled) return; // No ejecutar si está disabled
+    
     const qty = inputValue.trim() === "" ? 1 : Number(inputValue);
     const validQty = Math.max(1, qty);
     setQuantity(validQty);
     onAddToCart(validQty);
+    
     // Mostrar tick de confirmación
     setShowTick(true);
     setTimeout(() => {
@@ -78,19 +85,29 @@ const AddToCart: React.FC<AddToCartProps> = ({
           value={inputValue}
           onChange={(e) => updateQuantity(e.target.value)}
           placeholder="1"
-          className="border rounded w-12 p-1 text-center text-sm"
+          className={`border rounded w-12 p-1 text-center text-sm ${
+            disabled 
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+              : "bg-white text-gray-900"
+          }`}
           min="1"
+          disabled={disabled}
           onBlur={() => {
-            if (inputValue.trim() === "") {
+            if (!disabled && inputValue.trim() === "") {
               setInputValue("");
               setQuantity(1);
             }
           }}
         />
         <button
-          className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors text-white"
+          className={`p-2 rounded-full transition-colors text-white ${
+            disabled
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-primary hover:bg-primary/90"
+          }`}
           onClick={handleAddToCart}
           aria-label={t("addToCart")}
+          disabled={disabled}
         >
           {showTick ? (
             <FaCheck className="w-4 h-4" />

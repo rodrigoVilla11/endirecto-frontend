@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -41,7 +41,6 @@ interface OrderItem extends CartItem {
 
 const ShoppingCart: React.FC = () => {
   const { articleId, setArticleId } = useArticleId();
-  const [isModalOpen, setModalOpen] = useState(false);
   const { selectedClientId } = useClient();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -50,16 +49,18 @@ const ShoppingCart: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [order, setOrder] = useState<OrderItem[]>([]);
   const { showPurchasePrice } = useFilters();
+  const { isMobile } = useMobile();
 
   // 1. Fetch customer
-  const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
+  const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
 
   // 2. Build unique cart IDs list
   const cartIds = useMemo(
     () => Array.from(new Set(customer?.shopping_cart || [])).join(","),
-    [customer]
+    [customer?.shopping_cart]
   );
 
   // 3. Fetch only the cart's articles in summary mode
@@ -81,20 +82,24 @@ const ShoppingCart: React.FC = () => {
   const { data: articlesBonuses } = useGetArticlesBonusesQuery(null);
 
   const [updateCustomer] = useUpdateCustomerMutation();
-  const { isMobile } = useMobile();
 
-  // Determine if all data is loaded
-  const isAllDataLoaded =
-    customer &&
-    !isArticlesLoading &&
-    articles.length > 0 &&
-    paymentsConditions &&
-    articlesBonuses;
+  // Formateo de precio memoizado
+  const formatPrice = useCallback((value: number) => 
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    })
+      .format(value)
+      .replace("ARS", "")
+      .trim()
+  , []);
 
-    console.log(articles)
   // Build cart items once data is ready
   useEffect(() => {
-    if (!isAllDataLoaded) return;
+    if (!customer || isArticlesLoading || articles.length === 0 || !paymentsConditions || !articlesBonuses) {
+      return;
+    }
 
     const paymentCond = paymentsConditions.find(
       (p) => p.id === customer.payment_condition_id
@@ -102,37 +107,43 @@ const ShoppingCart: React.FC = () => {
     const payPct = Math.abs(parseFloat(paymentCond?.percentage || "0"));
 
     const items: CartItem[] = [];
+    const itemsMap = new Map<string, CartItem>();
 
     customer.shopping_cart.forEach((aid) => {
       const art = articles.find((a) => a.id === aid);
       if (!art) return;
 
       // Base price from summary
-      let price = art.prices.price;
-      const isOffer = art.prices.offer != null;
-      const bonus = articlesBonuses.find((b) => b.item_id === art.item.id);
+      let price = art.prices?.price || 0;
+      const isOffer = art.prices?.offer != null;
+      const bonus = articlesBonuses.find((b) => b.item_id === art.item_id);
 
       if (!isOffer && bonus?.percentage_1) {
-        price -= (art.prices.price * bonus.percentage_1) / 100;
+        price -= (price * bonus.percentage_1) / 100;
       }
       // Apply payment surcharge
       price += (price * payPct) / 100;
 
-      const existing = items.find((i) => i.id === art.id);
+      const existing = itemsMap.get(art.id);
       if (existing) {
         existing.quantity++;
       } else {
-        items.push({
+        const newItem: CartItem = {
           id: art.id,
           quantity: 1,
           price,
-          name: art.name,
-          brand: art.brand.name,
-          stock: { quantity: art.stock.quantity, status: art.stock.status },
+          name: art.name || "",
+          brand: art.brand || "",
+          stock: { 
+            quantity: art.stock?.quantity || 0, 
+            status: art.stock?.status || "UNKNOWN" 
+          },
           percentage: bonus?.percentage_1 || 0,
           image: art.images?.[0],
           supplier_code: art.supplier_code,
-        });
+        };
+        itemsMap.set(art.id, newItem);
+        items.push(newItem);
       }
     });
 
@@ -143,167 +154,194 @@ const ShoppingCart: React.FC = () => {
         selected: prev.find((o) => o.id === item.id)?.selected ?? true,
       }))
     );
-  }, [
-    isAllDataLoaded,
-    customer,
-    articles,
-    paymentsConditions,
-    articlesBonuses,
-  ]);
+  }, [customer, articles, paymentsConditions, articlesBonuses, isArticlesLoading]);
 
-  // Show spinner while loading articles
-  if (isArticlesLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // Handlers (quantity change, remove, empty, toggle, etc.)
-  const handleQuantityChange = async (id: string, qty: number) => {
-    if (qty < 1) return;
-    setCartItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
-    );
+  // Handlers optimizados con useCallback
+  const handleQuantityChange = useCallback(async (id: string, qty: number) => {
+    if (qty < 1 || !customer) return;
+    
+    // Actualización optimista del estado local
+    const updateState = (prev: CartItem[]) =>
+      prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i));
+    
+    setCartItems(updateState);
     setOrderItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
     );
-    if (!customer) return;
+
+    // Construir carrito actualizado
     const updated = cartItems.flatMap((i) =>
       i.id === id ? Array(qty).fill(i.id) : Array(i.quantity).fill(i.id)
     );
-    await updateCustomer({ id: customer.id, shopping_cart: updated });
-    refetchCustomer();
-  };
+    
+    try {
+      await updateCustomer({ id: customer.id, shopping_cart: updated });
+      refetchCustomer();
+    } catch (error) {
+      // Revertir en caso de error
+      console.error("Error updating cart:", error);
+      refetchCustomer();
+    }
+  }, [customer, cartItems, updateCustomer, refetchCustomer]);
 
-  const handleRemoveItem = async (id: string) => {
+  const handleRemoveItem = useCallback(async (id: string) => {
+    if (!customer) return;
+    
+    // Actualización optimista
     setCartItems((prev) => prev.filter((i) => i.id !== id));
     setOrderItems((prev) => prev.filter((i) => i.id !== id));
-    if (!customer) return;
+    
     const updated = cartItems
       .filter((i) => i.id !== id)
       .flatMap((i) => Array(i.quantity).fill(i.id));
-    await updateCustomer({ id: customer.id, shopping_cart: updated });
-    refetchCustomer();
-  };
+    
+    try {
+      await updateCustomer({ id: customer.id, shopping_cart: updated });
+      refetchCustomer();
+    } catch (error) {
+      console.error("Error removing item:", error);
+      refetchCustomer();
+    }
+  }, [customer, cartItems, updateCustomer, refetchCustomer]);
 
-  const handleEmptyCart = async () => {
+  const handleEmptyCart = useCallback(async () => {
     if (!customer) return;
-    await updateCustomer({ id: customer.id, shopping_cart: [] });
-    setCartItems([]);
-    setOrderItems([]);
-    setConfirmModalOpen(false);
-    refetchCustomer();
-  };
+    
+    try {
+      await updateCustomer({ id: customer.id, shopping_cart: [] });
+      setCartItems([]);
+      setOrderItems([]);
+      setConfirmModalOpen(false);
+      refetchCustomer();
+    } catch (error) {
+      console.error("Error emptying cart:", error);
+    }
+  }, [customer, updateCustomer, refetchCustomer]);
 
-  const handleToggleSelect = (id: string) =>
+  const handleToggleSelect = useCallback((id: string) => {
     setOrderItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i))
     );
+  }, []);
 
-  const handleSelectAll = (sel: boolean) =>
+  const handleSelectAll = useCallback((sel: boolean) => {
     setOrderItems((prev) => prev.map((i) => ({ ...i, selected: sel })));
+  }, []);
 
-  // Formatting and totals
-  const formatPrice = (v: number) =>
-    new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-    })
-      .format(v)
-      .replace("ARS", "")
-      .trim();
+  const handleOpenArticleDetails = useCallback((id: string) => {
+    setArticleId(id);
+  }, [setArticleId]);
 
-  const filteredItems = cartItems.filter(i => {
-  const term = searchTerm.toLowerCase()
+  const handleCloseArticleDetails = useCallback(() => {
+    setArticleId("");
+  }, [setArticleId]);
 
-  const matchName = i.name?.toLowerCase().includes(term)
-  const matchSupplier = i.supplier_code
-    ? i.supplier_code.toLowerCase().includes(term)
-    : false
-  const matchBrand = i.brand
-    ? i.brand.toLowerCase().includes(term)
-    : false
+  // Filtrado memoizado
+  const filteredItems = useMemo(() => {
+    if (!searchTerm) return cartItems;
+    
+    const term = searchTerm.toLowerCase();
+    return cartItems.filter((item) => {
+      const matchName = item.name?.toLowerCase().includes(term);
+      const matchSupplier = item.supplier_code?.toLowerCase().includes(term);
+      const matchBrand = item.brand?.toLowerCase().includes(term);
+      return matchName || matchSupplier || matchBrand;
+    });
+  }, [cartItems, searchTerm]);
 
-  return matchName || matchSupplier || matchBrand
-})
-
-  const allSelected = orderItems.every((i) => i.selected);
-  const selected = orderItems.filter((i) => i.selected);
-  const totalAmount = selected.reduce((s, i) => s + i.price * i.quantity, 0);
-  const totalItems = selected.reduce((s, i) => s + i.quantity, 0);
-
-  // Table data & headers
-  const tableData = filteredItems.map((item) => {
-    const oi = orderItems.find((o) => o.id === item.id)!;
+  // Cálculos memoizados
+  const { allSelected, selected, totalAmount, totalItems } = useMemo(() => {
+    const allSel = orderItems.length > 0 && orderItems.every((i) => i.selected);
+    const sel = orderItems.filter((i) => i.selected);
+    const totAmount = sel.reduce((s, i) => s + i.price * i.quantity, 0);
+    const totItems = sel.reduce((s, i) => s + i.quantity, 0);
+    
     return {
-      key: item.id,
-      included: (
-        <ButtonOnOff
-          title=""
-          active={oi.selected}
-          onChange={() => handleToggleSelect(item.id)}
-        />
-      ),
-      brand: item.brand,
-      image: item.image ? (
-        <img
-          src={item.image}
-          alt={item.name}
-          className="h-12 w-12 object-contain rounded-md cursor-pointer"
-          onClick={() => setArticleId(item.id)}
-        />
-      ) : (
-        "Sin imagen"
-      ),
-      name: (
-        <div onClick={() => setArticleId(item.id)} className="cursor-pointer">
-          <p className="font-bold text-xs">{item.supplier_code}</p>
-          <p className="text-xs">{item.name}</p>
-        </div>
-      ),
-      stock: (
-        <div
-          className={`${
-            item.stock.status === "STOCK"
-              ? "bg-success"
-              : item.stock.status === "NO-STOCK"
-              ? "bg-red-600"
-              : item.stock.status === "LOW-STOCK"
-              ? "bg-orange-600"
-              : "bg-gray-500"
-          } font-bold text-white text-center p-1 rounded-lg text-xs whitespace-nowrap`}
-        >
-          <p>{item.stock.status}</p>
-        </div>
-      ),
-      price: <span className="text-xs">{formatPrice(item.price)}</span>,
-      quantity: (
-        <input
-          type="number"
-          value={item.quantity}
-          min={1}
-          className="w-16 text-center text-xs"
-          onChange={(e) => handleQuantityChange(item.id, +e.target.value)}
-        />
-      ),
-      total: (
-        <span className="text-xs">
-          {formatPrice(item.price * item.quantity)}
-        </span>
-      ),
-      erase: (
-        <FaTrashCan
-          onClick={() => handleRemoveItem(item.id)}
-          className="cursor-pointer"
-        />
-      ),
+      allSelected: allSel,
+      selected: sel,
+      totalAmount: totAmount,
+      totalItems: totItems,
     };
-  });
+  }, [orderItems]);
 
-  const tableHeaders = [
+  // Table data memoizado
+  const tableData = useMemo(() => 
+    filteredItems.map((item) => {
+      const oi = orderItems.find((o) => o.id === item.id);
+      if (!oi) return null;
+      
+      return {
+        key: item.id,
+        included: (
+          <ButtonOnOff
+            title=""
+            active={oi.selected}
+            onChange={() => handleToggleSelect(item.id)}
+          />
+        ),
+        brand: item.brand,
+        image: item.image ? (
+          <img
+            src={item.image}
+            alt={item.name}
+            className="h-12 w-12 object-contain rounded-md cursor-pointer"
+            onClick={() => handleOpenArticleDetails(item.id)}
+          />
+        ) : (
+          "Sin imagen"
+        ),
+        name: (
+          <div onClick={() => handleOpenArticleDetails(item.id)} className="cursor-pointer">
+            <p className="font-bold text-xs">{item.supplier_code}</p>
+            <p className="text-xs">{item.name}</p>
+          </div>
+        ),
+        stock: (
+          <div
+            className={`${
+              item.stock.status === "STOCK"
+                ? "bg-success"
+                : item.stock.status === "NO-STOCK"
+                ? "bg-red-600"
+                : item.stock.status === "LOW-STOCK"
+                ? "bg-orange-600"
+                : "bg-gray-500"
+            } font-bold text-white text-center p-1 rounded-lg text-xs whitespace-nowrap`}
+          >
+            <p>{item.stock.status}</p>
+          </div>
+        ),
+        price: <span className="text-xs">{formatPrice(item.price)}</span>,
+        quantity: (
+          <input
+            type="number"
+            value={item.quantity}
+            min={1}
+            className="w-16 text-center text-xs"
+            onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        total: (
+          <span className="text-xs">
+            {formatPrice(item.price * item.quantity)}
+          </span>
+        ),
+        erase: (
+          <FaTrashCan
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveItem(item.id);
+            }}
+            className="cursor-pointer hover:text-red-600 transition-colors"
+          />
+        ),
+      };
+    }).filter(Boolean)
+  , [filteredItems, orderItems, formatPrice, handleToggleSelect, handleOpenArticleDetails, handleQuantityChange, handleRemoveItem]);
+
+  // Headers memoizados
+  const tableHeaders = useMemo(() => [
     { name: "Incluir", key: "included" },
     { name: "Marca", key: "brand" },
     { component: <FaImage />, key: "image" },
@@ -313,9 +351,10 @@ const ShoppingCart: React.FC = () => {
     { name: "Cantidad", key: "quantity" },
     { name: "Total", key: "total" },
     { component: <FaTrashCan />, key: "erase" },
-  ];
+  ], []);
 
-  const headerConfig = {
+  // Header config memoizado
+  const headerConfig = useMemo(() => ({
     buttons: [
       {
         logo: <FaTrashCan />,
@@ -327,7 +366,7 @@ const ShoppingCart: React.FC = () => {
       {
         logo: <MdShoppingCart />,
         title: "Cerrar Pedido",
-        disabled: cartItems.length === 0,
+        disabled: selected.length === 0,
         onClick: () => {
           setOrder(selected);
           setShowConfirmation(true);
@@ -349,7 +388,7 @@ const ShoppingCart: React.FC = () => {
           <Input
             placeholder="Buscar..."
             value={searchTerm}
-            onChange={(e: any) => setSearchTerm(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
           />
         ),
       },
@@ -360,7 +399,26 @@ const ShoppingCart: React.FC = () => {
       total: `PEDIDO (${totalItems}): ${formatPrice(totalAmount)}`,
     },
     results: `${filteredItems.length} Resultados`,
-  };
+  }), [cartItems.length, selected, allSelected, handleSelectAll, searchTerm, formatPrice, totalAmount, totalItems, filteredItems.length]);
+
+  // Show spinner while loading
+  if (!customer || isArticlesLoading) {
+    return (
+      <PrivateRoute
+        requiredRoles={[
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ]}
+      >
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </PrivateRoute>
+    );
+  }
 
   return (
     <PrivateRoute
@@ -380,8 +438,6 @@ const ShoppingCart: React.FC = () => {
             <div className="text-center py-8 text-gray-500">
               El carrito está vacío
             </div>
-          ) : isMobile ? (
-            <Table headers={tableHeaders} data={tableData} />
           ) : (
             <Table headers={tableHeaders} data={tableData} />
           )}
@@ -399,13 +455,13 @@ const ShoppingCart: React.FC = () => {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setConfirmModalOpen(false)}
-                className="px-4 py-2 bg-gray-400 text-white rounded"
+                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleEmptyCart}
-                className="px-4 py-2 bg-red-500 text-white rounded"
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
               >
                 Confirmar
               </button>
@@ -426,12 +482,14 @@ const ShoppingCart: React.FC = () => {
           />
         </Modal>
 
-        <Modal isOpen={Boolean(articleId)} onClose={() => setArticleId("")}>
-          <ArticleDetails
-            closeModal={() => setArticleId("")}
-            showPurchasePrice={showPurchasePrice}
-          />
-        </Modal>
+        {articleId && (
+          <Modal isOpen={true} onClose={handleCloseArticleDetails}>
+            <ArticleDetails
+              closeModal={handleCloseArticleDetails}
+              showPurchasePrice={showPurchasePrice}
+            />
+          </Modal>
+        )}
       </div>
     </PrivateRoute>
   );
