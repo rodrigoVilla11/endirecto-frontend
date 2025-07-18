@@ -50,24 +50,26 @@ const Page = () => {
   const [triggerExport, { isLoading: isDownloading }] =
     useLazyExportPriceListQuery();
 
-  const handleDownload = (brandId: string) => {
-    if (!priceListId) return;
-    triggerExport({ priceListId, brandId })
-      .unwrap() // <- aquí
-      .then((blob) => {
-        // blob es de tipo Blob
-        const date = new Date().toISOString().split("T")[0];
-        const filename = `lista_precios_${priceListId}_${brandId}_${date}.xlsx`;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        link.click();
-        URL.revokeObjectURL(url);
-      })
-      .catch((err) => {
-        console.error("Error descargando el Excel:", err);
-      });
+  const handleDownload = async (brandId: string) => {
+    if (!priceListId) return alert(" Por favor selecciona un cliente para poder descargar las listas de precio.");
+  const result = await triggerExport({ priceListId, brandId });
+
+  // Asegurarte de que venga data y no sea undefined
+  if ("data" in result && result.data) {
+    const blob: Blob = result.data;   // TS ya infiere que es Blob
+    const date = new Date().toISOString().split("T")[0];
+    const filename = `lista_precios_${priceListId}_${brandId}_${date}.xlsx`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+
+  } else {
+    console.error("Error descargando el Excel:", result.error);
+  }
   };
 
   const tableData =
