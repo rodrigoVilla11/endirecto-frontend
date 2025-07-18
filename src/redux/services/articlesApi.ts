@@ -48,9 +48,8 @@ export type Article = {
     image: string;
   };
   brand: string;
-  prices?: any,
-  stock?: any,
-
+  prices?: any;
+  stock?: any;
 };
 
 type UpdateArticlesPayload = {
@@ -190,7 +189,7 @@ export const articlesApi = createApi({
         if (articleId) params.append("articleId", articleId);
         if (summary) params.append("summary", "true"); // <— agregas el parámetro
 
-        console.log(`/articles?${params.toString()}`)
+        console.log(`/articles?${params.toString()}`);
         return `/articles?${params.toString()}`;
       },
       transformResponse: (
@@ -264,6 +263,20 @@ export const articlesApi = createApi({
         return response;
       },
     }),
+    exportPriceList: builder.query<
+      Blob,
+      { priceListId: string; brandId?: string }
+    >({
+      query: ({ priceListId, brandId }) => ({
+        url: `/articles/price-lists/${priceListId}/export${
+          brandId ? `?brandId=${brandId}` : ""
+        }&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        // opcionalmente especifica method: "GET" si tu baseQuery lo necesita
+        // method: "GET",
+        // aquí indicamos cómo extraer el blob del response
+        responseHandler: (response: Response) => response.blob(),
+      }),
+    }),
   }),
 });
 
@@ -275,4 +288,6 @@ export const {
   useSyncEquivalencesMutation,
   useSyncArticleVehiclesMutation,
   useSearchArticlesQuery,
+  useExportPriceListQuery,
+  useLazyExportPriceListQuery
 } = articlesApi;
