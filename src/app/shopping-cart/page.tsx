@@ -59,7 +59,7 @@ const ShoppingCart: React.FC = () => {
 
   // 2. Build unique cart IDs list
   const cartIds = useMemo(
-    () => Array.from(new Set(customer?.shopping_cart || [])).join(","),
+    () => Array.from(new Set(customer?.shopping_cart || [])).join(";"),
     [customer?.shopping_cart]
   );
 
