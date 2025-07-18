@@ -51,24 +51,24 @@ const Page = () => {
     useLazyExportPriceListQuery();
 
   const handleDownload = (brandId: string) => {
-  if (!priceListId) return;
-  triggerExport({ priceListId, brandId })
-    .unwrap()            // <- aquí
-    .then((blob) => {    // blob es de tipo Blob
-      const date = new Date().toISOString().split("T")[0];
-      const filename = `lista_precios_${priceListId}_${brandId}_${date}.xlsx`;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch((err) => {
-      console.error("Error descargando el Excel:", err);
-    });
-};
-
+    if (!priceListId) return;
+    triggerExport({ priceListId, brandId })
+      .unwrap() // <- aquí
+      .then((blob) => {
+        // blob es de tipo Blob
+        const date = new Date().toISOString().split("T")[0];
+        const filename = `lista_precios_${priceListId}_${brandId}_${date}.xlsx`;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch((err) => {
+        console.error("Error descargando el Excel:", err);
+      });
+  };
 
   const tableData =
     data?.map((brand) => ({
@@ -148,6 +148,32 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("page.pricesListsTitle")}</h3>
         <Header headerBody={headerBody} />
+        {!selectedClientId && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-4 mx-4"
+          >
+            <svg
+              className="w-5 h-5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l5.516 9.8c.75 1.33-.213 2.98-1.742 2.98H4.483c-1.529 0-2.492-1.65-1.742-2.98l5.516-9.8zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-9a1 1 0 00-.993.883L9 5v4a1 1 0 001.993.117L11 9V5a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <p className="font-semibold">¡Atención!</p>
+              <p>
+                Por favor selecciona un cliente para poder descargar las listas
+                de precio.
+              </p>
+            </div>
+          </div>
+        )}
+
         <Table headers={tableHeader} data={tableData} />
       </div>
     </PrivateRoute>

@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
 import { AiOutlineDownload } from "react-icons/ai";
 import { FaInfoCircle, FaPlus, FaTimes } from "react-icons/fa";
 import DatePicker from "react-datepicker";
@@ -15,9 +21,7 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 
-import {
-  useGetAllDocumentsQuery,
-} from "@/redux/services/customersInformations";
+import { useGetAllDocumentsQuery } from "@/redux/services/customersInformations";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
@@ -32,7 +36,13 @@ const DOCUMENT_TYPES = [
 ];
 
 // ToggleSwitch component
-const ToggleSwitch = ({ selected, onToggle }: { selected: boolean; onToggle: () => void }) => (
+const ToggleSwitch = ({
+  selected,
+  onToggle,
+}: {
+  selected: boolean;
+  onToggle: () => void;
+}) => (
   <div
     onClick={onToggle}
     className={`relative inline-block w-8 h-4 cursor-pointer rounded-full transition-colors duration-300 ${
@@ -53,34 +63,47 @@ export default function Page() {
   const { selectedClientId } = useClient();
 
   // Derived
-  const userRole = useMemo(() => userData?.role?.toUpperCase() || "", [userData]);
+  const userRole = useMemo(
+    () => userData?.role?.toUpperCase() || "",
+    [userData]
+  );
   const forcedSellerId = useMemo(
     () => (userRole === "VENDEDOR" ? userData?.seller_id : undefined),
     [userRole, userData]
   );
 
-  // State: filters, pagination, selection
+  // State
   const [page, setPage] = useState(1);
+  const [allDocs, setAllDocs] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState<string>(selectedClientId || "");
+  const [customerFilter, setCustomerFilter] = useState<string>(
+    selectedClientId || ""
+  );
   const [sortQuery, setSortQuery] = useState<string>("");
-  const [selectedDocs, setSelectedDocs] = useState<{ key: string; amount: number }[]>([]);
+  const [selectedDocs, setSelectedDocs] = useState<
+    { key: string; amount: number }[]
+  >([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
 
   // Sync client filter
   useEffect(() => {
-    if (selectedClientId) setCustomerFilter(selectedClientId);
+    if (selectedClientId) {
+      setCustomerFilter(selectedClientId);
+    }
   }, [selectedClientId]);
 
   // Reset list on filter change
   const resetList = useCallback(() => {
     setPage(1);
     setSelectedDocs([]);
+    setAllDocs([]);
   }, []);
 
   // Fetch documents
@@ -101,13 +124,32 @@ export default function Page() {
             }
           : {}),
       }),
-      [page, startDate, endDate, customerFilter, forcedSellerId, sellerFilter, typeFilter, sortQuery]
+      [
+        page,
+        startDate,
+        endDate,
+        customerFilter,
+        forcedSellerId,
+        sellerFilter,
+        typeFilter,
+        sortQuery,
+      ]
     ),
     { refetchOnMountOrArgChange: true }
   );
 
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
+
+  // Accumulate documents
+  useEffect(() => {
+    if (!documentsData?.data) return;
+    if (page === 1) {
+      setAllDocs(documentsData.data);
+    } else {
+      setAllDocs((prev) => [...prev, ...documentsData.data]);
+    }
+  }, [documentsData, page]);
 
   // Infinite scroll
   const observer = useRef<IntersectionObserver>();
@@ -116,7 +158,9 @@ export default function Page() {
       if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && documentsData?.data?.length === ITEMS_PER_PAGE) {
+          const hasMore =
+            (documentsData?.totalData || 0) > allDocs.length;
+          if (entries[0].isIntersecting && hasMore) {
             setPage((p) => p + 1);
           }
         },
@@ -124,40 +168,21 @@ export default function Page() {
       );
       if (node) observer.current.observe(node);
     },
-    [documentsData]
+    [documentsData, allDocs.length]
   );
 
-  // Table data
-  const tableData = useMemo(
-    () =>
-      (documentsData?.data || []).map((doc) => {
-        const isSelected = selectedDocs.some((d) => d.key === doc.id);
-        const customer = customersData?.find((c) => c.id === doc.customer_id);
-        const seller = sellersData?.find((s) => s.id === doc.seller_id);
-        return {
-          key: doc.id,
-          action: <ToggleSwitch selected={isSelected} onToggle={() => toggleSelect(doc)} />,
-          info: (
-            <FaInfoCircle
-              className="cursor-pointer text-xl text-green-500 hover:text-blue-500"
-              onClick={() => openDocModal(doc.id)}
-            />
-          ),
-          customer: customer ? `${customer.id} - ${customer.name}` : t("notFound"),
-          type: doc.type,
-          number: doc.number,
-          date: doc.date,
-          amount: formatCurrency(Number(doc.amount)),
-          balance: formatCurrency(Number(doc.amount)),
-          expiration_date: doc.expiration_date,
-          expiration_status: doc.expiration_status || "",
-          seller_id: seller?.name || t("notFound"),
-        };
-      }),
-    [documentsData, customersData, sellersData, selectedDocs, t]
-  );
+  // Format currency
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    })
+      .format(value)
+      .replace("ARS", "");
+  }
 
-  // Selection toggle
+  // Toggle select
   const toggleSelect = useCallback((doc: any) => {
     setSelectedDocs((prev) => {
       const exists = prev.some((d) => d.key === doc.id);
@@ -179,16 +204,24 @@ export default function Page() {
     setSelectedDocumentId(null);
   };
 
-  // Format currency
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-    })
-      .format(value)
-      .replace("ARS", "");
-  }
+  // Sort handler
+  const handleSort = useCallback(
+    (field: string) => {
+      setSortQuery((prev) => {
+        const [f, d] = prev.split(":");
+        const newDir = f === field && d === "asc" ? "desc" : "asc";
+        return `${field}:${newDir}`;
+      });
+      resetList();
+    },
+    [resetList]
+  );
+
+  // Sum of selected
+  const selectedSum = useMemo(
+    () => selectedDocs.reduce((sum, d) => sum + d.amount, 0),
+    [selectedDocs]
+  );
 
   // Header filters
   const headerFilters = useMemo(
@@ -206,7 +239,12 @@ export default function Page() {
               dateFormat="yyyy-MM-dd"
               className="border rounded p-2"
             />
-            {startDate && <FaTimes onClick={() => setStartDate(null)} />}
+            {startDate && (
+              <FaTimes
+                className="cursor-pointer"
+                onClick={() => setStartDate(null)}
+              />
+            )}
 
             <DatePicker
               selected={endDate}
@@ -218,7 +256,12 @@ export default function Page() {
               dateFormat="yyyy-MM-dd"
               className="border rounded p-2"
             />
-            {endDate && <FaTimes onClick={() => setEndDate(null)} />}
+            {endDate && (
+              <FaTimes
+                className="cursor-pointer"
+                onClick={() => setEndDate(null)}
+              />
+            )}
           </div>
         ),
       },
@@ -284,30 +327,68 @@ export default function Page() {
         ),
       },
     ],
-    [startDate, endDate, typeFilter, sellerFilter, customerFilter, forcedSellerId, selectedClientId, customersData, sellersData, t, resetList]
+    [
+      startDate,
+      endDate,
+      typeFilter,
+      sellerFilter,
+      customerFilter,
+      forcedSellerId,
+      selectedClientId,
+      customersData,
+      sellersData,
+      t,
+      resetList,
+    ]
   );
 
-  // Sort handler
-  const handleSort = useCallback(
-    (field: string) => {
-      setSortQuery((prev) => {
-        const [f, d] = prev.split(":");
-        const newDir = f === field && d === "asc" ? "desc" : "asc";
-        return `${field}:${newDir}`;
-      });
-      resetList();
-    },
-    [resetList]
-  );
-
-  // Selected sum
-  const selectedSum = useMemo(
-    () => selectedDocs.reduce((sum, d) => sum + d.amount, 0),
-    [selectedDocs]
+  // Table data from allDocs
+  const tableData = useMemo(
+    () =>
+      allDocs.map((doc) => {
+        const isSelected = selectedDocs.some((d) => d.key === doc.id);
+        const customer = customersData?.find((c) => c.id === doc.customer_id);
+        const seller = sellersData?.find((s) => s.id === doc.seller_id);
+        return {
+          key: doc.id,
+          action: (
+            <ToggleSwitch
+              selected={isSelected}
+              onToggle={() => toggleSelect(doc)}
+            />
+          ),
+          info: (
+            <FaInfoCircle
+              className="cursor-pointer text-xl text-green-500 hover:text-blue-500"
+              onClick={() => openDocModal(doc.id)}
+            />
+          ),
+          customer: customer
+            ? `${customer.id} - ${customer.name}`
+            : t("notFound"),
+          type: doc.type,
+          number: doc.number,
+          date: doc.date,
+          amount: formatCurrency(Number(doc.amount)),
+          balance: formatCurrency(Number(doc.amount)),
+          expiration_date: doc.expiration_date,
+          expiration_status: doc.expiration_status || "",
+          seller_id: seller?.name || t("notFound"),
+        };
+      }),
+    [allDocs, customersData, sellersData, selectedDocs, t]
   );
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR","OPERADOR","MARKETING","VENDEDOR","CUSTOMER"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="space-y-4">
         <Header
           headerBody={{
@@ -318,14 +399,15 @@ export default function Page() {
             filters: headerFilters,
             secondSection: {
               title: t("totalOwed"),
-              amount: formatCurrency(selectedSum || documentsData?.totalDocumentBalance || 0),
+              amount: formatCurrency(
+                selectedSum || documentsData?.totalDocumentBalance || 0
+              ),
             },
             results: t("results", { count: documentsData?.totalData || 0 }),
           }}
         />
 
-        {/* Mostrar mensaje si no hay resultados */}
-        {!isLoading && (!documentsData?.data || documentsData.data.length === 0) ? (
+        {!isLoading && allDocs.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             {t("noDocumentsFound") || "No se encontraron documentos."}
           </div>
@@ -334,7 +416,10 @@ export default function Page() {
             <Table
               headers={[
                 { name: t("action"), key: "action" },
-                { component: <FaInfoCircle className="text-xl" />, key: "info" },
+                {
+                  component: <FaInfoCircle className="text-xl" />,
+                  key: "info",
+                },
                 { name: t("customer"), key: "customer" },
                 { name: t("type"), key: "type" },
                 { name: t("number"), key: "number", important: true },
@@ -353,15 +438,20 @@ export default function Page() {
             <div ref={lastItemRef} className="h-8" />
           </>
         )}
-
       </div>
 
       <Modal isOpen={createModalOpen} onClose={closeCreateModal}>
-        <CRM closeModal={closeCreateModal} selectedClientId={selectedClientId} />
+        <CRM
+          closeModal={closeCreateModal}
+          selectedClientId={selectedClientId}
+        />
       </Modal>
 
       <Modal isOpen={docModalOpen} onClose={closeDocModal}>
-        <DocumentDetails documentId={selectedDocumentId || ""} onClose={closeDocModal} />
+        <DocumentDetails
+          documentId={selectedDocumentId || ""}
+          onClose={closeDocModal}
+        />
       </Modal>
     </PrivateRoute>
   );

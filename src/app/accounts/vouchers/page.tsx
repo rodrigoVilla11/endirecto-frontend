@@ -42,20 +42,20 @@ const VouchersComponent = () => {
   const [typeFilter, setTypeFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
 
-  // Estados para modales y documento seleccionado
+  // Estados para modal de documento
   const [isDocumentModalOpen, setDocumentModalOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
 
-  // Si existe un selectedClientId, se utiliza para filtrar y se asigna a customer_id
+  // Si existe un selectedClientId, se utiliza para filtrar
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
     }
   }, [selectedClientId]);
 
-  // Si el usuario es VENDEDOR, forzamos el filtro de vendedor y deshabilitamos el select
+  // Si el usuario es VENDEDOR, forzamos el filtro de vendedor
   useEffect(() => {
     if (userRole === "VENDEDOR" && userData?.seller_id) {
       setSellerFilter(userData.seller_id);
@@ -66,8 +66,8 @@ const VouchersComponent = () => {
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
 
-  // Consulta RTK Query para documentos
-  const { data, error, isLoading, refetch } = useGetDocumentsPagQuery({
+  // Consulta RTK Query para documentos paginados
+  const { refetch, isLoading, error } = useGetDocumentsPagQuery({
     page,
     limit,
     query: searchQuery,
@@ -79,17 +79,6 @@ const VouchersComponent = () => {
     seller_id: userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter,
   });
 
-  // Actualiza el customer_id según selectedClientId
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch();
-    } else {
-      setCustomer_id("");
-      refetch();
-    }
-  }, [selectedClientId, refetch]);
-
   // Debounced search para optimizar la búsqueda
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
@@ -97,28 +86,26 @@ const VouchersComponent = () => {
     setItems([]);
   }, 100);
 
-  // Cargar documentos
+  // Cargar documentos cada vez que cambian filtros o página
   useEffect(() => {
     const loadDocuments = async () => {
-      if (!isFetching) {
-        setIsFetching(true);
-        try {
-          const result = await refetch().unwrap();
-          const fetchedData = result || { documents: [], total: 0 };
-          const newItems = Array.isArray(fetchedData.documents)
-            ? fetchedData.documents
-            : [];
-          setTotalDocuments(fetchedData.total || 0);
-          if (page === 1) {
-            setItems(newItems);
-          } else {
-            setItems((prev) => [...prev, ...newItems]);
-          }
-        } catch (err) {
-          console.error(t("errorLoadingDocuments"), err);
-        } finally {
-          setIsFetching(false);
-        }
+      if (isFetching) return;
+      setIsFetching(true);
+      try {
+        const result = await refetch().unwrap();
+        const fetched = result || { documents: [], total: 0 };
+        const newDocs = Array.isArray(fetched.documents)
+          ? fetched.documents
+          : [];
+        setTotalDocuments(fetched.total || 0);
+
+        setItems(prev =>
+          page === 1 ? newDocs : [...prev, ...newDocs]
+        );
+      } catch (err) {
+        console.error(t("errorLoadingDocuments"), err);
+      } finally {
+        setIsFetching(false);
       }
     };
 
@@ -133,38 +120,36 @@ const VouchersComponent = () => {
     typeFilter,
     sellerFilter,
     refetch,
-    isFetching,
     t,
   ]);
 
-  // Infinite scroll
+  // Infinite scroll: observa el div sentinel y aumenta página si hay más
   const observerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        const firstEntry = entries[0];
-        if (firstEntry.isIntersecting && !isFetching) {
-          setPage((prev) => prev + 1);
+      entries => {
+        const entry = entries[0];
+        const hasMore = items.length < totalDocuments;
+        if (entry.isIntersecting && !isFetching && hasMore) {
+          setPage(prev => prev + 1);
         }
       },
       { threshold: 0.5 }
     );
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-    return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
-    };
-  }, [isFetching]);
 
+    const current = observerRef.current;
+    if (current) observer.observe(current);
+    return () => {
+      if (current) observer.unobserve(current);
+    };
+  }, [isFetching, items.length, totalDocuments]);
+
+  // Handlers de reset
   const handleResetSearch = () => {
     setSearchQuery("");
     setPage(1);
     setItems([]);
   };
-
   const handleResetDate = () => {
     setStartDate(null);
     setEndDate(null);
@@ -175,72 +160,60 @@ const VouchersComponent = () => {
   // Ordenamiento
   const handleSort = useCallback(
     (field: string) => {
-      const [currentField, currentDirection] = sortQuery.split(":");
-      let newSortQuery = "";
-      if (currentField === field) {
-        newSortQuery =
-          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
-      } else {
-        newSortQuery = `${field}:asc`;
-      }
-      setSortQuery(newSortQuery);
+      const [f, d] = sortQuery.split(":");
+      const dir = f === field && d === "asc" ? "desc" : "asc";
+      setSortQuery(`${field}:${dir}`);
       setPage(1);
       setItems([]);
     },
     [sortQuery]
   );
 
-  // Abrir y cerrar modal
-  const handleOpenDocumentModal = (documentId: string) => {
-    setSelectedDocumentId(documentId);
+  // Modal de documento
+  const openDocumentModal = (id: string) => {
+    setSelectedDocumentId(id);
     setDocumentModalOpen(true);
   };
-
   const closeDocumentModal = () => {
     setDocumentModalOpen(false);
     setSelectedDocumentId(null);
   };
 
-  // Mapeo de documentos para la tabla
-  const tableData = items?.map((document, index) => {
-    const customer = customersData?.find(
-      (data) => data.id === document.customer_id
-    );
-    const seller = sellersData?.find((data) => data.id === document.seller_id);
+  // Preparar datos para la tabla
+  const tableData = items.map(doc => {
+    const customer = customersData?.find(c => c.id === doc.customer_id);
+    const seller = sellersData?.find(s => s.id === doc.seller_id);
     return {
-      key: index,
-      id: (
+      key: doc.id,
+      action: (
         <div className="flex justify-center items-center">
           <IoInformationCircleOutline
-            className="text-center text-xl"
-            onClick={() => {
-              setSelectedDocumentId(document.id);
-              setDocumentModalOpen(true);
-            }}
+            className="text-xl cursor-pointer"
+            onClick={() => openDocumentModal(doc.id)}
           />
         </div>
       ),
-      customer: customer ? `${customer.id} - ${customer.name}` : t("notFound"),
-      type: document.type,
-      number: document.number,
-      date: document.date,
-      amount: document.amount,
-      balance: document.amount,
-      expiration: document.expiration_date,
-      logistic: document.expiration_status,
+      customer: customer
+        ? `${customer.id} - ${customer.name}`
+        : t("notFound"),
+      type: doc.type,
+      number: doc.number,
+      date: doc.date,
+      amount: doc.amount,
+      balance: doc.amount,
+      expiration: doc.expiration_date,
+      logistic: doc.expiration_status,
       seller: seller?.name || t("notFound"),
     };
   });
 
-  // Configuración del header
-  // Se agregan nuevos selects para los filtros: type, seller y customer.
+  // Filtros extra en el header
   const headerFilters = [
     {
-      // Filtro para tipo de documento
       content: (
         <select
           value={typeFilter}
-          onChange={(e) => {
+          onChange={e => {
             setTypeFilter(e.target.value);
             setPage(1);
             setItems([]);
@@ -257,11 +230,10 @@ const VouchersComponent = () => {
       ),
     },
     {
-      // Filtro para vendedor: si el rol es VENDEDOR, se fija el seller y se deshabilita.
       content: (
         <select
           value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
-          onChange={(e) => {
+          onChange={e => {
             if (userRole !== "VENDEDOR") {
               setSellerFilter(e.target.value);
               setPage(1);
@@ -272,21 +244,19 @@ const VouchersComponent = () => {
           disabled={userRole === "VENDEDOR"}
         >
           <option value="">{t("allSellers")}</option>
-          {sellersData &&
-            sellersData.map((seller: any) => (
-              <option key={seller.id} value={seller.id}>
-                {seller.name}
-              </option>
-            ))}
+          {sellersData?.map(s => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
         </select>
       ),
     },
     {
-      // Filtro para cliente: si existe selectedClientId se usa y se deshabilita.
       content: (
         <select
           value={selectedClientId || customer_id}
-          onChange={(e) => {
+          onChange={e => {
             setCustomer_id(e.target.value);
             setPage(1);
             setItems([]);
@@ -295,17 +265,17 @@ const VouchersComponent = () => {
           disabled={Boolean(selectedClientId)}
         >
           <option value="">{t("allCustomers")}</option>
-          {customersData &&
-            customersData.map((customer: any) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
+          {customersData?.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
       ),
     },
   ];
 
+  // Configuración del header principal
   const headerBody = {
     buttons: [{ logo: <AiOutlineDownload />, title: t("download") }],
     filters: [
@@ -340,10 +310,10 @@ const VouchersComponent = () => {
       },
       {
         content: (
-          <>
+          <div className="flex space-x-2">
             <DatePicker
               selected={startDate}
-              onChange={(date) => {
+              onChange={date => {
                 setStartDate(date);
                 setPage(1);
                 setItems([]);
@@ -355,7 +325,7 @@ const VouchersComponent = () => {
             />
             <DatePicker
               selected={endDate}
-              onChange={(date) => {
+              onChange={date => {
                 setEndDate(date);
                 setPage(1);
                 setItems([]);
@@ -365,15 +335,16 @@ const VouchersComponent = () => {
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
             />
-          </>
+          </div>
         ),
       },
       ...headerFilters,
     ],
     results: searchQuery
-      ? `${t("results", { count: items.length || 0 })}`
-      : `${t("results", { count: totalDocuments || 0 })}`,
+      ? t("results", { count: items.length })
+      : t("results", { count: totalDocuments }),
   };
+
   if (isLoading && page === 1) {
     return (
       <div className="flex justify-center py-8">
@@ -381,6 +352,7 @@ const VouchersComponent = () => {
       </div>
     );
   }
+
   if (error) {
     return <div className="p-4 text-red-500">{t("errorLoadingDocuments")}</div>;
   }
@@ -402,9 +374,7 @@ const VouchersComponent = () => {
           headers={[
             { name: t("action"), key: "action" },
             {
-              component: (
-                <IoInformationCircleOutline className="text-center text-xl" />
-              ),
+              component: <IoInformationCircleOutline className="text-xl" />,
               key: "info",
             },
             { name: t("customer"), key: "customer" },
