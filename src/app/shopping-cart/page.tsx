@@ -58,10 +58,12 @@ const ShoppingCart: React.FC = () => {
   );
 
   // 2. Build unique cart IDs list
-  const cartIds = useMemo(
-    () => Array.from(new Set(customer?.shopping_cart || [])).join(";"),
-    [customer?.shopping_cart]
-  );
+ const cartIds = useMemo(
+  () => Array.from(new Set(customer?.shopping_cart || []))
+    .map(id => encodeURIComponent(id)) // Encodear cada ID
+    .join(";"),
+  [customer?.shopping_cart]
+);
 
   // 3. Fetch only the cart's articles in summary mode
   const { data: articlesResponse, isFetching: isArticlesLoading } =
