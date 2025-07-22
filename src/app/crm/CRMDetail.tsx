@@ -26,6 +26,24 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
     { skip: !shouldLookupOrder }
   );
 
+  // Formatea un número a ARS con fallback a '-'
+  function formatPriceWithCurrency(value: number | string): string {
+    const number = typeof value === "string" ? Number(value) : value;
+    if (!Number.isFinite(number)) {
+      return "-";
+    }
+    // formateo con separador de miles y 2 decimales
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+      .format(number)
+      .replace("ARS", "")
+      .trim();
+  }
+
   // Función para determinar el color del estado
   const getStatusColor = (status: string) => {
     if (!status) return "bg-gray-100 text-gray-800";
@@ -33,12 +51,16 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
       case "completado":
       case "aprobado":
       case "finalizado":
+      case "completada":
+      case "entregada":
+      case "pagada":
         return "bg-green-100 text-green-800";
       case "pendiente":
       case "en proceso":
         return "bg-yellow-100 text-yellow-800";
       case "cancelado":
       case "rechazado":
+      case "cancelada":
         return "bg-red-100 text-red-800";
       default:
         return "bg-blue-100 text-blue-800";
@@ -52,7 +74,7 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
         {/* Encabezado básico */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-xl font-bold text-gray-800">
-            {t("crmDetailTitle")} - {data._id?.$oid || data._id || "Sin ID"}
+            {t("crmDetailTitle")}- {data._id?.$oid || data._id || "Sin ID"}
           </h2>
           <button
             onClick={onClose}
@@ -76,6 +98,10 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
               </span>
             </div>
           )}
+          <div className="mb-4">
+            <p className="text-sm text-gray-500">Tipo</p>
+            <p className="font-medium">{data.type}</p>
+          </div>
 
           {/* Fecha */}
           <div className="mb-4">
@@ -134,7 +160,7 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
         </button>
       </div>
 
-      <div className="p-5">
+      <div className="p-6">
         {/* Estado */}
         {orderInfo.status && (
           <div className="mb-4">
@@ -148,99 +174,110 @@ const CRMDetail: React.FC<CRMDetailProps> = ({ data, onClose }) => {
           </div>
         )}
 
-        {/* Información principal en grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="space-y-3">
+        {/* Datos clave - similar a OrderDetail */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-4">
+            <div className="mb-4">
+              <p className="text-sm text-gray-500">Tipo</p>
+              <p className="font-medium">{data.type}</p>
+            </div>
             <div>
-              <p className="text-sm text-gray-500">{t("seller")}</p>
+              <p className="text-sm text-gray-500">Cliente</p>
               <p className="font-medium">
-                {orderInfo.seller?.id || t("notAvailable")}
+                {orderInfo.customer?.id || "No especificado"}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t("customer")}</p>
+              <p className="text-sm text-gray-500">Vendedor</p>
               <p className="font-medium">
-                {orderInfo.customer?.id || t("notAvailable")}
+                {orderInfo.seller?.id || "No especificado"}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t("paymentCondition")}</p>
+              <p className="text-sm text-gray-500">Cond. de pago</p>
               <p className="font-medium">
-                {orderInfo.payment_condition?.id || t("notAvailable")}
+                {orderInfo.payment_condition?.id || "No especificada"}
               </p>
             </div>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-500">{t("date")}</p>
+              <p className="text-sm text-gray-500">Fecha</p>
               <p className="font-medium">
                 {orderInfo.date
                   ? new Date(
                       orderInfo.date.$date || orderInfo.date
-                    ).toLocaleString("es-ES", {
+                    ).toLocaleString("es-AR", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })
-                  : t("notAvailable")}
+                  : "No disponible"}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t("total")}</p>
+              <p className="text-sm text-gray-500">Total</p>
               <p className="font-medium text-lg text-green-700">
-                {orderInfo.total
-                  ? orderInfo.total.toLocaleString("es-AR", {
-                      style: "currency",
-                      currency: "ARS",
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  : t("notAvailable")}
+                {formatPriceWithCurrency(orderInfo.total)}
               </p>
             </div>
           </div>
         </div>
 
         {/* Notas */}
-        {orderInfo.notes && (
-          <div className="mb-6 bg-gray-50 p-3 rounded-md">
-            <p className="text-sm text-gray-500 mb-1">{t("notes")}</p>
+        {orderInfo.notes ? (
+          <div className="mb-6 bg-gray-50 p-4 rounded-md">
+            <p className="text-sm text-gray-500 mb-1">Notas</p>
             <p className="text-gray-700">{orderInfo.notes}</p>
           </div>
-        )}
+        ) : null}
 
-        {/* Detalles del pedido */}
-        {orderInfo.details && orderInfo.details.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3 pb-2 border-b border-gray-200">
-              {t("orderDetails")}
-            </h3>
-            <div className="bg-gray-50 rounded-md overflow-hidden">
-              <ul className="divide-y divide-gray-200">
-                {orderInfo.details.map((detail: any, index: number) => (
-                  <li
-                    key={index}
-                    className="p-3 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span>{detail.tmp_id}</span>
-                      <span className="text-gray-500 text-sm">
-                        #{index + 1}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+        {/* Detalles del pedido - exactamente como en OrderDetail */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3 pb-2 border-b border-gray-200">
+            Detalles del pedido
+          </h3>
+
+          {orderInfo.details?.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2">Artículo</th>
+                    <th className="px-4 py-2">Cantidad</th>
+                    <th className="px-4 py-2">Precio uni.</th>
+                    <th className="px-4 py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {orderInfo.details.map((detail: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        {detail.article?.id || detail.id || "-"}
+                      </td>
+                      <td className="px-4 py-3">{detail.quantity}</td>
+                      <td className="px-4 py-3">
+                        {formatPriceWithCurrency(detail.netprice)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatPriceWithCurrency(detail.total)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-gray-500 italic">No hay detalles disponibles.</p>
+          )}
+        </div>
 
-        {/* Botón de acción */}
+        {/* Cerrar */}
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md transition-colors shadow-sm font-medium"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-sm transition-colors font-medium"
           >
-            {t("close")}
+            Cerrar
           </button>
         </div>
       </div>

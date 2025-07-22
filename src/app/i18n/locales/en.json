@@ -997,7 +997,7 @@
     "label": "Observations",
     "placeholder": "Enter your observations..."
   },
-  "stats":{
+  "stats": {
     "title": "Stats",
     "filters": "Filters",
     "selectBrand": "Brand",
@@ -1011,8 +1011,7 @@
     "currentMonth": "Current Month",
     "previousMonth": "Previous Month",
     "last12Months": "Last 12 Months"
-  }
-  ,
+  },
   "updateMassive": {
     "title": "Massive Update",
     "description": "Enter a new margin for the Massive Update by Brand:",
@@ -1364,5 +1363,13 @@
   "monthly_sales_by_quantity": "Monthly Sales by Quantity",
   "sales_quantity": "Sales Quantity",
   "noDocumentsFound": "No Documents Found",
-  "paymentConditions": "Payment Conditions"
+  "paymentConditions": "Payment Conditions",
+  "preparingExport": "Preparing Export..",
+  "downloadingFile": "Downloading file...",
+  "exportCompleted": "Export completed",
+  "errorDownloading": "Error downloading file",
+  "noDataToExport": "No hay datos para exportar",
+  "serverError": "Server Error",
+  "noPermission": "Sin permisos para exportar",
+  "processing": "Processing..."
 }

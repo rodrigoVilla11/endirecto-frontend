@@ -36,6 +36,7 @@ const Page = () => {
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // Estados de filtros
   const [filters, setFilters] = useState({
@@ -57,6 +58,7 @@ const Page = () => {
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastElementRef = useRef<HTMLDivElement | null>(null);
 
   // Queries
   const { data: customersData } = useGetCustomersQuery(null);
@@ -68,6 +70,14 @@ const Page = () => {
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }, []);
+
+  // Reset de paginación
+  const resetPagination = useCallback(() => {
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+    setIsLoadingMore(false);
   }, []);
 
   // Configurar filtros iniciales basados en el rol del usuario
@@ -103,7 +113,7 @@ const Page = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [filters.search]);
+  }, [filters.search, resetPagination]);
 
   // Parámetros para la query
   const queryParams = useMemo(() => {
@@ -125,33 +135,46 @@ const Page = () => {
     data,
     error,
     isLoading: isQueryLoading,
+    isFetching,
     refetch,
   } = useGetOrdersPagQuery(queryParams, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: false,
     refetchOnReconnect: true,
+    skip: false,
   });
 
   // Manejar datos de la API
   useEffect(() => {
     if (data?.orders) {
       setItems((prev) => {
-        if (page === 1) return data.orders;
-        const newItems = data.orders.filter(
-          (order) => !prev.some((item) => item._id === order._id)
-        );
-        return [...prev, ...newItems];
+        if (page === 1) {
+          // Primera página - reemplazar todos los items
+          return data.orders;
+        } else {
+          // Páginas siguientes - agregar solo items nuevos
+          const existingIds = new Set(prev.map(item => item._id));
+          const newItems = data.orders.filter(order => !existingIds.has(order._id));
+          return [...prev, ...newItems];
+        }
       });
-      setHasMore(data.orders.length === ITEMS_PER_PAGE);
+      
+      // Determinar si hay más páginas
+      const receivedItems = data.orders.length;
+      setHasMore(receivedItems === ITEMS_PER_PAGE);
+      setIsLoadingMore(false);
     }
   }, [data?.orders, page]);
 
-  // Reset de paginación
-  const resetPagination = useCallback(() => {
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-  }, []);
+  // Efecto para resetear cuando cambian los filtros
+  useEffect(() => {
+    if (page === 1) {
+      setItems([]);
+      setHasMore(true);
+      setIsLoadingMore(false);
+    }
+  }, [queryParams.startDate, queryParams.endDate, queryParams.customer_id, 
+      queryParams.seller_id, queryParams.status, queryParams.search, queryParams.sort]);
 
   // Actualizar filtro genérico
   const updateFilter = useCallback((key: string, value: any) => {
@@ -162,22 +185,46 @@ const Page = () => {
     resetPagination();
   }, [resetPagination]);
 
-  // Infinite scroll
-  const lastArticleRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) observerRef.current.disconnect();
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
-            setPage((prev) => prev + 1);
-          }
-        },
-        { threshold: 0.0, rootMargin: "200px" }
-      );
-      if (node) observerRef.current.observe(node);
-    },
-    [hasMore, isQueryLoading]
-  );
+  // Configurar intersection observer
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isQueryLoading && !isFetching && !isLoadingMore) {
+          console.log('Loading more items...');
+          setIsLoadingMore(true);
+          setPage(prev => prev + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, isQueryLoading, isFetching, isLoadingMore]);
+
+  // Observar el último elemento
+  useEffect(() => {
+    if (lastElementRef.current && observerRef.current) {
+      observerRef.current.observe(lastElementRef.current);
+    }
+
+    return () => {
+      if (lastElementRef.current && observerRef.current) {
+        observerRef.current.unobserve(lastElementRef.current);
+      }
+    };
+  }, [items.length]);
 
   // Handlers
   const handleResetDates = useCallback(() => {
@@ -389,6 +436,8 @@ const Page = () => {
     );
   }
 
+  const isInitialLoading = isQueryLoading && page === 1 && items.length === 0;
+
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}
@@ -397,7 +446,7 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("orders")}</h3>
         <Header headerBody={headerBody} />
         
-        {isQueryLoading && page === 1 ? (
+        {isInitialLoading ? (
           <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
@@ -412,14 +461,36 @@ const Page = () => {
             />
             
             {/* Loading indicator para infinite scroll */}
-            {isQueryLoading && items.length > 0 && (
+            {(isLoadingMore || isFetching) && items.length > 0 && (
               <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+                <span className="ml-2 text-gray-600">Cargando más...</span>
               </div>
             )}
             
             {/* Sentinel para infinite scroll */}
-            {hasMore && <div ref={lastArticleRef} className="h-10" />}
+            {hasMore && !isInitialLoading && (
+              <div 
+                ref={lastElementRef} 
+                className="h-20 flex items-center justify-center"
+              >
+                {/* Elemento invisible para triggear el scroll infinito */}
+              </div>
+            )}
+            
+            {/* Mensaje cuando no hay más elementos */}
+            {!hasMore && items.length > 0 && (
+              <div className="text-center py-4 text-gray-500">
+                No hay más elementos para cargar
+              </div>
+            )}
+            
+            {/* Mensaje cuando no hay resultados */}
+            {!isInitialLoading && items.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No se encontraron resultados
+              </div>
+            )}
           </>
         )}
       </div>

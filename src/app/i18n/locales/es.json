@@ -1360,5 +1360,14 @@
   "monthly_sales_by_quantity": "Ventas mensuales por cantidad",
   "sales_quantity": "Cantidad vendida",
   "noDocumentsFound": "No se encontraron documentos.",
-  "paymentConditions": "Condiciones de pago"
+  "paymentConditions": "Condiciones de pago",
+  "preparingExport": "Preparando exportación...",
+  "downloadingFile": "Descargando archivo...",
+  "exportCompleted": "Exportación completada",
+  "errorDownloading": "Error al descargar el archivo",
+  "noDataToExport": "No hay datos para exportar",
+  "serverError": "Error del servidor",
+  "noPermission": "Sin permisos para exportar",
+  "processing": "Procesando..."
+
 }

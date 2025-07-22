@@ -21,6 +21,7 @@ import ImportExcelModal from "../application-of-articles/ImportExcel";
 import ExportExcelModal from "../application-of-articles/ExportExcelButton";
 import { useTranslation } from "react-i18next";
 import { IoMdClose } from "react-icons/io";
+import ExportArticlesEquivalencesModal from "./ExportExcel";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -213,7 +214,7 @@ const Page = () => {
           isOpen={isExportModalOpen}
           onClose={() => setExportModalOpen(false)}
         >
-          <ExportExcelModal closeModal={() => setExportModalOpen(false)} />
+          <ExportArticlesEquivalencesModal closeModal={() => setExportModalOpen(false)} />
         </Modal>
         <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)}>
           <EditArticleEquivalenceComponent

@@ -29,7 +29,7 @@ type UpdateArticleEquivalencePayload = {
 export const articlesEquivalencesApi = createApi({
   reducerPath: "articlesEquivalencesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
     getArticlesEquivalences: builder.query<ArticlesEquivalencesPagResponse,  { page?: number; limit?: number; query?: string; sort?: string }
@@ -38,7 +38,6 @@ export const articlesEquivalencesApi = createApi({
         return `/articles-equivalences?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: any): ArticlesEquivalencesPagResponse => {
-        // Asumiendo que el backend retorna la estructura correcta
         return {
           equivalences: response.equivalences,
           total: response.total,
@@ -85,14 +84,25 @@ export const articlesEquivalencesApi = createApi({
         body: formData,
       }),
     }),
-    exportArticleEquivalenceExcel: builder.query<Blob, void>({
-      query: () => ({
-        url: `/articles-equivalences/export?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-        method: 'GET',
+    // Endpoint para exportar a Excel
+    exportArticleEquivalenceExcel: builder.query<Blob, { query?: string }>({
+      query: ({ query = "" } = {}) => ({
+        url: `/articles-equivalences/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error('El archivo descargado está vacío');
+          }
+          
+          return blob;
+        },
       }),
-      transformResponse: async (response: Response) => {
-        return await response.blob();
-      },
     }),
   }),
 });
@@ -102,8 +112,7 @@ export const {
   useGetArticleEquivalenceByIdQuery,
   useGetArticleEquivalenceByArticleIdQuery,
   useCreateArticleEquivalenceMutation,
-  useExportArticleEquivalenceExcelQuery,
+  useUpdateArticleEquivalenceMutation,
   useImportArticleEquivalenceExcelMutation,
   useLazyExportArticleEquivalenceExcelQuery,
-  useUpdateArticleEquivalenceMutation
 } = articlesEquivalencesApi;
