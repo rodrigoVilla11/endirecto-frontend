@@ -132,14 +132,24 @@ export const articlesVehiclesApi = createApi({
       }),
     }),
 
-    exportArticleVehiclesExcel: builder.query<Blob, void>({
-      query: () => ({
-        url: `/articles-vehicles/export?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+     exportArticlesVehiclesExcel: builder.query<Blob, { query?: string }>({
+      query: ({ query = "" } = {}) => ({
+        url: `/articles-vehicles/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error('El archivo descargado está vacío');
+          }
+          
+          return blob;
+        },
       }),
-      transformResponse: async (response: Response) => {
-        return await response.blob();
-      },
     }),
   }),
 });
@@ -153,8 +163,7 @@ export const {
   useUpdateArticleVehicleMutation,
   useDeleteArticleVehicleMutation,
   useImportArticleVehiclesExcelMutation,
-  useExportArticleVehiclesExcelQuery,
-  useLazyExportArticleVehiclesExcelQuery,
+  useLazyExportArticlesVehiclesExcelQuery,
   useGetArticleVehicleBrandsQuery,  // ✅ Obtener marcas
   useGetArticleVehicleModelsQuery,  // ✅ Obtener modelos según marca
   useGetArticleVehicleEnginesQuery, // ✅ Obtener motores según marca

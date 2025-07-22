@@ -74,7 +74,6 @@ const Page = () => {
     setEquivalences([]);
   }, [searchQuery]);
 
-  
   const lastRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observerRef.current) observerRef.current.disconnect();
@@ -159,7 +158,6 @@ const Page = () => {
                   setSearchQuery(e.currentTarget.value);
                 }
               }}
-              
               className="pr-8"
             />
             {searchQuery && (
@@ -214,7 +212,10 @@ const Page = () => {
           isOpen={isExportModalOpen}
           onClose={() => setExportModalOpen(false)}
         >
-          <ExportArticlesEquivalencesModal closeModal={() => setExportModalOpen(false)} />
+          <ExportArticlesEquivalencesModal
+            closeModal={() => setExportModalOpen(false)}
+            searchQuery={searchQuery}
+          />
         </Modal>
         <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)}>
           <EditArticleEquivalenceComponent
