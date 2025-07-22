@@ -28,55 +28,99 @@ const ITEMS_PER_PAGE = 15;
 const Page = () => {
   const { t } = useTranslation();
   const { userData } = useAuth();
+  const { selectedClientId } = useClient();
+  
   const userRole = userData?.role ? userData.role.toUpperCase() : "";
+  
+  // Estados principales
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [customer_id, setCustomer_id] = useState("");
-  const [seller_id, setSeller_id] = useState("");
-  const [searchFilter, setSearchFilter] = useState("");
+  
+  // Estados de filtros
+  const [filters, setFilters] = useState({
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    customer_id: "",
+    seller_id: "",
+    status: "",
+    search: "",
+  });
+  
+  // Estados para debounce
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // Estados de UI
   const [sortQuery, setSortQuery] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
-  const [sellerFilter, setSellerFilter] = useState("");
+  
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Queries
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const { selectedClientId } = useClient();
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  function formatDate(date: Date) {
+  // Formatear fecha para la API
+  const formatDate = useCallback((date: Date) => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
-  }
+  }, []);
 
+  // Configurar filtros iniciales basados en el rol del usuario
   useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-    }
-  }, [selectedClientId]);
+    const initialFilters = {
+      ...filters,
+      customer_id: selectedClientId || "",
+    };
 
+    // Si es vendedor, establecer su seller_id automáticamente
+    if (userRole === "VENDEDOR" && userData?.seller_id) {
+      initialFilters.seller_id = userData.seller_id;
+    }
+
+    setFilters(initialFilters);
+  }, [selectedClientId, userRole, userData?.seller_id]);
+
+  // Debounce para búsqueda
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (debouncedSearch !== filters.search) {
+        setDebouncedSearch(filters.search);
+        resetPagination();
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [filters.search]);
+
+  // Parámetros para la query
   const queryParams = useMemo(() => {
     return {
       page,
       limit: ITEMS_PER_PAGE,
-      startDate: startDate ? formatDate(startDate) : undefined,
-      endDate: endDate ? formatDate(endDate) : undefined,
-      customer_id,
-      seller_id: sellerFilter,
-      sort: sortQuery,
-      status: statusFilter || undefined,
-      search: searchFilter || undefined,
+      startDate: filters.startDate ? formatDate(filters.startDate) : undefined,
+      endDate: filters.endDate ? formatDate(filters.endDate) : undefined,
+      customer_id: filters.customer_id || undefined,
+      seller_id: filters.seller_id || undefined,
+      sort: sortQuery || undefined,
+      status: filters.status || undefined,
+      search: debouncedSearch || undefined,
     };
-  }, [page, startDate, endDate, customer_id, seller_id, sortQuery, statusFilter, searchFilter]);
+  }, [page, filters, sortQuery, debouncedSearch, formatDate]);
 
+  // Query principal
   const {
     data,
     error,
@@ -84,21 +128,11 @@ const Page = () => {
     refetch,
   } = useGetOrdersPagQuery(queryParams, {
     refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
+    refetchOnFocus: false,
     refetchOnReconnect: true,
   });
 
-
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch();
-    } else {
-      setCustomer_id("");
-      refetch();
-    }
-  }, [selectedClientId]);
-
+  // Manejar datos de la API
   useEffect(() => {
     if (data?.orders) {
       setItems((prev) => {
@@ -112,6 +146,23 @@ const Page = () => {
     }
   }, [data?.orders, page]);
 
+  // Reset de paginación
+  const resetPagination = useCallback(() => {
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+  }, []);
+
+  // Actualizar filtro genérico
+  const updateFilter = useCallback((key: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    resetPagination();
+  }, [resetPagination]);
+
+  // Infinite scroll
   const lastArticleRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observerRef.current) observerRef.current.disconnect();
@@ -128,14 +179,15 @@ const Page = () => {
     [hasMore, isQueryLoading]
   );
 
-  const handleResetDate = () => {
-    setEndDate(null);
-    setStartDate(null);
-    setItems([]);
-    setPage(1);
-    setHasMore(true);
-    refetch();
-  };
+  // Handlers
+  const handleResetDates = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      startDate: null,
+      endDate: null
+    }));
+    resetPagination();
+  }, [resetPagination]);
 
   const handleSort = useCallback(
     (field: string) => {
@@ -148,15 +200,14 @@ const Page = () => {
         newSortQuery = `${field}:asc`;
       }
       setSortQuery(newSortQuery);
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
+      resetPagination();
     },
-    [sortQuery]
+    [sortQuery, resetPagination]
   );
 
-  function formatPriceWithCurrency(price: number): string {
-    const formattedNumber = new Intl.NumberFormat("es-AR", {
+  // Formatear precio
+  const formatPriceWithCurrency = useCallback((price: number): string => {
+    return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       minimumFractionDigits: 2,
@@ -165,34 +216,27 @@ const Page = () => {
       .format(price)
       .replace("ARS", "")
       .trim();
-    return `${formattedNumber}`;
-  }
+  }, []);
 
-  const openDetailModal = (order: any) => {
+  // Modal handlers
+  const openDetailModal = useCallback((order: any) => {
     setCurrentOrder(order);
     setIsDetailOpen(true);
-  };
+  }, []);
 
-  const closeDetailModal = () => {
+  const closeDetailModal = useCallback(() => {
     setIsDetailOpen(false);
     setCurrentOrder(null);
-  };
+  }, []);
 
-  useEffect(() => {
-    if (userRole === "VENDEDOR" && userData?.seller_id) {
-      setSellerFilter(userData.seller_id);
-    }
-  }, [userRole, userData]);
-
-  const tableData = items
-    ?.filter((order) => {
-      return !customer_id || order.customer.id === customer_id;
-    })
-    ?.map((order) => {
+  // Datos de la tabla
+  const tableData = useMemo(() => {
+    return items?.map((order) => {
       const customer = customersData?.find(
         (data) => data.id === order.customer.id
       );
       const seller = sellersData?.find((data) => data.id === order.seller?.id);
+      
       return {
         key: `${customer?.name} ${order.date ? format(new Date(order.date), "dd/MM/yyyy") : "N/A"}`,
         info: (
@@ -215,8 +259,10 @@ const Page = () => {
         observations: order.notes ? order.notes : "-",
         status: order.status,
       };
-    });
+    }) || [];
+  }, [items, customersData, sellersData, t, openDetailModal, formatPriceWithCurrency]);
 
+  // Headers de la tabla
   const tableHeader = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
@@ -235,6 +281,7 @@ const Page = () => {
     { name: t("status"), key: "status" },
   ];
 
+  // Header body
   const headerBody = {
     buttons: [
       {
@@ -247,15 +294,20 @@ const Page = () => {
         content: (
           <div className="flex items-center gap-2">
             <DatePicker
-              selected={startDate}
-              onChange={(date) => setStartDate(date)}
+              selected={filters.startDate}
+              onChange={(date) => updateFilter('startDate', date)}
               placeholderText={t("dateFrom")}
               dateFormat="yyyy-MM-dd"
               className="border border-gray-300 rounded p-2"
+              maxDate={filters.endDate || undefined}
             />
-            {startDate && (
-              <button onClick={handleResetDate} aria-label={t("clearDate")}>
-                <FaTimes className="text-gray-400 hover:text-gray-600" />
+            {(filters.startDate || filters.endDate) && (
+              <button 
+                onClick={handleResetDates} 
+                aria-label={t("clearDate")}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
               </button>
             )}
           </div>
@@ -264,11 +316,12 @@ const Page = () => {
       {
         content: (
           <DatePicker
-            selected={endDate}
-            onChange={(date) => setEndDate(date)}
+            selected={filters.endDate}
+            onChange={(date) => updateFilter('endDate', date)}
             placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
+            minDate={filters.startDate || undefined}
           />
         ),
       },
@@ -276,17 +329,10 @@ const Page = () => {
         content: (
           <select
             className="border border-gray-300 rounded p-2"
-            defaultValue=""
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
+            value={filters.status}
+            onChange={(e) => updateFilter('status', e.target.value)}
           >
-            <option value="" disabled>
-              {t("selectStatus")}
-            </option>
+            <option value="">{t("allStatuses") || "Todos los estados"}</option>
             <option value="charged">{t("charged")}</option>
             <option value="sendend">{t("sendend")}</option>
           </select>
@@ -295,46 +341,53 @@ const Page = () => {
       {
         content: (
           <select
-            value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
-            onChange={(e) => {
-              if (userRole !== "VENDEDOR") {
-                setSellerFilter(e.target.value);
-                setPage(1);
-                setItems([]);
-              }
-            }}
+            value={filters.seller_id}
+            onChange={(e) => updateFilter('seller_id', e.target.value)}
             className="border border-gray-300 rounded p-2"
             disabled={userRole === "VENDEDOR"}
           >
             <option value="">{t("allSellers")}</option>
-            {sellersData &&
-              sellersData.map((seller: any) => (
-                <option key={seller.id} value={seller.id}>
-                  {seller.name}
-                </option>
-              ))}
+            {sellersData?.map((seller: any) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.name}
+              </option>
+            ))}
           </select>
         ),
       },
       {
         content: (
-          <input
-            type="text"
-            value={searchFilter}
-            onChange={(e) => {
-              setSearchFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            placeholder={t("searchFilter")}
-            className="border border-gray-300 rounded p-2"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
+              placeholder={t("searchFilter")}
+              className="border border-gray-300 rounded p-2 pr-8"
+            />
+            {filters.search && (
+              <button
+                onClick={() => updateFilter('search', '')}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes size={12} />
+              </button>
+            )}
+          </div>
         ),
       },
     ],
     results: `${t("results", { count: data?.total || 0 })}`,
   };
+
+  // Loading y error states
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        {t("errorLoadingOrders") || "Error al cargar pedidos"}
+      </div>
+    );
+  }
 
   return (
     <PrivateRoute
@@ -343,21 +396,34 @@ const Page = () => {
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("orders")}</h3>
         <Header headerBody={headerBody} />
+        
         {isQueryLoading && page === 1 ? (
           <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         ) : (
-          <Table
-            headers={tableHeader}
-            data={tableData}
-            onSort={handleSort}
-            sortField={sortQuery.split(":")[0]}
-            sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
-          />
+          <>
+            <Table
+              headers={tableHeader}
+              data={tableData}
+              onSort={handleSort}
+              sortField={sortQuery.split(":")[0]}
+              sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+            />
+            
+            {/* Loading indicator para infinite scroll */}
+            {isQueryLoading && items.length > 0 && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+              </div>
+            )}
+            
+            {/* Sentinel para infinite scroll */}
+            {hasMore && <div ref={lastArticleRef} className="h-10" />}
+          </>
         )}
-        <div ref={lastArticleRef} className="h-10" />
       </div>
+
       <Modal isOpen={isDetailOpen} onClose={closeDetailModal}>
         <OrderDetail order={currentOrder} closeModal={closeDetailModal} />
       </Modal>

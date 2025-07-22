@@ -18,6 +18,12 @@ type CreateArticleTechnicalDetailPayload = {
   article_id: string; // Artículo ID
   technical_detail_id: string; // Característica técnica ID
 };
+type UpdateArticleTechnicalDetailPayload = {
+  id: string; // ID
+  value?: string; // Valor de la característica
+  article_id?: string; // Artículo ID
+  technical_detail_id?: string; // Característica técnica ID
+};
 
 export const articlesTechnicalDetailsApi = createApi({
   reducerPath: "articlesTechnicalDetailsApi",
@@ -62,6 +68,16 @@ export const articlesTechnicalDetailsApi = createApi({
         body: newArticleTechnicalDetail,
       }),
     }),
+     updateArticleTechnicalDetail: builder.mutation<
+      ArticleTechnicalDetail,
+      UpdateArticleTechnicalDetailPayload
+    >({
+      query: (newArticleTechnicalDetail) => ({
+        url: `/articles-technical-details?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PUT",
+        body: newArticleTechnicalDetail,
+      }),
+    }),
     importTechnicalDetailExcel: builder.mutation<
       { totalProcessed: number; successful: number; errors: any[] },
       FormData
@@ -91,4 +107,5 @@ export const {
   useCreateArticleTechnicalDetailMutation,
   useLazyExportTechnicalDetailExcelQuery,
   useImportTechnicalDetailExcelMutation,
+  useUpdateArticleTechnicalDetailMutation
 } = articlesTechnicalDetailsApi;
