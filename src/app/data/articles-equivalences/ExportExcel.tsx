@@ -139,7 +139,7 @@ const ExportArticlesEquivalencesModal: React.FC<ExportArticlesEquivalencesModalP
               </p>
               {searchQuery && (
                 <p className="text-xs text-blue-600 mt-1">
-                  {t("currentFilter") || "Filtro actual"}: "{searchQuery}"
+                  {t("currentFilter") || "Filtro actual"}: &quot;{searchQuery}&quot;
                 </p>
               )}
             </div>
