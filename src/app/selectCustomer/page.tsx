@@ -50,11 +50,14 @@ const removeDuplicates = (array: any[]) => {
 // Constante para el número de elementos por página - reducido para carga inicial más rápida
 const ITEMS_PER_PAGE = 10;
 
-const Spinner = React.memo(() => (
-  <div className="flex justify-center items-center p-4">
-    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
-));
+const Spinner = React.memo(function Spinner() {
+  return (
+    <div className="flex justify-center items-center p-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+});
+Spinner.displayName = 'Spinner';
 
 const SelectCustomer = () => {
   // Hooks de navegación, traducción y contexto
@@ -259,11 +262,14 @@ const SelectCustomer = () => {
   }, []);
 
   // Componente CustomerIcon memoizado
-  const CustomerIcon = React.memo(({ name }: { name: string }) => (
-    <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
-      <p>{name.charAt(0).toUpperCase()}</p>
-    </div>
-  ));
+  const CustomerIcon = React.memo(function CustomerIcon({ name }: { name: string }) {
+    return (
+      <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
+        <p>{name.charAt(0).toUpperCase()}</p>
+      </div>
+    );
+  });
+  CustomerIcon.displayName = 'CustomerIcon';
 
   // Formatear moneda optimizado
   const formatCurrency = useMemo(() => {
@@ -335,7 +341,7 @@ const SelectCustomer = () => {
         ),
       };
     });
-  }, [items, paymentConditions, activeMenu, handleSelectCustomer, formatCurrency, handleViewLocation, toggleCustomerMenu, handleUpdateGPS, handleResetPassword]);
+  }, [items, paymentConditions, activeMenu, handleSelectCustomer, formatCurrency, handleViewLocation, toggleCustomerMenu, handleUpdateGPS, handleResetPassword, CustomerIcon]);
 
   // Configuración de encabezados memoizada
   const tableHeader = useMemo(() => [
