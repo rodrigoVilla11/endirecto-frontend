@@ -77,8 +77,8 @@ const Page = () => {
   useEffect(() => {
     if (
       !isLoading &&
-      customersItems.length === 0 &&
-      items.length > 0 &&
+      customersItems &&
+      items &&
       selectedClientId
     ) {
       const missingItems = items.filter(

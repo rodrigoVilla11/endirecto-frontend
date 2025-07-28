@@ -91,7 +91,6 @@ const Page = () => {
   // Debounced search mejorado
   const debouncedSearch = useCallback(
     debounce((query: string) => {
-      console.log("Ejecutando búsqueda con:", query);
       setSearchQuery(query);
       resetPagination();
     }, 300), // Aumentado a 300ms para mejor UX
@@ -150,7 +149,6 @@ const Page = () => {
       observerRef.current = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore && !isQueryLoading && !isFetching) {
-            console.log("Cargando más datos...");
             setIsLoading(true);
             setPage((prev) => prev + 1);
           }
@@ -208,7 +206,6 @@ const Page = () => {
         newSortQuery = `${field}:asc`;
       }
       
-      console.log("Aplicando ordenamiento:", newSortQuery);
       setSortQuery(newSortQuery);
       resetPagination();
     },

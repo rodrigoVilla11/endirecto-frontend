@@ -85,12 +85,7 @@ const Page = () => {
 
   useEffect(() => {
     const addMissingBrands = async () => {
-      if (
-        !isLoading &&
-        customersBrands.length === 0 &&
-        brands &&
-        selectedClientId
-      ) {
+      if (!isLoading && customersBrands && brands && selectedClientId) {
         const brandsToCreate = brands.filter(
           (brand) => !customersBrands.some((item) => item.brand_id === brand.id)
         );
@@ -148,14 +143,17 @@ const Page = () => {
       });
   };
 
-  const tableData =
-    customersBrands?.map((customersBrand) => {
+const tableData =
+  customersBrands
+    ?.map((customersBrand) => {
       const brand = brands?.find((data) => data.id === customersBrand.brand_id);
+      if (!brand) return null; // ❌ si no hay brand, no renderizamos nada
+
       return {
         key: customersBrand._id,
         image: (
           <div className="flex justify-center items-center">
-            {brand?.images ? (
+            {brand.images ? (
               <img
                 src={brand.images}
                 alt={brand.name}
@@ -166,7 +164,7 @@ const Page = () => {
             )}
           </div>
         ),
-        brand: brand ? brand.name : t("page.table.unknown"),
+        brand: brand.name,
         margin: (
           <div className="flex items-center justify-center space-x-2">
             <input
@@ -192,7 +190,8 @@ const Page = () => {
           </div>
         ),
       };
-    }) || [];
+    })
+    .filter(Boolean) || []; // ✅ eliminamos los null
 
   if (!selectedClientId) {
     return <div>{t("page.selectClient")}</div>;

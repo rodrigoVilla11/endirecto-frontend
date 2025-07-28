@@ -15,6 +15,7 @@ const Tables = ({ article }: any) => {
   const { t } = useTranslation();
   const [activeTable, setActiveTable] = useState("info");
 
+  console.log(article);
   const renderTable = () => {
     switch (activeTable) {
       case "info":
@@ -53,17 +54,17 @@ const Tables = ({ article }: any) => {
         >
           <MdAttachMoney />
         </button>
-        {article.hasTechnicalDetails === true && (
-          <button
-            className={`w-1/4 flex justify-center items-center rounded-sm ${
-              activeTable === "technical" ? "bg-gray-300" : ""
-            }`}
-            onClick={() => setActiveTable("technical")}
-            title={t("technicalDetailsButton")}
-          >
-            <GrDocumentText />
-          </button>
-        )}
+
+        <button
+          className={`w-1/4 flex justify-center items-center rounded-sm ${
+            activeTable === "technical" ? "bg-gray-300" : ""
+          }`}
+          onClick={() => setActiveTable("technical")}
+          title={t("technicalDetailsButton")}
+        >
+          <GrDocumentText />
+        </button>
+
         {Array.isArray(article.article_vehicles) &&
           article.article_vehicles.length > 0 && (
             <button
