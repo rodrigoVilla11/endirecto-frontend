@@ -13,10 +13,12 @@ import { CiMenuKebab } from "react-icons/ci";
 import { FiMapPin } from "react-icons/fi";
 import { AiOutlineDownload } from "react-icons/ai";
 
-// Componentes y contextos personalizados
-import ResetPassword from "./ResetPassword";
-import UpdateGPS from "./UpdateGPS";
-import MapModal from "./MapModal";
+// Componentes lazy loading para modales pesados
+import { lazy, Suspense } from "react";
+const ResetPassword = lazy(() => import("./ResetPassword"));
+const UpdateGPS = lazy(() => import("./UpdateGPS"));
+const MapModal = lazy(() => import("./MapModal"));
+const MapComponent = lazy(() => import("./Map"));
 
 // Hooks de navegación e internacionalización
 import { useRouter } from "next/navigation";
@@ -32,32 +34,27 @@ import Header from "../components/components/Header";
 import CustomerListMobile from "./MobileSeller";
 import Table from "../components/components/Table";
 import Modal from "../components/components/Modal";
-import MapComponent from "./Map";
 import ButtonOnOff from "./ButtonOnOff";
 import { useClient } from "../context/ClientContext";
 
-// Función debounce importada desde un archivo local
-
-// Función helper para eliminar duplicados basado en la propiedad "id"
-function removeDuplicates(array: any[]) {
-  const unique: Record<string, boolean> = {};
-  return array.filter((item: any) => {
-    if (unique[item.id]) {
-      return false;
-    }
-    unique[item.id] = true;
+// Función helper optimizada para eliminar duplicados
+const removeDuplicates = (array: any[]) => {
+  const seen = new Set();
+  return array.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
     return true;
   });
-}
+};
 
-// Constante para el número de elementos por página
-const ITEMS_PER_PAGE = 15;
+// Constante para el número de elementos por página - reducido para carga inicial más rápida
+const ITEMS_PER_PAGE = 10;
 
-const Spinner = () => (
+const Spinner = React.memo(() => (
   <div className="flex justify-center items-center p-4">
     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
   </div>
-);
+));
 
 const SelectCustomer = () => {
   // Hooks de navegación, traducción y contexto
@@ -67,45 +64,37 @@ const SelectCustomer = () => {
   const { userData, role } = useAuth();
   const { setSelectedClientId } = useClient();
 
-  // Estados principales
+  // Estados principales - optimizados
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
-
   const [filter, setFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [sortQuery, setSortQuery] = useState("");
-  const [searchParams, setSearchParams] = useState({
+  
+  // Memoizar searchParams para evitar re-renders innecesarios
+  const [searchParams, setSearchParams] = useState(() => ({
     debt: false,
     overdueDebt: false,
-    seller_id:
-      role === "VENDEDOR" && userData?.seller_id ? userData.seller_id : "",
+    seller_id: role === "VENDEDOR" && userData?.seller_id ? userData.seller_id : "",
     itemsInCart: false,
-  });
+  }));
 
   // Estados para modales y selección del cliente actual
-  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
-    null
-  );
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showUpdateGPSModal, setShowUpdateGPSModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [showCustomersMapModal, setShowCustomersMapModal] = useState(false);
-
-  // Estado para el menú de opciones de cada cliente
   const [activeMenu, setActiveMenu] = useState(null);
 
-  // Referencia para el IntersectionObserver (Infinite Scroll)
+  // Referencia para el IntersectionObserver
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastItemRef = useRef<HTMLDivElement>(null);
 
-  // Consulta a la API para obtener clientes paginados
-  const {
-    data: customersData,
-    error,
-    isFetching,
-  } = useGetCustomersPagQuery({
+  // Memoizar parámetros de consulta para evitar re-fetches innecesarios
+  const queryParams = useMemo(() => ({
     page,
     limit: ITEMS_PER_PAGE,
     query: searchQuery,
@@ -114,10 +103,20 @@ const SelectCustomer = () => {
     seller_id: searchParams.seller_id || "",
     hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
     sort: sortQuery,
-  });
+  }), [page, searchQuery, searchParams, sortQuery]);
 
-  // Consulta para obtener todos los clientes (para el mapa) con límite alto
-  const { data: allCustomersData } = useGetCustomersPagQuery({
+  // Consulta principal optimizada
+  const {
+    data: customersData,
+    error,
+    isFetching,
+  } = useGetCustomersPagQuery(queryParams);
+
+  // Consulta para el mapa solo cuando se necesite
+  const {
+    data: allCustomersData,
+    refetch: refetchAllCustomers
+  } = useGetCustomersPagQuery({
     page: 1,
     limit: 1000,
     query: searchQuery,
@@ -126,160 +125,167 @@ const SelectCustomer = () => {
     seller_id: searchParams.seller_id || "",
     hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
     sort: sortQuery,
+  }, {
+    skip: !showCustomersMapModal, // Solo fetch cuando se necesite el mapa
   });
 
-  // Consultas para condiciones de pago y vendedores
+  // Consultas para datos auxiliares con caché
   const { data: paymentConditions } = useGetPaymentConditionsQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
 
-  // Función de búsqueda con debounce para actualizar la consulta
-  const debouncedSearch = useCallback(
-    debounce((query) => {
+  // Función de búsqueda optimizada con debounce
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => {
       setPage(1);
       setItems([]);
       setHasMore(true);
       setSearchQuery(query);
-    }, 500),
+    }, 300), // Reducido a 300ms para respuesta más rápida
     []
   );
 
-  // Manejo del cambio en el input de búsqueda
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    debouncedSearch(e.target.value);
-  };
+  // Handlers optimizados con useCallback
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    debouncedSearch(value);
+  }, [debouncedSearch]);
 
-  const handleSelectCustomer = useCallback(
-    (customerId: string) => {
-      setSelectedClientId(customerId);
-      router.push("/dashboard");
-    },
-    [setSelectedClientId, router, role]
-  );
+  const handleSelectCustomer = useCallback((customerId: string) => {
+    setSelectedClientId(customerId);
+    router.push("/dashboard");
+  }, [setSelectedClientId, router]);
 
-  // Botón para resetear la búsqueda
-  const resetSearch = () => {
-    setInputValue(""); // Se borra el input de inmediato
+  const resetSearch = useCallback(() => {
+    setInputValue("");
     setSearchQuery("");
     setItems([]);
     setPage(1);
     setHasMore(true);
-  };
+  }, []);
 
-  useEffect(() => {
-    if (customersData && customersData.customers) {
-      setItems((prevItems) =>
-        removeDuplicates([...prevItems, ...customersData.customers])
-      );
-      if (customersData.customers.length < ITEMS_PER_PAGE) {
-        setHasMore(false);
-      }
-    }
-  }, [customersData]);
-
-  // Callback para gestionar el Infinite Scroll con IntersectionObserver
-  const lastArticleRef = useCallback(
-    (node: any) => {
-      if (isFetching) return;
-      if (observerRef.current) observerRef.current.disconnect();
-      observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setPage((prevPage) => prevPage + 1);
+  // Optimización del infinite scroll
+  const setupIntersectionObserver = useCallback(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+          setPage(prev => prev + 1);
         }
-      });
-      if (node) observerRef.current.observe(node);
-    },
-    [isFetching, hasMore]
-  );
-
-  // Handlers para aplicar filtros
-  const handleFilterDebt = () => {
-    setSearchParams((prev) => ({ ...prev, debt: !prev.debt }));
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-    setFilter((prevFilter) => (prevFilter === "debt" ? "" : "debt"));
-  };
-
-  const handleFilterOverdueDebt = () => {
-    setSearchParams((prev) => ({ ...prev, overdueDebt: !prev.overdueDebt }));
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-    setFilter((prevFilter) =>
-      prevFilter === "overdueDebt" ? "" : "overdueDebt"
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px', // Cargar antes de llegar al final
+      }
     );
-  };
 
-  const handleFilterCart = () => {
-    setSearchParams((prev) => ({ ...prev, itemsInCart: !prev.itemsInCart }));
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-    setFilter((prevFilter) =>
-      prevFilter === "itemsInCart" ? "" : "itemsInCart"
-    );
-  };
+    if (lastItemRef.current) {
+      observerRef.current.observe(lastItemRef.current);
+    }
+  }, [hasMore, isFetching]);
 
-  const resetList = useCallback(() => {
+  // Configurar observer cuando cambie hasMore o isFetching
+  useEffect(() => {
+    setupIntersectionObserver();
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [setupIntersectionObserver]);
+
+  // Optimizar actualización de items
+  useEffect(() => {
+    if (customersData?.customers) {
+      const newCustomers = customersData.customers;
+      
+      if (page === 1) {
+        setItems(newCustomers);
+      } else {
+        setItems(prev => {
+          const combined = [...prev, ...newCustomers];
+          return removeDuplicates(combined);
+        });
+      }
+      
+      setHasMore(newCustomers.length === ITEMS_PER_PAGE);
+    }
+  }, [customersData, page]);
+
+  // Handlers para filtros optimizados
+  const resetFilters = useCallback(() => {
     setPage(1);
     setItems([]);
     setHasMore(true);
   }, []);
 
-  // Handler para cambiar el orden de la consulta al hacer clic en un encabezado
-  const handleSort = useCallback(
-    (field: string) => {
-      const [currentField, currentDirection] = sortQuery.split(":");
-      const newDirection =
-        currentField === field && currentDirection === "asc" ? "desc" : "asc";
-      setSortQuery(`${field}:${newDirection}`);
-      resetList();
-    },
-    [sortQuery, resetList]
-  );
+  const createFilterHandler = useCallback((filterName: keyof typeof searchParams) => () => {
+    setSearchParams(prev => ({ ...prev, [filterName]: !prev[filterName] }));
+    setFilter(prev => prev === filterName ? "" : filterName);
+    resetFilters();
+  }, [resetFilters]);
 
-  // Función para alternar el menú de opciones de un cliente
-  const toggleCustomerMenu = (customerId: any) => {
-    setActiveMenu((prev) => (prev === customerId ? null : customerId));
-  };
+  const handleFilterDebt = useMemo(() => createFilterHandler('debt'), [createFilterHandler]);
+  const handleFilterOverdueDebt = useMemo(() => createFilterHandler('overdueDebt'), [createFilterHandler]);
+  const handleFilterCart = useMemo(() => createFilterHandler('itemsInCart'), [createFilterHandler]);
 
-  // Handlers para ejecutar acciones desde el menú de cada cliente
-  const handleResetPassword = (customer: any) => {
+  // Handler de ordenamiento optimizado
+  const handleSort = useCallback((field: string) => {
+    const [currentField, currentDirection] = sortQuery.split(":");
+    const newDirection = currentField === field && currentDirection === "asc" ? "desc" : "asc";
+    setSortQuery(`${field}:${newDirection}`);
+    resetFilters();
+  }, [sortQuery, resetFilters]);
+
+  // Handlers de menú optimizados
+  const toggleCustomerMenu = useCallback((customerId: any) => {
+    setActiveMenu(prev => prev === customerId ? null : customerId);
+  }, []);
+
+  const handleResetPassword = useCallback((customer: any) => {
     setCurrentCustomerId(customer);
     setShowResetPasswordModal(true);
     setActiveMenu(null);
-  };
+  }, []);
 
-  const handleUpdateGPS = (customer: any) => {
+  const handleUpdateGPS = useCallback((customer: any) => {
     setCurrentCustomerId(customer);
     setShowUpdateGPSModal(true);
     setActiveMenu(null);
-  };
+  }, []);
 
-  const handleViewLocation = (customer: any) => {
+  const handleViewLocation = useCallback((customer: any) => {
     setCurrentCustomerId(customer);
     setShowMapModal(true);
-  };
+  }, []);
 
-  // Transformar la lista de clientes al formato requerido por el componente Table
+  // Componente CustomerIcon memoizado
+  const CustomerIcon = React.memo(({ name }: { name: string }) => (
+    <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
+      <p>{name.charAt(0).toUpperCase()}</p>
+    </div>
+  ));
+
+  // Formatear moneda optimizado
+  const formatCurrency = useMemo(() => {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR",
+    });
+  }, []);
+
+  // Transformar datos de tabla con memoización optimizada
   const tableData = useMemo(() => {
     return items.map((customer: any) => {
-      const firstLetter = customer.name ? customer.name.charAt(0) : "";
-      const paymentCondition =
-        paymentConditions?.find(
-          (cond) => cond.id === customer.payment_condition_id
-        )?.name || "";
+      const paymentCondition = paymentConditions?.find(
+        (cond) => cond.id === customer.payment_condition_id
+      )?.name || "";
+
       return {
-        icon: (
-          <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
-            <p>{customer.name.charAt(0).toUpperCase()}</p>
-          </div>
-        ),
+        icon: <CustomerIcon name={customer.name} />,
         id: (
           <span
             onClick={() => handleSelectCustomer(customer.id)}
-            style={{ cursor: "pointer" }}
+            className="cursor-pointer hover:text-blue-600"
           >
             {customer.id}
           </span>
@@ -287,33 +293,27 @@ const SelectCustomer = () => {
         name: (
           <span
             onClick={() => handleSelectCustomer(customer.id)}
-            style={{ cursor: "pointer" }}
+            className="cursor-pointer hover:text-blue-600"
           >
             {customer.name}
           </span>
         ),
         address: <span title={customer.address}>{customer.address}</span>,
         "payment-condition": paymentCondition,
-        "status-account": new Intl.NumberFormat("es-ES", {
-          style: "currency",
-          currency: "EUR",
-        }).format(customer.totalAmount || 0),
-        "expired-debt": new Intl.NumberFormat("es-ES", {
-          style: "currency",
-          currency: "EUR",
-        }).format(customer.totalAmountExpired || 0),
+        "status-account": formatCurrency.format(customer.totalAmount || 0),
+        "expired-debt": formatCurrency.format(customer.totalAmountExpired || 0),
         shopping_cart: customer.shopping_cart?.length || 0,
         gps: (
           <FiMapPin
             onClick={() => handleViewLocation(customer)}
-            style={{ cursor: "pointer" }}
+            className="cursor-pointer hover:text-blue-600"
           />
         ),
         menu: (
-          <div>
+          <div className="relative">
             <CiMenuKebab
               onClick={() => toggleCustomerMenu(customer.id)}
-              style={{ cursor: "pointer" }}
+              className="cursor-pointer hover:text-blue-600"
             />
             {activeMenu === customer.id && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
@@ -335,131 +335,115 @@ const SelectCustomer = () => {
         ),
       };
     });
-  }, [items, paymentConditions, activeMenu, handleSelectCustomer]);
+  }, [items, paymentConditions, activeMenu, handleSelectCustomer, formatCurrency, handleViewLocation, toggleCustomerMenu, handleUpdateGPS, handleResetPassword]);
 
-  // Configuración de encabezados de la tabla y filtros
-  const tableHeader = useMemo(
-    () => [
-      { component: <CgProfile className="text-center text-xl" />, key: "icon" },
-      { name: "Id", key: "id", important: true },
-      { name: t("customer"), key: "name", important: true, sortable: true },
-      { name: t("address"), key: "address" },
-      { name: t("paymentCondition"), key: "payment-condition" },
-      { name: t("statusAccount"), key: "status-account", sortable: true },
-      { name: t("expiredDebt"), key: "expired-debt", sortable: true },
-      { name: t("articlesOnCart"), key: "shopping_cart", sortable: true },
-      { name: "GPS", key: "gps", important: true },
+  // Configuración de encabezados memoizada
+  const tableHeader = useMemo(() => [
+    { component: <CgProfile className="text-center text-xl" />, key: "icon" },
+    { name: "Id", key: "id", important: true },
+    { name: t("customer"), key: "name", important: true, sortable: true },
+    { name: t("address"), key: "address" },
+    { name: t("paymentCondition"), key: "payment-condition" },
+    { name: t("statusAccount"), key: "status-account", sortable: true },
+    { name: t("expiredDebt"), key: "expired-debt", sortable: true },
+    { name: t("articlesOnCart"), key: "shopping_cart", sortable: true },
+    { name: "GPS", key: "gps", important: true },
+    { component: <CiMenuKebab className="text-center text-xl" />, key: "menu", important: true },
+  ], [t]);
+
+  // Header body memoizado
+  const headerBody = useMemo(() => ({
+    buttons: [
       {
-        component: <CiMenuKebab className="text-center text-xl" />,
-        key: "menu",
-        important: true,
+        logo: <FiMapPin />,
+        title: `${t("viewOnMap")}`,
+        onClick: () => {
+          setShowCustomersMapModal(true);
+          if (!allCustomersData) {
+            refetchAllCustomers();
+          }
+        },
+      },
+      { logo: <AiOutlineDownload />, title: t("download") },
+    ],
+    filters: [
+      {
+        content: (
+          <select
+            value={searchParams.seller_id}
+            onChange={(e) => {
+              setSearchParams(prev => ({ ...prev, seller_id: e.target.value }));
+              resetFilters();
+            }}
+            className="border border-gray-300 rounded p-2"
+            disabled={role === "VENDEDOR"}
+          >
+            <option value="">{t("seller")}</option>
+            {sellersData?.map((seller) => (
+              <option key={seller.id} value={seller.id}>
+                {seller.name}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      {
+        content: (
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={t("search")}
+              value={inputValue}
+              onChange={handleSearchChange}
+              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
+            />
+            <button
+              onClick={resetSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+            >
+              X
+            </button>
+          </div>
+        ),
+      },
+      {
+        content: (
+          <ButtonOnOff
+            title={t("debt")}
+            onChange={handleFilterDebt}
+            active={filter === "debt"}
+          />
+        ),
+      },
+      {
+        content: (
+          <ButtonOnOff
+            title={t("expiredDebt")}
+            onChange={handleFilterOverdueDebt}
+            active={filter === "overdueDebt"}
+          />
+        ),
+      },
+      {
+        content: (
+          <ButtonOnOff
+            title={t("articlesOnCart")}
+            onChange={handleFilterCart}
+            active={filter === "itemsInCart"}
+          />
+        ),
       },
     ],
-    [t]
-  );
-  const headerBody = useMemo(
-    () => ({
-      buttons: [
-        {
-          logo: <FiMapPin />,
-          title: `${t("viewOnMap")}`,
-          onClick: () => setShowCustomersMapModal(true),
-        },
-        { logo: <AiOutlineDownload />, title: t("download") },
-      ],
-      filters: [
-        {
-          content: (
-            <select
-              value={searchParams.seller_id}
-              onChange={(e) => {
-                setSearchParams((prev) => ({
-                  ...prev,
-                  seller_id: e.target.value,
-                }));
-                setPage(1);
-                setItems([]);
-                setHasMore(true);
-              }}
-              className="border border-gray-300 rounded p-2"
-              disabled={role === "VENDEDOR"}
-            >
-              <option value="">{t("seller")}</option>
-              {sellersData?.map((seller) => (
-                <option key={seller.id} value={seller.id}>
-                  {seller.name}
-                </option>
-              ))}
-            </select>
-          ),
-        },
-        {
-          content: (
-            <div className="relative">
-              <input
-                type="text"
-                placeholder={t("search")}
-                value={inputValue}
-                onChange={handleSearchChange}
-                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
-              />
-              <button
-                onClick={resetSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                X
-              </button>
-            </div>
-          ),
-        },
-        {
-          content: (
-            // <button onClick={handleFilterDebt}>{t("Filtrar por Deuda")}</button>
-            <ButtonOnOff
-              title={t("debt")}
-              onChange={handleFilterDebt}
-              active={filter === "debt"}
-            />
-          ),
-        },
-        {
-          content: (
-            <ButtonOnOff
-              title={t("expiredDebt")}
-              onChange={handleFilterOverdueDebt}
-              active={filter === "overdueDebt"}
-            />
-          ),
-        },
-        {
-          content: (
-            <ButtonOnOff
-              title={t("articlesOnCart")}
-              onChange={handleFilterCart}
-              active={filter === "itemsInCart"}
-            />
-          ),
-        },
-      ],
-      results: `${t("results", { count: customersData?.totalCustomers || 0 })}`,
-    }),
-    [
-      searchQuery,
-      customersData?.totalCustomers,
-      debouncedSearch,
-      handleResetPassword,
-      searchParams,
-    ]
-  );
+    results: `${t("results", { count: customersData?.totalCustomers || 0 })}`,
+  }), [searchParams, inputValue, handleSearchChange, resetSearch, filter, handleFilterDebt, handleFilterOverdueDebt, handleFilterCart, customersData?.totalCustomers, t, sellersData, role, resetFilters, refetchAllCustomers, allCustomersData]);
 
   return (
-    <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
       <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
         <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>
           {t("selectCustomerTitle")}
         </h3>
+        
         {isMobile ? (
           <div className="bg-zinc-900 p-4 rounded-lg">
             <div className="flex gap-2 mb-4">
@@ -471,7 +455,7 @@ const SelectCustomer = () => {
               <ButtonOnOff
                 title={t("expiredDebt")}
                 onChange={handleFilterOverdueDebt}
-              active={filter === "overdueDebt"}
+                active={filter === "overdueDebt"}
               />
               <ButtonOnOff
                 title={t("articlesOnCart")}
@@ -480,7 +464,6 @@ const SelectCustomer = () => {
               />
             </div>
 
-
             <div className="relative">
               <input
                 type="text"
@@ -488,7 +471,7 @@ const SelectCustomer = () => {
                 value={inputValue}
                 onChange={handleSearchChange}
                 className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                />
+              />
               <button
                 onClick={resetSearch}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
@@ -506,6 +489,7 @@ const SelectCustomer = () => {
         ) : (
           <Header headerBody={headerBody} />
         )}
+
         {error && <div className="error">{t("Error al cargar clientes")}</div>}
 
         {/* Renderizar contenido según el dispositivo */}
@@ -525,61 +509,60 @@ const SelectCustomer = () => {
           <Table headers={tableHeader} data={tableData} onSort={handleSort} />
         )}
 
-        {/* Div para Infinite Scroll */}
-        <div ref={lastArticleRef}></div>
+        {/* Div para Infinite Scroll optimizado */}
+        <div ref={lastItemRef} style={{ height: '1px' }}></div>
 
-        {/* Spinner de carga mostrado al final */}
-        {(isFetching || isLoading) && <Spinner />}
+        {/* Spinner de carga */}
+        {isFetching && <Spinner />}
 
-        {/* Modal para resetear la contraseña */}
-        {showResetPasswordModal && currentCustomerId && (
-          <Modal
-            isOpen={showResetPasswordModal}
-            onClose={() => setShowResetPasswordModal(false)}
-          >
-            <ResetPassword
-              customerId={currentCustomerId}
-              closeModal={() => setShowResetPasswordModal(false)}
-            />
-          </Modal>
-        )}
+        {/* Modales con lazy loading y Suspense */}
+        <Suspense fallback={<Spinner />}>
+          {showResetPasswordModal && currentCustomerId && (
+            <Modal
+              isOpen={showResetPasswordModal}
+              onClose={() => setShowResetPasswordModal(false)}
+            >
+              <ResetPassword
+                customerId={currentCustomerId}
+                closeModal={() => setShowResetPasswordModal(false)}
+              />
+            </Modal>
+          )}
 
-        {/* Modal para actualizar el GPS */}
-        {showUpdateGPSModal && currentCustomerId && (
-          <Modal
-            isOpen={showUpdateGPSModal}
-            onClose={() => setShowUpdateGPSModal(false)}
-          >
-            <UpdateGPS
-              customerId={currentCustomerId}
-              closeModal={() => setShowUpdateGPSModal(false)}
-            />
-          </Modal>
-        )}
+          {showUpdateGPSModal && currentCustomerId && (
+            <Modal
+              isOpen={showUpdateGPSModal}
+              onClose={() => setShowUpdateGPSModal(false)}
+            >
+              <UpdateGPS
+                customerId={currentCustomerId}
+                closeModal={() => setShowUpdateGPSModal(false)}
+              />
+            </Modal>
+          )}
 
-        {/* Modal para ver la ubicación en el GPS */}
-        {showMapModal && currentCustomerId && (
-          <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)}>
-            <MapComponent
-              key={currentCustomerId} // Se utiliza un key estable para evitar remounts innecesarios
-              currentCustomerId={currentCustomerId}
-              closeModal={() => setShowMapModal(false)}
-            />
-          </Modal>
-        )}
+          {showMapModal && currentCustomerId && (
+            <Modal isOpen={showMapModal} onClose={() => setShowMapModal(false)}>
+              <MapComponent
+                key={currentCustomerId}
+                currentCustomerId={currentCustomerId}
+                closeModal={() => setShowMapModal(false)}
+              />
+            </Modal>
+          )}
 
-        {/* Modal para ver todos los clientes en el mapa */}
-        {showCustomersMapModal && allCustomersData && (
-          <Modal
-            isOpen={showCustomersMapModal}
-            onClose={() => setShowCustomersMapModal(false)}
-          >
-            <MapModal
-              customers={allCustomersData.customers}
+          {showCustomersMapModal && allCustomersData && (
+            <Modal
+              isOpen={showCustomersMapModal}
               onClose={() => setShowCustomersMapModal(false)}
-            />
-          </Modal>
-        )}
+            >
+              <MapModal
+                customers={allCustomersData.customers}
+                onClose={() => setShowCustomersMapModal(false)}
+              />
+            </Modal>
+          )}
+        </Suspense>
       </div>
     </PrivateRoute>
   );

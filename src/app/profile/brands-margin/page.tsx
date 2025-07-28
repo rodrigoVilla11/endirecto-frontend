@@ -191,7 +191,7 @@ const tableData =
         ),
       };
     })
-    .filter(Boolean) || []; // ✅ eliminamos los null
+    .filter(Boolean) || [];
 
   if (!selectedClientId) {
     return <div>{t("page.selectClient")}</div>;
