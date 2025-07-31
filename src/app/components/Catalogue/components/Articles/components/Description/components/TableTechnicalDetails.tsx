@@ -9,7 +9,6 @@ const TableTechnicalDetails = ({ articleId }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading } = useGetArticleTechnicalDetailByArticleIdQuery({ articleId: encodedId });
 
-  console.log("data", data)
   if (isLoading) return <p>{t("loading")}</p>;
   if (error) return <p>{t("error")}</p>;
 

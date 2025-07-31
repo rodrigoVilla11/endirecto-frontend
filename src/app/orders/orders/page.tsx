@@ -144,7 +144,6 @@ const Page = () => {
     skip: false,
   });
 
-  console.log("data", data);
 
   // Manejar datos de la API
   useEffect(() => {
@@ -215,7 +214,6 @@ const Page = () => {
           !isFetching &&
           !isLoadingMore
         ) {
-          console.log("Loading more items...");
           setIsLoadingMore(true);
           setPage((prev) => prev + 1);
         }

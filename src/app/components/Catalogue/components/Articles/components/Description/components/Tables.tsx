@@ -15,7 +15,6 @@ const Tables = ({ article }: any) => {
   const { t } = useTranslation();
   const [activeTable, setActiveTable] = useState("info");
 
-  console.log(article);
   const renderTable = () => {
     switch (activeTable) {
       case "info":

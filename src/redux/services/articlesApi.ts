@@ -121,7 +121,7 @@ export const articlesApi = createApi({
         if (item) params.append("item", item);
         if (tag) params.append("tag", tag);
         if (query) params.append("query", query);
-        console.log(`/articles/summary?${params.toString()}`);
+        
         return `/articles/summary?${params.toString()}`;
       },
     }),
@@ -189,7 +189,6 @@ export const articlesApi = createApi({
         if (articleId) params.append("articleId", articleId);
         if (summary) params.append("summary", "true"); // <— agregas el parámetro
 
-        console.log(`/articles?${params.toString()}`);
         return `/articles?${params.toString()}`;
       },
       transformResponse: (
