@@ -182,9 +182,9 @@ export const articlesApi = createApi({
           params.append("tag", Array.isArray(tags) ? tags.join(",") : tags);
         if (stock) params.append("stock", stock);
         if (vehicle_brand) params.append("vehicle_brand", vehicle_brand);
-        if (engine) params.append("engine", engine);
-        if (model) params.append("model", model);
-        if (year) params.append("year", year);
+        if (engine) params.append("vehicle_engine", engine);
+        if (model) params.append("vehicle_model", model);
+        if (year) params.append("vehicle_year", year);
         if (sort) params.append("sort", sort);
         if (articleId) params.append("articleId", articleId);
         if (summary) params.append("summary", "true"); // <— agregas el parámetro
