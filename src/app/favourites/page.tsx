@@ -165,8 +165,8 @@ const Page = () => {
     { name: t("table.article"), key: "name" },
     { name: t("table.price"), key: "price" },
     { name: t("table.stock"), key: "stock" },
-    { component: <FaShoppingCart className="text-center text-xl" />, key: "shopping-cart" },
-    { component: <FaTrashCan className="text-center text-xl" />, key: "trash-can" },
+    { component: <FaShoppingCart className="text-center text-xl" />, key: "shoppingCart" },
+    { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
   const headerBody = {

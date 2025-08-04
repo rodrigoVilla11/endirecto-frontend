@@ -27,6 +27,8 @@ import { IoIosTrash } from "react-icons/io";
 import CreateUserComponent from "./CreateUser";
 import UpdateUserComponent from "./UpdateUser";
 import DeleteUserComponent from "./DeleteUser";
+import { AiFillFileExcel } from "react-icons/ai";
+import ExportUsersModal from "./ExportExcelButton";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -48,6 +50,7 @@ const Page = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // ======================================================
@@ -149,6 +152,11 @@ const Page = () => {
   // Efectos
   // ======================================================
 
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+  };
+
   // Actualizar la lista de usuarios y evitar duplicados (similar al de articles)
   useEffect(() => {
     if (data) {
@@ -248,6 +256,11 @@ const Page = () => {
           logo: <FaPlus />,
           title: t("new"),
           onClick: () => handleModalOpen("create"),
+        },
+        {
+          logo: <AiFillFileExcel />,
+          title: t("exportExcel"),
+          onClick: openExportModal,
         },
       ],
       filters: [
@@ -367,6 +380,13 @@ const Page = () => {
               closeModal={() => handleModalClose("delete")}
             />
           )}
+        </Modal>
+
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportUsersModal
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
+          />
         </Modal>
       </div>
     </PrivateRoute>

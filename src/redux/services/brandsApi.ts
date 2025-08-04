@@ -36,7 +36,7 @@ export const brandsApi = createApi({
       Brands[],
       { page?: number; limit?: number; query?: string; sort?: string }
     >({
-      query: ({ page = 1, limit = 10, query = "" , sort = ""} = {}) => {
+      query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
         return `/brands?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
       },
       transformResponse: (response: Brands[]) => {
@@ -58,6 +58,25 @@ export const brandsApi = createApi({
         body: updatedBrand,
       }),
     }),
+    exportBrandsExcel: builder.query<Blob, { query?: string }>({
+      query: ({ query = "" } = {}) => ({
+        url: `/brands/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error("El archivo descargado está vacío");
+          }
+
+          return blob;
+        },
+      }),
+    }),
   }),
 });
 
@@ -67,4 +86,5 @@ export const {
   useCountBrandsQuery,
   useGetBrandsPagQuery,
   useUpdateBrandMutation,
+  useLazyExportBrandsExcelQuery
 } = brandsApi;

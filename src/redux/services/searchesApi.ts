@@ -52,7 +52,8 @@ export const searchesApi = createApi({
 
     // Consulta para obtener una búsqueda por ID
     getSearchById: builder.query<Search, { id: string }>({
-      query: ({ id }) => `/searches/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+      query: ({ id }) =>
+        `/searches/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
 
     // Mutación para crear una búsqueda (o incrementar el quantity si ya existe)
@@ -80,6 +81,25 @@ export const searchesApi = createApi({
         method: "DELETE",
       }),
     }),
+    exportSearchesExcel: builder.query<Blob, { query?: string }>({
+      query: ({ query = "" } = {}) => ({
+        url: `/searches/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error("El archivo descargado está vacío");
+          }
+
+          return blob;
+        },
+      }),
+    }),
   }),
 });
 
@@ -91,4 +111,5 @@ export const {
   useCreateSearchMutation,
   useUpdateSearchMutation,
   useDeleteSearchMutation,
+  useLazyExportSearchesExcelQuery
 } = searchesApi;

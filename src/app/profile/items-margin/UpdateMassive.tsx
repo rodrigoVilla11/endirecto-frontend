@@ -41,7 +41,10 @@ const UpdateMassive = ({ customer_id, closeModal }: UpdateMassiveProps) => {
       <input
         type="number"
         value={margin}
-        onChange={(e) => setMargin(Number(e.target.value) || "")}
+        onChange={(e) => {
+          const val = e.target.value;
+          setMargin(val === "" ? "" : Number(val));
+        }}
         placeholder={t("updateMassiveItems.newMarginPlaceholder")}
         className="w-full mt-4 p-2 border border-gray-300 rounded-md"
         min={0}
@@ -64,18 +67,16 @@ const UpdateMassive = ({ customer_id, closeModal }: UpdateMassiveProps) => {
           }`}
           disabled={isLoading}
         >
-          {isLoading ? t("updateMassiveItems.loading") : t("updateMassiveItems.update")}
+          {isLoading
+            ? t("updateMassiveItems.loading")
+            : t("updateMassiveItems.update")}
         </button>
       </div>
       {isSuccess && (
-        <p className="text-green-500 mt-4">
-          {t("updateMassiveItems.success")}
-        </p>
+        <p className="text-green-500 mt-4">{t("updateMassiveItems.success")}</p>
       )}
       {isError && (
-        <p className="text-red-500 mt-4">
-          {t("updateMassiveItems.error")}
-        </p>
+        <p className="text-red-500 mt-4">{t("updateMassiveItems.error")}</p>
       )}
     </div>
   );

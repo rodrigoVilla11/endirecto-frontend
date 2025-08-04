@@ -5,8 +5,14 @@ import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
-import { useGetSearchesPagQuery, useDeleteSearchMutation } from "@/redux/services/searchesApi";
+import {
+  useGetSearchesPagQuery,
+  useDeleteSearchMutation,
+} from "@/redux/services/searchesApi";
 import { useTranslation } from "react-i18next";
+import { AiFillFileExcel } from "react-icons/ai";
+import Modal from "@/app/components/components/Modal";
+import ExportExcelModal from "./ExportExcelButton";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -23,6 +29,8 @@ const Page = () => {
 
   // Modal de confirmación para eliminar
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
+
   const [searchToDelete, setSearchToDelete] = useState<any>(null);
 
   // RTK Query: Obtener búsquedas paginadas
@@ -30,7 +38,7 @@ const Page = () => {
     data,
     error,
     isLoading: isQueryLoading,
-    refetch
+    refetch,
   } = useGetSearchesPagQuery(
     {
       page,
@@ -49,6 +57,11 @@ const Page = () => {
 
   // Ref para el Intersection Observer (infinite scroll)
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+  };
 
   // Actualizar lista de artículos y evitar duplicados
   useEffect(() => {
@@ -102,7 +115,9 @@ const Page = () => {
     try {
       await deleteSearchMutation(searchToDelete._id).unwrap();
       // Removemos del estado local
-      setItems((prev) => prev.filter((item) => item._id !== searchToDelete._id));
+      setItems((prev) =>
+        prev.filter((item) => item._id !== searchToDelete._id)
+      );
       setIsDeleteModalOpen(false);
       setSearchToDelete(null);
       // Opcional: si prefieres, puedes hacer un refetch en lugar de manipular el estado
@@ -139,7 +154,13 @@ const Page = () => {
 
   // Configuración del header
   const headerBody = {
-    buttons: [],
+    buttons: [
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+    ],
     filters: [
       {
         content: (
@@ -186,6 +207,13 @@ const Page = () => {
 
         {/* Sentinel para el infinite scroll */}
         <div ref={lastArticleRef} className="h-10" />
+
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportExcelModal
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
+          />
+        </Modal>
 
         {/* Modal de confirmación para eliminar */}
         {isDeleteModalOpen && (

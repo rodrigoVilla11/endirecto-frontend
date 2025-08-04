@@ -17,7 +17,7 @@ type User = {
   branch: string;
   zone?: string;
   seller_id?: string;
-  notifications: any
+  notifications: any;
 };
 
 type CreateUserPayload = {
@@ -48,14 +48,13 @@ export interface CreateUserNotificationDto {
   schedule_to: Date;
   title: string;
   type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO";
-  customer_id?: string
+  customer_id?: string;
 }
 
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl:
-      process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
+    baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000", // Valor predeterminado si la variable de entorno no está disponible
   }),
   endpoints: (builder) => ({
     getUsers: builder.query<User[], null>({
@@ -134,15 +133,34 @@ export const usersApi = createApi({
       }),
     }),
     markNotificationAsRead: builder.mutation<
-          User,
-          { id: string; title: string }
-        >({
-          query: ({ id, title }) => ({
-            url: `/users/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-            method: "PATCH",
-            body: { id, title },
-          }),
-        }),
+      User,
+      { id: string; title: string }
+    >({
+      query: ({ id, title }) => ({
+        url: `/users/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "PATCH",
+        body: { id, title },
+      }),
+    }),
+    exportUsersExcel: builder.query<Blob, { query?: string }>({
+      query: ({ query = "" } = {}) => ({
+        url: `/users/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error("El archivo descargado está vacío");
+          }
+
+          return blob;
+        },
+      }),
+    }),
   }),
 });
 
@@ -157,4 +175,5 @@ export const {
   useAddNotificationToUserMutation,
   useAddNotificationToUsersByRolesMutation,
   useMarkNotificationAsReadMutation,
+  useLazyExportUsersExcelQuery
 } = usersApi;

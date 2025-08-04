@@ -22,6 +22,7 @@ import ExportArticlesTDModal from "./ExportExcel";
 import { useTranslation } from "react-i18next";
 import { IoMdClose } from "react-icons/io";
 import { useGetAllTechnicalDetailQuery } from "@/redux/services/technicalDetails";
+import ExportTechnicalDetailsModal from "./ExportExcel";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -313,7 +314,10 @@ const Page = () => {
           <ImportArticlesTDModal closeModal={closeImportModal} />
         </Modal>
         <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
-          <ExportArticlesTDModal closeModal={closeExportModal} />
+          <ExportTechnicalDetailsModal
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
+          />
         </Modal>
         <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)}>
           <EditArticleTechnicalDetailComponent
@@ -336,15 +340,18 @@ type EditArticleTechnicalDetailProps = {
     technical_detail_id: string;
     value: string;
   };
-  onUpdate: (data: { id: string; article_id: string; technical_detail_id: string; value: string }) => void;
+  onUpdate: (data: {
+    id: string;
+    article_id: string;
+    technical_detail_id: string;
+    value: string;
+  }) => void;
   onCancel: () => void;
 };
 
-const EditArticleTechnicalDetailComponent: React.FC<EditArticleTechnicalDetailProps> = ({
-  technical,
-  onUpdate,
-  onCancel,
-}) => {
+const EditArticleTechnicalDetailComponent: React.FC<
+  EditArticleTechnicalDetailProps
+> = ({ technical, onUpdate, onCancel }) => {
   const [formData, setFormData] = useState({
     article_id: technical?.article_id || "",
     technical_detail_id: technical?.technical_detail_id || "",
@@ -357,7 +364,9 @@ const EditArticleTechnicalDetailComponent: React.FC<EditArticleTechnicalDetailPr
     isError: isErrorTechnicalDetails,
   } = useGetAllTechnicalDetailQuery(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 

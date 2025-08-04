@@ -289,7 +289,7 @@ const Page = () => {
         ),
       },
     ],
-    results: `${t("results", { defaultValue: "Resultados" })}: ${data?.total || 0}${searchQuery ? ` (filtrado por: "${searchQuery}")` : ""}`,
+    results: `${"Resultados" } : ${data?.total || 0}${searchQuery ? ` (filtrado por: "${searchQuery}")` : ""}`,
   };
 
   // Estados de carga
@@ -455,6 +455,8 @@ const EditArticleVehicleComponent: React.FC<EditArticleVehicleComponentProps> = 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log("articleVehicle",articleVehicle)
+    console.log("articleVehicle.id", articleVehicle.id)
     try {
       await updateArticleVehicle({
         id: articleVehicle.id,

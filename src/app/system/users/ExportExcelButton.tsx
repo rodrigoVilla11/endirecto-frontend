@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { IoMdClose, IoMdDownload, IoMdAlert } from "react-icons/io";
 import { useTranslation } from "react-i18next";
-import { useExportTechnicalDetailExcelMutation } from "@/redux/services/articlesTechnicalDetailsApi";
+import { useLazyExportUsersExcelQuery } from "@/redux/services/usersApi";
 
-interface ExportTechnicalDetailsModalProps {
+interface ExportUsersModalProps {
   closeModal: () => void;
   searchQuery?: string; // Opcional: para exportar solo datos filtrados
 }
 
-const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = ({
+const ExportUsersModal: React.FC<ExportUsersModalProps> = ({
   closeModal,
-  searchQuery = "",
+  searchQuery = ""
 }) => {
   const { t } = useTranslation();
-  
-  // CAMBIADO: Usar mutation en lugar de lazy query
-  const [exportExcel, { isLoading, isError, error }] =
-    useExportTechnicalDetailExcelMutation();
-    
+  const [triggerExport, { isLoading, isError, error }] =
+    useLazyExportUsersExcelQuery();
   const [exportProgress, setExportProgress] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -25,39 +22,39 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
     try {
       setExportProgress(t("preparingExport") || "Preparando exportación...");
       setShowSuccess(false);
-      
-      // CAMBIADO: Usar exportExcel en lugar de triggerExport
-      const blob = await exportExcel({ query: searchQuery }).unwrap();
-      downloadFile(blob);
-    } catch (err) {
+
+      // Ejecutar la query de export para usuarios
+      const result = await triggerExport({ query: searchQuery }).unwrap();
+
+      // Si llegamos aquí, tenemos el blob
+      downloadFile(result);
+    } catch {
       setExportProgress("");
-      console.error('Error al exportar:', err);
     }
   };
 
   const downloadFile = (blob: Blob) => {
     try {
       setExportProgress(t("downloadingFile") || "Descargando archivo...");
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const date = new Date().toISOString().split("T")[0];
-      let filename = `detalles-tecnicos-${date}`;
-      if (searchQuery) filename += `-filtro`;
-      filename += `.xlsx`;
       a.href = url;
-      a.download = filename;
+      a.download = `usuarios-${new Date().toISOString().split("T")[0]}.xlsx`;
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+
       setExportProgress(t("exportCompleted") || "Exportación completada");
       setShowSuccess(true);
-      setTimeout(closeModal, 2000);
-    } catch (err) {
+
+      setTimeout(() => closeModal(), 2000);
+    } catch {
       setExportProgress(
         t("errorDownloading") || "Error al descargar el archivo"
       );
-      console.error('Error al descargar:', err);
     }
   };
 
@@ -70,6 +67,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
 
   const getErrorMessage = () => {
     if (!isError || !error) return "";
+
     if ("status" in error) {
       switch (error.status) {
         case 404:
@@ -86,18 +84,16 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
           );
         default:
           return (
-            t("errorExportingTechnicalDetails") ||
-            "Error al exportar detalles técnicos"
+            t("errorExportingUsers") || "Error al exportar los usuarios"
           );
       }
     }
+
     if ("message" in error) {
       return error.message;
     }
-    return (
-      t("errorExportingTechnicalDetails") ||
-      "Error al exportar detalles técnicos"
-    );
+
+    return t("errorExportingUsers") || "Error al exportar los usuarios";
   };
 
   return (
@@ -106,7 +102,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
-            {t("exportTechnicalDetails") || "Exportar Detalles Técnicos"}
+            {t("exportUsers") || "Exportar Usuarios"}
           </h2>
           <button
             onClick={closeModal}
@@ -125,14 +121,14 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
             <div>
               <p className="text-sm text-gray-600">
                 {searchQuery
-                  ? t("exportFilteredTechnicalDetailsDescription") ||
-                    "Se exportarán los detalles técnicos que coincidan con el filtro actual en Excel (.xlsx)."
-                  : t("exportTechnicalDetailsDescription") ||
-                    "Se exportarán todos los detalles técnicos en Excel (.xlsx)."}
+                  ? t("exportFilteredUsersDescription") ||
+                    "Se exportarán los usuarios que coincidan con el filtro actual en formato Excel (.xlsx)."
+                  : t("exportUsersDescription") ||
+                    "Se exportarán todos los usuarios en formato Excel (.xlsx)."}
               </p>
               {searchQuery && (
                 <p className="text-xs text-blue-600 mt-1">
-                  {t("currentFilter") || "Filtro actual"}: "{searchQuery}"
+                  {t("currentFilter") || "Filtro actual"}: “{searchQuery}”
                 </p>
               )}
             </div>
@@ -217,4 +213,4 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
   );
 };
 
-export default ExportTechnicalDetailsModal;
+export default ExportUsersModal;

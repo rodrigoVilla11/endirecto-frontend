@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { IoMdClose, IoMdDownload, IoMdAlert } from "react-icons/io";
 import { useTranslation } from "react-i18next";
-import { useExportTechnicalDetailExcelMutation } from "@/redux/services/articlesTechnicalDetailsApi";
+import { useLazyExportArticlesExcelQuery } from "@/redux/services/articlesApi";
 
-interface ExportTechnicalDetailsModalProps {
+interface ExportArticlesModalProps {
   closeModal: () => void;
-  searchQuery?: string; // Opcional: para exportar solo datos filtrados
+  priceListId: string;
+  query?: string;
+  brandId?: string;
+  itemId?: string;
 }
 
-const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = ({
+const ExportArticlesModal: React.FC<ExportArticlesModalProps> = ({
   closeModal,
-  searchQuery = "",
+  priceListId,
+  query = "",
+  brandId,
+  itemId,
 }) => {
   const { t } = useTranslation();
-  
-  // CAMBIADO: Usar mutation en lugar de lazy query
-  const [exportExcel, { isLoading, isError, error }] =
-    useExportTechnicalDetailExcelMutation();
-    
+  const [triggerExport, { isLoading, isError, error }] =
+    useLazyExportArticlesExcelQuery();
   const [exportProgress, setExportProgress] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -25,39 +28,52 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
     try {
       setExportProgress(t("preparingExport") || "Preparando exportación...");
       setShowSuccess(false);
-      
-      // CAMBIADO: Usar exportExcel en lugar de triggerExport
-      const blob = await exportExcel({ query: searchQuery }).unwrap();
-      downloadFile(blob);
-    } catch (err) {
+
+      const result = await triggerExport({
+        priceListId,
+        query,
+        brandId,
+        itemId,
+      }).unwrap();
+
+      downloadFile(result);
+    } catch {
       setExportProgress("");
-      console.error('Error al exportar:', err);
     }
   };
 
   const downloadFile = (blob: Blob) => {
     try {
       setExportProgress(t("downloadingFile") || "Descargando archivo...");
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       const date = new Date().toISOString().split("T")[0];
-      let filename = `detalles-tecnicos-${date}`;
-      if (searchQuery) filename += `-filtro`;
+      let filename = `articulos-${date}`;
+      if (brandId) {
+        filename += `-marca-${brandId}`;
+      }
+      if (itemId) {
+        filename += `-item-${itemId}`;
+      }
       filename += `.xlsx`;
+
       a.href = url;
       a.download = filename;
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+
       setExportProgress(t("exportCompleted") || "Exportación completada");
       setShowSuccess(true);
-      setTimeout(closeModal, 2000);
-    } catch (err) {
+
+      setTimeout(() => closeModal(), 2000);
+    } catch {
       setExportProgress(
         t("errorDownloading") || "Error al descargar el archivo"
       );
-      console.error('Error al descargar:', err);
     }
   };
 
@@ -70,6 +86,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
 
   const getErrorMessage = () => {
     if (!isError || !error) return "";
+
     if ("status" in error) {
       switch (error.status) {
         case 404:
@@ -81,23 +98,17 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
         case "FETCH_ERROR":
           return t("connectionError") || "Error de conexión";
         case "PARSING_ERROR":
-          return (
-            t("fileProcessingError") || "Error al procesar el archivo"
-          );
+          return t("fileProcessingError") || "Error al procesar el archivo";
         default:
-          return (
-            t("errorExportingTechnicalDetails") ||
-            "Error al exportar detalles técnicos"
-          );
+          return t("errorExportingArticles") || "Error al exportar artículos";
       }
     }
+
     if ("message" in error) {
       return error.message;
     }
-    return (
-      t("errorExportingTechnicalDetails") ||
-      "Error al exportar detalles técnicos"
-    );
+
+    return t("errorExportingArticles") || "Error al exportar artículos";
   };
 
   return (
@@ -106,7 +117,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
-            {t("exportTechnicalDetails") || "Exportar Detalles Técnicos"}
+            {t("exportArticles") || "Exportar Artículos"}
           </h2>
           <button
             onClick={closeModal}
@@ -124,21 +135,28 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
             <IoMdDownload className="text-blue-600 text-xl mt-1 flex-shrink-0" />
             <div>
               <p className="text-sm text-gray-600">
-                {searchQuery
-                  ? t("exportFilteredTechnicalDetailsDescription") ||
-                    "Se exportarán los detalles técnicos que coincidan con el filtro actual en Excel (.xlsx)."
-                  : t("exportTechnicalDetailsDescription") ||
-                    "Se exportarán todos los detalles técnicos en Excel (.xlsx)."}
+                {query
+                  ? t("exportFilteredArticles") ||
+                    "Se exportarán los artículos filtrados en Excel (.xlsx)."
+                  : t("exportAllArticles") ||
+                    "Se exportarán todos los artículos en Excel (.xlsx)."}
               </p>
-              {searchQuery && (
+              {(query || brandId || itemId) && (
                 <p className="text-xs text-blue-600 mt-1">
-                  {t("currentFilter") || "Filtro actual"}: "{searchQuery}"
+                  {t("currentFilters") || "Filtros actuales"}:{" "}
+                  {[
+                    query && `Texto: "${query}"`,
+                    brandId && `Marca: ${brandId}`,
+                    itemId && `Item: ${itemId}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" • ")}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Progress indicator */}
+          {/* Progress */}
           {exportProgress && (
             <div
               className={`border rounded-md p-3 ${
@@ -163,7 +181,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
             </div>
           )}
 
-          {/* Error message */}
+          {/* Error */}
           {isError && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
               <div className="flex items-center gap-2">
@@ -217,4 +235,4 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
   );
 };
 
-export default ExportTechnicalDetailsModal;
+export default ExportArticlesModal;

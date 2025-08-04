@@ -108,7 +108,7 @@ export const articlesVehiclesApi = createApi({
       { id: string } & Partial<CreateArticleVehiclePayload>
     >({
       query: ({ id, ...patch }) => ({
-        url: `/articles-vehicles/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        url: `/articles-vehicles/update/${encodeURIComponent(id)}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PUT",
         body: patch,
       }),

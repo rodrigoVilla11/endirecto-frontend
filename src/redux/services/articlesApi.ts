@@ -59,6 +59,11 @@ type UpdateArticlesPayload = {
   pdfs?: string[];
 };
 
+interface ExportArticlesExcelArgs {
+  priceListId: string;
+  query?: string;
+}
+
 export const articlesApi = createApi({
   reducerPath: "articlesApi",
   baseQuery: fetchBaseQuery({
@@ -121,7 +126,7 @@ export const articlesApi = createApi({
         if (item) params.append("item", item);
         if (tag) params.append("tag", tag);
         if (query) params.append("query", query);
-        
+
         return `/articles/summary?${params.toString()}`;
       },
     }),
@@ -276,6 +281,38 @@ export const articlesApi = createApi({
         responseHandler: (response: Response) => response.blob(),
       }),
     }),
+    exportArticlesExcel: builder.query<
+      Blob,
+      {
+        query?: string;
+        priceListId?: string;
+        brandId?: string;
+        itemId?: string;
+      }
+    >({
+      query: ({
+        query = "",
+        priceListId = "",
+        brandId = "",
+        itemId = "",
+      } = {}) => ({
+        url: `/articles/export?query=${query}&brandId=${brandId}&itemId=${itemId}&priceListId=${priceListId}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "GET",
+        // Importante: configurar para recibir blob
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error("El archivo descargado está vacío");
+          }
+
+          return blob;
+        },
+      }),
+    }),
   }),
 });
 
@@ -288,5 +325,6 @@ export const {
   useSyncArticleVehiclesMutation,
   useSearchArticlesQuery,
   useExportPriceListQuery,
-  useLazyExportPriceListQuery
+  useLazyExportPriceListQuery,
+  useLazyExportArticlesExcelQuery
 } = articlesApi;

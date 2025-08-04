@@ -197,7 +197,9 @@ const DashboardPage = () => {
     {
       logo: (
         <MdTextSnippet
-          className={`${totalDebt?.documents_balance ? "text-red-500" : "text-green-600"}`}
+          className={`${
+            totalDebt?.documents_balance ? "text-red-500" : "text-green-600"
+          }`}
         />
       ),
       title: t("statusAccount"),
@@ -209,7 +211,13 @@ const DashboardPage = () => {
       text: (
         <div className="flex flex-col gap-1 text-sm">
           <div className="flex items-center gap-2">
-            <span className={`${totalDebt?.documents_balance ? "text-red-600": "text-green-600"}`}>{t("expired")}:</span>
+            <span
+              className={`${
+                totalDebt?.documents_balance ? "text-red-600" : "text-green-600"
+              }`}
+            >
+              {t("expired")}:
+            </span>
             {totalDebt ? (
               <span>
                 {formatPriceWithCurrency(totalDebt?.documents_balance_expired)}
@@ -411,6 +419,42 @@ const DashboardPage = () => {
           ? "red"
           : "green",
     },
+    // {
+    //   logo: (
+    //     <IoNotificationsOutline
+    //       className={
+    //         ((selectedClientId
+    //           ? data?.notifications.filter((n: any) => !n.read).length
+    //           : userQuery.data?.notifications.filter((n: any) => !n.read)
+    //               .length) || 0) > 0
+    //           ? "text-red-500"
+    //           : "text-green-500"
+    //       }
+    //     />
+    //   ),
+    //   title: "Observations",
+    //   subtitle: "SUBTITLE",
+    //   text: selectedClientId
+    //     ? [
+    //         data?.obs1,
+    //         data?.obs2,
+    //         data?.obs3,
+    //         data?.obs4,
+    //         data?.obs5,
+    //         data?.obs6,
+    //       ]
+    //         .filter(Boolean)
+    //         .join(", ")
+    //     : "Debes seleccionar un cliente",
+    //   href: "/",
+    //   allowedRoles: [
+    //     "ADMINISTRADOR",
+    //     "OPERADOR",
+    //     "MARKETING",
+    //     "VENDEDOR",
+    //     "CUSTOMER",
+    //   ],
+    // },
   ];
 
   // ------------------ Definición de Items para Shortcuts ------------------

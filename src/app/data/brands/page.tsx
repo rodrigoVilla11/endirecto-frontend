@@ -15,6 +15,8 @@ import {
   useCountBrandsQuery,
   useGetBrandsPagQuery,
 } from "@/redux/services/brandsApi";
+import { AiFillFileExcel } from "react-icons/ai";
+import ExportBrandsModal from "./ExportExcelButton";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -33,6 +35,7 @@ const Page = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [currentBrandId, setCurrentBrandId] = useState<string | null>(null);
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
 
   // Referencia para el IntersectionObserver (scroll infinito)
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -204,9 +207,19 @@ const Page = () => {
     },
   ];
 
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+  };
   // Encabezado y filtros de la página
   const headerBody = {
-    buttons: [],
+    buttons: [
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+    ],
     filters: [
       {
         content: (
@@ -303,6 +316,13 @@ const Page = () => {
               onClose={closeModal}
             />
           )}
+        </Modal>
+
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportBrandsModal
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
+          />
         </Modal>
       </div>
     </PrivateRoute>

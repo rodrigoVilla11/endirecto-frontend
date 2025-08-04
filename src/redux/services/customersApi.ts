@@ -58,6 +58,12 @@ export type Customer = {
   profileImg: string;
   gps: string;
   showCostPrice: boolean;
+  obs1: string;
+  obs2: string;
+  obs3: string;
+  obs4: string;
+  obs5: string;
+  obs6: string;
 };
 
 export type UpdateCustomersPayload = {

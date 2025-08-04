@@ -16,6 +16,8 @@ import debounce from "@/app/context/debounce";
 import { useTranslation } from "react-i18next";
 import ItemDetail from "./ItemDetail";
 import { GoPencil } from "react-icons/go";
+import { AiFillFileExcel } from "react-icons/ai";
+import ExportItemsModal from "./ExportExcelButton";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -29,6 +31,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
 
   // Estados de los modales: actualización y detalle
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -59,6 +62,11 @@ const Page = () => {
     }
   );
 
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+  };
+
   // Búsqueda debounced
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
@@ -67,7 +75,7 @@ const Page = () => {
     setHasMore(true);
   }, 100);
 
- // ======================================================
+  // ======================================================
   // Efectos
   // ======================================================
   // Actualizar lista de artículos y evitar duplicados
@@ -205,7 +213,13 @@ const Page = () => {
   ];
 
   const headerBody = {
-    buttons: [],
+    buttons: [
+      {
+        logo: <AiFillFileExcel />,
+        title: t("exportExcel"),
+        onClick: openExportModal,
+      },
+    ],
     filters: [
       {
         content: (
@@ -300,6 +314,13 @@ const Page = () => {
               onClose={handleModalClose}
             />
           )}
+        </Modal>
+
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportItemsModal
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
+          />
         </Modal>
       </div>
     </PrivateRoute>

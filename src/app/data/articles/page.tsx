@@ -15,7 +15,7 @@ import UpdateArticleComponent from "./UpdateArticle";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import debounce from "@/app/context/debounce";
 import { FaImage, FaPencil, FaInfo } from "react-icons/fa6";
-import { AiOutlineDownload } from "react-icons/ai";
+import { AiFillFileExcel, AiOutlineDownload } from "react-icons/ai";
 import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import { GoPencil } from "react-icons/go";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
@@ -23,6 +23,9 @@ import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import { useGetItemsQuery } from "@/redux/services/itemsApi";
 import { useTranslation } from "react-i18next";
 import ArticleDetail from "./ArticleDetail";
+import ExportArticlesModal from "./ExportExcelButton";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -41,7 +44,13 @@ const Page = () => {
   const [brandFilter, setBrandFilter] = useState("");
   const [itemFilter, setItemFilter] = useState("");
 
+   const { selectedClientId } = useClient();
+    const { data: customer } = useGetCustomerByIdQuery({
+      id: selectedClientId || "",
+    });
+
   // Estado para controlar la apertura de modales
+  const [isExportModalOpen, setExportModalOpen] = useState(false);
   const [modalState, setModalState] = useState<{
     type: "update" | "delete" | "info" | null;
     articleId: string | null;
@@ -68,7 +77,7 @@ const Page = () => {
       limit: ITEMS_PER_PAGE,
       query: searchQuery,
       sort: sortQuery,
-      priceListId: "3",
+      priceListId: customer?.price_list_id || "3",
       brand: brandFilter,
       item: itemFilter,
     },
@@ -112,18 +121,24 @@ const Page = () => {
   );
 
   // Manejar cambios en el filtro de marca
-  const handleBrandChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBrandFilter(e.target.value);
-    setPage(1);
-    setArticles([]);
-  }, []);
+  const handleBrandChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setBrandFilter(e.target.value);
+      setPage(1);
+      setArticles([]);
+    },
+    []
+  );
 
   // Manejar cambios en el filtro de ítem
-  const handleItemChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setItemFilter(e.target.value);
-    setPage(1);
-    setArticles([]);
-  }, []);
+  const handleItemChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setItemFilter(e.target.value);
+      setPage(1);
+      setArticles([]);
+    },
+    []
+  );
 
   // Abrir modal (para actualización, eliminación o detalle)
   const handleModalOpen = useCallback(
@@ -132,6 +147,10 @@ const Page = () => {
     },
     []
   );
+  const openExportModal = () => setExportModalOpen(true);
+  const closeExportModal = () => {
+    setExportModalOpen(false);
+  };
 
   // Cerrar modal y refrescar datos
   const handleModalClose = useCallback(
@@ -243,21 +262,42 @@ const Page = () => {
 
   const tableHeader = useMemo(
     () => [
-      { component: <FaInfoCircle className="text-center text-xl" />, key: "info", sortable: false, important: true },
+      {
+        component: <FaInfoCircle className="text-center text-xl" />,
+        key: "info",
+        sortable: false,
+        important: true,
+      },
       { name: t("brand"), key: "brand", sortable: true, important: true },
-      { component: <FaImage className="text-center text-xl" />, key: "image", sortable: false, important: true },
+      {
+        component: <FaImage className="text-center text-xl" />,
+        key: "image",
+        sortable: false,
+        important: true,
+      },
       { name: t("item"), key: "item", sortable: true },
       { name: t("id"), key: "id", sortable: true, important: true },
       { name: t("supplierCode"), key: "supplier", sortable: true },
       { name: t("name"), key: "name", sortable: true },
-      { component: <GoPencil className="text-center text-lg" />, key: "edit", sortable: false },
+      {
+        component: <GoPencil className="text-center text-lg" />,
+        key: "edit",
+        sortable: false,
+      },
     ],
     [t]
   );
 
   const headerBody = useMemo(
     () => ({
-      buttons: [{ logo: <AiOutlineDownload />, title: t("download") }],
+      buttons: [
+        { logo: <AiOutlineDownload />, title: t("download") },
+        {
+          logo: <AiFillFileExcel />,
+          title: t("exportExcel"),
+          onClick: openExportModal,
+        },
+      ],
       filters: [
         {
           content: (
@@ -356,7 +396,9 @@ const Page = () => {
         <Header headerBody={headerBody} />
 
         {articles.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">{t("noArticlesFound")}</div>
+          <div className="text-center py-8 text-gray-500">
+            {t("noArticlesFound")}
+          </div>
         ) : (
           <>
             {isMobile ? (
@@ -382,7 +424,10 @@ const Page = () => {
         <div ref={lastArticleRef} className="h-10" />
 
         {/* Modal de actualización */}
-        <Modal isOpen={modalState.type === "update"} onClose={() => handleModalClose("update")}>
+        <Modal
+          isOpen={modalState.type === "update"}
+          onClose={() => handleModalClose("update")}
+        >
           {modalState.articleId && (
             <UpdateArticleComponent
               articleId={modalState.articleId}
@@ -393,13 +438,28 @@ const Page = () => {
         </Modal>
 
         {/* Modal de detalle del artículo */}
-        <Modal isOpen={modalState.type === "info"} onClose={() => handleModalClose("info")}>
+        <Modal
+          isOpen={modalState.type === "info"}
+          onClose={() => handleModalClose("info")}
+        >
           {modalState.articleId && (
             <ArticleDetail
-              data={articles.find((article) => article.id === modalState.articleId)}
+              data={articles.find(
+                (article) => article.id === modalState.articleId
+              )}
               onClose={() => handleModalClose("info")}
             />
           )}
+        </Modal>
+
+        <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
+          <ExportArticlesModal
+            closeModal={closeExportModal}
+            query={searchQuery}
+            priceListId={customer?.price_list_id || "3"}
+            brandId={brandFilter}
+            itemId={itemFilter}
+          />
         </Modal>
       </div>
     </PrivateRoute>
