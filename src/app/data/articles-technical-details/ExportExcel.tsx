@@ -8,16 +8,15 @@ interface ExportTechnicalDetailsModalProps {
   searchQuery?: string; // Opcional: para exportar solo datos filtrados
 }
 
-const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = ({
-  closeModal,
-  searchQuery = "",
-}) => {
+const ExportTechnicalDetailsModal: React.FC<
+  ExportTechnicalDetailsModalProps
+> = ({ closeModal, searchQuery = "" }) => {
   const { t } = useTranslation();
-  
+
   // CAMBIADO: Usar mutation en lugar de lazy query
   const [exportExcel, { isLoading, isError, error }] =
     useExportTechnicalDetailExcelMutation();
-    
+
   const [exportProgress, setExportProgress] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -25,13 +24,13 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
     try {
       setExportProgress(t("preparingExport") || "Preparando exportación...");
       setShowSuccess(false);
-      
+
       // CAMBIADO: Usar exportExcel en lugar de triggerExport
       const blob = await exportExcel({ query: searchQuery }).unwrap();
       downloadFile(blob);
     } catch (err) {
       setExportProgress("");
-      console.error('Error al exportar:', err);
+      console.error("Error al exportar:", err);
     }
   };
 
@@ -57,7 +56,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
       setExportProgress(
         t("errorDownloading") || "Error al descargar el archivo"
       );
-      console.error('Error al descargar:', err);
+      console.error("Error al descargar:", err);
     }
   };
 
@@ -81,9 +80,7 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
         case "FETCH_ERROR":
           return t("connectionError") || "Error de conexión";
         case "PARSING_ERROR":
-          return (
-            t("fileProcessingError") || "Error al procesar el archivo"
-          );
+          return t("fileProcessingError") || "Error al procesar el archivo";
         default:
           return (
             t("errorExportingTechnicalDetails") ||
@@ -132,7 +129,8 @@ const ExportTechnicalDetailsModal: React.FC<ExportTechnicalDetailsModalProps> = 
               </p>
               {searchQuery && (
                 <p className="text-xs text-blue-600 mt-1">
-                  {t("currentFilter") || "Filtro actual"}: "{searchQuery}"
+                  {t("currentFilter") || "Filtro actual"}: &quot;{searchQuery}
+                  &quot;
                 </p>
               )}
             </div>
