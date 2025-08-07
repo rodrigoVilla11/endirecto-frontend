@@ -23,6 +23,8 @@ import { useGetOrdersQuery } from "@/redux/services/ordersApi";
 import { useAuth } from "../context/AuthContext";
 import MapModal from "./MapModal";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
+import { AiOutlineDownload } from "react-icons/ai";
+import { useLazyExportCrmQuery } from "@/redux/services/crmApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -50,6 +52,41 @@ const Page = () => {
     crm: any | null;
   }>({ type: null, crm: null });
   const [isViewAllMapModalOpen, setViewAllMapModalOpen] = useState(false);
+
+  const [exportCrm, { isFetching: isExporting }] = useLazyExportCrmQuery();
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportCrm({
+        startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
+        endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
+        status: undefined, // si sumás un selector, pasalo acá
+        type: typeFilter || undefined,
+        insitu: "", // usás vacío en la pantalla
+        customer_id: customer_id || undefined,
+        sort: sortQuery || undefined,
+        seller_id: sellerFilter || undefined,
+        user_id: undefined, // si después filtrás por user, lo pasás
+        action: undefined, // idem
+        search: searchQuery || undefined,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const fileName =
+        `crm` +
+        `${startDate ? "_" + format(startDate, "yyyy-MM-dd") : ""}` +
+        `${endDate ? "_" + format(endDate, "yyyy-MM-dd") : ""}.xlsx`;
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Error exportando CRM", e);
+    }
+  };
 
   // ---------- Estados y lógica para modal de creación ----------
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -354,6 +391,16 @@ const Page = () => {
     () => ({
       buttons: [
         {
+          logo: (
+            <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />
+          ),
+          title: isExporting
+            ? t("exporting") || "Exportando..."
+            : t("download") || "Descargar",
+          onClick: handleExport,
+          disabled: isExporting, // si tu <Header> soporta disabled por botón
+        },
+        {
           logo: <IoMdPin />,
           title: t("viewOnMap"),
           onClick: () => setViewAllMapModalOpen(true),
@@ -447,6 +494,7 @@ const Page = () => {
       sellerFilter,
       typeFilter,
       searchQuery,
+      isExporting,
       data?.total,
       sellersData,
       openCreateModal,

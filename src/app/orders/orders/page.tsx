@@ -22,6 +22,7 @@ import { useClient } from "@/app/context/ClientContext";
 import Modal from "@/app/components/components/Modal";
 import OrderDetail from "./OrderDetail";
 import { useAuth } from "@/app/context/AuthContext";
+import { useLazyExportOrdersQuery } from "@/redux/services/ordersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -50,6 +51,38 @@ const Page = () => {
 
   // Estados para debounce
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [exportOrders, { isFetching: isExporting }] =
+    useLazyExportOrdersQuery();
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportOrders({
+        startDate: queryParams.startDate,
+        endDate: queryParams.endDate,
+        status: filters.status || undefined,
+        customer_id: filters.customer_id || undefined,
+        seller_id: filters.seller_id || undefined,
+        sort: sortQuery || undefined,
+        search: debouncedSearch || undefined,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const fileName = `orders${
+        queryParams.startDate ? "_" + queryParams.startDate : ""
+      }${queryParams.endDate ? "_" + queryParams.endDate : ""}.xlsx`;
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Error exportando Excel", e);
+      // si usás toasts, podés mostrar uno acá
+    }
+  };
 
   // Estados de UI
   const [sortQuery, setSortQuery] = useState<string>("");
@@ -143,7 +176,6 @@ const Page = () => {
     refetchOnReconnect: true,
     skip: false,
   });
-
 
   // Manejar datos de la API
   useEffect(() => {
@@ -365,8 +397,12 @@ const Page = () => {
   const headerBody = {
     buttons: [
       {
-        logo: <AiOutlineDownload />,
-        title: t("download"),
+        logo: (
+          <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />
+        ),
+        title: isExporting ? t("exporting") || "Exportando..." : t("download"),
+        onClick: handleExport,
+        disabled: isExporting, 
       },
     ],
     filters: [

@@ -52,8 +52,19 @@ const Page = () => {
     { refetchOnMountOrArgChange: true }
   );
 
-  const [syncEquivalences] = useSyncEquivalencesMutation();
+  const [syncEquivalences, { isLoading: isSyncing }] =
+    useSyncEquivalencesMutation();
   const [updateArticleEquivalence] = useUpdateArticleEquivalenceMutation();
+
+  const handleSync = async () => {
+    if (isSyncing) return; // evita doble click
+    try {
+      await syncEquivalences().unwrap();
+      // opcional: algún toast de éxito
+    } catch (e) {
+      // opcional: toast de error
+    }
+  };
 
   useEffect(() => {
     if (!data?.equivalences) return;
@@ -139,9 +150,9 @@ const Page = () => {
         onClick: () => setExportModalOpen(true),
       },
       {
-        logo: <IoSync />,
-        title: t("syncEquivalences"),
-        onClick: () => syncEquivalences(),
+        logo: <IoSync className={isSyncing ? "animate-spin" : ""} />,
+        title: isSyncing ? t("Sincronizando") : t("syncEquivalences"),
+        onClick: handleSync,
       },
     ],
     filters: [

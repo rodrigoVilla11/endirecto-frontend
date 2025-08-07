@@ -176,6 +176,59 @@ export const crmApi = createApi({
         body: { currentLat, currentLon },
       }),
     }),
+     exportCrm: builder.query<
+      Blob,
+      {
+        startDate?: string;
+        endDate?: string;
+        status?: string;
+        type?: string;
+        insitu?: string;       // "true" | "false"
+        customer_id?: string;
+        sort?: string;         // ej: "date:desc"
+        seller_id?: string;
+        user_id?: string;
+        action?: string;
+        search?: string;
+      }
+    >({
+      query: ({
+        startDate,
+        endDate,
+        status,
+        type,
+        insitu,
+        customer_id,
+        sort = "",
+        seller_id,
+        user_id,
+        action,
+        search,
+      } = {}) => {
+        const url = `/crm/export`;
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (startDate)   params.append("startDate", startDate);
+        if (endDate)     params.append("endDate", endDate);
+        if (status)      params.append("status", status);
+        if (type)        params.append("type", type);
+        if (insitu)      params.append("insitu", insitu);
+        if (customer_id) params.append("customer_id", customer_id);
+        if (seller_id)   params.append("seller_id", seller_id);
+        if (user_id)     params.append("user_id", user_id);
+        if (action)      params.append("action", action);
+        if (sort)        params.append("sort", sort);
+        if (search)      params.append("search", search);
+
+        return {
+          url: `${url}?${params.toString()}`,
+          method: "GET",
+          // ⚠️ hace que RTK Query devuelva un Blob (xlsx)
+          responseHandler: (response) => response.blob(),
+        };
+      },
+    }),
   }),
 });
 
@@ -188,4 +241,5 @@ export const {
   useDeleteCrmMutation,
   useUpdateCrmMutation,
   useCheckInsituVisitMutation,
+  useLazyExportCrmQuery
 } = crmApi;

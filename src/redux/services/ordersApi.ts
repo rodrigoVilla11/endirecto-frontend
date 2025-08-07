@@ -179,6 +179,48 @@ export const ordersApi = createApi({
       },
       transformResponse: (response: any[]) => response,
     }),
+    exportOrders: builder.query<
+      Blob,
+      {
+        startDate?: string;
+        endDate?: string;
+        status?: string;
+        customer_id?: string;
+        seller_id?: string;
+        sort?: string;
+        search?: string;
+      }
+    >({
+      // importante: pedir blob
+      query: ({
+        startDate,
+        endDate,
+        status,
+        customer_id,
+        seller_id,
+        sort = "",
+        search,
+      } = {}) => {
+        const url = `/orders/export`;
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (status) params.append("status", status);
+        if (customer_id) params.append("customer_id", customer_id);
+        if (seller_id) params.append("seller_id", seller_id);
+        if (sort) params.append("sort", sort);
+        if (search) params.append("search", search);
+
+        return {
+          url: `${url}?${params.toString()}`,
+          method: "GET",
+          // hace que RTK Query parsee la respuesta como Blob
+          responseHandler: (response) => response.blob(),
+        };
+      },
+    }),
   }),
 });
 
@@ -190,4 +232,5 @@ export const {
   useGetOrdersPagQuery,
   useGetOrdersQuery,
   useGetMonthlySalesQuery,
+  useLazyExportOrdersQuery
 } = ordersApi;

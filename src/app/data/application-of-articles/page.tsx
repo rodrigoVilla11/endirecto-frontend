@@ -31,7 +31,9 @@ const Page = () => {
 
   // Estados básicos
   const [page, setPage] = useState(1);
-  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>([]);
+  const [applicationsOfArticles, setApplicationsOfArticles] = useState<any[]>(
+    []
+  );
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +43,8 @@ const Page = () => {
   const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
-  const [selectedArticleVehicle, setSelectedArticleVehicle] = useState<any>(null);
+  const [selectedArticleVehicle, setSelectedArticleVehicle] =
+    useState<any>(null);
 
   // Referencias para infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -49,7 +52,7 @@ const Page = () => {
 
   // Queries de Redux
   const { data: articlesData } = useGetAllArticlesQuery(null);
-  
+
   const {
     data,
     error,
@@ -72,13 +75,13 @@ const Page = () => {
 
   const [
     syncArticleVehicles,
-    { isLoading: isLoadingSync, isSuccess, isError: isSyncError },
+    { isLoading: isSyncing, isSuccess, isError: isSyncError },
   ] = useSyncArticleVehiclesMutation();
 
   const handleSyncEquivalences = async () => {
+    if (isSyncing) return; // evita doble click
     try {
       await syncArticleVehicles().unwrap();
-      // Refrescar datos después de la sincronización
       setPage(1);
       setApplicationsOfArticles([]);
       setHasMore(true);
@@ -117,15 +120,15 @@ const Page = () => {
         if (page === 1) {
           return data.vehicles;
         }
-        
+
         // Para páginas subsecuentes, agregar solo nuevos elementos
-        const existingIds = new Set(prev.map(item => item.id));
+        const existingIds = new Set(prev.map((item) => item.id));
         const newArticles = data.vehicles.filter(
           (article) => !existingIds.has(article.id)
         );
         return [...prev, ...newArticles];
       });
-      
+
       // Determinar si hay más páginas
       setHasMore(data.vehicles.length === ITEMS_PER_PAGE);
       setIsLoading(false);
@@ -143,12 +146,17 @@ const Page = () => {
   const lastArticleRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isQueryLoading || isFetching) return;
-      
+
       if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isQueryLoading && !isFetching) {
+          if (
+            entries[0].isIntersecting &&
+            hasMore &&
+            !isQueryLoading &&
+            !isFetching
+          ) {
             setIsLoading(true);
             setPage((prev) => prev + 1);
           }
@@ -199,13 +207,14 @@ const Page = () => {
     (field: string) => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
-      
+
       if (currentField === field) {
-        newSortQuery = currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
+        newSortQuery =
+          currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
         newSortQuery = `${field}:asc`;
       }
-      
+
       setSortQuery(newSortQuery);
       resetPagination();
     },
@@ -217,7 +226,9 @@ const Page = () => {
     const article = articlesData?.find((data) => data.id === item.article_id);
     return {
       key: `${item.id || index}`,
-      article: article?.supplier_code || t("notFound", { defaultValue: "No encontrado" }),
+      article:
+        article?.supplier_code ||
+        t("notFound", { defaultValue: "No encontrado" }),
       brand: item?.brand || t("notFound", { defaultValue: "No encontrado" }),
       model: item?.model || t("notFound", { defaultValue: "No encontrado" }),
       engine: item?.engine || t("notFound", { defaultValue: "No encontrado" }),
@@ -258,10 +269,12 @@ const Page = () => {
         onClick: openExportModal,
       },
       {
-        logo: <IoSync />,
-        title: t("syncApplications"),
+        logo: <IoSync className={isSyncing ? "animate-spin" : ""} />,
+        title: isSyncing
+          ? t("syncing", { defaultValue: "Sincronizando..." })
+          : t("syncApplications", { defaultValue: "Sincronizar aplicaciones" }),
         onClick: handleSyncEquivalences,
-        disabled: isLoadingSync,
+        disabled: isSyncing,
       },
     ],
     filters: [
@@ -269,7 +282,9 @@ const Page = () => {
         content: (
           <div className="relative">
             <Input
-              placeholder={t("searchPlaceholder", { defaultValue: "Buscar..." })}
+              placeholder={t("searchPlaceholder", {
+                defaultValue: "Buscar...",
+              })}
               value={internalSearchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setInternalSearchQuery(e.target.value);
@@ -280,7 +295,9 @@ const Page = () => {
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 onClick={handleResetSearch}
-                aria-label={t("clearSearch", { defaultValue: "Limpiar búsqueda" })}
+                aria-label={t("clearSearch", {
+                  defaultValue: "Limpiar búsqueda",
+                })}
               >
                 <FaTimes />
               </button>
@@ -289,7 +306,9 @@ const Page = () => {
         ),
       },
     ],
-    results: `${"Resultados" } : ${data?.total || 0}${searchQuery ? ` (filtrado por: "${searchQuery}")` : ""}`,
+    results: `${"Resultados"} : ${data?.total || 0}${
+      searchQuery ? ` (filtrado por: "${searchQuery}")` : ""
+    }`,
   };
 
   // Estados de carga
@@ -298,7 +317,9 @@ const Page = () => {
       <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          <span className="ml-2">{t("loading", { defaultValue: "Cargando..." })}</span>
+          <span className="ml-2">
+            {t("loading", { defaultValue: "Cargando..." })}
+          </span>
         </div>
       </PrivateRoute>
     );
@@ -318,17 +339,22 @@ const Page = () => {
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
         <h3 className="font-bold pt-4 px-4">
-          {t("applicationOfArticles", { defaultValue: "Aplicaciones de Artículos" })}
+          {t("applicationOfArticles", {
+            defaultValue: "Aplicaciones de Artículos",
+          })}
         </h3>
-        
+
         <Header headerBody={headerBody} />
 
         {applicationsOfArticles.length === 0 && !isQueryLoading ? (
           <div className="text-center py-8 text-gray-500">
-            {searchQuery 
-              ? t("noResultsFound", { defaultValue: "No se encontraron resultados para la búsqueda" })
-              : t("noApplicationsFound", { defaultValue: "No se encontraron aplicaciones" })
-            }
+            {searchQuery
+              ? t("noResultsFound", {
+                  defaultValue: "No se encontraron resultados para la búsqueda",
+                })
+              : t("noApplicationsFound", {
+                  defaultValue: "No se encontraron aplicaciones",
+                })}
           </div>
         ) : (
           <>
@@ -339,7 +365,7 @@ const Page = () => {
               sortField={sortQuery.split(":")[0]}
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
-            
+
             {/* Indicador de carga para infinite scroll */}
             {(isLoading || isFetching) && (
               <div className="flex justify-center py-4">
@@ -358,7 +384,7 @@ const Page = () => {
         )}
 
         {/* Mensajes de sincronización */}
-        {isLoadingSync && (
+        {isSyncing && (
           <div className="fixed bottom-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-2 rounded">
             {t("syncing", { defaultValue: "Sincronizando..." })}
           </div>
@@ -380,18 +406,18 @@ const Page = () => {
         <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
           <CreateArticleVehicleComponent closeModal={closeCreateModal} />
         </Modal>
-        
+
         <Modal isOpen={isImportModalOpen} onClose={closeImportModal}>
           <ImportExcelModal closeModal={closeImportModal} />
         </Modal>
-        
+
         <Modal isOpen={isExportModalOpen} onClose={closeExportModal}>
-          <ExportExcelButton 
-            closeModal={closeExportModal} 
-            searchQuery={searchQuery} 
+          <ExportExcelButton
+            closeModal={closeExportModal}
+            searchQuery={searchQuery}
           />
         </Modal>
-        
+
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => {
@@ -422,12 +448,11 @@ type EditArticleVehicleComponentProps = {
   closeModal: () => void;
 };
 
-const EditArticleVehicleComponent: React.FC<EditArticleVehicleComponentProps> = ({ 
-  articleVehicle, 
-  closeModal 
-}) => {
+const EditArticleVehicleComponent: React.FC<
+  EditArticleVehicleComponentProps
+> = ({ articleVehicle, closeModal }) => {
   const { t } = useTranslation();
-  
+
   const [formData, setFormData] = useState({
     brand: articleVehicle?.brand || "",
     model: articleVehicle?.model || "",
@@ -455,8 +480,8 @@ const EditArticleVehicleComponent: React.FC<EditArticleVehicleComponentProps> = 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("articleVehicle",articleVehicle)
-    console.log("articleVehicle.id", articleVehicle.id)
+    console.log("articleVehicle", articleVehicle);
+    console.log("articleVehicle.id", articleVehicle.id);
     try {
       await updateArticleVehicle({
         id: articleVehicle.id,
@@ -472,7 +497,9 @@ const EditArticleVehicleComponent: React.FC<EditArticleVehicleComponentProps> = 
     <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">
-          {t("editArticleVehicle", { defaultValue: "Editar Aplicación de Artículo" })}
+          {t("editArticleVehicle", {
+            defaultValue: "Editar Aplicación de Artículo",
+          })}
         </h2>
         <button
           onClick={closeModal}
@@ -565,10 +592,9 @@ const EditArticleVehicleComponent: React.FC<EditArticleVehicleComponentProps> = 
             {isUpdating && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
             )}
-            {isUpdating 
+            {isUpdating
               ? t("updating", { defaultValue: "Actualizando..." })
-              : t("update", { defaultValue: "Actualizar" })
-            }
+              : t("update", { defaultValue: "Actualizar" })}
           </button>
         </div>
       </form>
