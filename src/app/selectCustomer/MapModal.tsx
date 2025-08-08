@@ -29,63 +29,10 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
+  // Hooks siempre primero
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
   });
-
-  if (!apiKey) {
-    return (
-      <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="text-center text-red-500">
-        Error al cargar la API de Google Maps
-      </div>
-    );
-  }
-
-  // Filtrar clientes según la búsqueda
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Si la cantidad de clientes filtrados es mayor a 1000, se muestra un mensaje pidiendo filtrar antes
-  if (filteredCustomers.length > 998) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="rounded-xl bg-white p-6 shadow-2xl text-center">
-          <p className="text-xl font-semibold text-gray-800">
-            Demasiados clientes
-          </p>
-          <p className="mt-2 text-gray-600">
-            Por favor, filtra antes de ver los resultados. No se pueden mostrar
-            más de 1000 clientes.
-          </p>
-          <button
-            onClick={onClose}
-            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Crear marcadores a partir de los clientes filtrados
-  const markers: MarkerData[] = filteredCustomers
-    .map((c) => {
-      if (!c.gps) return null;
-      const [lat, lng] = c.gps.split(",").map((p) => parseFloat(p.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return { id: c.id, name: c.name, position: { lat, lng } };
-      }
-      return null;
-    })
-    .filter((m): m is MarkerData => m !== null);
 
   const containerStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
   const mapOptions = useMemo(
@@ -101,10 +48,36 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
     []
   );
 
-  const center =
-    markers.length > 0
-      ? markers[0]!.position
-      : { lat: -34.6037, lng: -58.3816 };
+  const filteredCustomers = useMemo(
+    () =>
+      customers.filter((customer) =>
+        customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [customers, searchQuery]
+  );
+
+  const markers: MarkerData[] = useMemo(
+    () =>
+      filteredCustomers
+        .map((c) => {
+          if (!c.gps) return null;
+          const [lat, lng] = c.gps.split(",").map((p) => parseFloat(p.trim()));
+          if (!isNaN(lat) && !isNaN(lng)) {
+            return { id: c.id, name: c.name, position: { lat, lng } };
+          }
+          return null;
+        })
+        .filter((m): m is MarkerData => m !== null),
+    [filteredCustomers]
+  );
+
+  const center = useMemo(
+    () => (markers.length ? markers[0].position : { lat: -34.6037, lng: -58.3816 }),
+    [markers]
+  );
+
+  // En vez de returns tempranos, render condicional
+  const tooMany = filteredCustomers.length > 998;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -121,59 +94,82 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
           </button>
         </div>
 
-        {/* Contenedor principal */}
+        {/* Contenido */}
         <div className="flex h-full w-full pt-16">
           <div className="relative flex-1">
-            {/* Barra de búsqueda */}
-            <div className="left-4 right-4 top-4 z-10">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Buscar lugares..."
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            {/* Mensajes de estado arriba del mapa */}
+            {!apiKey ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>
               </div>
-            </div>
-
-            {/* Mapa */}
-            {!isLoaded ? (
-              <div className="flex h-full w-full items-center justify-center bg-gray-100">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+            ) : loadError ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <div className="text-center text-red-500">
+                  Error al cargar la API de Google Maps
+                </div>
+              </div>
+            ) : tooMany ? (
+              <div className="flex h-full w-full items-center justify-center p-6">
+                <div className="rounded-xl bg-white p-6 shadow-2xl text-center">
+                  <p className="text-xl font-semibold text-gray-800">Demasiados clientes</p>
+                  <p className="mt-2 text-gray-600">
+                    Por favor, filtra antes de ver los resultados. No se pueden mostrar
+                    más de 1000 clientes.
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                  >
+                    Cerrar
+                  </button>
+                </div>
               </div>
             ) : (
-              <GoogleMap
-                mapContainerStyle={containerStyle}
-                onLoad={(map) => {
-                  setMapInstance(map);
-                  map.setCenter(center);
-                }}
-                zoom={10}
-                options={{
-                  styles: [
-                    {
-                      featureType: "poi",
-                      elementType: "labels",
-                      stylers: [{ visibility: "off" }],
-                    },
-                  ],
-                }}
-              >
-                {markers.map((marker, index) => (
-                  <Marker
-                    key={marker.id}
-                    position={marker.position}
-                    label={{
-                      text: String(index + 1),
-                      color: "white",
-                      fontSize: "14px",
-                      fontWeight: "bold",
+              <>
+                {/* Barra de búsqueda */}
+                <div className="left-4 right-4 top-4 z-10">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar lugares..."
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+
+                {/* Mapa */}
+                {!isLoaded ? (
+                  <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                  </div>
+                ) : (
+                  <GoogleMap
+                    mapContainerStyle={containerStyle}
+                    onLoad={(map) => {
+                      setMapInstance(map);
+                      map.setCenter(center);
                     }}
-                  />
-                ))}
-              </GoogleMap>
+                    zoom={10}
+                    options={mapOptions}
+                  >
+                    {markers.map((marker, index) => (
+                      <Marker
+                        key={marker.id}
+                        position={marker.position}
+                        label={{
+                          text: String(index + 1),
+                          color: "white",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                        }}
+                      />
+                    ))}
+                  </GoogleMap>
+                )}
+              </>
             )}
           </div>
 
@@ -227,6 +223,7 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
               </table>
             </div>
           </div>
+
         </div>
       </div>
     </div>
