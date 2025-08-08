@@ -1,6 +1,6 @@
 "use client";
-import React, { useMemo, useCallback } from "react";
-import { GoogleMap, LoadScript, MarkerF } from "@react-google-maps/api";
+import React, { useMemo, useCallback, useState } from "react";
+import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
 import { useTranslation } from "react-i18next";
 
 type MapComponentProps = {
@@ -17,19 +17,24 @@ const parseGPS = (gps: string) => {
   const valid =
     Number.isFinite(lat) &&
     Number.isFinite(lng) &&
-    lat >= -90 && lat <= 90 &&
-    lng >= -180 && lng <= 180;
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180;
   return valid ? { lat, lng } : null;
 };
 
 const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) => {
   const { t } = useTranslation();
 
-  const center = useMemo(() => parseGPS(currentGPS), [currentGPS]);
+  // 👇 TODOS los hooks se llaman SIEMPRE, antes de cualquier condicional de render
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+    id: "google-maps-sdk", // evita cargas duplicadas
+  });
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return <div>{t("map.noApiKey")}</div>;
-  if (!center) return <div>{t("map.invalidGPSFormat")}</div>;
+  const center = useMemo(() => parseGPS(currentGPS), [currentGPS]);
 
   const containerStyle = useMemo(() => ({ width: "100%", height: "320px" }), []);
   const options = useMemo(
@@ -43,13 +48,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) =
   );
 
   const onMapLoad = useCallback(() => {
-    // Si querés guardar ref del mapa o hacer fitBounds, hacelo acá
+    // Si necesitás guardar el map o hacer fitBounds, hacelo acá
   }, []);
 
+  // 👇 Nada de early return: todo se resuelve en el JSX
   return (
-    // SUGERENCIA: idealmente mover <LoadScript> a un nivel superior para no recargar el SDK
-    <LoadScript googleMapsApiKey={apiKey}>
-      <div className="relative">
+    <div className="relative">
+      {!apiKey ? (
+        <div>{t("map.noApiKey")}</div>
+      ) : loadError ? (
+        <div>{t("map.errorLoading")}</div>
+      ) : !center ? (
+        <div>{t("map.invalidGPSFormat")}</div>
+      ) : !isLoaded ? (
+        <div className="flex h-[320px] items-center justify-center">Cargando mapa…</div>
+      ) : (
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={center}
@@ -59,18 +72,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ currentGPS, closeModal }) =
         >
           <MarkerF position={center} />
         </GoogleMap>
+      )}
 
-        <button
-          type="button"
-          onClick={closeModal}
-          aria-label={t("map.close")}
-          title={t("map.close") as string}
-          className="absolute top-2 right-2 rounded-md px-3 py-1.5 text-white bg-gray-600 hover:bg-gray-700"
-        >
-          ×
-        </button>
-      </div>
-    </LoadScript>
+      <button
+        type="button"
+        onClick={closeModal}
+        aria-label={t("map.close")}
+        title={t("map.close") as string}
+        className="absolute top-2 right-2 rounded-md px-3 py-1.5 text-white bg-gray-600 hover:bg-gray-700"
+      >
+        ×
+      </button>
+    </div>
   );
 };
 
