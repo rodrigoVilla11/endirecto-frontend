@@ -212,6 +212,49 @@ export const documentsApi = createApi({
         }));
       },
     }),
+     exportDocuments: builder.query<
+      Blob,
+      {
+        query?: string;
+        startDate?: string;
+        endDate?: string;
+        expirationStatus?: string;
+        customer_id?: string;
+        sort?: string;       // ej: "date:desc"
+        type?: string;
+        seller_id?: string;
+      }
+    >({
+      query: ({
+        query = "",
+        startDate,
+        endDate,
+        expirationStatus,
+        customer_id,
+        sort,
+        type,
+        seller_id,
+      } = {}) => {
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
+        if (query) params.append("q", query);
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (expirationStatus) params.append("status", expirationStatus);
+        if (customer_id) params.append("customer_id", customer_id);
+        if (sort) params.append("sort", sort);
+        if (type) params.append("type", type);
+        if (seller_id) params.append("seller_id", seller_id);
+
+        return {
+          url: `/documents/export?${params.toString()}`,
+          method: "GET",
+          // Necesario para recibir el archivo binario
+          responseHandler: async (response) => await response.blob(),
+        };
+      },
+    }),
   }),
 });
 
@@ -223,4 +266,5 @@ export const {
   useSumExpiredAmountsQuery,
   useSumAmountsQuery,
   useGetMonthlyInvoicesQuery,
+  useLazyExportDocumentsQuery
 } = documentsApi;

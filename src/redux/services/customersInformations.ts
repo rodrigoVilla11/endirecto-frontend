@@ -56,14 +56,12 @@ export const customersInformationsApi = createApi({
       query: () =>
         `/customers-informations?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>(
-      {
-        query: ({ id }) =>
-          id
-            ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
-            : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
-      }
-    ),
+    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>({
+      query: ({ id }) =>
+        id
+          ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
+          : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+    }),
     getCustomerWithDocuments: builder.query<any, { id: string }>({
       query: ({ id }) =>
         `/customers-informations/${id}/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -152,11 +150,48 @@ export const customersInformationsApi = createApi({
       { customerId?: string; sellerId?: string }
     >({
       query: ({ customerId, sellerId }) => {
-
         let queryString = `/customers-informations/balances-summary?token=${process.env.NEXT_PUBLIC_TOKEN}`;
         if (customerId) queryString += `&customerId=${customerId}`;
         if (sellerId) queryString += `&sellerId=${sellerId}`;
         return queryString;
+      },
+    }),
+    exportDocuments: builder.query<
+      Blob,
+      {
+        sortField?: string;
+        sortOrder?: "asc" | "desc";
+        startDate?: string;
+        endDate?: string;
+        customerId?: string;
+        sellerId?: string;
+        type?: string;
+      }
+    >({
+      query: ({
+        sortField,
+        sortOrder,
+        startDate,
+        endDate,
+        customerId,
+        sellerId,
+        type,
+      }) => {
+        let url = `/customers-informations/export?token=${process.env.NEXT_PUBLIC_TOKEN}`;
+        if (sortField) url += `&sortField=${sortField}`;
+        if (sortOrder) url += `&sortOrder=${sortOrder}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+        if (customerId) url += `&customerId=${customerId}`;
+        if (sellerId) url += `&sellerId=${sellerId}`;
+        if (type) url += `&type=${type}`;
+
+        return {
+          url,
+          method: "GET",
+          // Necesario para recibir el archivo binario
+          responseHandler: async (response) => await response.blob(),
+        };
       },
     }),
   }),
@@ -169,4 +204,5 @@ export const {
   useGetLookupDocumentsQuery,
   useGetAllDocumentsQuery,
   useGetBalancesSummaryQuery,
+  useLazyExportDocumentsQuery,
 } = customersInformationsApi;

@@ -21,7 +21,10 @@ import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useClient } from "@/app/context/ClientContext";
 import { useAuth } from "@/app/context/AuthContext";
 
-import { useGetAllDocumentsQuery } from "@/redux/services/customersInformations";
+import {
+  useGetAllDocumentsQuery,
+  useLazyExportDocumentsQuery,
+} from "@/redux/services/customersInformations";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
@@ -91,6 +94,28 @@ export default function Page() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
+  const [triggerExport, { isFetching }] = useLazyExportDocumentsQuery();
+
+  const handleDownload = async () => {
+    const blob = await triggerExport({
+      sortField: sortQuery?.split(":")[0],
+      sortOrder: (sortQuery?.split(":")[1] as "asc" | "desc") || "desc",
+      startDate: startDate?.toISOString().slice(0, 10),
+      endDate: endDate?.toISOString().slice(0, 10),
+      customerId: customerFilter || undefined,
+      sellerId: forcedSellerId || sellerFilter || undefined,
+      type: typeFilter || undefined,
+    }).unwrap();
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `documentos_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   // Sync client filter
   useEffect(() => {
@@ -158,8 +183,7 @@ export default function Page() {
       if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver(
         (entries) => {
-          const hasMore =
-            (documentsData?.totalData || 0) > allDocs.length;
+          const hasMore = (documentsData?.totalData || 0) > allDocs.length;
           if (entries[0].isIntersecting && hasMore) {
             setPage((p) => p + 1);
           }
@@ -393,7 +417,13 @@ export default function Page() {
         <Header
           headerBody={{
             buttons: [
-              { logo: <AiOutlineDownload />, title: t("download") },
+              {
+                logo: <AiOutlineDownload />,
+                title: isFetching ? t("downloading") : t("download"),
+                onClick: handleDownload,
+                // si tu <Header> soporta deshabilitar:
+                disabled: isFetching,
+              },
               { logo: <FaPlus />, title: t("crm"), onClick: openCreateModal },
             ],
             filters: headerFilters,
@@ -433,7 +463,9 @@ export default function Page() {
               data={tableData}
               onSort={handleSort}
               sortField={sortQuery.split(":")[0]}
-              sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || undefined}
+              sortOrder={
+                (sortQuery.split(":")[1] as "asc" | "desc") || undefined
+              }
             />
             <div ref={lastItemRef} className="h-8" />
           </>
