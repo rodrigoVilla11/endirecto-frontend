@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Header from "./components/Header";
 import Card from "./components/Card";
@@ -44,10 +44,13 @@ const DashboardPage = () => {
   const { isOpen } = useSideMenu();
   const { selectedClientId } = useClient();
   const { role, userData } = useAuth();
-
-  const { data, error, isLoading, refetch } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
+  const hasCustomer = Boolean(selectedClientId);
+  const sellerIdFromRole =
+    role === "VENDEDOR" ? userData?.seller_id : undefined;
+  const { data, isLoading } = useGetCustomerByIdQuery(
+    { id: selectedClientId! },
+    { skip: !hasCustomer }
+  );
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
 
   // ------------------ Filtro de vendedor ------------------
@@ -59,20 +62,26 @@ const DashboardPage = () => {
   }, [role, userData]);
 
   // ------------------ Query Params ------------------
-  const queryParams =
-    selectedClientId && selectedClientId !== ""
-      ? { customerId: selectedClientId }
-      : userData?.role === "VENDEDOR"
-      ? { sellerId: userData.seller_id }
-      : {};
+  const queryParams = hasCustomer
+    ? { customerId: selectedClientId! }
+    : sellerIdFromRole
+    ? { sellerId: sellerIdFromRole }
+    : {};
 
-  const { data: totalCustomers } = useGetCustomersPagQuery({
-    page: 1,
-    limit: ITEMS_PER_PAGE,
-    seller_id: sellerFilter,
+  const canQuery = true;
+
+  const { data: totalCustomers } = useGetCustomersPagQuery(
+    {
+      page: 1,
+      limit: 1, // solo necesito el total
+      seller_id: sellerIdFromRole || "",
+    },
+    { skip: role === "VENDEDOR" && !sellerIdFromRole } // no llames hasta saber seller
+  );
+  const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams, {
+    skip: !canQuery,
+    refetchOnMountOrArgChange: false,
   });
-
-  const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
   // ------------------ Funciones de Formateo ------------------
   const formatPriceWithCurrency = (price: any) =>
@@ -102,24 +111,37 @@ const DashboardPage = () => {
   const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
 
   // Ventas mensuales del año actual y pasado
-  const { data: currentYearSalesData } = useGetMonthlySalesQuery({
-    startDate: `${currentYear}-01-01`,
-    endDate: `${currentYear}-12-31`,
-    ...queryParams,
-  });
-  const { data: lastYearSalesData } = useGetMonthlySalesQuery({
-    startDate: `${lastYear}-01-01`,
-    endDate: `${lastYear}-12-31`,
-    ...queryParams,
-  });
+  const { data: currentYearSalesData } = useGetMonthlySalesQuery(
+    {
+      startDate: `${currentYear}-01-01`,
+      endDate: `${currentYear}-12-31`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
+
+  const { data: lastYearSalesData } = useGetMonthlySalesQuery(
+    {
+      startDate: `${lastYear}-01-01`,
+      endDate: `${lastYear}-12-31`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
 
   // Facturación mensual (facturas) del año actual
-  const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery({
-    startDate: `${currentYear}-${currentMonth}-01`,
-    endDate: `${currentYear}-${currentMonth}-31`,
-    ...queryParams,
-  });
-
+  const endOfMonth = new Date(currentYear, currentMonth, 0).getDate(); // día real de fin de mes
+  const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery(
+    {
+      startDate: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
+      endDate: `${currentYear}-${String(currentMonth).padStart(
+        2,
+        "0"
+      )}-${endOfMonth}`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
   // Extraer datos específicos para ventas e ingresos
   const currentMonthSalesData = currentYearSalesData?.find(
     (d) => d.month === currentMonth
@@ -169,293 +191,365 @@ const DashboardPage = () => {
     logout?: boolean;
   }
 
-  const itemsCard: CardItem[] = [
-    {
-      logo: <MdOutlineShoppingBag />,
-      title: t("catalogue"),
-      text: t("accessCatalog"),
-      href: "/catalogue",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
-    },
-    {
-      logo: <CgProfile />,
-      title: t("selectCustomer"),
-      subtitle: totalCustomers ? (
-        totalCustomers.totalCustomers
-      ) : (
-        <SkeletonText width="w-8" />
-      ),
-      href: "/selectCustomer",
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
-    },
-    {
-      logo: (
-        <MdTextSnippet
-          className={`${
-            totalDebt?.documents_balance ? "text-red-500" : "text-green-600"
-          }`}
-        />
-      ),
-      title: t("statusAccount"),
-      subtitle: totalDebt ? (
-        `${formatPriceWithCurrency(totalDebt?.documents_balance)}`
-      ) : (
-        <SkeletonText width="w-24" />
-      ),
-      text: (
-        <div className="flex flex-col gap-1 text-sm">
-          <div className="flex items-center gap-2">
-            <span
-              className={`${
-                totalDebt?.documents_balance ? "text-red-600" : "text-green-600"
-              }`}
-            >
-              {t("expired")}:
-            </span>
-            {totalDebt ? (
-              <span>
-                {formatPriceWithCurrency(totalDebt?.documents_balance_expired)}
-              </span>
-            ) : (
-              <SkeletonText width="w-24" />
-            )}
-          </div>
-        </div>
-      ),
-      href: "/accounts/status",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
-      color: totalDebt?.documents_balance ? "red" : "green",
-    },
-    // Venta interanual
-    {
-      logo: (
-        <BsCash
-          className={
-            interannualPercentage < 80
-              ? "text-red-500"
-              : interannualPercentage < 100
-              ? "text-yellow-500"
-              : "text-green-500"
-          }
-        />
-      ),
-      title: t("interannualSell"),
-      subtitle:
-        interannualPercentage !== null ? (
-          `${interannualPercentage.toFixed(0)}%`
+  // Comparaciones reales
+  const interannualColor =
+    currentMonthSalesData?.totalSales >
+    (lastYearSameMonthSalesData?.totalSales || 0)
+      ? "green"
+      : currentMonthSalesData?.totalSales ===
+        (lastYearSameMonthSalesData?.totalSales || 0)
+      ? "yellow"
+      : "red";
+
+  const monthlyColor =
+    currentMonthSalesData?.totalSales >
+    (previousMonthSalesData?.totalSales || 0)
+      ? "green"
+      : currentMonthSalesData?.totalSales ===
+        (previousMonthSalesData?.totalSales || 0)
+      ? "yellow"
+      : "red";
+
+  const itemsCard: CardItem[] = useMemo(
+    () => [
+      {
+        logo: <MdOutlineShoppingBag />,
+        title: t("catalogue"),
+        text: t("accessCatalog"),
+        href: "/catalogue",
+        allowedRoles: [
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ],
+      },
+      {
+        logo: <CgProfile />,
+        title: t("selectCustomer"),
+        subtitle: totalCustomers ? (
+          totalCustomers.totalCustomers
         ) : (
-          <SkeletonText width="w-10" />
+          <SkeletonText width="w-8" />
+        ),
+        href: "/selectCustomer",
+        allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      },
+      {
+        logo: (
+          <MdTextSnippet
+            className={`${
+              totalDebt?.documents_balance ? "text-red-500" : "text-green-600"
+            }`}
+          />
+        ),
+        title: t("statusAccount"),
+        subtitle: totalDebt ? (
+          `${formatPriceWithCurrency(totalDebt?.documents_balance)}`
+        ) : (
+          <SkeletonText width="w-24" />
+        ),
+        text: (
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className={`${
+                  totalDebt?.documents_balance
+                    ? "text-red-600"
+                    : "text-green-600"
+                }`}
+              >
+                {t("expired")}:
+              </span>
+              {totalDebt ? (
+                <span>
+                  {formatPriceWithCurrency(
+                    totalDebt?.documents_balance_expired
+                  )}
+                </span>
+              ) : (
+                <SkeletonText width="w-24" />
+              )}
+            </div>
+          </div>
+        ),
+        href: "/accounts/status",
+        allowedRoles: [
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ],
+        color: totalDebt?.documents_balance ? "red" : "green",
+      },
+      // Venta interanual
+      {
+        logo: (
+          <BsCash
+            className={
+              interannualColor === "green"
+                ? "text-green-500"
+                : interannualColor === "yellow"
+                ? "text-yellow-500"
+                : "text-red-500"
+            }
+          />
+        ),
+        title: t("interannualSell"),
+        subtitle:
+          interannualPercentage !== null ? (
+            `${interannualPercentage.toFixed(0)}%`
+          ) : (
+            <SkeletonText width="w-10" />
+          ),
+
+        text: (
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className={
+                  (currentMonthSalesData?.totalSales || 0) >
+                  (lastYearSameMonthSalesData?.totalSales || 0)
+                    ? "text-green-600"
+                    : (currentMonthSalesData?.totalSales || 0) ===
+                      (lastYearSameMonthSalesData?.totalSales || 0)
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }
+              >
+                {t("currentMonth")}:
+              </span>
+              {currentYearSalesData ? (
+                <span>
+                  {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+                </span>
+              ) : (
+                <SkeletonText width="w-20" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={
+                  (currentMonthSalesData?.totalSales || 0) >
+                  (lastYearSameMonthSalesData?.totalSales || 0)
+                    ? "text-green-600"
+                    : (currentMonthSalesData?.totalSales || 0) ===
+                      (lastYearSameMonthSalesData?.totalSales || 0)
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }
+              >
+                {t("lastYearMonth")}:
+              </span>
+              {lastYearSalesData ? (
+                <span>
+                  {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
+                </span>
+              ) : (
+                <SkeletonText width="w-20" />
+              )}
+            </div>
+          </div>
         ),
 
-      text: (
-        <div className="flex flex-col gap-1 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-red-600">{t("currentMonth")}:</span>
-            {currentYearSalesData ? (
-              <span>
-                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+        href: "",
+        allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+        color: interannualColor,
+      },
+      // Venta mensual
+      {
+        logo: (
+          <BsCash
+            className={
+              monthlyColor === "green"
+                ? "text-green-500"
+                : monthlyColor === "yellow"
+                ? "text-yellow-500"
+                : "text-red-500"
+            }
+          />
+        ),
+        title: t("monthlySell"),
+        subtitle: monthlyPercentage ? (
+          `${monthlyPercentage.toFixed(0)}%`
+        ) : (
+          <SkeletonText width="w-8" />
+        ),
+        text: (
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className={
+                  currentMonthSalesData?.totalSales >
+                  (previousMonthSalesData?.totalSales || 0)
+                    ? "text-green-600"
+                    : currentMonthSalesData?.totalSales ===
+                      (previousMonthSalesData?.totalSales || 0)
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }
+              >
+                {t("currentMonth")}:
               </span>
-            ) : (
-              <SkeletonText width="w-20" />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-red-600">{t("lastYearMonth")}:</span>
-            {lastYearSalesData ? (
-              <span>
-                {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
+              {currentYearSalesData ? (
+                <span>
+                  {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+                </span>
+              ) : (
+                <SkeletonText width="w-20" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={
+                  currentMonthSalesData?.totalSales >
+                  (previousMonthSalesData?.totalSales || 0)
+                    ? "text-green-600"
+                    : currentMonthSalesData?.totalSales ===
+                      (previousMonthSalesData?.totalSales || 0)
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }
+              >
+                {t("lastMonth")}:
               </span>
-            ) : (
-              <SkeletonText width="w-20" />
-            )}
+              {currentYearSalesData ? (
+                <span>
+                  {formatCurrency(previousMonthSalesData?.totalSales || 0)}
+                </span>
+              ) : (
+                <SkeletonText width="w-20" />
+              )}
+            </div>
           </div>
-        </div>
-      ),
-      href: "",
-      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-      color:
-        interannualPercentage < 80
-          ? "red"
-          : interannualPercentage < 100
-          ? "yellow"
-          : "green",
-    },
-    // Venta mensual
-    {
-      logo: (
-        <BsCash
-          className={
-            monthlyPercentage < 80
-              ? "text-red-500"
-              : monthlyPercentage < 100
-              ? "text-yellow-500"
-              : "text-green-500"
-          }
-        />
-      ),
-      title: t("monthlySell"),
-      subtitle: monthlyPercentage ? (
-        `${monthlyPercentage.toFixed(0)}%`
-      ) : (
-        <SkeletonText width="w-8" />
-      ),
-      text: (
-        <div className="flex flex-col gap-1 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-red-600">{t("currentMonth")}:</span>
-            {currentYearSalesData ? (
-              <span>
-                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
-              </span>
-            ) : (
-              <SkeletonText width="w-20" />
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-red-600">{t("lastMonth")}:</span>
-            {currentYearSalesData ? (
-              <span>
-                {formatCurrency(previousMonthSalesData?.totalSales || 0)}
-              </span>
-            ) : (
-              <SkeletonText width="w-20" />
-            )}
-          </div>
-        </div>
-      ),
-
-      href: "/orders/orders",
-      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-      color:
-        monthlyPercentage < 80
-          ? "red"
-          : monthlyPercentage < 100
-          ? "yellow"
-          : "green",
-    },
-    // Pedidos mensuales
-    {
-      logo: <IoIosPaper />,
-      title: t("monthlyOrders"),
-      subtitle: currentMonthOrdersTotal ? (
-        formatCurrency(currentMonthOrdersTotal)
-      ) : (
-        <SkeletonText width="w-20" />
-      ),
-      text: currentMonthOrdersCount ? (
-        `${t("quantityOrders")}: ${currentMonthOrdersCount}`
-      ) : (
-        <SkeletonText width="w-24" />
-      ),
-      href: "/orders/orders",
-      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    },
-    // Facturación mensual
-    {
-      logo: <IoIosPaper />,
-      title: t("monthlyInvoices"),
-      subtitle: currentMonthInvoiceTotal ? (
-        formatCurrency(currentMonthInvoiceTotal)
-      ) : (
-        <SkeletonText width="w-20" />
-      ),
-      text: currentMonthInvoiceCount ? (
-        `${t("numberInvoices")}: ${currentMonthInvoiceCount}`
-      ) : (
-        <SkeletonText width="w-20" />
-      ),
-      href: "/accounts/vouchers",
-      allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
-    },
-    // Notificaciones
-    {
-      logo: (
-        <IoNotificationsOutline
-          className={
-            ((selectedClientId
-              ? data?.notifications.filter((n: any) => !n.read).length
-              : userQuery.data?.notifications.filter((n: any) => !n.read)
-                  .length) || 0) > 0
-              ? "text-red-500"
-              : "text-green-500"
-          }
-        />
-      ),
-      title: t("notifications"),
-      subtitle: selectedClientId
-        ? data?.notifications.length
-        : userQuery.data?.notifications.length,
-      text: `${t("unreadNotifications")}: ${
-        (selectedClientId
-          ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
-        0
-      }`,
-      href: "/notifications",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
-      ],
-      color:
-        ((selectedClientId
-          ? data?.notifications.filter((n: any) => !n.read).length
-          : userQuery.data?.notifications.filter((n: any) => !n.read).length) ||
-          0) > 0
-          ? "red"
-          : "green",
-    },
-    // {
-    //   logo: (
-    //     <IoNotificationsOutline
-    //       className={
-    //         ((selectedClientId
-    //           ? data?.notifications.filter((n: any) => !n.read).length
-    //           : userQuery.data?.notifications.filter((n: any) => !n.read)
-    //               .length) || 0) > 0
-    //           ? "text-red-500"
-    //           : "text-green-500"
-    //       }
-    //     />
-    //   ),
-    //   title: "Observations",
-    //   subtitle: "SUBTITLE",
-    //   text: selectedClientId
-    //     ? [
-    //         data?.obs1,
-    //         data?.obs2,
-    //         data?.obs3,
-    //         data?.obs4,
-    //         data?.obs5,
-    //         data?.obs6,
-    //       ]
-    //         .filter(Boolean)
-    //         .join(", ")
-    //     : "Debes seleccionar un cliente",
-    //   href: "/",
-    //   allowedRoles: [
-    //     "ADMINISTRADOR",
-    //     "OPERADOR",
-    //     "MARKETING",
-    //     "VENDEDOR",
-    //     "CUSTOMER",
-    //   ],
-    // },
-  ];
+        ),
+        href: "/orders/orders",
+        allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+        color: monthlyColor,
+      },
+      // Pedidos mensuales
+      {
+        logo: <IoIosPaper />,
+        title: t("monthlyOrders"),
+        subtitle: currentMonthOrdersTotal ? (
+          formatCurrency(currentMonthOrdersTotal)
+        ) : (
+          <SkeletonText width="w-20" />
+        ),
+        text: currentMonthOrdersCount ? (
+          `${t("quantityOrders")}: ${currentMonthOrdersCount}`
+        ) : (
+          <SkeletonText width="w-24" />
+        ),
+        href: "/orders/orders",
+        allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+      },
+      // Facturación mensual
+      {
+        logo: <IoIosPaper />,
+        title: t("monthlyInvoices"),
+        subtitle: currentMonthInvoiceTotal ? (
+          formatCurrency(currentMonthInvoiceTotal)
+        ) : (
+          <SkeletonText width="w-20" />
+        ),
+        text: currentMonthInvoiceCount ? (
+          `${t("numberInvoices")}: ${currentMonthInvoiceCount}`
+        ) : (
+          <SkeletonText width="w-20" />
+        ),
+        href: "/accounts/vouchers",
+        allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+      },
+      // Notificaciones
+      {
+        logo: (
+          <IoNotificationsOutline
+            className={
+              ((selectedClientId
+                ? data?.notifications.filter((n: any) => !n.read).length
+                : userQuery.data?.notifications.filter((n: any) => !n.read)
+                    .length) || 0) > 0
+                ? "text-red-500"
+                : "text-green-500"
+            }
+          />
+        ),
+        title: t("notifications"),
+        subtitle: selectedClientId
+          ? data?.notifications.length
+          : userQuery.data?.notifications.length,
+        text: `${t("unreadNotifications")}: ${
+          (selectedClientId
+            ? data?.notifications.filter((n: any) => !n.read).length
+            : userQuery.data?.notifications.filter((n: any) => !n.read)
+                .length) || 0
+        }`,
+        href: "/notifications",
+        allowedRoles: [
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ],
+        color:
+          ((selectedClientId
+            ? data?.notifications.filter((n: any) => !n.read).length
+            : userQuery.data?.notifications.filter((n: any) => !n.read)
+                .length) || 0) > 0
+            ? "red"
+            : "green",
+      },
+      {
+        logo: (
+          <IoNotificationsOutline
+            className={
+              ((selectedClientId
+                ? data?.notifications.filter((n: any) => !n.read).length
+                : userQuery.data?.notifications.filter((n: any) => !n.read)
+                    .length) || 0) > 0
+                ? "text-red-500"
+                : "text-green-500"
+            }
+          />
+        ),
+        title: "Observations",
+        subtitle: "SUBTITLE",
+        text: selectedClientId
+          ? [
+              data?.obs1,
+              data?.obs2,
+              data?.obs3,
+              data?.obs4,
+              data?.obs5,
+              data?.obs6,
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : "Debes seleccionar un cliente",
+        href: "/",
+        allowedRoles: [
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ],
+      },
+    ],
+    [
+      totalCustomers?.totalCustomers,
+      totalDebt,
+      currentYearSalesData,
+      lastYearSalesData,
+      currentYearInvoicesData,
+      selectedClientId,
+      userQuery.data,
+    ]
+  );
 
   // ------------------ Definición de Items para Shortcuts ------------------
   const itemsShortcuts: CardItem[] = [
@@ -596,6 +690,7 @@ const DashboardPage = () => {
           {filteredItemsCard.map((item, index) => (
             <Link
               key={index}
+              prefetch={false}
               href={item.href}
               className="transform transition-transform duration-300 hover:scale-105"
             >
@@ -619,6 +714,7 @@ const DashboardPage = () => {
         >
           {filteredItemsShortcuts.map((item, index) => (
             <Link
+              prefetch={false}
               key={index}
               href={item.href}
               className="transform transition-transform duration-300 hover:scale-105"
