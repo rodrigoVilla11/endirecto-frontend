@@ -2,43 +2,72 @@
 
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { X, Search, MapPin } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useMapsLoader } from "../providers/MapProvider";
 
-type MapModalProps = {
-  visit: any[];
-  onClose: () => void;
-};
-type MarkerData = {
+type VisitRow = {
   id: string;
   seller_id: string;
   customer_id: string;
-  position: { lat: number; lng: number };
+  gps?: string;
 };
 
+type MapModalProps = {
+  visit: VisitRow[];
+  onClose: () => void;
+};
 
-
+type Row = VisitRow & {
+  displayIndex: number; // índice visible 1..N (aunque no tenga GPS)
+  sellerName: string;
+  customerName: string;
+  position: google.maps.LatLngLiteral | null; // null si no tiene GPS válido
+};
 
 export default function MapModal({ visit, onClose }: MapModalProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation();
+  const { isLoaded, loadError } = useMapsLoader(); // <- NO volvemos a cargar el SDK
+  const [searchQuery, setSearchQuery] = useState("");
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey,
-  });
+  const defaultCenter = useMemo(
+    () => ({ lat: -34.6037, lng: -58.3816 }),
+    []
+  );
+  const containerStyle = useMemo(
+    () => ({ width: "100%", height: "100%" }),
+    []
+  );
+  const mapOptions = useMemo(
+    () => ({
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }],
+        },
+      ],
+    }),
+    []
+  );
 
-  const filteredCustomers = useMemo(() => {
-    if (!visit) return [];
+  // 1) Filtrar
+  const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    if (!q) return visit;
+
     return visit.filter((v) => {
-      const sellerName = sellersData?.find((s: any) => s.id === v.seller_id)?.name || "";
-      const customerName = customersData?.find((c: any) => c.id === v.customer_id)?.name || "";
+      const sellerName =
+        sellersData?.find((s: any) => s.id === v.seller_id)?.name || "";
+      const customerName =
+        customersData?.find((c: any) => c.id === v.customer_id)?.name || "";
       return (
         v.seller_id.toLowerCase().includes(q) ||
         sellerName.toLowerCase().includes(q) ||
@@ -47,54 +76,82 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
     });
   }, [visit, searchQuery, sellersData, customersData]);
 
- const markers: MarkerData[] = useMemo(() => {
-  return filteredCustomers
-    .map((c) => {
-      if (!c.gps) return null;
-      const [lat, lng] = c.gps.split(",").map((n : any) => parseFloat(n.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return {
-          id: String(c.id),
-          seller_id: String(c.seller_id),
-          customer_id: String(c.customer_id),
-          position: { lat, lng },
-        };
+  // 2) Construir filas con índice y posición (null si no tiene GPS)
+  const rows: Row[] = useMemo(() => {
+    return filtered.map((v, i) => {
+      const sellerName =
+        sellersData?.find((s: any) => s.id === v.seller_id)?.name ||
+        v.seller_id;
+      const customerName =
+        customersData?.find((c: any) => c.id === v.customer_id)?.name ||
+        v.customer_id;
+
+      let position: google.maps.LatLngLiteral | null = null;
+      if (v.gps) {
+        const [latStr, lngStr] = v.gps.split(",").map((p) => p.trim());
+        const lat = Number(latStr);
+        const lng = Number(lngStr);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          position = { lat, lng };
+        }
       }
-      return null;
-    })
-    .filter((m): m is MarkerData => m !== null); // <-- aquí TypeScript ya sabe que no hay null
-}, [filteredCustomers]);
 
-  const center = markers[0]?.position || { lat: -34.6037, lng: -58.3816 };
+      return {
+        ...v,
+        displayIndex: i + 1, // numeración estable
+        sellerName,
+        customerName,
+        position,
+      };
+    });
+  }, [filtered, sellersData, customersData]);
 
-  const handleRowClick = useCallback(
-    (gps: string) => {
-      if (!mapInstance || !gps) return;
-      const [lat, lng] = gps.split(",").map((n) => parseFloat(n.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        mapInstance.panTo({ lat, lng });
+  // 3) Markers con la misma numeración que la lista
+  const markers = useMemo(
+    () =>
+      rows
+        .filter((r) => !!r.position)
+        .map((r) => ({
+          id: r.id,
+          position: r.position as google.maps.LatLngLiteral,
+          labelIndex: r.displayIndex,
+        })),
+    [rows]
+  );
+
+  // 4) Centro inicial
+  const initialCenter = markers[0]?.position || defaultCenter;
+
+  // Handlers
+  const focusRow = useCallback(
+    (row: Row) => {
+      setSelectedId(row.id);
+      if (row.position && mapInstance) {
+        mapInstance.panTo(row.position);
         mapInstance.setZoom(15);
       }
     },
     [mapInstance]
   );
 
-  if (!apiKey) return <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>;
-  if (loadError) return <div className="text-center text-red-500">Error al cargar Google Maps</div>;
+  const focusMarker = useCallback(
+    (markerId: string) => {
+      const row = rows.find((r) => r.id === markerId);
+      if (!row) return;
+      setSelectedId(row.id);
+      if (row.position && mapInstance) {
+        mapInstance.panTo(row.position);
+        mapInstance.setZoom(15);
+      }
+    },
+    [mapInstance, rows]
+  );
 
-  if (filteredCustomers.length > 998) {
+  // Estados de carga del SDK
+  if (loadError) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="rounded-xl bg-white p-6 shadow-2xl text-center">
-          <p className="text-xl font-semibold text-gray-800">Demasiados clientes</p>
-          <p className="mt-2 text-gray-600">Por favor, filtra antes de ver los resultados.</p>
-          <button
-            onClick={onClose}
-            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          >
-            Cerrar
-          </button>
-        </div>
+      <div className="text-center text-red-500">
+        Error al cargar Google Maps
       </div>
     );
   }
@@ -114,10 +171,11 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
           </button>
         </div>
 
-        {/* Contenedor principal */}
+        {/* Contenido */}
         <div className="flex h-full w-full pt-16">
           {/* Mapa */}
           <div className="relative flex-1">
+            {/* Buscador */}
             <div className="absolute left-4 right-4 top-4 z-10">
               <div className="relative">
                 <input
@@ -138,26 +196,23 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
               </div>
             ) : (
               <GoogleMap
-                mapContainerStyle={{ width: "100%", height: "100%" }}
-                center={center}
+                mapContainerStyle={containerStyle}
+                center={initialCenter}
                 zoom={10}
                 onLoad={(map) => setMapInstance(map)}
-                options={{
-                  styles: [
-                    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-                  ],
-                }}
+                options={mapOptions}
               >
-                {markers.map((marker, index) => (
+                {markers.map((m) => (
                   <Marker
-                    key={marker.id}
-                    position={marker.position}
+                    key={m.id}
+                    position={m.position}
                     label={{
-                      text: String(index + 1),
+                      text: String(m.labelIndex), // misma numeración que la lista
                       color: "white",
                       fontSize: "14px",
                       fontWeight: "bold",
                     }}
+                    onClick={() => focusMarker(m.id)}
                   />
                 ))}
               </GoogleMap>
@@ -165,34 +220,51 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
           </div>
 
           {/* Lista */}
-          <div className="w-80 border-l">
+          <div className="w-96 border-l border-gray-200 bg-white">
             <div className="h-full overflow-auto">
               <table className="w-full">
                 <thead className="sticky top-0 bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Nombre
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredCustomers.map((c, index) => {
-                    const sellerName =
-                      sellersData?.find((s: any) => s.id === c.seller_id)?.name || c.seller_id;
-                    const customerName =
-                      customersData?.find((cust: any) => cust.id === c.customer_id)?.name ||
-                      c.customer_id;
+                  {rows.map((row) => {
+                    const isSelected = selectedId === row.id;
+                    const hasLocation = !!row.position;
+
                     return (
                       <tr
-                        key={c.id}
-                        className="cursor-pointer hover:bg-gray-50"
-                        onClick={() => handleRowClick(c.gps)}
+                        key={row.id}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected ? "bg-blue-50" : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => focusRow(row)}
                       >
-                        <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                        <td className="flex items-center px-4 py-3 text-sm">
-                          <MapPin className="mr-2 h-4 w-4 text-gray-400" />
-                          <span className="font-medium text-gray-900">
-                            {sellerName}, {customerName}
-                          </span>
+                        <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+                          {row.displayIndex}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <MapPin
+                              className={`h-4 w-4 ${
+                                hasLocation ? "text-gray-400" : "text-red-500"
+                              }`}
+                            />
+                            <span className="font-medium text-gray-900">
+                              {row.sellerName}, {row.customerName}
+                            </span>
+                            {!hasLocation && (
+                              <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                                Sin ubicación
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -201,6 +273,7 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
               </table>
             </div>
           </div>
+          {/* /Lista */}
         </div>
       </div>
     </div>

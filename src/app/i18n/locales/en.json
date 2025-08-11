@@ -1164,7 +1164,8 @@
     "noGPSData": "No GPS data provided",
     "invalidGPSFormat": "Invalid GPS format. It should be lat, lon.",
     "invalidCoordinates": "Latitude and longitude values must be valid numbers.",
-    "noApiKey": "Error: Google Maps API Key is not configured."
+    "noApiKey": "Error: Google Maps API Key is not configured.",
+    "noAddress": "No Address"
   },
   "mapModal": {
     "noApiKey": "Error: Google Maps API Key is not configured.",

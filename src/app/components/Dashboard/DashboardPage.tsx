@@ -503,42 +503,42 @@ const DashboardPage = () => {
             ? "red"
             : "green",
       },
-      {
-        logo: (
-          <IoNotificationsOutline
-            className={
-              ((selectedClientId
-                ? data?.notifications.filter((n: any) => !n.read).length
-                : userQuery.data?.notifications.filter((n: any) => !n.read)
-                    .length) || 0) > 0
-                ? "text-red-500"
-                : "text-green-500"
-            }
-          />
-        ),
-        title: "Observations",
-        subtitle: "SUBTITLE",
-        text: selectedClientId
-          ? [
-              data?.obs1,
-              data?.obs2,
-              data?.obs3,
-              data?.obs4,
-              data?.obs5,
-              data?.obs6,
-            ]
-              .filter(Boolean)
-              .join(", ")
-          : "Debes seleccionar un cliente",
-        href: "/",
-        allowedRoles: [
-          "ADMINISTRADOR",
-          "OPERADOR",
-          "MARKETING",
-          "VENDEDOR",
-          "CUSTOMER",
-        ],
-      },
+      // {
+      //   logo: (
+      //     <IoNotificationsOutline
+      //       className={
+      //         ((selectedClientId
+      //           ? data?.notifications.filter((n: any) => !n.read).length
+      //           : userQuery.data?.notifications.filter((n: any) => !n.read)
+      //               .length) || 0) > 0
+      //           ? "text-red-500"
+      //           : "text-green-500"
+      //       }
+      //     />
+      //   ),
+      //   title: "Observations",
+      //   subtitle: "SUBTITLE",
+      //   text: selectedClientId
+      //     ? [
+      //         data?.obs1,
+      //         data?.obs2,
+      //         data?.obs3,
+      //         data?.obs4,
+      //         data?.obs5,
+      //         data?.obs6,
+      //       ]
+      //         .filter(Boolean)
+      //         .join(", ")
+      //     : "Debes seleccionar un cliente",
+      //   href: "/",
+      //   allowedRoles: [
+      //     "ADMINISTRADOR",
+      //     "OPERADOR",
+      //     "MARKETING",
+      //     "VENDEDOR",
+      //     "CUSTOMER",
+      //   ],
+      // },
     ],
     [
       totalCustomers?.totalCustomers,

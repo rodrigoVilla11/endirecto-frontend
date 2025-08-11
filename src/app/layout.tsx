@@ -14,7 +14,7 @@ import FixedBottomScreen, {
   ArticleComparationProvider,
 } from "./context/ComparationArticles";
 import { MobileProvider } from "./context/ResponsiveContext";
-
+import { MapsProvider } from "./providers/MapProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,13 +38,15 @@ export default function RootLayout({
                 <FiltersProvider>
                   <ArticleIdProvider>
                     <ArticleComparationProvider>
-                      <MobileProvider>
-                        <div className="flex h-screen">
-                          <NavBarAndSideMenu />
-                          <MainContent>{children}</MainContent>
-                          <FixedBottomScreen />
-                        </div>
-                      </MobileProvider>
+                      <MapsProvider>
+                        <MobileProvider>
+                          <div className="flex h-screen">
+                            <NavBarAndSideMenu />
+                            <MainContent>{children}</MainContent>
+                            <FixedBottomScreen />
+                          </div>
+                        </MobileProvider>
+                      </MapsProvider>
                     </ArticleComparationProvider>
                   </ArticleIdProvider>
                 </FiltersProvider>

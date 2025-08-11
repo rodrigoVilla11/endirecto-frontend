@@ -309,11 +309,11 @@ const SelectCustomer = () => {
         "status-account": formatCurrency.format(customer.totalAmount || 0),
         "expired-debt": formatCurrency.format(customer.totalAmountExpired || 0),
         shopping_cart: customer.shopping_cart?.length || 0,
-        gps: (
+        gps: ( customer.gps ?
           <FiMapPin
             onClick={() => handleViewLocation(customer)}
             className="cursor-pointer hover:text-blue-600"
-          />
+          /> : "No GPS"
         ),
         menu: (
           <div className="relative">

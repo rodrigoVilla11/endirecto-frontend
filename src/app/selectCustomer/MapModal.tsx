@@ -1,20 +1,21 @@
 "use client";
 
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { X, Search, MapPin } from "lucide-react";
-import { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useMapsLoader } from "../providers/MapProvider";
 
 type Customer = {
   id: string;
   name: string;
-  gps?: string;
+  gps?: string; // "lat, lng"
 };
 
-type MarkerData = {
-  id: string;
-  name: string;
-  position: { lat: number; lng: number };
+type Row = {
+  customer: Customer;
+  displayIndex: number; // 1..N según el filtro
+  position: google.maps.LatLngLiteral | null; // null si no hay GPS válido
 };
 
 type MapModalProps = {
@@ -23,16 +24,17 @@ type MapModalProps = {
 };
 
 export default function MapModal({ customers, onClose }: MapModalProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation();
+  const { isLoaded, loadError } = useMapsLoader(); // <- evita duplicar loader
+  const [searchQuery, setSearchQuery] = useState("");
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
-  // Hooks siempre primero
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey,
-  });
+  const defaultCenter = useMemo<google.maps.LatLngLiteral>(
+    () => ({ lat: -34.6037, lng: -58.3816 }),
+    []
+  );
+  const [focus, setFocus] = useState<google.maps.LatLngLiteral>(defaultCenter);
 
   const containerStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
   const mapOptions = useMemo(
@@ -44,40 +46,95 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
           stylers: [{ visibility: "off" }],
         },
       ],
+      clickableIcons: false,
     }),
     []
   );
 
+  // 1) Filtro por búsqueda (NO elimina los que no tengan GPS)
   const filteredCustomers = useMemo(
     () =>
-      customers.filter((customer) =>
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+      customers.filter((c) =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase())
       ),
     [customers, searchQuery]
   );
 
-  const markers: MarkerData[] = useMemo(
-    () =>
-      filteredCustomers
-        .map((c) => {
-          if (!c.gps) return null;
-          const [lat, lng] = c.gps.split(",").map((p) => parseFloat(p.trim()));
-          if (!isNaN(lat) && !isNaN(lng)) {
-            return { id: c.id, name: c.name, position: { lat, lng } };
-          }
-          return null;
-        })
-        .filter((m): m is MarkerData => m !== null),
-    [filteredCustomers]
+  // 2) Construir filas con numeración estable y position (o null)
+  const rows: Row[] = useMemo(() => {
+    return filteredCustomers.map((c, i) => {
+      const displayIndex = i + 1;
+      let position: google.maps.LatLngLiteral | null = null;
+
+      if (c.gps) {
+        const [latStr, lngStr] = c.gps.split(",").map((p) => p.trim());
+        const lat = Number(latStr);
+        const lng = Number(lngStr);
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng) &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180
+        ) {
+          position = { lat, lng };
+        }
+      }
+
+      return { customer: c, displayIndex, position };
+    });
+  }, [filteredCustomers]);
+
+  // 3) Centro inicial: primer row con position, si no hay => default
+  const initialCenter = useMemo(
+    () => rows.find((r) => r.position)?.position || defaultCenter,
+    [rows, defaultCenter]
   );
 
-  const center = useMemo(
-    () => (markers.length ? markers[0].position : { lat: -34.6037, lng: -58.3816 }),
-    [markers]
-  );
+  // Sincronizar foco/selección al cambiar el listado
+  useEffect(() => {
+    setFocus(initialCenter);
+    if (!selectedId && rows.length > 0) {
+      setSelectedId(rows[0].customer.id);
+    }
+  }, [initialCenter, rows, selectedId]);
 
-  // En vez de returns tempranos, render condicional
   const tooMany = filteredCustomers.length > 998;
+
+  // Helpers de foco
+  const focusRow = useCallback(
+    (row: Row) => {
+      setSelectedId(row.customer.id);
+      if (row.position && mapInstance) {
+        mapInstance.panTo(row.position);
+        mapInstance.setZoom(15);
+      }
+    },
+    [mapInstance]
+  );
+
+  const focusMarker = useCallback(
+    (customerId: string) => {
+      const row = rows.find((r) => r.customer.id === customerId);
+      if (!row) return;
+      setSelectedId(customerId);
+      if (row.position && mapInstance) {
+        mapInstance.panTo(row.position);
+        mapInstance.setZoom(15);
+      }
+    },
+    [rows, mapInstance]
+  );
+
+  // Estados antes del mapa
+  if (loadError) {
+    return (
+      <div className="text-center text-red-500">
+        Error al cargar Google Maps
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -96,25 +153,18 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
 
         {/* Contenido */}
         <div className="flex h-full w-full pt-16">
+          {/* Mapa */}
           <div className="relative flex-1">
-            {/* Mensajes de estado arriba del mapa */}
-            {!apiKey ? (
-              <div className="flex h-full w-full items-center justify-center">
-                <div className="text-center text-red-500">{t("mapModal.noApiKey")}</div>
-              </div>
-            ) : loadError ? (
-              <div className="flex h-full w-full items-center justify-center">
-                <div className="text-center text-red-500">
-                  Error al cargar la API de Google Maps
-                </div>
-              </div>
-            ) : tooMany ? (
+            {/* Estados previos a mapa */}
+            {tooMany ? (
               <div className="flex h-full w-full items-center justify-center p-6">
                 <div className="rounded-xl bg-white p-6 shadow-2xl text-center">
-                  <p className="text-xl font-semibold text-gray-800">Demasiados clientes</p>
+                  <p className="text-xl font-semibold text-gray-800">
+                    Demasiados clientes
+                  </p>
                   <p className="mt-2 text-gray-600">
-                    Por favor, filtra antes de ver los resultados. No se pueden mostrar
-                    más de 1000 clientes.
+                    Por favor, filtra antes de ver los resultados. No se pueden
+                    mostrar más de 1000 clientes.
                   </p>
                   <button
                     onClick={onClose}
@@ -126,12 +176,12 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
               </div>
             ) : (
               <>
-                {/* Barra de búsqueda */}
+                {/* Search */}
                 <div className="left-4 right-4 top-4 z-10">
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Buscar lugares..."
+                      placeholder="Buscar clientes..."
                       className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -140,7 +190,7 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
                   </div>
                 </div>
 
-                {/* Mapa */}
+                {/* Google Map */}
                 {!isLoaded ? (
                   <div className="flex h-full w-full items-center justify-center bg-gray-100">
                     <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
@@ -148,32 +198,38 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
                 ) : (
                   <GoogleMap
                     mapContainerStyle={containerStyle}
-                    onLoad={(map) => {
-                      setMapInstance(map);
-                      map.setCenter(center);
-                    }}
+                    center={focus}
                     zoom={10}
                     options={mapOptions}
+                    onLoad={(map) => setMapInstance(map)}
                   >
-                    {markers.map((marker, index) => (
-                      <Marker
-                        key={marker.id}
-                        position={marker.position}
-                        label={{
-                          text: String(index + 1),
-                          color: "white",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                        }}
-                      />
-                    ))}
+                    {/* Markers solo de los que tienen posición */}
+                    {rows
+                      .filter((r) => r.position)
+                      .map((r) => (
+                        <Marker
+                          key={r.customer.id}
+                          position={r.position!}
+                          label={{
+                            text: String(r.displayIndex), // 1..N estable
+                            color:
+                              selectedId === r.customer.id ? "black" : "white",
+                            fontSize: "14px",
+                            fontWeight: "bold",
+                          }}
+                          options={{
+                            zIndex: selectedId === r.customer.id ? 999 : 1,
+                          }}
+                          onClick={() => focusMarker(r.customer.id)}
+                        />
+                      ))}
                   </GoogleMap>
                 )}
               </>
             )}
           </div>
 
-          {/* Lista de clientes */}
+          {/* Lista */}
           <div className="w-96 border-l border-gray-200 bg-white">
             <div className="h-full overflow-auto">
               <table className="w-full">
@@ -188,42 +244,46 @@ export default function MapModal({ customers, onClose }: MapModalProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredCustomers.map((customer, index) => (
-                    <tr
-                      key={customer.id}
-                      className="cursor-pointer transition-colors hover:bg-gray-50"
-                      onClick={() => {
-                        if (mapInstance && customer.gps) {
-                          const parts = customer.gps
-                            .split(",")
-                            .map((p) => Number.parseFloat(p.trim()));
-                          if (
-                            parts.length === 2 &&
-                            !isNaN(parts[0]) &&
-                            !isNaN(parts[1])
-                          ) {
-                            mapInstance.panTo({ lat: parts[0], lng: parts[1] });
-                            mapInstance.setZoom(15);
-                          }
-                        }
-                      }}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
-                        {index + 1}
-                      </td>
-                      <td className="flex items-center whitespace-nowrap px-4 py-3 text-sm">
-                        <MapPin className="mr-2 h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">
-                          {customer.name}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((r) => {
+                    const isSelected = selectedId === r.customer.id;
+                    return (
+                      <tr
+                        key={r.customer.id}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected ? "bg-blue-50" : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => focusRow(r)}
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                          {r.displayIndex}
+                        </td>
+                        <td className="flex items-center whitespace-nowrap px-4 py-3 text-sm">
+                          <MapPin
+                            className={`mr-2 h-4 w-4 ${
+                              r.position ? "text-gray-400" : "text-yellow-500"
+                            }`}
+                          />
+                          <span
+                            className={`font-medium ${
+                              isSelected ? "text-blue-700" : "text-gray-900"
+                            }`}
+                          >
+                            {r.customer.name}
+                          </span>
+                          {!r.position && (
+                            <span className="ml-2 rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">
+                              {t("map.noAddress") || "Sin dirección"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
-
+          {/* /Lista */}
         </div>
       </div>
     </div>
