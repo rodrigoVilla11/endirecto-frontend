@@ -16,7 +16,7 @@ type VisitRow = {
 };
 
 type MapModalProps = {
-  visit: VisitRow[];
+  visit: any;
   onClose: () => void;
 };
 
@@ -63,7 +63,7 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return visit;
 
-    return visit.filter((v) => {
+    return visit.filter((v: any) => {
       const sellerName =
         sellersData?.find((s: any) => s.id === v.seller_id)?.name || "";
       const customerName =
@@ -78,7 +78,7 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
 
   // 2) Construir filas con índice y posición (null si no tiene GPS)
   const rows: Row[] = useMemo(() => {
-    return filtered.map((v, i) => {
+    return filtered.map((v: any, i: any) => {
       const sellerName =
         sellersData?.find((s: any) => s.id === v.seller_id)?.name ||
         v.seller_id;
@@ -88,7 +88,7 @@ export default function MapModal({ visit, onClose }: MapModalProps) {
 
       let position: google.maps.LatLngLiteral | null = null;
       if (v.gps) {
-        const [latStr, lngStr] = v.gps.split(",").map((p) => p.trim());
+        const [latStr, lngStr] = v.gps.split(",").map((p: any) => p.trim());
         const lat = Number(latStr);
         const lng = Number(lngStr);
         if (Number.isFinite(lat) && Number.isFinite(lng)) {
