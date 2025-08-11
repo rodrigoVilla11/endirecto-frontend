@@ -1,13 +1,19 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { IoMdPin } from "react-icons/io";
-import { FaInfoCircle, FaPlus } from "react-icons/fa";
+import { FaInfoCircle } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { useGetCrmPagQuery } from "@/redux/services/crmApi";
+import { useGetCrmPagQuery, useLazyExportCrmQuery } from "@/redux/services/crmApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "../context/PrivateRoutes";
@@ -24,50 +30,79 @@ import { useAuth } from "../context/AuthContext";
 import MapModal from "./MapModal";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { AiOutlineDownload } from "react-icons/ai";
-import { useLazyExportCrmQuery } from "@/redux/services/crmApi";
 
 const ITEMS_PER_PAGE = 15;
+const keyOf = (o: unknown) => JSON.stringify(o);
 
 const Page = () => {
   const { t } = useTranslation();
 
-  // ---------- Estados para la paginación y datos ----------
+  // -------- Context / Auth --------
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
+  const userRole = (userData?.role || "").toUpperCase();
+
+  // -------- Filtros / estado UI --------
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const { userData } = useAuth();
-  const userRole = userData?.role ? userData.role.toUpperCase() : "";
-  // ---------- Estados para los filtros ----------
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [sellerFilter, setSellerFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortQuery, setSortQuery] = useState<string>("");
+  const [resetSeq, setResetSeq] = useState(0); // versión de filtros
+
+  // -------- Modales --------
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isViewGPSModalOpen, setViewGPSModalOpen] = useState(false);
   const [currentGPS, setCurrentGPS] = useState<string | null>(null);
+  const [isViewAllMapModalOpen, setViewAllMapModalOpen] = useState(false);
   const [modalState, setModalState] = useState<{
     type: "update" | "delete" | "info" | null;
     crm: any | null;
   }>({ type: null, crm: null });
-  const [isViewAllMapModalOpen, setViewAllMapModalOpen] = useState(false);
 
+  // -------- Datos relacionados --------
+  const { data: customersData } = useGetCustomersQuery(null);
+  const { data: sellersData } = useGetSellersQuery(null);
+  const { data: ordersData } = useGetOrdersQuery(null);
+  const { data: usersData } = useGetUsersQuery(null);
+
+  // -------- Filtro por rol vendedor --------
+  useEffect(() => {
+    if (userRole === "VENDEDOR" && userData?.seller_id) {
+      setSellerFilter(userData.seller_id);
+    }
+  }, [userRole, userData]);
+
+  // -------- Filtro por cliente desde contexto --------
+  const [customer_id, setCustomer_id] = useState("");
+  useEffect(() => {
+    setCustomer_id(selectedClientId || "");
+    // cada cambio de cliente resetea paginación
+    setPage(1);
+    setItems([]);
+    setHasMore(true);
+    setResetSeq((s) => s + 1);
+  }, [selectedClientId]);
+
+  // -------- Export --------
   const [exportCrm, { isFetching: isExporting }] = useLazyExportCrmQuery();
-
   const handleExport = async () => {
     try {
       const blob = await exportCrm({
         startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
         endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
-        status: undefined, // si sumás un selector, pasalo acá
+        status: undefined,
         type: typeFilter || undefined,
-        insitu: "", // usás vacío en la pantalla
+        insitu: "",
         customer_id: customer_id || undefined,
         sort: sortQuery || undefined,
         seller_id: sellerFilter || undefined,
-        user_id: undefined, // si después filtrás por user, lo pasás
-        action: undefined, // idem
+        user_id: undefined,
+        action: undefined,
         search: searchQuery || undefined,
       }).unwrap();
 
@@ -88,123 +123,41 @@ const Page = () => {
     }
   };
 
-  // ---------- Estados y lógica para modal de creación ----------
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const openCreateModal = useCallback(() => setCreateModalOpen(true), []);
-  const closeCreateModal = useCallback(() => {
-    setCreateModalOpen(false);
-    refetch();
-  }, []);
+  // -------- Helpers --------
+  const formatCurrency = (value: any) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
 
-  // ---------- Context y data adicional ----------
-  const { selectedClientId } = useClient();
-  const [customer_id, setCustomer_id] = useState("");
-
-  // ---------- Queries para datos relacionados ----------
-  const { data: customersData } = useGetCustomersQuery(null);
-  const { data: sellersData } = useGetSellersQuery(null);
-  const { data: ordersData } = useGetOrdersQuery(null);
-  const { data: usersData } = useGetUsersQuery(null);
-
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-    }
-  }, [selectedClientId]);
-
-  useEffect(() => {
-    if (userRole === "VENDEDOR" && userData?.seller_id) {
-      setSellerFilter(userData.seller_id);
-    }
-  }, [userRole, userData]);
-
-  // ---------- Query principal para CRM ----------
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-    isFetching,
-  } = useGetCrmPagQuery(
-    {
-      page,
-      limit: ITEMS_PER_PAGE,
-      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
-      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
-      type: typeFilter,
-      insitu: "",
-      customer_id,
-      seller_id: sellerFilter,
-      search: searchQuery,
-      sort: sortQuery,
-    },
-    {
-      refetchOnMountOrArgChange: true,
-    }
-  );
-  const { data: allVisitsData } = useGetCrmPagQuery(
-    {
-      page,
-      limit: 1000,
-      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
-      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
-      type: "VISIT",
-      insitu: "",
-      customer_id,
-      seller_id: sellerFilter,
-      search: searchQuery,
-      sort: sortQuery,
-    },
-    {
-      refetchOnMountOrArgChange: true,
-    }
-  );
-  const markersVisits = allVisitsData?.crms || [];
-
-  // Actualizar customer_id cuando cambie selectedClientId
-  useEffect(() => {
-    if (selectedClientId) {
-      setCustomer_id(selectedClientId);
-      refetch();
-    } else {
-      setCustomer_id("");
-      refetch();
-    }
-  }, [selectedClientId]);
-  // ---------- Actualiza el customer_id al cambiar selectedClientId ----------
-  useEffect(() => {
-    if (selectedClientId !== undefined) {
-      setCustomer_id(selectedClientId || "");
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
-    }
-  }, [selectedClientId]);
-
-  // ---------- Manejo de la carga inicial y actualización de datos ----------
-  useEffect(() => {
-    if (data?.crms) {
-      setItems((prev) => {
-        if (page === 1) {
-          return data.crms;
-        }
-        const newArticles = data.crms.filter(
-          (article) => !prev.some((item) => item._id === article._id)
-        );
-        return [...prev, ...newArticles];
-      });
-      setHasMore(data.crms.length === ITEMS_PER_PAGE);
-    }
-  }, [data?.crms, page]);
-
-  // ---------- Función para resetear la paginación y filtros ----------
   const resetPagination = useCallback(() => {
     setPage(1);
     setItems([]);
     setHasMore(true);
+    setResetSeq((s) => s + 1); // cambia key de cache y anula respuestas viejas
   }, []);
 
-  // ---------- Debounce para la búsqueda ----------
+  // -------- Handlers filtros --------
+  const handleDateChange = useCallback(
+    (setter: React.Dispatch<React.SetStateAction<Date | null>>) =>
+      (date: Date | null) => {
+        setter(date);
+        resetPagination();
+      },
+    [resetPagination]
+  );
+
+  const handleFilterChange = useCallback(
+    (setter: React.Dispatch<React.SetStateAction<string>>) =>
+      (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+        setter(e.target.value);
+        resetPagination();
+      },
+    [resetPagination]
+  );
+
   const debouncedSearch = useCallback(
     debounce((value: string) => {
       setSearchQuery(value);
@@ -213,37 +166,13 @@ const Page = () => {
     [resetPagination]
   );
 
-  // ---------- IntersectionObserver para scroll infinito ----------
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  const openViewGPSModal = (gps: string) => {
-    setCurrentGPS(gps);
-    setViewGPSModalOpen(true);
-  };
-  const closeViewGPSModal = () => {
-    setViewGPSModalOpen(false);
-    setCurrentGPS(null);
-  };
-
-  const lastArticleRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) observerRef.current.disconnect();
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
-            setPage((prev) => prev + 1);
-          }
-        },
-        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
-      );
-
-      if (node) observerRef.current.observe(node);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      debouncedSearch(e.target.value);
     },
-    [hasMore, isQueryLoading]
+    [debouncedSearch]
   );
 
-  // ---------- Manejo de ordenamiento ----------
   const handleSort = useCallback(
     (field: string) => {
       const [currentField, currentDirection] = sortQuery
@@ -264,70 +193,147 @@ const Page = () => {
     [sortQuery, resetPagination]
   );
 
-  // ---------- Funciones para manejar cambios de filtros ----------
-  const handleDateChange = useCallback(
-    (setter: React.Dispatch<React.SetStateAction<Date | null>>) =>
-      (date: Date | null) => {
-        setter(date);
-        resetPagination();
-      },
-    [resetPagination]
+  // -------- Args para query principal (mem) --------
+  const listArgs = useMemo(() => {
+    return {
+      page,
+      limit: ITEMS_PER_PAGE,
+      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
+      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
+      type: typeFilter || undefined,
+      insitu: "",
+      customer_id: customer_id || undefined,
+      seller_id: sellerFilter || undefined,
+      search: searchQuery || undefined,
+      sort: sortQuery || undefined,
+      __v: resetSeq, // token
+    };
+  }, [
+    page,
+    startDate,
+    endDate,
+    typeFilter,
+    customer_id,
+    sellerFilter,
+    searchQuery,
+    sortQuery,
+    resetSeq,
+  ]);
+
+  // guardo la key actual para descartar respuestas viejas
+  const currentKeyRef = useRef(keyOf(listArgs));
+  useEffect(() => {
+    currentKeyRef.current = keyOf(listArgs);
+  }, [listArgs]);
+
+  // -------- Query principal --------
+  const {
+    data,
+    error,
+    isLoading: isQueryLoading,
+    isFetching,
+  } = useGetCrmPagQuery(listArgs, {
+    refetchOnMountOrArgChange: true,
+  });
+
+  // -------- Query para “ver en mapa” desacoplada del infinito --------
+  const mapArgs = useMemo(
+    () => ({
+      page: 1,
+      limit: 1000,
+      startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
+      endDate: endDate ? endOfDay(endDate).toISOString() : undefined,
+      type: "VISIT" as const,
+      insitu: "",
+      customer_id: customer_id || undefined,
+      seller_id: sellerFilter || undefined,
+      search: searchQuery || undefined,
+      sort: sortQuery || undefined,
+      __v: resetSeq,
+    }),
+    [startDate, endDate, customer_id, sellerFilter, searchQuery, sortQuery, resetSeq]
   );
 
-  const handleFilterChange = useCallback(
-    (setter: React.Dispatch<React.SetStateAction<string>>) =>
-      (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-        setter(e.target.value);
-        resetPagination();
-      },
-    [resetPagination]
-  );
+  const { data: allVisitsData } = useGetCrmPagQuery(mapArgs, {
+    refetchOnMountOrArgChange: true,
+  });
+  const markersVisits = allVisitsData?.crms || [];
 
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      debouncedSearch(e.target.value);
+  // -------- Acumulación segura con control de staleness --------
+  useEffect(() => {
+    if (!data?.crms) return;
+    if (keyOf(listArgs) !== currentKeyRef.current) return; // respuesta vieja
+
+    setItems((prev) => {
+      if (page === 1) return data.crms;
+      const newOnes = data.crms.filter(
+        (row: any) => !prev.some((p) => p._id === row._id)
+      );
+      return [...prev, ...newOnes];
+    });
+    setHasMore(data.crms.length === ITEMS_PER_PAGE);
+  }, [data?.crms, listArgs, page]);
+
+  // -------- IntersectionObserver para infinito --------
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastArticleRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isQueryLoading) {
+            setPage((prev) => prev + 1);
+          }
+        },
+        { threshold: 0.0, rootMargin: "200px" }
+      );
+
+      if (node) observerRef.current.observe(node);
     },
-    [debouncedSearch]
+    [hasMore, isQueryLoading]
   );
+
+  // -------- Abrir/cerrar modales --------
+  const openCreateModal = useCallback(() => setCreateModalOpen(true), []);
+  const closeCreateModal = useCallback(() => {
+    setCreateModalOpen(false);
+    // tras crear, reseteo paginación para traer datos frescos
+    resetPagination();
+  }, [resetPagination]);
+
+  const openViewGPSModal = (gps: string) => {
+    setCurrentGPS(gps);
+    setViewGPSModalOpen(true);
+  };
+  const closeViewGPSModal = () => {
+    setViewGPSModalOpen(false);
+    setCurrentGPS(null);
+  };
 
   const handleModalOpen = useCallback(
     (type: "update" | "delete" | "info", crm: any) => {
-      setModalState({ type, crm: crm });
+      setModalState({ type, crm });
     },
     []
   );
   const handleModalClose = useCallback(
-    async (type: "update" | "delete" | "info") => {
+    (type: "update" | "delete" | "info") => {
       setModalState({ type: null, crm: null });
-      setTimeout(async () => {
-        try {
-          await refetch();
-        } catch (error) {
-          console.error(t("errorRefetchingData"), error);
-        }
-      }, 100);
+      // si el modal modifica datos, preferible resetear:
+      if (type !== "info") resetPagination();
     },
-    [refetch, t]
+    [resetPagination]
   );
-  const formatCurrency = (value: any) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
-  // ---------- Memoización del mapeo de datos para la tabla ----------
-  const tableData = React.useMemo(
+  // -------- Mapeo de tabla --------
+  const tableData = useMemo(
     () =>
       items?.map((crm) => {
-        const customer = customersData?.find(
-          (data) => data.id === crm.customer_id
-        );
-        const seller = sellersData?.find((data) => data.id === crm.seller_id);
-        const order = ordersData?.find((data) => data.tmp_id === crm.order_id);
-        const user = usersData?.find((data) => data._id === crm.user_id);
+        const customer = customersData?.find((d) => d.id === crm.customer_id);
+        const seller = sellersData?.find((d) => d.id === crm.seller_id);
+        const order = ordersData?.find((d) => d.tmp_id === crm.order_id);
+        const user = usersData?.find((d) => d._id === crm.user_id);
         return {
           key: crm._id,
           info: (
@@ -361,18 +367,12 @@ const Page = () => {
           ),
         };
       }) || [],
-    [items, customersData, sellersData, ordersData, t]
+    [items, customersData, sellersData, ordersData, usersData, t]
   );
 
-  // ---------- Definición de columnas ----------
-  const tableHeader = React.useMemo(
+  const tableHeader = useMemo(
     () => [
-      {
-        component: (
-          <IoInformationCircleOutline className="text-center text-xl" />
-        ),
-        key: "info",
-      },
+      { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
       { name: t("seller"), key: "seller", important: true },
       { name: t("customer"), key: "customer", important: true },
       { name: t("user"), key: "user" },
@@ -386,19 +386,15 @@ const Page = () => {
     [t]
   );
 
-  // ---------- Filtros en la cabecera (Header) ----------
-  const headerBody = React.useMemo(
+  // -------- Header config --------
+  const headerBody = useMemo(
     () => ({
       buttons: [
         {
-          logo: (
-            <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />
-          ),
-          title: isExporting
-            ? t("exporting") || "Exportando..."
-            : t("download") || "Descargar",
+          logo: <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />,
+          title: isExporting ? (t("exporting") || "Exportando...") : (t("download") || "Descargar"),
           onClick: handleExport,
-          disabled: isExporting, // si tu <Header> soporta disabled por botón
+          disabled: isExporting,
         },
         {
           logo: <IoMdPin />,
@@ -407,7 +403,6 @@ const Page = () => {
         },
       ],
       filters: [
-        // Fecha desde
         {
           content: (
             <DatePicker
@@ -419,7 +414,6 @@ const Page = () => {
             />
           ),
         },
-        // Fecha hasta
         {
           content: (
             <DatePicker
@@ -431,30 +425,25 @@ const Page = () => {
             />
           ),
         },
-        // Filtro por Vendedor
         {
           content: (
             <select
-              value={
-                userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter
-              }
+              value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
               onChange={(e) => {
                 if (userRole !== "VENDEDOR") {
                   setSellerFilter(e.target.value);
-                  setPage(1);
-                  setItems([]);
+                  resetPagination();
                 }
               }}
               className="border border-gray-300 rounded p-2"
               disabled={userRole === "VENDEDOR"}
             >
               <option value="">{t("allSellers")}</option>
-              {sellersData &&
-                sellersData.map((seller: any) => (
-                  <option key={seller.id} value={seller.id}>
-                    {seller.name}
-                  </option>
-                ))}
+              {sellersData?.map((s: any) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
             </select>
           ),
         },
@@ -472,6 +461,7 @@ const Page = () => {
             </select>
           ),
         },
+        // Buscador (si lo usás):
         // {
         //   content: (
         //     <input
@@ -493,14 +483,16 @@ const Page = () => {
       endDate,
       sellerFilter,
       typeFilter,
-      searchQuery,
+      // searchQuery, // si activás el buscador, incluí acá
       isExporting,
       data?.total,
       sellersData,
-      openCreateModal,
+      userRole,
+      userData?.seller_id,
       handleDateChange,
       handleFilterChange,
       handleSearchChange,
+      resetPagination,
     ]
   );
 
@@ -513,12 +505,11 @@ const Page = () => {
   }
 
   return (
-    <PrivateRoute
-      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
-    >
+    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("crm")}</h3>
         <Header headerBody={headerBody} />
+
         {isQueryLoading && page === 1 ? (
           <div className="p-4 text-center">{t("loading")}</div>
         ) : (
@@ -530,44 +521,32 @@ const Page = () => {
             sortOrder={(sortQuery.split(":")[1] as "asc" | "desc") || ""}
           />
         )}
-        {isLoadingMore && (
-          <div className="text-center py-2">{t("loadingMore")}</div>
-        )}
       </div>
 
-      {/* Intersection Observer div */}
+      {/* sentinel para infinito */}
       <div ref={lastArticleRef} className="h-10" />
 
-      {/* Modal de creación */}
+      {/* Modal crear */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
         <CreateCRMComponent closeModal={closeCreateModal} />
       </Modal>
 
+      {/* Modal ver GPS puntual */}
       {isViewGPSModalOpen && currentGPS && (
         <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
-          <MapComponent
-            currentGPS={currentGPS}
-            closeModal={closeViewGPSModal}
-          />
+          <MapComponent currentGPS={currentGPS} closeModal={closeViewGPSModal} />
         </Modal>
       )}
 
+      {/* Modal ver todo en mapa */}
       {isViewAllMapModalOpen && (
-        <Modal
-          isOpen={isViewAllMapModalOpen}
-          onClose={() => setViewAllMapModalOpen(false)}
-        >
-          <MapModal
-            visit={markersVisits}
-            onClose={() => setViewAllMapModalOpen(false)}
-          />
+        <Modal isOpen={isViewAllMapModalOpen} onClose={() => setViewAllMapModalOpen(false)}>
+          <MapModal visit={markersVisits} onClose={() => setViewAllMapModalOpen(false)} />
         </Modal>
       )}
 
-      <Modal
-        isOpen={modalState.type === "info"}
-        onClose={() => handleModalClose("info")}
-      >
+      {/* Modal detalles CRM */}
+      <Modal isOpen={modalState.type === "info"} onClose={() => handleModalClose("info")}>
         {modalState.crm && (
           <CRMDetail
             data={modalState.crm}
