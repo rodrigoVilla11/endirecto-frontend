@@ -583,12 +583,12 @@ const DashboardPage = () => {
       href: "/collections/summaries",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },
-    {
-      logo: <BsCash />,
-      title: t("collectionsUnsummaries"),
-      href: "/collections/unsummaries",
-      allowedRoles: ["ADMINISTRADOR"],
-    },
+    // {
+    //   logo: <BsCash />,
+    //   title: t("collectionsUnsummaries"),
+    //   href: "/collections/unsummaries",
+    //   allowedRoles: ["ADMINISTRADOR"],
+    // },
     {
       logo: <IoCalculatorSharp />,
       title: t("orders"),

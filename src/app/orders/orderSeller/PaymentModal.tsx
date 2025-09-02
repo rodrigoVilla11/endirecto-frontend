@@ -7,7 +7,7 @@ import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/cus
 import ValueView from "./ValueView";
 import { CommentsView } from "./CommentsView";
 import { useTranslation } from "react-i18next";
-
+import { CreatePayment, PaymentStatus, useCreatePaymentMutation } from "@/redux/services/paymentsApi";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,6 +27,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
+  const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
 
   // Documentos seleccionados (llenados por DocumentsView)
   const [newPayment, setNewPayment] = useState<
@@ -568,11 +569,99 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
               <button
                 onClick={async () => {
+                  const nowIso = new Date().toISOString();
+
+                  const ruleAppliedFor = (docDays: number) => {
+                    if (paymentTypeUI === "contra_entrega") {
+                      if (contraEntregaOpt === "efectivo_general")
+                        return "efectivo_general";
+                      if (contraEntregaOpt === "efectivo_promos")
+                        return "efectivo_promos";
+                      if (contraEntregaOpt === "cheque_30") {
+                        if (!Number.isNaN(docDays) && docDays <= 30)
+                          return "cheque<=30";
+                        return "cheque>30";
+                      }
+                      return "contra_entrega";
+                    }
+                    if (Number.isNaN(docDays)) return "cta_cte_unknown";
+                    if (docDays <= 15) return "cta_cte<=15";
+                    if (docDays <= 30) return "cta_cte<=30";
+                    if (docDays <= 45) return "precio_facturado";
+                    return "actualizacion_precios";
+                  };
+
+                  // 🔧 Tipamos el payload y usamos el tipo de estado correcto
+                  const payload: CreatePayment = {
+                    status: "confirmed" as PaymentStatus, // <- evita "string" genérico
+                    customer: { id: selectedClientId ?? "" },
+                    currency: "ARS",
+                    date: nowIso,
+                    type: paymentTypeUI,
+                    contra_entrega_choice:
+                      paymentTypeUI === "contra_entrega"
+                        ? contraEntregaOpt
+                        : undefined,
+
+                    totals: {
+                      gross: +totalBase.toFixed(2),
+                      discount: +totalDiscount.toFixed(2),
+                      net: +totalAfterDiscount.toFixed(2),
+                      values: +newValues
+                        .reduce(
+                          (acc, v) => acc + (parseFloat(v.amount || "0") || 0),
+                          0
+                        )
+                        .toFixed(2),
+                      diff: +diff.toFixed(2),
+                    },
+
+                    // compat: igual a totals.net
+                    total: +totalAfterDiscount.toFixed(2),
+
+                    documents: computedDiscounts.map((d) => ({
+                      document_id: d.document_id,
+                      number: d.number,
+                      days_used: Number.isNaN(d.days) ? undefined : d.days,
+                      rule_applied: ruleAppliedFor(d.days),
+                      base: +d.base.toFixed(2),
+                      discount_rate: +d.rate.toFixed(4),
+                      discount_amount: +d.discountAmount.toFixed(2),
+                      final_amount: +d.finalAmount.toFixed(2),
+                      note: d.note,
+                    })),
+
+                    payment_condition: {
+                      id: newPayment[0]?.payment_condition ?? "default",
+                    },
+
+                    values: newValues.map((v) => ({
+                      amount: +(parseFloat(v.amount || "0") || 0).toFixed(2),
+                      concept: v.selectedReason,
+                      method: v.method, // "efectivo" | "transferencia" | "cheque"
+                      bank: v.bank || undefined,
+                      receipt_url:
+                        typeof v.receipt === "string" ? v.receipt : undefined,
+                      receipt_original_name:
+                        typeof v.receipt === "object" && v.receipt
+                          ? (v.receipt as File).name
+                          : undefined,
+                    })),
+
+                    user: { id: "web" }, // TODO: reemplazar por el user real
+                    comments,
+                    source: "web",
+                    version: 1,
+                    isCharged: false, // opcional en CreatePayment, requerido en tu modelo
+                    // ❌ NO incluyas multisoft_id si no tenés valor
+                  };
+
+                  console.log("POST /payments payload:", payload);
+
                   setIsSubmittingPayment(true);
                   setSubmittedPayment(false);
                   try {
-                    // Acá hacés la mutation real si querés.
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await createPayment(payload).unwrap();
                     setSubmittedPayment(true);
                     setTimeout(() => {
                       setIsSubmittingPayment(false);
@@ -581,21 +670,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       onClose();
                     }, 800);
                   } catch (error) {
-                    console.error("Error procesando el pago:", error);
+                    console.error("Error creando payment:", error);
                     setIsSubmittingPayment(false);
                   }
                 }}
-                disabled={
-                  isSubmittingPayment || newValues.length === 0 || diff !== 0
-                }
-                className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-60"
-                title={
-                  newValues.length === 0
-                    ? "No hay valores para confirmar"
-                    : diff !== 0
-                    ? "La diferencia debe ser 0 para confirmar"
-                    : undefined
-                }
               >
                 {isSubmittingPayment
                   ? t("paymentModal.loading") || "Cargando..."

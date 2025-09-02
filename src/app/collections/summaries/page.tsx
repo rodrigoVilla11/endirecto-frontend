@@ -1,98 +1,111 @@
 "use client";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AiOutlineDownload } from "react-icons/ai";
-import Input from "@/app/components/components/Input";
+import { FaRegFilePdf, FaCheck, FaEye, FaSpinner, FaTimes, FaCheckCircle } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaRegFilePdf } from "react-icons/fa";
-import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useCountCollectionQuery, useGetCollectionsPagQuery } from "@/redux/services/collectionsApi";
-import { useGetBranchesQuery } from "@/redux/services/branchesApi";
-import { format } from "date-fns";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import DatePicker from "react-datepicker";
-import { useClient } from "@/app/context/ClientContext";
-import debounce from "@/app/context/debounce";
-import { FaTimes } from "react-icons/fa";
+import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useClient } from "@/app/context/ClientContext";
+
+// 👉 RTK Query (payments)
+import {
+  useLazyGetPaymentsQuery,
+  useMarkAsChargedMutation,
+  type Payment,
+} from "@/redux/services/paymentsApi";
 
 const ITEMS_PER_PAGE = 15;
 
-const Page = () => {
+const PaymentsPendingPage = () => {
   const { t } = useTranslation();
-
-  // Estados básicos
-  const [page, setPage] = useState(1);
-  const [items, setItems] = useState<any[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
-  const [customer_id, setCustomer_id] = useState("");
   const { selectedClientId } = useClient();
 
-  // Referencias
+  // Estado de lista
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState<Payment[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc|desc"
+  const [customer_id, setCustomer_id] = useState<string>("");
+
+  // Filtros
+  const [searchParams, setSearchParams] = useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+  }>({
+    startDate: null,
+    endDate: null,
+  });
+
+  // Modal
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selected, setSelected] = useState<Payment | null>(null);
+
+  // RTK hooks
+  const [fetchPayments, { data, isFetching }] = useLazyGetPaymentsQuery();
+  const [markAsCharged, { isLoading: isMarking }] = useMarkAsChargedMutation();
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  // Observer para scroll infinito
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: sellersData } = useGetSellersQuery(null);
-  const [searchParams, setSearchParams] = useState({
-    seller_id: "",
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-  });
-
-  const {
-    data,
-    error,
-    isLoading: isQueryLoading,
-    refetch,
-  } = useGetCollectionsPagQuery({
-    page,
-    limit: ITEMS_PER_PAGE,
-    status: "SUMMARIZED",
-    startDate: searchParams.startDate ? searchParams.startDate.toISOString() : undefined,
-    endDate: searchParams.endDate ? searchParams.endDate.toISOString() : undefined,
-    seller_id: searchParams.seller_id,
-    customer_id,
-    sort: sortQuery,
-  });
-
-  const { data: countCollectionsData } = useCountCollectionQuery(null);
-  const { data: branchData } = useGetBranchesQuery(null);
-
-  // Evitar llamadas innecesarias a `refetch` cuando cambia selectedClientId
+  // Mantener sync con cliente elegido
   useEffect(() => {
     if (selectedClientId !== customer_id) {
       setCustomer_id(selectedClientId || "");
-      refetch();
+      setPage(1);
+      setItems([]);
+      setHasMore(true);
     }
-  }, [selectedClientId, customer_id, refetch]);
+  }, [selectedClientId]);
 
-  // Carga de datos con paginación y ordenamiento
+  // Carga con paginación y orden
   useEffect(() => {
     const loadItems = async () => {
-      if (isLoading) return; // Evita llamadas innecesarias
+      if (isLoading) return;
       setIsLoading(true);
+
       try {
-        const result = await refetch().unwrap();
-        // Extraemos las collections de la respuesta
-        const newItems = result.collections || [];
+        const startDate =
+          searchParams.startDate ? format(searchParams.startDate, "yyyy-MM-dd") : undefined;
+        const endDate =
+          searchParams.endDate ? format(searchParams.endDate, "yyyy-MM-dd") : undefined;
+
+        const result = await fetchPayments({
+          page,
+          limit: ITEMS_PER_PAGE,
+          startDate,
+          endDate,
+          sort: sortQuery,
+          customer_id: customer_id || undefined,
+          // 👇 clave para traer solo no cobrados
+          isCharged: "false",
+          includeLookup: false,
+        }).unwrap();
+
+        const newItems = result?.payments ?? [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         setHasMore(newItems.length === ITEMS_PER_PAGE);
-      } catch (error) {
-        console.error("Error loading collections:", error);
+      } catch (err) {
+        console.error("Error loading payments:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadItems();
-  }, [page, sortQuery, customer_id, refetch, isLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, sortQuery, customer_id, searchParams.startDate, searchParams.endDate]);
 
-  // Intersection Observer para scroll infinito
+  // IntersectionObserver
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoading) {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isFetching) {
           setPage((prev) => prev + 1);
         }
       },
@@ -100,22 +113,19 @@ const Page = () => {
     );
 
     if (observerRef.current) observer.observe(observerRef.current);
-
     return () => {
       if (observerRef.current) observer.unobserve(observerRef.current);
     };
-  }, [hasMore, isLoading]);
+  }, [hasMore, isLoading, isFetching]);
 
-  // Manejo de ordenamiento
+  // Ordenamiento
   const handleSort = useCallback(
     (field: string) => {
       setPage(1);
       setItems([]);
       setHasMore(true);
 
-      const [currentField, currentDirection] = sortQuery
-        ? sortQuery.split(":")
-        : ["", ""];
+      const [currentField, currentDirection] = sortQuery ? sortQuery.split(":") : ["", ""];
       setSortQuery(
         currentField === field
           ? `${field}:${currentDirection === "asc" ? "desc" : "asc"}`
@@ -125,35 +135,97 @@ const Page = () => {
     [sortQuery]
   );
 
-  // Construcción de datos para la tabla
-  const tableData = items?.map((collection) => {
-    // Se usa el nuevo modelo: id, branchId, sellerId, etc.
-    const branch = branchData?.find((data) => data.id === collection.branchId);
-    const seller = sellersData?.find((data) => data.id === collection.sellerId);
+  // Acciones
+  const openDetails = (payment: Payment) => {
+    setSelected(payment);
+    setIsDetailOpen(true);
+  };
 
-    return {
-      key: collection.id,
-      info: (
-        <div className="flex justify-center items-center">
-          <AiOutlineDownload className="text-center text-xl" />
-        </div>
-      ),
-      pdf: (
-        <div className="flex justify-center items-center">
-          <FaRegFilePdf className="text-center text-xl" />
-        </div>
-      ),
-      number: collection.number,
-      date: collection.date
-        ? format(new Date(collection.date), "dd/MM/yyyy HH:mm")
-        : "N/A",
-      payment: "PESOS",
-      amount: collection.amount,
-      status: collection.status,
-      notes: collection.notes,
-      seller: seller?.name || t("notFound"),
-    };
-  });
+  const closeDetails = () => {
+    setIsDetailOpen(false);
+    setSelected(null);
+  };
+
+  const onMarkCharged = async (id: string) => {
+    const confirmMsg = t("areYouSureMarkAsCharged") || "¿Marcar este pago como cobrado?";
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setMarkingId(id);
+      await markAsCharged(id).unwrap();
+      // Sacamos el item de la lista local
+      setItems((prev) => prev.filter((p) => p._id !== id));
+      // Si el modal está abierto y es el mismo, lo cerramos
+      if (selected?._id === id) closeDetails();
+    } catch (e) {
+      console.error("No se pudo marcar como cobrado:", e);
+    } finally {
+      setMarkingId(null);
+    }
+  };
+
+  // Tabla
+  const tableData =
+    items?.map((p) => {
+      const number = p.documents?.[0]?.number ?? "—";
+      const isThisMarking = markingId === p._id;
+
+      return {
+        key: p._id,
+
+        // Abrir modal de detalles
+        info: (
+          <button
+            className="flex items-center justify-center p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            title={t("view") as string}
+            onClick={() => openDetails(p)}
+          >
+            <FaEye className="text-lg" />
+          </button>
+        ),
+
+        // (placeholder) PDF/descarga
+        pdf: (
+          <div className="flex justify-center items-center">
+            <FaRegFilePdf className="text-center text-xl" />
+          </div>
+        ),
+
+        number,
+        date: p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "N/A",
+        payment: p.currency || "ARS",
+        amount: p.total, // neto = totals.net
+        status: p.status,
+        notes: p.comments ?? "",
+        customer: p.customer?.id ?? "—",
+
+        // Acción: marcar como cobrado
+        actions: (
+          <button
+            className={`flex items-center gap-2 px-3 py-1 rounded text-white ${
+              isThisMarking
+                ? "bg-amber-500 cursor-wait"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
+            onClick={() => onMarkCharged(p._id)}
+            disabled={isMarking || isThisMarking}
+            title={t("markAsCharged") as string}
+          >
+            {isThisMarking ? (
+              <>
+                <FaSpinner className="animate-spin" />
+                {t("processing") || "Procesando..."}
+              </>
+            ) : (
+              <>
+                <FaCheckCircle />
+                {t("markAsCharged") || "Marcar cobrado"}
+              </>
+            )}
+          </button>
+        ),
+      };
+    }) ?? [];
 
   const tableHeader = [
     { component: <AiOutlineDownload className="text-center text-xl" />, key: "info" },
@@ -164,7 +236,8 @@ const Page = () => {
     { name: t("amount"), key: "amount", important: true },
     { name: t("status"), key: "status", important: true },
     { name: t("notes"), key: "notes" },
-    { name: t("seller"), key: "seller" },
+    { name: t("customer"), key: "customer" },
+    { name: t("actions") || "Acciones", key: "actions" },
   ];
 
   const headerBody = {
@@ -174,9 +247,12 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.startDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, startDate: date })
-            }
+            onChange={(date) => {
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+              setSearchParams((s) => ({ ...s, startDate: date }));
+            }}
             placeholderText={t("dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -187,9 +263,12 @@ const Page = () => {
         content: (
           <DatePicker
             selected={searchParams.endDate}
-            onChange={(date) =>
-              setSearchParams({ ...searchParams, endDate: date })
-            }
+            onChange={(date) => {
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+              setSearchParams((s) => ({ ...s, endDate: date }));
+            }}
             placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
@@ -197,25 +276,252 @@ const Page = () => {
         ),
       },
     ],
-    results: `${data?.total || 0} ${t("results")}`,
+    results: `${(data?.total ?? 0)} ${t("results")}`,
   };
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("collectionsSummaries")}</h3>
+        <h3 className="font-bold p-4">{t("pendingPayments")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={tableHeader}
           data={tableData}
           onSort={handleSort}
           sortField={sortQuery.split(":")[0] || ""}
-          sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
+          sortOrder={(sortQuery.split(":")[1] as "asc" | "desc" | "") || ""}
         />
       </div>
+
+      {/* Modal de Detalles */}
+      {isDetailOpen && selected && (
+        <DetailsModal
+          payment={selected}
+          onClose={closeDetails}
+          onMark={() => onMarkCharged(selected._id)}
+          isMarking={isMarking || markingId === selected._id}
+          t={t}
+        />
+      )}
+
       <div ref={observerRef} className="h-10" />
     </PrivateRoute>
   );
 };
 
-export default Page;
+export default PaymentsPendingPage;
+
+/* ===================== Modal de Detalles ===================== */
+
+type DetailsModalProps = {
+  payment: Payment;
+  onClose: () => void;
+  onMark: () => void;
+  isMarking: boolean;
+  t: (k: string) => string;
+};
+
+function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalProps) {
+  const currencyFmt = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: payment.currency || "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-col">
+            <h4 className="text-lg font-semibold">
+              {t("paymentDetail") || "Detalle de pago"}
+            </h4>
+            <span className="text-xs text-zinc-500">
+              {t("number")}: {payment.documents?.[0]?.number ?? "—"} · {t("date")}:{" "}
+              {payment.date ? format(new Date(payment.date), "dd/MM/yyyy HH:mm") : "N/A"}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            title={t("close") || "Cerrar"}
+          >
+            <FaTimes />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-4">
+          {/* Meta */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <Info label={t("customer") || "Cliente"} value={payment.customer?.id || "—"} />
+            <Info label={t("status")} value={payment.status} />
+            <Info label={t("type") || "Tipo"} value={payment.type} />
+            <Info
+              label={t("charged") || "Cobrado"}
+              value={payment.isCharged ? (t("yes") || "Sí") : (t("no") || "No")}
+            />
+          </div>
+
+          {/* Totales */}
+          <div className="rounded border border-zinc-200 dark:border-zinc-800">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+              {t("totals") || "Totales"}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 text-sm">
+              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
+              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
+              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
+              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
+              <Info
+                label="Dif."
+                valueClassName={
+                  (payment.totals?.diff ?? 0) === 0
+                    ? "text-emerald-600"
+                    : (payment.totals?.diff ?? 0) > 0
+                    ? "text-amber-600"
+                    : "text-red-600"
+                }
+                value={currencyFmt.format(payment.totals?.diff ?? 0)}
+              />
+            </div>
+          </div>
+
+          {/* Documentos */}
+          <div className="rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+              {t("documents") || "Documentos"}
+            </div>
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <div className="grid grid-cols-6 px-3 py-2 text-xs text-zinc-500">
+                <span>{t("number")}</span>
+                <span>{t("days") || "Días"}</span>
+                <span>{t("base") || "Base"}</span>
+                <span>%</span>
+                <span>{t("discount") || "Desc."}</span>
+                <span>{t("final") || "Final"}</span>
+              </div>
+              {(payment.documents || []).map((d) => (
+                <div key={d.document_id} className="grid grid-cols-6 px-3 py-2 text-sm">
+                  <span>{d.number}</span>
+                  <span className={d.note ? "text-amber-600" : ""}>
+                    {d.days_used ?? "—"}
+                  </span>
+                  <span>{currencyFmt.format(d.base)}</span>
+                  <span>{(d.discount_rate * 100).toFixed(0)}%</span>
+                  <span>-{currencyFmt.format(d.discount_amount)}</span>
+                  <span className={d.note ? "text-amber-600" : ""}>
+                    {currencyFmt.format(d.final_amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Valores */}
+          <div className="rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+              {t("values") || "Valores"}
+            </div>
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <div className="grid grid-cols-5 px-3 py-2 text-xs text-zinc-500">
+                <span>{t("method") || "Medio"}</span>
+                <span>{t("concept") || "Concepto"}</span>
+                <span>{t("amount") || "Importe"}</span>
+                <span>{t("bank") || "Banco"}</span>
+                <span>{t("receipt") || "Comprobante"}</span>
+              </div>
+              {(payment.values || []).map((v, i) => (
+                <div key={i} className="grid grid-cols-5 px-3 py-2 text-sm">
+                  <span className="uppercase">{v.method}</span>
+                  <span>{v.concept}</span>
+                  <span>{currencyFmt.format(v.amount)}</span>
+                  <span>{v.bank || "—"}</span>
+                  <span>
+                    {v.receipt_url ? (
+                      <a
+                        href={v.receipt_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {t("view") || "Ver"}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Comentarios */}
+          {payment.comments ? (
+            <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
+              <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
+              <div className="text-zinc-700 dark:text-zinc-300">{payment.comments}</div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="text-xs text-zinc-500">
+            ID: {payment._id} · {t("created") || "Creado"}:{" "}
+            {payment.created_at ? format(new Date(payment.created_at), "dd/MM/yyyy HH:mm") : "—"}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              className="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              onClick={onClose}
+            >
+              {t("close") || "Cerrar"}
+            </button>
+
+            <button
+              className={`px-3 py-2 rounded text-white ${
+                isMarking ? "bg-amber-500 cursor-wait" : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+              onClick={onMark}
+              disabled={isMarking}
+            >
+              {isMarking ? (
+                <span className="inline-flex items-center gap-2">
+                  <FaSpinner className="animate-spin" /> {t("processing") || "Procesando..."}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <FaCheck /> {t("markAsCharged") || "Marcar cobrado"}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Info({
+  label,
+  value,
+  valueClassName = "",
+}: {
+  label: string;
+  value: React.ReactNode;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[11px] uppercase tracking-wider text-zinc-500">{label}</span>
+      <span className={`text-sm ${valueClassName}`}>{value}</span>
+    </div>
+  );
+}

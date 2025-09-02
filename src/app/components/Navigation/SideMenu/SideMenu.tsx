@@ -205,10 +205,10 @@ const SideMenu = () => {
           name: t("collectionsSummaries"),
           path: "/collections/summaries",
         },
-        {
-          name: t("collectionsUnsummaries"),
-          path: "/collections/unsummaries",
-        },
+        // {
+        //   name: t("collectionsUnsummaries"),
+        //   path: "/collections/unsummaries",
+        // },
       ],
     },
     {
