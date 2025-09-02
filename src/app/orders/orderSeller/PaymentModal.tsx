@@ -13,15 +13,22 @@ interface PaymentModalProps {
   onClose: () => void;
 }
 
+type PaymentType = "contra_entrega" | "cta_cte";
+type ContraEntregaOption = "efectivo_general" | "efectivo_promos" | "cheque_30";
+
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("documents");
+  const [activeTab, setActiveTab] = useState<
+    "documents" | "values" | "comments"
+  >("documents");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
+
+  // Documentos seleccionados (llenados por DocumentsView)
   const [newPayment, setNewPayment] = useState<
     {
       document_id: string;
@@ -36,56 +43,127 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days_until_expiration_today: number;
     }[]
   >([]);
-  const [newValues, setNewValues] = useState<
-    { amount: string; selectedReason: string; currency: string }[]
-  >([]);
 
-  // Estados para el proceso del pago
+  // Valores ingresados
+  type PaymentMethod = "efectivo" | "transferencia" | "cheque";
+  type ValueItem = {
+    amount: string;
+    selectedReason: string; // podés usarlo para “concepto”
+    method: PaymentMethod;
+    bank?: string;
+    receipt?: File | string; // File en UI; podés mapearlo a URL al enviar
+  };
+
+  const [newValues, setNewValues] = useState<ValueItem[]>([]);
+
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [submittedPayment, setSubmittedPayment] = useState(false);
 
-  function sumSaldoAPagar(documents: { saldo_a_pagar: string }[]): number {
-    return documents.reduce(
-      (total, doc) => total + parseFloat(doc.saldo_a_pagar || "0"),
-      0
-    );
+  const currencyFmt = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  // ---- Lógica de descuentos ----
+  const [paymentTypeUI, setPaymentTypeUI] =
+    useState<PaymentType>("contra_entrega");
+  const [contraEntregaOpt, setContraEntregaOpt] =
+    useState<ContraEntregaOption>("efectivo_general");
+
+  function daysFromInvoice(dateStr?: string) {
+    if (!dateStr) return NaN;
+    const d = new Date(dateStr);
+    const today = new Date();
+    const diffMs = today.getTime() - d.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }
-  const totalSaldoAPagar = sumSaldoAPagar(newPayment);
 
-  function sumAmounts(newValues: { amount: string }[]): number {
-    return newValues.reduce(
-      (total, value) => total + parseFloat(value.amount || "0"),
-      0
-    );
+  // Preferimos days_until_expiration_today; si no viene, caemos a días desde fecha factura
+  function getDocDays(doc: {
+    days_until_expiration_today?: any;
+    date?: string;
+  }) {
+    const v = Number(doc.days_until_expiration_today);
+    if (Number.isFinite(v)) return v;
+    return daysFromInvoice(doc.date);
   }
-  const totalValues = sumAmounts(newValues);
 
-  const formattedTotal = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalSaldoAPagar);
+  function getDiscountRateForDoc(
+    docDays: number,
+    type: PaymentType,
+    contraEntregaChoice: ContraEntregaOption
+  ): { rate: number; note?: string } {
+    if (type === "contra_entrega") {
+      if (contraEntregaChoice === "efectivo_general") return { rate: 0.2 };
+      if (contraEntregaChoice === "efectivo_promos") return { rate: 0.15 };
+      if (contraEntregaChoice === "cheque_30") {
+        if (!isNaN(docDays) && docDays <= 30) return { rate: 0.13 };
+        return { rate: 0, note: "Cheque > 30 días: sin descuento" };
+      }
+      return { rate: 0 };
+    }
 
-  const formattedTotalValues = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalValues);
+    // ---- CUENTA CORRIENTE (auto) ----
+    if (isNaN(docDays))
+      return { rate: 0, note: "Fecha/estimación de días inválida" };
 
-  const diff = totalSaldoAPagar - totalValues;
+    if (docDays <= 15) return { rate: 0.13 }; // 13%
+    if (docDays <= 30) return { rate: 0.1 }; // 10%
+    if (docDays > 45) return { rate: 0, note: "Actualización de precios" }; // aviso
+    // 30 < días ≤ 45
+    return { rate: 0, note: "Precio facturado (0%)" };
+  }
 
-  const formattedDiff = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(diff);
+  const computedDiscounts = newPayment.map((doc) => {
+    const days = getDocDays(doc);
+    const { rate, note } = getDiscountRateForDoc(
+      days,
+      paymentTypeUI,
+      contraEntregaOpt
+    );
+    const base = parseFloat(doc.saldo_a_pagar || "0") || 0;
+    const discountAmount = +(base * rate).toFixed(2);
+    const finalAmount = +(base - discountAmount).toFixed(2);
+    return {
+      document_id: doc.document_id,
+      number: doc.number,
+      days,
+      base,
+      rate,
+      discountAmount,
+      finalAmount,
+      note,
+    };
+  });
 
-  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
+  const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
+  const totalDiscount = computedDiscounts.reduce(
+    (a, d) => a + d.discountAmount,
+    0
+  );
+  const totalAfterDiscount = computedDiscounts.reduce(
+    (a, d) => a + d.finalAmount,
+    0
+  );
+
+  const totalValues = newValues.reduce(
+    (total, v) => total + parseFloat(v.amount || "0"),
+    0
+  );
+  const diff = +(totalAfterDiscount - totalValues).toFixed(2);
+
+  const formattedTotalGross = currencyFmt.format(totalBase);
+  const formattedTotalNet = currencyFmt.format(totalAfterDiscount);
+  const formattedTotalValues = currencyFmt.format(totalValues);
+  const formattedDiff = currencyFmt.format(diff);
+
+  // ---- Datos externos (RTK Query) ----
+  const { data } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
   });
+
   if (!isOpen) return null;
 
   const handleRowSelect = (id: string, checked: boolean) => {
@@ -93,6 +171,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       checked ? [...prev, id] : prev.filter((rowId) => rowId !== id)
     );
   };
+
   const today = new Date();
   const formattedDate = today.toLocaleDateString("es-ES", {
     day: "2-digit",
@@ -101,7 +180,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   });
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/90 z-50"
+      onClick={!isConfirmModalOpen ? onClose : undefined}
+    >
       <div
         className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto"
         onClick={(e) => e.stopPropagation()}
@@ -136,25 +218,36 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 </span>
               }
             />
-            <InfoRow label={t("paymentModal.grossAmount")} value={formattedTotal} />
-            <InfoRow label={t("paymentModal.netAmount")} value={formattedTotal} />
-            <InfoRow label={t("paymentModal.values")} value={formattedTotalValues} />
+            {/* Resumen */}
+            <InfoRow label="Importe bruto" value={formattedTotalGross} />
+            <InfoRow label="Importe neto (c/desc)" value={formattedTotalNet} />
+            <InfoRow label="Valores" value={formattedTotalValues} />
             <InfoRow
-              label={t("paymentModal.difference")}
+              label="Diferencia"
               value={formattedDiff}
-              valueClassName="text-emerald-500"
+              valueClassName={
+                diff === 0
+                  ? "text-emerald-500"
+                  : diff > 0
+                  ? "text-amber-400"
+                  : "text-red-500"
+              }
             />
-            {/* Mostrar días de pago si hay documentos en newPayment */}
+
+            {/* Días hasta vencimiento por doc (si querés mantenerlo) */}
             {newPayment.length > 0 &&
               newPayment.map((item, index) => (
                 <InfoRow
                   key={index}
-                  label={t("paymentModal.daysOfPayment", { number: item.number })}
+                  label={t("paymentModal.daysOfPayment", {
+                    number: item.number,
+                  })}
                   value={
                     <>
                       <span
                         className={`${
-                          item.days_until_expiration_today > item.days_until_expiration
+                          item.days_until_expiration_today >
+                          item.days_until_expiration
                             ? "text-red-500"
                             : "text-green-500"
                         }`}
@@ -170,7 +263,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
           {/* Tabs */}
           <div className="grid grid-cols-3">
-            {["documents", "values", "comments"].map((tabKey) => (
+            {(["documents", "values", "comments"] as const).map((tabKey) => (
               <button
                 key={tabKey}
                 onClick={() => setActiveTab(tabKey)}
@@ -191,7 +284,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               <div className="text-white">
                 {data &&
                   "documents" in data &&
-                  data.documents.map((item: any) => (
+                  (data as any).documents.map((item: any) => (
                     <DocumentsView
                       key={item.id}
                       document_id={item.id}
@@ -203,11 +296,168 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   ))}
               </div>
             )}
+
             {activeTab === "values" && (
-              <div className="text-white">
+              <div className="text-white space-y-4">
+                {/* Selector de condición (solo dos botones) */}
+                <div className="flex gap-2">
+                  <button
+                    className={`px-3 py-2 rounded ${
+                      paymentTypeUI === "contra_entrega"
+                        ? "bg-white text-black"
+                        : "bg-zinc-700 text-white"
+                    }`}
+                    onClick={() => setPaymentTypeUI("contra_entrega")}
+                  >
+                    Pago contra entrega
+                  </button>
+                  <button
+                    className={`px-3 py-2 rounded ${
+                      paymentTypeUI === "cta_cte"
+                        ? "bg-white text-black"
+                        : "bg-zinc-700 text-white"
+                    }`}
+                    onClick={() => setPaymentTypeUI("cta_cte")}
+                  >
+                    Cuenta corriente
+                  </button>
+                </div>
+
+                {/* Opciones solo para Pago contra entrega */}
+                {paymentTypeUI === "contra_entrega" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <label
+                      className={`px-3 py-2 rounded cursor-pointer text-center ${
+                        contraEntregaOpt === "efectivo_general"
+                          ? "bg-emerald-500 text-black"
+                          : "bg-zinc-700 text-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="hidden"
+                        checked={contraEntregaOpt === "efectivo_general"}
+                        onChange={() => setContraEntregaOpt("efectivo_general")}
+                      />
+                      Efectivo (General 20%)
+                    </label>
+                    <label
+                      className={`px-3 py-2 rounded cursor-pointer text-center ${
+                        contraEntregaOpt === "efectivo_promos"
+                          ? "bg-emerald-500 text-black"
+                          : "bg-zinc-700 text-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="hidden"
+                        checked={contraEntregaOpt === "efectivo_promos"}
+                        onChange={() => setContraEntregaOpt("efectivo_promos")}
+                      />
+                      Efectivo (Promos 15%)
+                    </label>
+                    <label
+                      className={`px-3 py-2 rounded cursor-pointer text-center ${
+                        contraEntregaOpt === "cheque_30"
+                          ? "bg-emerald-500 text-black"
+                          : "bg-zinc-700 text-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="hidden"
+                        checked={contraEntregaOpt === "cheque_30"}
+                        onChange={() => setContraEntregaOpt("cheque_30")}
+                      />
+                      Cheque ≤ 30 días (13%)
+                    </label>
+                  </div>
+                )}
+
+                {/* Nota para Cuenta Corriente */}
+                {paymentTypeUI === "cta_cte" && (
+                  <div className="text-sm text-zinc-300">
+                    El descuento se calcula automáticamente por documento según{" "}
+                    <code>days_until_expiration_today</code>: ≤ 15 días = 13%, ≤
+                    30 días = 10%, 30–45 días = 0%, {">"} 45 días =
+                    actualización.
+                  </div>
+                )}
+
+                {/* Tabla de desglose */}
+                {computedDiscounts.length > 0 && (
+                  <div className="border border-zinc-700 rounded">
+                    <div className="grid grid-cols-6 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
+                      <span>Factura</span>
+                      <span>Días</span>
+                      <span>Base</span>
+                      <span>%</span>
+                      <span>Desc.</span>
+                      <span>Final</span>
+                    </div>
+                    {computedDiscounts.map((d) => (
+                      <div
+                        key={d.document_id}
+                        className="grid grid-cols-6 px-3 py-2 text-sm text-white border-b border-zinc-800"
+                        title={d.note || ""}
+                      >
+                        <span>{d.number}</span>
+                        <span className={d.note ? "text-yellow-400" : ""}>
+                          {isNaN(d.days) ? "—" : d.days}
+                        </span>
+                        <span>{currencyFmt.format(d.base)}</span>
+                        <span>{(d.rate * 100).toFixed(0)}%</span>
+                        <span>-{currencyFmt.format(d.discountAmount)}</span>
+                        <span className={d.note ? "text-yellow-400" : ""}>
+                          {currencyFmt.format(d.finalAmount)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="px-3 py-2 text-sm text-white flex justify-between">
+                      <span>Total</span>
+                      <span>
+                        {currencyFmt.format(totalBase)} → Descuento: -
+                        {currencyFmt.format(totalDiscount)} ={" "}
+                        <strong>
+                          {currencyFmt.format(totalAfterDiscount)}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Volcar neto con descuento a Valores */}
+                <button
+                  className="mt-1 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
+                  onClick={() => {
+                    const next: ValueItem = {
+                      amount: totalAfterDiscount.toFixed(2),
+                      selectedReason: "Pago con descuento",
+                      method: "efectivo", // por defecto
+                      bank: undefined,
+                      receipt: undefined,
+                    };
+                    const idx = newValues.findIndex(
+                      (v) => v.selectedReason === "Pago con descuento"
+                    );
+                    if (idx >= 0) {
+                      const clone = [...newValues];
+                      clone[idx] = next;
+                      setNewValues(clone);
+                    } else {
+                      setNewValues([next, ...newValues]);
+                    }
+                  }}
+                  disabled={computedDiscounts.length === 0}
+                >
+                  Usar total con descuento en Valores
+                </button>
+
+                {/* Valores manuales */}
                 <ValueView setNewValues={setNewValues} newValues={newValues} />
               </div>
             )}
+
             {activeTab === "comments" && (
               <div className="text-white">
                 <CommentsView comments={comments} setComments={setComments} />
@@ -234,29 +484,80 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <h3 className="text-lg font-semibold text-white mb-4">
               {t("paymentModal.confirmPayment")}
             </h3>
-            <input
-              type="number"
-              placeholder={t("paymentModal.amount")}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full p-2 mb-4 bg-zinc-700 text-white rounded"
-            />
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full p-2 mb-4 bg-zinc-700 text-white rounded"
-            >
-              <option value="">{t("paymentModal.selectPaymentMethod")}</option>
-              <option value="efectivo">
-                {t("paymentModal.paymentMethods.cash")}
-              </option>
-              <option value="tarjeta">
-                {t("paymentModal.paymentMethods.card")}
-              </option>
-              <option value="transferencia">
-                {t("paymentModal.paymentMethods.transfer")}
-              </option>
-            </select>
+
+            {/* Lista de valores */}
+            {newValues.length === 0 ? (
+              <div className="text-zinc-400 text-sm mb-4">
+                No hay valores cargados. Volvé y agregá al menos uno.
+              </div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {newValues.map((v, i) => (
+                  <div
+                    key={i}
+                    className="border border-zinc-700 rounded p-3 text-sm text-white bg-zinc-900"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">
+                        {v.selectedReason || "Valor sin concepto"}
+                      </span>
+                      <span>
+                        {new Intl.NumberFormat("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                        }).format(parseFloat(v.amount || "0") || 0)}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-zinc-300">
+                      Medio: <b>{v.method}</b>
+                      {v.bank ? (
+                        <>
+                          {" "}
+                          · Banco: <b>{v.bank}</b>
+                        </>
+                      ) : null}
+                      {v.receipt ? " · Comprobante adjunto" : ""}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Total de valores */}
+                <div className="flex items-center justify-between text-white text-sm pt-2 border-t border-zinc-700">
+                  <span>Total valores</span>
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat("es-AR", {
+                      style: "currency",
+                      currency: "ARS",
+                    }).format(
+                      newValues.reduce(
+                        (acc, v) => acc + (parseFloat(v.amount || "0") || 0),
+                        0
+                      )
+                    )}
+                  </span>
+                </div>
+
+                {/* Diferencia */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-300">Diferencia</span>
+                  <span
+                    className={
+                      diff === 0
+                        ? "text-emerald-400 font-semibold"
+                        : diff > 0
+                        ? "text-amber-400 font-semibold"
+                        : "text-red-400 font-semibold"
+                    }
+                  >
+                    {new Intl.NumberFormat("es-AR", {
+                      style: "currency",
+                      currency: "ARS",
+                    }).format(diff)}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setIsConfirmModalOpen(false)}
@@ -264,28 +565,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               >
                 {t("paymentModal.cancel")}
               </button>
+
               <button
                 onClick={async () => {
                   setIsSubmittingPayment(true);
                   setSubmittedPayment(false);
                   try {
-                    // Simular el proceso asíncrono del pago
+                    // Acá hacés la mutation real si querés.
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                     setSubmittedPayment(true);
-                    // Mostramos el tick durante 1 segundo antes de cerrar
                     setTimeout(() => {
                       setIsSubmittingPayment(false);
                       setSubmittedPayment(false);
                       setIsConfirmModalOpen(false);
                       onClose();
-                    }, 1000);
+                    }, 800);
                   } catch (error) {
                     console.error("Error procesando el pago:", error);
                     setIsSubmittingPayment(false);
                   }
                 }}
-                disabled={isSubmittingPayment}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
+                disabled={
+                  isSubmittingPayment || newValues.length === 0 || diff !== 0
+                }
+                className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-60"
+                title={
+                  newValues.length === 0
+                    ? "No hay valores para confirmar"
+                    : diff !== 0
+                    ? "La diferencia debe ser 0 para confirmar"
+                    : undefined
+                }
               >
                 {isSubmittingPayment
                   ? t("paymentModal.loading") || "Cargando..."
