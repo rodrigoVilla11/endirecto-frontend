@@ -9,7 +9,7 @@ export type ValueItem = {
   selectedReason: string; // Concepto / motivo
   method: PaymentMethod;
   bank?: string;
-  receipt?: File | string; // guardamos el File; el backend decidirá cómo subirlo
+  receipt?: File | string;
 };
 
 export default function ValueView({
@@ -51,7 +51,6 @@ export default function ValueView({
     setNewValues((prev) => {
       const clone = [...prev];
       clone[idx] = { ...clone[idx], ...patch };
-      // si cambiamos a efectivo, limpiamos banco/comprobante
       if (patch.method === "efectivo") {
         clone[idx].bank = "";
         clone[idx].receipt = undefined;
@@ -64,9 +63,10 @@ export default function ValueView({
     updateRow(idx, { receipt: file });
   };
 
-  const totalValues = useMemo(() => {
-    return newValues.reduce((acc, v) => acc + (parseFloat(v.amount || "0") || 0), 0);
-  }, [newValues]);
+  const totalValues = useMemo(
+    () => newValues.reduce((acc, v) => acc + (parseFloat(v.amount || "0") || 0), 0),
+    [newValues]
+  );
 
   return (
     <div className="space-y-3">
@@ -86,7 +86,9 @@ export default function ValueView({
 
       <div className="space-y-2">
         {newValues.map((v, idx) => {
-          const showBankAndReceipt = v.method === "transferencia" || v.method === "cheque";
+          const showBankAndReceipt =
+            v.method === "transferencia" || v.method === "cheque";
+
           const receiptPreview =
             typeof v.receipt !== "string" && v.receipt instanceof File
               ? URL.createObjectURL(v.receipt)
@@ -99,61 +101,78 @@ export default function ValueView({
               key={idx}
               className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50"
             >
-              <div className="grid md:grid-cols-12 grid-cols-1 gap-3">
+              {/* FILA PRINCIPAL
+                 md: cuatro columnas fijas => [Monto | Concepto | Medio de pago | Acciones]
+                 En mobile cae a una columna, pero los pills hacen scroll horizontal */}
+              <div
+                className="
+                  grid grid-cols-1
+                  md:grid-cols-[8rem,1fr,26rem,7rem]
+                  gap-3 items-start
+                "
+              >
                 {/* Monto */}
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-xs text-zinc-400 mb-1">Monto</label>
                   <input
                     type="number"
                     inputMode="decimal"
+                    step="0.01"
                     placeholder="0.00"
                     value={v.amount}
                     onChange={(e) => updateRow(idx, { amount: e.target.value })}
-                    className="w-full p-2 rounded bg-zinc-700 text-white outline-none"
+                    className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none tabular-nums"
                   />
                 </div>
 
                 {/* Concepto */}
-                <div className="md:col-span-4">
-                  <label className="block text-xs text-zinc-400 mb-1">Concepto</label>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Concepto
+                  </label>
                   <input
                     type="text"
                     placeholder="Ej: Pago factura 001-0000123"
                     value={v.selectedReason}
-                    onChange={(e) => updateRow(idx, { selectedReason: e.target.value })}
-                    className="w-full p-2 rounded bg-zinc-700 text-white outline-none"
+                    onChange={(e) =>
+                      updateRow(idx, { selectedReason: e.target.value })
+                    }
+                    className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                   />
                 </div>
 
-                {/* Método de pago */}
-                <div className="md:col-span-4">
+                {/* Medio de pago */}
+                <div>
                   <label className="block text-xs text-zinc-400 mb-1">
                     Medio de pago
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex gap-2 overflow-x-auto md:overflow-visible flex-nowrap md:flex-nowrap pr-1">
                     <RadioPill
                       label="Efectivo"
                       selected={v.method === "efectivo"}
                       onClick={() => updateRow(idx, { method: "efectivo" })}
+                      className="min-w-[8.5rem]"
                     />
                     <RadioPill
                       label="Transferencia"
                       selected={v.method === "transferencia"}
                       onClick={() => updateRow(idx, { method: "transferencia" })}
+                      className="min-w-[9.5rem]"
                     />
                     <RadioPill
                       label="Cheque"
                       selected={v.method === "cheque"}
                       onClick={() => updateRow(idx, { method: "cheque" })}
+                      className="min-w-[7.5rem]"
                     />
                   </div>
                 </div>
 
                 {/* Acciones */}
-                <div className="md:col-span-2 flex items-end justify-end">
+                <div className="flex md:justify-end">
                   <button
                     onClick={() => removeRow(idx)}
-                    className="px-3 py-2 rounded bg-zinc-700 text-white hover:bg-zinc-600"
+                    className="w-full md:w-auto h-10 px-3 rounded bg-zinc-700 text-white hover:bg-zinc-600"
                   >
                     Eliminar
                   </button>
@@ -162,20 +181,22 @@ export default function ValueView({
 
               {/* Campos condicionales */}
               {showBankAndReceipt && (
-                <div className="grid md:grid-cols-12 grid-cols-1 gap-3 mt-3">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
                   {/* Banco */}
                   <div className="md:col-span-4">
-                    <label className="block text-xs text-zinc-400 mb-1">Banco</label>
+                    <label className="block text-xs text-zinc-400 mb-1">
+                      Banco
+                    </label>
                     <input
                       type="text"
                       placeholder="Ej: Banco Galicia"
                       value={v.bank || ""}
                       onChange={(e) => updateRow(idx, { bank: e.target.value })}
-                      className="w-full p-2 rounded bg-zinc-700 text-white outline-none"
+                      className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                     />
                   </div>
 
-                  {/* Comprobante (foto) */}
+                  {/* Comprobante */}
                   <div className="md:col-span-4">
                     <label className="block text-xs text-zinc-400 mb-1">
                       Comprobante (foto)
@@ -184,14 +205,16 @@ export default function ValueView({
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleFile(idx, e.target.files?.[0])}
-                      className="w-full p-2 rounded bg-zinc-700 text-white outline-none file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-zinc-600 file:text-white"
+                      className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-zinc-600 file:text-white"
                     />
                   </div>
 
                   {/* Vista previa */}
                   {receiptPreview && (
                     <div className="md:col-span-4">
-                      <label className="block text-xs text-zinc-400 mb-1">Vista previa</label>
+                      <label className="block text-xs text-zinc-400 mb-1">
+                        Vista previa
+                      </label>
                       <div className="h-[120px] rounded overflow-hidden border border-zinc-700 bg-black/30 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -207,7 +230,11 @@ export default function ValueView({
 
               {/* Pie: monto formateado */}
               <div className="mt-3 text-xs text-zinc-400">
-                {v.amount ? `≈ ${currencyFmt.format(parseFloat(v.amount || "0") || 0)}` : ""}
+                {v.amount
+                  ? `≈ ${currencyFmt.format(
+                      parseFloat(v.amount || "0") || 0
+                    )}`
+                  : ""}
               </div>
             </div>
           );
@@ -216,29 +243,31 @@ export default function ValueView({
 
       {/* Total de valores */}
       <div className="text-right text-sm text-white">
-        Total valores:{" "}
-        <strong>{currencyFmt.format(totalValues)}</strong>
+        Total valores: <strong>{currencyFmt.format(totalValues)}</strong>
       </div>
     </div>
   );
 }
 
+/* ================== UI helper ================== */
 function RadioPill({
   label,
   selected,
   onClick,
+  className = "",
 }: {
   label: string;
   selected: boolean;
   onClick: () => void;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-2 rounded text-center ${
-        selected ? "bg-emerald-500 text-black" : "bg-zinc-700 text-white"
-      }`}
+      className={`h-10 px-3 rounded text-center text-sm leading-snug shrink-0
+        ${selected ? "bg-emerald-500 text-black" : "bg-zinc-700 text-white"}
+        ${className}`}
     >
       {label}
     </button>
