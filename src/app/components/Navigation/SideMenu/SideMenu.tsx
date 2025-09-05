@@ -23,6 +23,7 @@ import { LucideMessageSquareShare } from "lucide-react";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useTranslation } from "react-i18next";
+import { FaRegNoteSticky } from "react-icons/fa6";
 
 const SideMenu = () => {
   const { isOpen, setIsOpen, setOpenSubCategory } = useSideMenu();
@@ -33,8 +34,8 @@ const SideMenu = () => {
   const { isMobile } = useMobile();
 
   const pathname = usePathname();
-  
-    const isSelectCustomers = pathname === "/selectCustomer";
+
+  const isSelectCustomers = pathname === "/selectCustomer";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -187,23 +188,23 @@ const SideMenu = () => {
           path: "/accounts/status",
         },
         {
-          name: t("payments"),
-          path: "/accounts/payments",
-        },
-        {
           name: t("vouchers"),
           path: "/accounts/vouchers",
         },
       ],
     },
     {
-      icon: <BsCash />,
+      icon: <FaRegNoteSticky />,
       name: t("collectionsSummaries"),
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
       subCategories: [
         {
           name: t("collectionsSummaries"),
           path: "/collections/summaries",
+        },
+        {
+          name: t("payments"),
+          path: "/accounts/payments",
         },
         // {
         //   name: t("collectionsUnsummaries"),
@@ -412,19 +413,18 @@ const SideMenu = () => {
         !(navBtn && navBtn.contains(event.target as Node))
       ) {
         setIsOpen(false);
-        setOpenSubCategory(null)
+        setOpenSubCategory(null);
       }
     };
-  
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-  
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, setIsOpen]);
-  
 
   return (
     <div
@@ -435,14 +435,13 @@ const SideMenu = () => {
               isMobile ? "bg-zinc-900" : "bg-header-color"
             } px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
           : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
-      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${isSelectCustomers ? "mt-20" : "mt-28"} pt-4`}
+      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${
+        isSelectCustomers ? "mt-20" : "mt-28"
+      } pt-4`}
     >
-        {filteredIcons.map((icon: any, index: any) => (
-          <ButtonsIcons
-            key={index}
-            icon={icon}
-          />
-        ))}
+      {filteredIcons.map((icon: any, index: any) => (
+        <ButtonsIcons key={index} icon={icon} />
+      ))}
     </div>
   );
 };

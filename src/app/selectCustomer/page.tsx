@@ -57,7 +57,7 @@ const Spinner = React.memo(function Spinner() {
     </div>
   );
 });
-Spinner.displayName = 'Spinner';
+Spinner.displayName = "Spinner";
 
 const SelectCustomer = () => {
   // Hooks de navegación, traducción y contexto
@@ -75,17 +75,20 @@ const SelectCustomer = () => {
   const [hasMore, setHasMore] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [sortQuery, setSortQuery] = useState("");
-  
+
   // Memoizar searchParams para evitar re-renders innecesarios
   const [searchParams, setSearchParams] = useState(() => ({
     debt: false,
     overdueDebt: false,
-    seller_id: role === "VENDEDOR" && userData?.seller_id ? userData.seller_id : "",
+    seller_id:
+      role === "VENDEDOR" && userData?.seller_id ? userData.seller_id : "",
     itemsInCart: false,
   }));
 
   // Estados para modales y selección del cliente actual
-  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(null);
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
+    null
+  );
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showUpdateGPSModal, setShowUpdateGPSModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -97,16 +100,19 @@ const SelectCustomer = () => {
   const lastItemRef = useRef<HTMLDivElement>(null);
 
   // Memoizar parámetros de consulta para evitar re-fetches innecesarios
-  const queryParams = useMemo(() => ({
-    page,
-    limit: ITEMS_PER_PAGE,
-    query: searchQuery,
-    hasDebt: searchParams.debt ? "true" : "",
-    hasDebtExpired: searchParams.overdueDebt ? "true" : "",
-    seller_id: searchParams.seller_id || "",
-    hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
-    sort: sortQuery,
-  }), [page, searchQuery, searchParams, sortQuery]);
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit: ITEMS_PER_PAGE,
+      query: searchQuery,
+      hasDebt: searchParams.debt ? "true" : "",
+      hasDebtExpired: searchParams.overdueDebt ? "true" : "",
+      seller_id: searchParams.seller_id || "",
+      hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
+      sort: sortQuery,
+    }),
+    [page, searchQuery, searchParams, sortQuery]
+  );
 
   // Consulta principal optimizada
   const {
@@ -116,21 +122,22 @@ const SelectCustomer = () => {
   } = useGetCustomersPagQuery(queryParams);
 
   // Consulta para el mapa solo cuando se necesite
-  const {
-    data: allCustomersData,
-    refetch: refetchAllCustomers
-  } = useGetCustomersPagQuery({
-    page: 1,
-    limit: 1000,
-    query: searchQuery,
-    hasDebt: searchParams.debt ? "true" : "",
-    hasDebtExpired: searchParams.overdueDebt ? "true" : "",
-    seller_id: searchParams.seller_id || "",
-    hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
-    sort: sortQuery,
-  }, {
-    skip: !showCustomersMapModal, // Solo fetch cuando se necesite el mapa
-  });
+  const { data: allCustomersData, refetch: refetchAllCustomers } =
+    useGetCustomersPagQuery(
+      {
+        page: 1,
+        limit: 1000,
+        query: searchQuery,
+        hasDebt: searchParams.debt ? "true" : "",
+        hasDebtExpired: searchParams.overdueDebt ? "true" : "",
+        seller_id: searchParams.seller_id || "",
+        hasArticlesOnSC: searchParams.itemsInCart ? "true" : "",
+        sort: sortQuery,
+      },
+      {
+        skip: !showCustomersMapModal, // Solo fetch cuando se necesite el mapa
+      }
+    );
 
   // Consultas para datos auxiliares con caché
   const { data: paymentConditions } = useGetPaymentConditionsQuery(null);
@@ -138,26 +145,33 @@ const SelectCustomer = () => {
 
   // Función de búsqueda optimizada con debounce
   const debouncedSearch = useMemo(
-    () => debounce((query: string) => {
-      setPage(1);
-      setItems([]);
-      setHasMore(true);
-      setSearchQuery(query);
-    }, 300), // Reducido a 300ms para respuesta más rápida
+    () =>
+      debounce((query: string) => {
+        setPage(1);
+        setItems([]);
+        setHasMore(true);
+        setSearchQuery(query);
+      }, 300), // Reducido a 300ms para respuesta más rápida
     []
   );
 
   // Handlers optimizados con useCallback
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-    debouncedSearch(value);
-  }, [debouncedSearch]);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setInputValue(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
 
-  const handleSelectCustomer = useCallback((customerId: string) => {
-    setSelectedClientId(customerId);
-    router.push("/dashboard");
-  }, [setSelectedClientId, router]);
+  const handleSelectCustomer = useCallback(
+    (customerId: string) => {
+      setSelectedClientId(customerId);
+      router.push("/dashboard");
+    },
+    [setSelectedClientId, router]
+  );
 
   const resetSearch = useCallback(() => {
     setInputValue("");
@@ -170,16 +184,16 @@ const SelectCustomer = () => {
   // Optimización del infinite scroll
   const setupIntersectionObserver = useCallback(() => {
     if (observerRef.current) observerRef.current.disconnect();
-    
+
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isFetching) {
-          setPage(prev => prev + 1);
+          setPage((prev) => prev + 1);
         }
       },
-      { 
+      {
         threshold: 0.1,
-        rootMargin: '100px', // Cargar antes de llegar al final
+        rootMargin: "100px", // Cargar antes de llegar al final
       }
     );
 
@@ -200,16 +214,16 @@ const SelectCustomer = () => {
   useEffect(() => {
     if (customersData?.customers) {
       const newCustomers = customersData.customers;
-      
+
       if (page === 1) {
         setItems(newCustomers);
       } else {
-        setItems(prev => {
+        setItems((prev) => {
           const combined = [...prev, ...newCustomers];
           return removeDuplicates(combined);
         });
       }
-      
+
       setHasMore(newCustomers.length === ITEMS_PER_PAGE);
     }
   }, [customersData, page]);
@@ -221,27 +235,43 @@ const SelectCustomer = () => {
     setHasMore(true);
   }, []);
 
-  const createFilterHandler = useCallback((filterName: keyof typeof searchParams) => () => {
-    setSearchParams(prev => ({ ...prev, [filterName]: !prev[filterName] }));
-    setFilter(prev => prev === filterName ? "" : filterName);
-    resetFilters();
-  }, [resetFilters]);
+  const createFilterHandler = useCallback(
+    (filterName: keyof typeof searchParams) => () => {
+      setSearchParams((prev) => ({ ...prev, [filterName]: !prev[filterName] }));
+      setFilter((prev) => (prev === filterName ? "" : filterName));
+      resetFilters();
+    },
+    [resetFilters]
+  );
 
-  const handleFilterDebt = useMemo(() => createFilterHandler('debt'), [createFilterHandler]);
-  const handleFilterOverdueDebt = useMemo(() => createFilterHandler('overdueDebt'), [createFilterHandler]);
-  const handleFilterCart = useMemo(() => createFilterHandler('itemsInCart'), [createFilterHandler]);
+  const handleFilterDebt = useMemo(
+    () => createFilterHandler("debt"),
+    [createFilterHandler]
+  );
+  const handleFilterOverdueDebt = useMemo(
+    () => createFilterHandler("overdueDebt"),
+    [createFilterHandler]
+  );
+  const handleFilterCart = useMemo(
+    () => createFilterHandler("itemsInCart"),
+    [createFilterHandler]
+  );
 
   // Handler de ordenamiento optimizado
-  const handleSort = useCallback((field: string) => {
-    const [currentField, currentDirection] = sortQuery.split(":");
-    const newDirection = currentField === field && currentDirection === "asc" ? "desc" : "asc";
-    setSortQuery(`${field}:${newDirection}`);
-    resetFilters();
-  }, [sortQuery, resetFilters]);
+  const handleSort = useCallback(
+    (field: string) => {
+      const [currentField, currentDirection] = sortQuery.split(":");
+      const newDirection =
+        currentField === field && currentDirection === "asc" ? "desc" : "asc";
+      setSortQuery(`${field}:${newDirection}`);
+      resetFilters();
+    },
+    [sortQuery, resetFilters]
+  );
 
   // Handlers de menú optimizados
   const toggleCustomerMenu = useCallback((customerId: any) => {
-    setActiveMenu(prev => prev === customerId ? null : customerId);
+    setActiveMenu((prev) => (prev === customerId ? null : customerId));
   }, []);
 
   const handleResetPassword = useCallback((customer: any) => {
@@ -262,29 +292,37 @@ const SelectCustomer = () => {
   }, []);
 
   // Componente CustomerIcon memoizado
-  const CustomerIcon = React.memo(function CustomerIcon({ name }: { name: string }) {
+  const CustomerIcon = React.memo(function CustomerIcon({
+    name,
+  }: {
+    name: string;
+  }) {
     return (
       <div className="rounded-full h-8 w-8 bg-secondary text-white flex justify-center items-center">
         <p>{name.charAt(0).toUpperCase()}</p>
       </div>
     );
   });
-  CustomerIcon.displayName = 'CustomerIcon';
+  CustomerIcon.displayName = "CustomerIcon";
 
   // Formatear moneda optimizado
-  const formatCurrency = useMemo(() => {
-    return new Intl.NumberFormat("es-ES", {
+    function formatCurrency(value: number) {
+    return new Intl.NumberFormat("es-AR", {
       style: "currency",
-      currency: "EUR",
-    });
-  }, []);
-
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    })
+      .format(value)
+      .replace("ARS", "");
+  }
+  
   // Transformar datos de tabla con memoización optimizada
   const tableData = useMemo(() => {
     return items.map((customer: any) => {
-      const paymentCondition = paymentConditions?.find(
-        (cond) => cond.id === customer.payment_condition_id
-      )?.name || "";
+      const paymentCondition =
+        paymentConditions?.find(
+          (cond) => cond.id === customer.payment_condition_id
+        )?.name || "";
 
       return {
         icon: <CustomerIcon name={customer.name} />,
@@ -306,14 +344,16 @@ const SelectCustomer = () => {
         ),
         address: <span title={customer.address}>{customer.address}</span>,
         "payment-condition": paymentCondition,
-        "status-account": formatCurrency.format(customer.totalAmount || 0),
-        "expired-debt": formatCurrency.format(customer.totalAmountExpired || 0),
+        "status-account": formatCurrency(customer.totalAmount || 0),
+        "expired-debt": formatCurrency(customer.totalAmountExpired || 0),
         shopping_cart: customer.shopping_cart?.length || 0,
-        gps: ( customer.gps ?
+        gps: customer.gps ? (
           <FiMapPin
             onClick={() => handleViewLocation(customer)}
             className="cursor-pointer hover:text-blue-600"
-          /> : "No GPS"
+          />
+        ) : (
+          "No GPS"
         ),
         menu: (
           <div className="relative">
@@ -341,115 +381,157 @@ const SelectCustomer = () => {
         ),
       };
     });
-  }, [items, paymentConditions, activeMenu, handleSelectCustomer, formatCurrency, handleViewLocation, toggleCustomerMenu, handleUpdateGPS, handleResetPassword, CustomerIcon]);
+  }, [
+    items,
+    paymentConditions,
+    activeMenu,
+    handleSelectCustomer,
+    formatCurrency,
+    handleViewLocation,
+    toggleCustomerMenu,
+    handleUpdateGPS,
+    handleResetPassword,
+    CustomerIcon,
+  ]);
 
   // Configuración de encabezados memoizada
-  const tableHeader = useMemo(() => [
-    { component: <CgProfile className="text-center text-xl" />, key: "icon" },
-    { name: "Id", key: "id", important: true },
-    { name: t("customer"), key: "name", important: true, sortable: true },
-    { name: t("address"), key: "address" },
-    { name: t("paymentCondition"), key: "payment-condition" },
-    { name: t("statusAccount"), key: "status-account", sortable: true },
-    { name: t("expiredDebt"), key: "expired-debt", sortable: true },
-    { name: t("articlesOnCart"), key: "shopping_cart", sortable: true },
-    { name: "GPS", key: "gps", important: true },
-    { component: <CiMenuKebab className="text-center text-xl" />, key: "menu", important: true },
-  ], [t]);
+  const tableHeader = useMemo(
+    () => [
+      { component: <CgProfile className="text-center text-xl" />, key: "icon" },
+      { name: "Id", key: "id", important: true },
+      { name: t("customer"), key: "name", important: true, sortable: true },
+      { name: t("address"), key: "address" },
+      { name: t("paymentCondition"), key: "payment-condition" },
+      { name: t("statusAccount"), key: "status-account", sortable: true },
+      { name: t("expiredDebt"), key: "expired-debt", sortable: true },
+      { name: t("articlesOnCart"), key: "shopping_cart", sortable: true },
+      { name: "GPS", key: "gps", important: true },
+      {
+        component: <CiMenuKebab className="text-center text-xl" />,
+        key: "menu",
+        important: true,
+      },
+    ],
+    [t]
+  );
 
   // Header body memoizado
-  const headerBody = useMemo(() => ({
-    buttons: [
-      {
-        logo: <FiMapPin />,
-        title: `${t("viewOnMap")}`,
-        onClick: () => {
-          setShowCustomersMapModal(true);
-          if (!allCustomersData) {
-            refetchAllCustomers();
-          }
+  const headerBody = useMemo(
+    () => ({
+      buttons: [
+        {
+          logo: <FiMapPin />,
+          title: `${t("viewOnMap")}`,
+          onClick: () => {
+            setShowCustomersMapModal(true);
+            if (!allCustomersData) {
+              refetchAllCustomers();
+            }
+          },
         },
-      },
-      { logo: <AiOutlineDownload />, title: t("download") },
-    ],
-    filters: [
-      {
-        content: (
-          <select
-            value={searchParams.seller_id}
-            onChange={(e) => {
-              setSearchParams(prev => ({ ...prev, seller_id: e.target.value }));
-              resetFilters();
-            }}
-            className="border border-gray-300 rounded p-2"
-            disabled={role === "VENDEDOR"}
-          >
-            <option value="">{t("seller")}</option>
-            {sellersData?.map((seller) => (
-              <option key={seller.id} value={seller.id}>
-                {seller.name}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-      {
-        content: (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder={t("search")}
-              value={inputValue}
-              onChange={handleSearchChange}
-              className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
-            />
-            <button
-              onClick={resetSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+        { logo: <AiOutlineDownload />, title: t("download") },
+      ],
+      filters: [
+        {
+          content: (
+            <select
+              value={searchParams.seller_id}
+              onChange={(e) => {
+                setSearchParams((prev) => ({
+                  ...prev,
+                  seller_id: e.target.value,
+                }));
+                resetFilters();
+              }}
+              className="border border-gray-300 rounded p-2"
+              disabled={role === "VENDEDOR"}
             >
-              X
-            </button>
-          </div>
-        ),
-      },
-      {
-        content: (
-          <ButtonOnOff
-            title={t("debt")}
-            onChange={handleFilterDebt}
-            active={filter === "debt"}
-          />
-        ),
-      },
-      {
-        content: (
-          <ButtonOnOff
-            title={t("expiredDebt")}
-            onChange={handleFilterOverdueDebt}
-            active={filter === "overdueDebt"}
-          />
-        ),
-      },
-      {
-        content: (
-          <ButtonOnOff
-            title={t("articlesOnCart")}
-            onChange={handleFilterCart}
-            active={filter === "itemsInCart"}
-          />
-        ),
-      },
-    ],
-    results: `${t("results", { count: customersData?.totalCustomers || 0 })}`,
-  }), [searchParams, inputValue, handleSearchChange, resetSearch, filter, handleFilterDebt, handleFilterOverdueDebt, handleFilterCart, customersData?.totalCustomers, t, sellersData, role, resetFilters, refetchAllCustomers, allCustomersData]);
+              <option value="">{t("seller")}</option>
+              {sellersData?.map((seller) => (
+                <option key={seller.id} value={seller.id}>
+                  {seller.name}
+                </option>
+              ))}
+            </select>
+          ),
+        },
+        {
+          content: (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={t("search")}
+                value={inputValue}
+                onChange={handleSearchChange}
+                className="w-full bg-white rounded-md px-4 py-2 pr-10 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 border"
+              />
+              <button
+                onClick={resetSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                X
+              </button>
+            </div>
+          ),
+        },
+        {
+          content: (
+            <ButtonOnOff
+              title={t("debt")}
+              onChange={handleFilterDebt}
+              active={filter === "debt"}
+            />
+          ),
+        },
+        {
+          content: (
+            <ButtonOnOff
+              title={t("expiredDebt")}
+              onChange={handleFilterOverdueDebt}
+              active={filter === "overdueDebt"}
+            />
+          ),
+        },
+        {
+          content: (
+            <ButtonOnOff
+              title={t("articlesOnCart")}
+              onChange={handleFilterCart}
+              active={filter === "itemsInCart"}
+            />
+          ),
+        },
+      ],
+      results: `${t("results", { count: customersData?.totalCustomers || 0 })}`,
+    }),
+    [
+      searchParams,
+      inputValue,
+      handleSearchChange,
+      resetSearch,
+      filter,
+      handleFilterDebt,
+      handleFilterOverdueDebt,
+      handleFilterCart,
+      customersData?.totalCustomers,
+      t,
+      sellersData,
+      role,
+      resetFilters,
+      refetchAllCustomers,
+      allCustomersData,
+    ]
+  );
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
         <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>
           {t("selectCustomerTitle")}
         </h3>
-        
+
         {isMobile ? (
           <div className="bg-zinc-900 p-4 rounded-lg">
             <div className="flex gap-2 mb-4">
@@ -516,7 +598,7 @@ const SelectCustomer = () => {
         )}
 
         {/* Div para Infinite Scroll optimizado */}
-        <div ref={lastItemRef} style={{ height: '1px' }}></div>
+        <div ref={lastItemRef} style={{ height: "1px" }}></div>
 
         {/* Spinner de carga */}
         {isFetching && <Spinner />}

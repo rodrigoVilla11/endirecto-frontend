@@ -563,13 +563,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   onClick={() => {
                     const next: ValueItem = {
                       amount: totalAfterDiscount.toFixed(2),
-                      selectedReason: "Pago con descuento",
+                      selectedReason: "Pago a factura",
                       method: "efectivo",
                       bank: undefined,
                       receipt: undefined,
                     };
                     const idx = newValues.findIndex(
-                      (v) => v.selectedReason === "Pago con descuento"
+                      (v) => v.selectedReason === "Pago a factura"
                     );
                     if (idx >= 0) {
                       const clone = [...newValues];
