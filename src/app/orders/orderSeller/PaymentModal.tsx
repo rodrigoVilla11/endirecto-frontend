@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DocumentsView } from "./DocumentsView";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
@@ -14,6 +14,7 @@ import {
 } from "@/redux/services/paymentsApi";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -36,6 +37,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
+
+  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingValueRef = useRef<ValueItem | null>(null);
 
   // Documentos seleccionados (llenados por DocumentsView)
   const [newPayment, setNewPayment] = useState<
@@ -60,7 +65,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     selectedReason: string;
     method: PaymentMethod;
     bank?: string;
-    receipt?: File | string;
+    receipt?: string;
+    receiptOriginalName?: string;
   };
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
 
@@ -244,9 +250,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // TODO: reemplazá por tu fuente real (AuthContext / Redux / NextAuth)
   const getCurrentUserId = () => {
     // ej: const { user } = useAuth(); return user?.id;
-    return (
-      (userData?._id) || ""
-    );
+    return userData?._id || "";
   };
 
   // TODO: si en tu app la condición de pago es un registro real, poné su ID de DB acá.
@@ -338,14 +342,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         values: newValues.map((v) => ({
           amount: round2(parseFloat(v.amount || "0")),
           concept: v.selectedReason,
-          method: v.method, // coincide con PaymentMethodEnum
+          method: v.method,
           bank: v.bank || undefined,
-          // receipt_url / receipt_original_name si ya subís archivos
+          receipt_url: v.receipt || undefined, // 👈 ahora sí
+          receipt_original_name: v.receiptOriginalName || undefined, // 👈 ahora sí
         })),
       } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
 
       // Debug opcional
-      // console.log("CreatePayment payload", payload);
+      console.log("CreatePayment payload", payload);
 
       await createPayment(payload).unwrap();
 
@@ -598,6 +603,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       onRowSelect={handleRowSelect}
                       selectedRows={selectedRows}
                       setNewPayment={setNewPayment}
+                      paymentType={paymentTypeUI}
+                      contraEntregaOpt={contraEntregaOpt}
                     />
                   ))}
               </div>
@@ -641,13 +648,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </button>
                 </div>
 
-                {/* Aviso si hay documentos */}
+                {/* Aviso si hay documentos
                 {hasSelectedDocs && (
                   <div className="text-xs text-amber-300">
                     Hay comprobantes seleccionados: se aplica automáticamente{" "}
                     <b>Cuenta corriente</b>.
                   </div>
-                )}
+                )} */}
 
                 {/* Opciones solo para Pago contra entrega (y solo si está permitido) */}
                 {paymentTypeUI === "contra_entrega" && !hasSelectedDocs && (
@@ -734,116 +741,239 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 )}
 
                 {/* Nota para Cuenta Corriente */}
-                {paymentTypeUI === "cta_cte" && (
+                {/* {paymentTypeUI === "cta_cte" && (
                   <div className="text-sm text-zinc-300">
                     El descuento se calcula automáticamente por documento según{" "}
                     <code>days_until_expiration_today</code>: ≤ 15 días = 13%, ≤
                     30 días = 10%, 30–45 días = 0%, {">"} 45 días =
                     actualización.
                   </div>
-                )}
+                )} */}
 
                 {/* Tabla de desglose */}
                 {computedDiscounts.length > 0 && (
-                  <div className="border border-zinc-700 rounded overflow-hidden">
-                    {/* Cabecera */}
-                    <div
-                      className="
-      grid grid-cols-[1.6fr_.6fr_1fr_.6fr_1fr_1fr]
-      gap-2 px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700
-    "
-                    >
-                      <span className="truncate">Factura</span>
-                      <span className="text-right">Días</span>
-                      <span className="text-right">Base</span>
-                      <span className="text-right">%</span>
-                      <span className="text-right">Desc.</span>
-                      <span className="text-right">Final</span>
-                    </div>
-
-                    {/* Filas */}
+                  <div className="space-y-3">
                     {computedDiscounts.map((d) => (
                       <div
                         key={d.document_id}
-                        className="
-          grid grid-cols-[1.6fr_.6fr_1fr_.6fr_1fr_1fr]
-          gap-2 px-3 py-2 text-sm text-white border-b border-zinc-800 items-center
-        "
+                        className="border border-zinc-700 rounded overflow-hidden"
                         title={d.note || ""}
                       >
-                        <span className="truncate min-w-0" title={d.number}>
-                          {d.number}
-                        </span>
+                        <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
+                          Detalle de comprobante
+                        </div>
 
-                        <span
-                          className={`text-right ${
-                            d.note ? "text-yellow-400" : ""
-                          }`}
-                        >
-                          {isNaN(d.days) ? "—" : d.days}
-                        </span>
+                        <div className="divide-y divide-zinc-800 text-sm text-white">
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">Factura</span>
+                            <span className="truncate min-w-0" title={d.number}>
+                              {d.number}
+                            </span>
+                          </div>
 
-                        <span className="text-right whitespace-nowrap tabular-nums">
-                          {currencyFmt.format(d.base)}
-                        </span>
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">Días</span>
+                            <span
+                              className={`tabular-nums ${
+                                d.note ? "text-yellow-400" : ""
+                              }`}
+                            >
+                              {isNaN(d.days) ? "—" : d.days}
+                            </span>
+                          </div>
 
-                        <span className="text-right whitespace-nowrap tabular-nums">
-                          {(d.rate * 100).toFixed(0)}%
-                        </span>
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">Base</span>
+                            <span className="tabular-nums">
+                              {currencyFmt.format(d.base)}
+                            </span>
+                          </div>
 
-                        <span className="text-right whitespace-nowrap tabular-nums">
-                          -{currencyFmt.format(d.discountAmount)}
-                        </span>
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">%</span>
+                            <span className="tabular-nums">
+                              {(d.rate * 100).toFixed(0)}%
+                            </span>
+                          </div>
 
-                        <span
-                          className={`text-right whitespace-nowrap tabular-nums ${
-                            d.note ? "text-yellow-400" : ""
-                          }`}
-                        >
-                          {currencyFmt.format(d.finalAmount)}
-                        </span>
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">Desc.</span>
+                            <span className="tabular-nums">
+                              -{currencyFmt.format(d.discountAmount)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between px-3 py-2">
+                            <span className="text-zinc-400">Final</span>
+                            <span
+                              className={`tabular-nums ${
+                                d.note ? "text-yellow-400" : ""
+                              }`}
+                            >
+                              {currencyFmt.format(d.finalAmount)}
+                            </span>
+                          </div>
+
+                          {d.note && (
+                            <div className="px-3 py-2 text-xs text-yellow-400">
+                              {d.note}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
 
-                    {/* Total */}
-                    <div className="px-3 py-2 text-sm text-white flex justify-between items-center">
-                      <span>Total</span>
-                      <span className="whitespace-nowrap tabular-nums">
-                        {currencyFmt.format(totalBase)} → Descuento: -
-                        {currencyFmt.format(totalDiscount)} ={" "}
-                        <strong>
-                          {currencyFmt.format(totalAfterDiscount)}
-                        </strong>
-                      </span>
-                    </div>
+                    {/* Totales (en filas) */}
+                    {/* <div className="border border-zinc-700 rounded overflow-hidden">
+                      <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
+                        Total
+                      </div>
+                      <div className="divide-y divide-zinc-800 text-sm text-white">
+                        <div className="flex justify-between px-3 py-2">
+                          <span className="text-zinc-400">Bruto</span>
+                          <span className="tabular-nums">
+                            {currencyFmt.format(totalBase)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between px-3 py-2">
+                          <span className="text-zinc-400">Desc.</span>
+                          <span className="tabular-nums">
+                            -{currencyFmt.format(totalDiscount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between px-3 py-2">
+                          <span className="text-zinc-400">Neto</span>
+                          <span className="tabular-nums">
+                            {currencyFmt.format(totalAfterDiscount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between px-3 py-2">
+                          <span className="text-zinc-400">Valores</span>
+                          <span className="tabular-nums">
+                            {currencyFmt.format(totalValues)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between px-3 py-2">
+                          <span className="text-zinc-400">Dif.</span>
+                          <span
+                            className={`tabular-nums ${
+                              diff === 0
+                                ? "text-emerald-400"
+                                : diff > 0
+                                ? "text-amber-400"
+                                : "text-red-400"
+                            }`}
+                          >
+                            {currencyFmt.format(diff)}
+                          </span>
+                        </div>
+                      </div>
+                    </div> */}
                   </div>
                 )}
 
                 {/* Volcar neto con descuento a Valores */}
+                {/* Volcar neto con descuento a Valores (con comprobante opcional) */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    const base = pendingValueRef.current;
+                    // limpiar para el próximo uso
+                    pendingValueRef.current = null;
+                    e.target.value = "";
+
+                    // si por algún motivo no hay base, salimos
+                    if (!base) return;
+
+                    // si el usuario canceló el picker, agregamos igual sin comprobante
+                    if (!file) {
+                      setNewValues((prev) => {
+                        const idx = prev.findIndex(
+                          (v) => v.selectedReason === base.selectedReason
+                        );
+                        if (idx >= 0) {
+                          const clone = [...prev];
+                          clone[idx] = base;
+                          return clone;
+                        }
+                        return [base, ...prev];
+                      });
+                      return;
+                    }
+
+                    try {
+                      const res = await uploadImage(file).unwrap();
+                      const withReceipt = {
+                        ...base,
+                        receiptUrl: (res as any).secure_url || (res as any).url,
+                        receiptOriginalName: file.name,
+                      };
+
+                      setNewValues((prev) => {
+                        const idx = prev.findIndex(
+                          (v) => v.selectedReason === base.selectedReason
+                        );
+                        if (idx >= 0) {
+                          const clone = [...prev];
+                          clone[idx] = withReceipt;
+                          return clone;
+                        }
+                        return [withReceipt, ...prev];
+                      });
+                    } catch (err) {
+                      console.error(err);
+                      // fallback: agregamos sin comprobante si falló el upload
+                      setNewValues((prev) => {
+                        const idx = prev.findIndex(
+                          (v) => v.selectedReason === base.selectedReason
+                        );
+                        if (idx >= 0) {
+                          const clone = [...prev];
+                          clone[idx] = base;
+                          return clone;
+                        }
+                        return [base, ...prev];
+                      });
+                      alert(
+                        "No se pudo subir el comprobante. Se agregó el valor sin archivo."
+                      );
+                    }
+                  }}
+                />
+
                 <button
                   className="mt-1 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
                   onClick={() => {
-                    const next: ValueItem = {
+                    // método sugerido según opción elegida
+                    const method: PaymentMethod =
+                      paymentTypeUI === "contra_entrega" &&
+                      contraEntregaOpt === "cheque_30"
+                        ? "cheque"
+                        : "efectivo";
+
+                    // armamos el ValueItem base
+                    const base: ValueItem = {
                       amount: totalAfterDiscount.toFixed(2),
                       selectedReason: "Pago a factura",
-                      method: "efectivo",
+                      method,
                       bank: undefined,
-                      receipt: undefined,
                     };
-                    const idx = newValues.findIndex(
-                      (v) => v.selectedReason === "Pago a factura"
-                    );
-                    if (idx >= 0) {
-                      const clone = [...newValues];
-                      clone[idx] = next;
-                      setNewValues(clone);
-                    } else {
-                      setNewValues([next, ...newValues]);
-                    }
+
+                    // guardamos temporalmente para que el onChange lo complete (o lo agregue “as is” si se cancela)
+                    pendingValueRef.current = base;
+
+                    // abrimos el file picker; si el usuario cancela, igual se agrega sin comprobante
+                    fileInputRef.current?.click();
                   }}
-                  disabled={computedDiscounts.length === 0}
+                  disabled={computedDiscounts.length === 0 || isUploading}
                 >
-                  Agregar a Valores
+                  {isUploading
+                    ? "Subiendo..."
+                    : "Agregar a Valores (+ comprobante)"}
                 </button>
 
                 {/* Valores manuales */}

@@ -178,14 +178,16 @@ const SideMenu = () => {
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
-        "MARKETING",
         "VENDEDOR",
-        "CUSTOMER",
       ],
       subCategories: [
         {
           name: t("documentStatus"),
           path: "/accounts/status",
+        },
+        {
+          name: t("payments"),
+          path: "/accounts/payments",
         },
         {
           name: t("vouchers"),
@@ -196,15 +198,11 @@ const SideMenu = () => {
     {
       icon: <FaRegNoteSticky />,
       name: t("collectionsSummaries"),
-      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      allowedRoles: ["ADMINISTRADOR"],
       subCategories: [
         {
           name: t("collectionsSummaries"),
           path: "/collections/summaries",
-        },
-        {
-          name: t("payments"),
-          path: "/accounts/payments",
         },
         // {
         //   name: t("collectionsUnsummaries"),

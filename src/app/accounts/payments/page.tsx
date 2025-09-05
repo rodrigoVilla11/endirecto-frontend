@@ -17,6 +17,7 @@ import {
   type Payment,
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { StatusPill, TypePill } from "@/app/collections/summaries/page";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -167,17 +168,22 @@ const PaymentsChargedPage = () => {
 
         // 1) 👁️ (ver detalle)
         info: (
-          <button
-            className="flex items-center justify-center p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700"
-            title={t("view") as string}
-            onClick={() => openDetails(p)}
-          >
-            <FaEye className="text-lg" />
-          </button>
+          <div className="grid place-items-center">
+            {/* centra horizontal y vertical dentro de la celda */}
+            <button
+              type="button"
+              className="inline-flex items-center justify-center w-6 h-6 rounded "
+              title={t("view") as string}
+              onClick={() => openDetails(p)}
+              aria-label={t("view") as string}
+            >
+              <FaEye className="text-base leading-none" />
+            </button>
+          </div>
         ),
 
         // 2) CLIENTE (customer.id)
-        customer: p.customer?.id ?? "—",
+        customer: <CustomerIdAndName id={p.customer?.id} />,
 
         // 3) VENDEDOR (customer.seller_id) --> lo resolvemos con el componente que usa el hook
         seller: <CustomerSellerCell customerId={p.customer?.id} />,
@@ -257,7 +263,7 @@ const PaymentsChargedPage = () => {
         ),
       },
     ],
-    results: `${data?.total ?? 0} ${t("results")}`,
+    results: `${data?.total ?? 0} ${t("page.header.results")}`,
   };
 
   return (
@@ -378,10 +384,17 @@ function DetailsModal({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
             <Info
               label={t("customer") || "Cliente"}
-              value={payment.customer?.id || "—"}
+              value={<CustomerIdAndName id={payment.customer?.id} />}
             />
-            <Info label={t("status")} value={payment.status} />
-            <Info label={t("type") || "Tipo"} value={payment.type} />
+
+            <Info
+              label={t("status")}
+              value={<StatusPill status={payment.status} />}
+            />
+            <Info
+              label={t("type") || "Tipo"}
+              value={<TypePill type={payment.type} />}
+            />
             <Info
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
@@ -439,7 +452,10 @@ function DetailsModal({
                 <span>{t("final") || "Final"}</span>
               </div>
               {(payment.documents || []).map((d) => (
-                <div key={d.document_id} className="grid grid-cols-6 px-3 py-2 text-sm">
+                <div
+                  key={d.document_id}
+                  className="grid grid-cols-6 px-3 py-2 text-sm"
+                >
                   <span>{d.number}</span>
                   <span className={d.note ? "text-amber-600" : ""}>
                     {d.days_used ?? "—"}
@@ -561,5 +577,24 @@ function Info({
       </span>
       <span className={`text-sm ${valueClassName}`}>{value}</span>
     </div>
+  );
+}
+
+function CustomerIdAndName({ id }: { id?: string }) {
+  const { data, isFetching, isError } = useGetCustomerByIdQuery(
+    { id: id ?? "" },
+    { skip: !id }
+  );
+
+  if (!id) return <>—</>;
+  if (isFetching) return <span className="text-zinc-400">…</span>;
+  if (isError) return <>{id} — —</>;
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="font-mono text-xs">{id}</span>
+      <span>—</span>
+      <span className="font-mono text-xs">{data?.name ?? "—"}</span>
+    </span>
   );
 }

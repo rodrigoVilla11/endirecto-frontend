@@ -929,7 +929,11 @@
     "descuento": "Descuento",
     "saldoAPagar": "Saldo a Pagar",
     "vto": "Vto:",
-    "noEspecificado": "No especificado"
+    "noEspecificado": "No especificado",
+    "saldo": "Saldo",
+    "diasDesdeEmision": "Días desde emisión",
+    "importeDescuento": "Importe desc.",
+    "finalConDescuento": "Final c/desc."
   },
   "customerDashboard": {
     "newOrder": "Nuevo Pedido",
@@ -1370,7 +1374,7 @@
   "serverError": "Error del servidor",
   "noPermission": "Sin permisos para exportar",
   "processing": "Procesando...",
-  "pendingPayments": "Pagos pendientes",
+  "pendingPayments": "Resumenes de Cobranza",
   "view": "Ver",
   "paymentMethod": "Forma de pago",
   "bank": "Banco",
@@ -1400,5 +1404,14 @@
   "addComment": "Agregar comentario",
   "optional": "opcional",
   "commentPlaceholder": "Escribí un comentario...",
-  "confirm": "Confirmar"
+  "confirm": "Confirmar",
+   "paymentStatus": {
+    "pending": "Pendiente",
+    "confirmed": "Confirmado",
+    "reversed": "Revertido"
+  },
+   "paymentType": {
+    "contra_entrega": "Contra entrega",
+    "cta_cte": "Cuenta corriente"
+  }
 }

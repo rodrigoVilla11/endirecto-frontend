@@ -16,6 +16,7 @@ import {
   useMarkAsChargedMutation,
   type Payment,
 } from "@/redux/services/paymentsApi";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -74,10 +75,12 @@ const PaymentsPendingPage = () => {
       setIsLoading(true);
 
       try {
-        const startDate =
-          searchParams.startDate ? format(searchParams.startDate, "yyyy-MM-dd") : undefined;
-        const endDate =
-          searchParams.endDate ? format(searchParams.endDate, "yyyy-MM-dd") : undefined;
+        const startDate = searchParams.startDate
+          ? format(searchParams.startDate, "yyyy-MM-dd")
+          : undefined;
+        const endDate = searchParams.endDate
+          ? format(searchParams.endDate, "yyyy-MM-dd")
+          : undefined;
 
         const result = await fetchPayments({
           page,
@@ -103,7 +106,13 @@ const PaymentsPendingPage = () => {
 
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, sortQuery, customer_id, searchParams.startDate, searchParams.endDate]);
+  }, [
+    page,
+    sortQuery,
+    customer_id,
+    searchParams.startDate,
+    searchParams.endDate,
+  ]);
 
   // IntersectionObserver
   useEffect(() => {
@@ -129,7 +138,9 @@ const PaymentsPendingPage = () => {
       setItems([]);
       setHasMore(true);
 
-      const [currentField, currentDirection] = sortQuery ? sortQuery.split(":") : ["", ""];
+      const [currentField, currentDirection] = sortQuery
+        ? sortQuery.split(":")
+        : ["", ""];
       setSortQuery(
         currentField === field
           ? `${field}:${currentDirection === "asc" ? "desc" : "asc"}`
@@ -168,10 +179,10 @@ const PaymentsPendingPage = () => {
       setMarkingId(confirmPayment._id);
 
       // ⚠️ Ajustá este payload a tu API: muchos backends esperan { id, comments }
-      await (markAsCharged as unknown as (args: any) => any)({
+      (await (markAsCharged as unknown as (args: any) => any)({
         id: confirmPayment._id,
         comments: confirmComment?.trim() || undefined,
-      }).unwrap?.() ?? markAsCharged(confirmPayment._id).unwrap();
+      }).unwrap?.()) ?? markAsCharged(confirmPayment._id).unwrap();
 
       // Sacamos el item de la lista local
       setItems((prev) => prev.filter((p) => p._id !== confirmPayment._id));
@@ -221,17 +232,23 @@ const PaymentsPendingPage = () => {
 
         // 1) 👁️ Ver detalle
         info: (
-          <button
-            className="flex items-center justify-center p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700"
-            title={t("view") as string}
-            onClick={() => openDetails(p)}
-          >
-            <FaEye className="text-lg" />
-          </button>
+          <div className="grid place-items-center">
+            {" "}
+            {/* centra horizontal y vertical dentro de la celda */}
+            <button
+              type="button"
+              className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-zinc-200 "
+              title={t("view") as string}
+              onClick={() => openDetails(p)}
+              aria-label={t("view") as string}
+            >
+              <FaEye className="text-base leading-none" />
+            </button>
+          </div>
         ),
 
         // 2) CLIENTE (customer.id)
-        customer: p.customer?.id ?? "—",
+        customer: <CustomerIdAndName id={p.customer?.id} />,
 
         // 3) DOCUMENT (map de documents.number)
         documents: (p.documents ?? []).map((d) => d.number).join(", ") || "—",
@@ -310,11 +327,19 @@ const PaymentsPendingPage = () => {
         ),
       },
     ],
-    results: `${(data?.total ?? 0)} ${t("results")}`,
+    results: `${data?.total ?? 0} ${t("page.header.results")}`,
   };
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR", "CUSTOMER"]}>
+    <PrivateRoute
+      requiredRoles={[
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "MARKETING",
+        "VENDEDOR",
+        "CUSTOMER",
+      ]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("pendingPayments")}</h3>
         <Header headerBody={headerBody} />
@@ -383,13 +408,18 @@ function ConfirmMarkModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60" onClick={onCancel}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60"
+      onClick={onCancel}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h4 className="text-lg font-semibold">{t("confirmMarkAsChargedTitle") || "Confirmar cobro"}</h4>
+          <h4 className="text-lg font-semibold">
+            {t("confirmMarkAsChargedTitle") || "Confirmar cobro"}
+          </h4>
           <button
             onClick={onCancel}
             className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -408,13 +438,18 @@ function ConfirmMarkModal({
           <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-zinc-500">{t("customer")}</span>
+                <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+                  {t("customer")}
+                </span>
                 <div className="font-medium">{payment.customer?.id ?? "—"}</div>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-zinc-500">{t("documents")}</span>
+                <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+                  {t("documents")}
+                </span>
                 <div className="font-medium">
-                  {(payment.documents ?? []).map((d) => d.number).join(", ") || "—"}
+                  {(payment.documents ?? []).map((d) => d.number).join(", ") ||
+                    "—"}
                 </div>
               </div>
             </div>
@@ -422,14 +457,19 @@ function ConfirmMarkModal({
 
           <label className="block text-sm">
             <span className="text-[11px] uppercase tracking-wider text-zinc-500">
-              {t("addComment") || "Agregar comentario"} <span className="lowercase text-zinc-400">({t("optional") || "opcional"})</span>
+              {t("addComment") || "Agregar comentario"}{" "}
+              <span className="lowercase text-zinc-400">
+                ({t("optional") || "opcional"})
+              </span>
             </span>
             <textarea
               value={comment}
               onChange={(e) => onChangeComment(e.target.value)}
               rows={4}
               className="mt-1 w-full rounded border border-zinc-300 dark:border-zinc-700 p-2 outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder={t("commentPlaceholder") || "Escribí un comentario..."}
+              placeholder={
+                t("commentPlaceholder") || "Escribí un comentario..."
+              }
             />
           </label>
         </div>
@@ -442,13 +482,18 @@ function ConfirmMarkModal({
             {t("cancel") || "Cancelar"}
           </button>
           <button
-            className={`px-3 py-2 rounded text-white ${isLoading ? "bg-amber-500 cursor-wait" : "bg-emerald-600 hover:bg-emerald-700"}`}
+            className={`px-3 py-2 rounded text-white ${
+              isLoading
+                ? "bg-amber-500 cursor-wait"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
             onClick={onConfirm}
             disabled={isLoading}
           >
             {isLoading ? (
               <span className="inline-flex items-center gap-2">
-                <FaSpinner className="animate-spin" /> {t("processing") || "Procesando..."}
+                <FaSpinner className="animate-spin" />{" "}
+                {t("processing") || "Procesando..."}
               </span>
             ) : (
               <span className="inline-flex items-center gap-2">
@@ -472,7 +517,13 @@ type DetailsModalProps = {
   t: (k: string) => string;
 };
 
-function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalProps) {
+function DetailsModal({
+  payment,
+  onClose,
+  onMark,
+  isMarking,
+  t,
+}: DetailsModalProps) {
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: payment.currency || "ARS",
@@ -481,7 +532,10 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden"
@@ -493,8 +547,11 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
               {t("paymentDetail") || "Detalle de pago"}
             </h4>
             <span className="text-xs text-zinc-500">
-              {t("number")}: {payment.documents?.[0]?.number ?? "—"} · {t("date")}:{" "}
-              {payment.date ? format(new Date(payment.date), "dd/MM/yyyy HH:mm") : "N/A"}
+              {t("number")}: {payment.documents?.[0]?.number ?? "—"} ·{" "}
+              {t("date")}:{" "}
+              {payment.date
+                ? format(new Date(payment.date), "dd/MM/yyyy HH:mm")
+                : "N/A"}
             </span>
           </div>
           <button
@@ -510,12 +567,21 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
         <div className="p-4 space-y-4">
           {/* Meta */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-            <Info label={t("customer") || "Cliente"} value={payment.customer?.id || "—"} />
-            <Info label={t("status")} value={payment.status} />
-            <Info label={t("type") || "Tipo"} value={payment.type} />
+            <Info
+              label={t("customer") || "Cliente"}
+              value={<CustomerIdAndName id={payment.customer?.id} />}
+            />
+            <Info
+              label={t("status")}
+              value={<StatusPill status={payment.status} />}
+            />
+            <Info
+              label={t("type") || "Tipo"}
+              value={<TypePill type={payment.type} />}
+            />
             <Info
               label={t("charged") || "Cobrado"}
-              value={payment.isCharged ? (t("yes") || "Sí") : (t("no") || "No")}
+              value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
             />
           </div>
 
@@ -525,10 +591,22 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
               {t("totals") || "Totales"}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 text-sm">
-              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
-              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
-              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
-              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
+              <Info
+                label="Bruto"
+                value={currencyFmt.format(payment.totals?.gross ?? 0)}
+              />
+              <Info
+                label="Desc."
+                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
+              />
+              <Info
+                label="Neto"
+                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
+              />
+              <Info
+                label="Valores"
+                value={currencyFmt.format(payment.totals?.values ?? 0)}
+              />
               <Info
                 label="Dif."
                 valueClassName={
@@ -558,7 +636,10 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
                 <span>{t("final") || "Final"}</span>
               </div>
               {(payment.documents || []).map((d) => (
-                <div key={d.document_id} className="grid grid-cols-6 px-3 py-2 text-sm">
+                <div
+                  key={d.document_id}
+                  className="grid grid-cols-6 px-3 py-2 text-sm"
+                >
                   <span>{d.number}</span>
                   <span className={d.note ? "text-amber-600" : ""}>
                     {d.days_used ?? "—"}
@@ -616,7 +697,9 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
           {payment.comments ? (
             <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
-              <div className="text-zinc-700 dark:text-zinc-300">{payment.comments}</div>
+              <div className="text-zinc-700 dark:text-zinc-300">
+                {payment.comments}
+              </div>
             </div>
           ) : null}
         </div>
@@ -625,7 +708,9 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
         <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-200 dark:border-zinc-800">
           <div className="text-xs text-zinc-500">
             ID: {payment._id} · {t("created") || "Creado"}:{" "}
-            {payment.created_at ? format(new Date(payment.created_at), "dd/MM/yyyy HH:mm") : "—"}
+            {payment.created_at
+              ? format(new Date(payment.created_at), "dd/MM/yyyy HH:mm")
+              : "—"}
           </div>
 
           <div className="flex gap-2">
@@ -638,14 +723,17 @@ function DetailsModal({ payment, onClose, onMark, isMarking, t }: DetailsModalPr
 
             <button
               className={`px-3 py-2 rounded text-white ${
-                isMarking ? "bg-amber-500 cursor-wait" : "bg-emerald-600 hover:bg-emerald-700"
+                isMarking
+                  ? "bg-amber-500 cursor-wait"
+                  : "bg-emerald-600 hover:bg-emerald-700"
               }`}
               onClick={onMark} // <- abre el ConfirmMarkModal
               disabled={isMarking}
             >
               {isMarking ? (
                 <span className="inline-flex items-center gap-2">
-                  <FaSpinner className="animate-spin" /> {t("processing") || "Procesando..."}
+                  <FaSpinner className="animate-spin" />{" "}
+                  {t("processing") || "Procesando..."}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2">
@@ -671,8 +759,91 @@ function Info({
 }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wider text-zinc-500">{label}</span>
+      <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+        {label}
+      </span>
       <span className={`text-sm ${valueClassName}`}>{value}</span>
     </div>
+  );
+}
+
+function CustomerIdAndName({ id }: { id?: string }) {
+  const { data, isFetching, isError } = useGetCustomerByIdQuery(
+    { id: id ?? "" },
+    { skip: !id }
+  );
+
+  if (!id) return <>—</>;
+  if (isFetching) return <span className="text-zinc-400">…</span>;
+  if (isError) return <>{id} — —</>;
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="font-mono text-xs">{id}</span>
+      <span>—</span>
+      <span className="font-mono text-xs">{data?.name ?? "—"}</span>
+    </span>
+  );
+}
+
+export function StatusPill({ status }: { status?: string }) {
+  const { t } = useTranslation();
+
+  const s = (status ?? "").toLowerCase();
+
+  const fallback =
+    s === "pending"
+      ? "Pending"
+      : s === "confirmed"
+      ? "Confirmed"
+      : s === "reversed"
+      ? "Reversed"
+      : s || "-";
+
+  // Clave i18n: paymentStatus.pending / .confirmed / .reversed
+  const label = t(`paymentStatus.${s}`, fallback);
+
+  const cls =
+    s === "pending"
+      ? "bg-amber-100 text-amber-800"
+      : s === "confirmed"
+      ? "bg-emerald-100 text-emerald-800"
+      : s === "reversed"
+      ? "bg-rose-100 text-rose-800"
+      : "bg-zinc-100 text-zinc-800";
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+export function TypePill({ type }: { type?: string }) {
+  const { t } = useTranslation();
+  const k = (type ?? "").toLowerCase();
+
+  // Fallback legible si faltan traducciones
+  const fallback =
+    k === "contra_entrega"
+      ? "Cash on delivery"
+      : k === "cta_cte"
+      ? "On account"
+      : k || "-";
+
+  // paymentType.contra_entrega / paymentType.cta_cte
+  const label = t(`paymentType.${k}`, fallback);
+
+  const cls =
+    k === "contra_entrega"
+      ? "bg-blue-100 text-blue-800"
+      : k === "cta_cte"
+      ? "bg-violet-100 text-violet-800"
+      : "bg-zinc-100 text-zinc-800";
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
+    </span>
   );
 }

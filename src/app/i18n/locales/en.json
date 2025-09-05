@@ -933,7 +933,11 @@
     "descuento": "Discount",
     "saldoAPagar": "Balance Due",
     "vto": "Exp:",
-    "noEspecificado": "Not specified"
+    "noEspecificado": "Not specified",
+    "saldo": "Balance",
+    "diasDesdeEmision": "Days since issue",
+    "importeDescuento": "Discount amount",
+    "finalConDescuento": "Final (with discount)"
   },
   "customerDashboard": {
     "newOrder": "New Order",
@@ -1398,10 +1402,19 @@
   "chargedPayments": "Charged payments",
   "unmarkAsCharged": "Unmark as charged",
   "areYouSureUnmarkCharged": "Are you sure you want to unmark this payment as charged?",
-   "confirmMarkAsChargedTitle": "Confirm payment",
+  "confirmMarkAsChargedTitle": "Confirm payment",
   "confirmMarkAsChargedBody": "Do you want to mark this payment as charged? You can add a comment.",
   "addComment": "Add comment",
   "optional": "optional",
   "commentPlaceholder": "Write a comment...",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "paymentStatus": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "reversed": "Reversed"
+  },
+  "paymentType": {
+    "contra_entrega": "Cash on delivery",
+    "cta_cte": "On account"
+  }
 }

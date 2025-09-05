@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 
 type PaymentMethod = "efectivo" | "transferencia" | "cheque";
 
@@ -9,7 +10,10 @@ export type ValueItem = {
   selectedReason: string; // Concepto / motivo
   method: PaymentMethod;
   bank?: string;
-  receipt?: File | string;
+  /** URL del comprobante en Cloudinary */
+  receipt?: string;
+  /** Nombre original del archivo subido */
+  receiptOriginalName?: string;
 };
 
 export default function ValueView({
@@ -30,6 +34,9 @@ export default function ValueView({
     []
   );
 
+  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
   const addRow = () => {
     setNewValues((prev) => [
       {
@@ -38,6 +45,7 @@ export default function ValueView({
         method: "efectivo",
         bank: "",
         receipt: undefined,
+        receiptOriginalName: undefined,
       },
       ...prev,
     ]);
@@ -54,14 +62,43 @@ export default function ValueView({
       if (patch.method === "efectivo") {
         clone[idx].bank = "";
         clone[idx].receipt = undefined;
+        clone[idx].receiptOriginalName = undefined;
       }
       return clone;
     });
   };
 
-  const handleFile = (idx: number, file?: File) => {
-    updateRow(idx, { receipt: file });
+  const extractCloudinaryUrl = (res: any) =>
+    res?.secure_url ??
+    res?.url ??
+    res?.data?.secure_url ??
+    res?.data?.url ??
+    null;
+
+  // Sube a Cloudinary APENAS se elige un archivo y guarda el URL (string)
+  const handleFileChange = async (idx: number, file?: File) => {
+    if (!file) {
+      updateRow(idx, { receipt: undefined, receiptOriginalName: undefined });
+      return;
+    }
+    try {
+      setUploadingIdx(idx);
+      const res = await uploadImage(file).unwrap();
+      const url = extractCloudinaryUrl(res);
+      console.log("url")
+      if (!url) throw new Error("No vino secure_url/url en la respuesta");
+      updateRow(idx, { receipt: url, receiptOriginalName: file.name });
+    } catch (e) {
+      console.error("Upload error:", e);
+      alert("No se pudo subir el comprobante. Probá de nuevo.");
+      updateRow(idx, { receipt: undefined, receiptOriginalName: undefined });
+    } finally {
+      setUploadingIdx(null);
+    }
   };
+
+  const isImageUrl = (url?: string) =>
+    !!url && /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(url);
 
   const totalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + (parseFloat(v.amount || "0") || 0), 0),
@@ -88,22 +125,14 @@ export default function ValueView({
         {newValues.map((v, idx) => {
           const showBankAndReceipt =
             v.method === "transferencia" || v.method === "cheque";
-
-          const receiptPreview =
-            typeof v.receipt !== "string" && v.receipt instanceof File
-              ? URL.createObjectURL(v.receipt)
-              : typeof v.receipt === "string"
-              ? v.receipt
-              : undefined;
+          const isThisUploading = uploadingIdx === idx && isUploading;
 
           return (
             <div
               key={idx}
               className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50"
             >
-              {/* FILA PRINCIPAL
-                 md: cuatro columnas fijas => [Monto | Concepto | Medio de pago | Acciones]
-                 En mobile cae a una columna, pero los pills hacen scroll horizontal */}
+              {/* Fila principal */}
               <div
                 className="
                   grid grid-cols-1
@@ -196,21 +225,67 @@ export default function ValueView({
                     />
                   </div>
 
-                  {/* Comprobante */}
+                  {/* Comprobante: input que sube automáticamente */}
                   <div className="md:col-span-4">
                     <label className="block text-xs text-zinc-400 mb-1">
-                      Comprobante (foto)
+                      Comprobante (imagen / PDF)
                     </label>
                     <input
                       type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFile(idx, e.target.files?.[0])}
+                      accept="image/*,application/pdf"
+                      onChange={(e) => handleFileChange(idx, e.target.files?.[0])}
                       className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-zinc-600 file:text-white"
                     />
+
+                    <div className="mt-2 flex gap-2 items-center">
+                      <span
+                        className={`text-xs ${
+                          isThisUploading ? "text-amber-400" : "text-zinc-400"
+                        }`}
+                      >
+                        {isThisUploading
+                          ? "Subiendo..."
+                          : v.receipt
+                          ? "Subida lista"
+                          : "Sin comprobante"}
+                      </span>
+
+                      {v.receipt && (
+                        <a
+                          href={v.receipt}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-9 px-3 rounded bg-zinc-700 text-white flex items-center hover:bg-zinc-600"
+                        >
+                          Ver comprobante
+                        </a>
+                      )}
+
+                      {v.receipt && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateRow(idx, {
+                              receipt: undefined,
+                              receiptOriginalName: undefined,
+                            })
+                          }
+                          className="h-9 px-3 rounded bg-zinc-700 text-white hover:bg-zinc-600"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+
+                    {v.receiptOriginalName && (
+                      <div className="text-xs text-zinc-400 mt-1">
+                        Archivo: {v.receiptOriginalName}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Vista previa */}
-                  {receiptPreview && (
+                  {/* Vista previa sólo si es imagen */}
+                  {isImageUrl(v.receipt) && (
                     <div className="md:col-span-4">
                       <label className="block text-xs text-zinc-400 mb-1">
                         Vista previa
@@ -218,7 +293,7 @@ export default function ValueView({
                       <div className="h-[120px] rounded overflow-hidden border border-zinc-700 bg-black/30 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={receiptPreview}
+                          src={v.receipt as string}
                           alt="Comprobante"
                           className="object-contain h-full w-full"
                         />
