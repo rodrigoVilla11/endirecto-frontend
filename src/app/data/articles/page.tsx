@@ -88,6 +88,7 @@ const Page = () => {
     }
   );
 
+  console.log("data", data)
   // ======================================================
   // Handlers
   // ======================================================
@@ -229,7 +230,7 @@ const Page = () => {
             />
           </div>
         ),
-        brand: article.brand?.name || t("noBrand"),
+        brand: article.brand || t("noBrand"),
         image: (
           <div className="flex justify-center items-center">
             {article.images?.[0] ? (
@@ -244,7 +245,7 @@ const Page = () => {
             )}
           </div>
         ),
-        item: article.item?.name || t("noItem"),
+        item: article.item || t("noItem"),
         id: article.id,
         supplier: article.supplier_code,
         name: article.name,

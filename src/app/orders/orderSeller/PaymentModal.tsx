@@ -12,6 +12,8 @@ import {
   PaymentStatus,
   useCreatePaymentMutation,
 } from "@/redux/services/paymentsApi";
+import { createPortal } from "react-dom";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -103,6 +105,266 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (Number.isFinite(v)) return v;
     return daysFromInvoice(doc.date);
   }
+  const { userData } = useAuth();
+
+  // 👇 Agregar dentro del componente PaymentModal, antes del return
+  // const handleCreatePayment = async () => {
+  //   if (isCreating || isSubmittingPayment) return;
+
+  //   // 1) Tomar user id (ajustá a tu app)
+  //   // Si usás AuthContext: const { user: authUser } = useAuth();
+  //   const currentUserId = userData?._id
+  //   if (!currentUserId) {
+  //     alert(
+  //       "No se encontró el usuario logueado (user). Pasá el user.id desde tu AuthContext/Redux."
+  //     );
+  //     return;
+  //   }
+
+  //   // 2) Validaciones mínimas
+  //   if (!selectedClientId) {
+  //     alert("Falta el cliente (customer).");
+  //     return;
+  //   }
+  //   if (newValues.length === 0) {
+  //     alert("Agregá al menos un valor de pago.");
+  //     return;
+  //   }
+  //   // Si hay documentos, exigimos que neto y valores coincidan
+  //   if (computedDiscounts.length > 0 && Math.abs(diff) > 0.01) {
+  //     alert(
+  //       `La diferencia debe ser $0,00 para imputar a comprobantes. Actual: ${formattedDiff}`
+  //     );
+  //     return;
+  //   }
+
+  //   // 3) Helpers para campos que exige el backend
+  //   const mapPaymentCondition = () => {
+  //     // Ajustá estos strings a tu Enum de backend (ej.: "CUENTA_CORRIENTE" | "CONTRA_ENTREGA")
+  //     return paymentTypeUI === "cta_cte"
+  //       ? "CUENTA_CORRIENTE"
+  //       : "CONTRA_ENTREGA";
+  //   };
+
+  //   const mapType = () => {
+  //     // Ajustá a tu Enum real (ej.: "COLLECTION" | "PAYMENT" | "INCOME")
+  //     return "COLLECTION";
+  //   };
+
+  //   const mapStatus = (): PaymentStatus => {
+  //     // "CONFIRMED" no es válido en tu esquema.
+  //     // Usamos PENDING como valor seguro. Cambiá si tu enum permite "APPROVED" / "COMPLETED" etc.
+  //     return "PENDING" as PaymentStatus;
+  //   };
+
+  //   const buildRuleApplied = (days: number) => {
+  //     if (paymentTypeUI === "contra_entrega") {
+  //       if (contraEntregaOpt === "efectivo_general")
+  //         return "contra_entrega:efectivo_general:20%";
+  //       if (contraEntregaOpt === "efectivo_promos")
+  //         return "contra_entrega:efectivo_promos:15%";
+  //       if (contraEntregaOpt === "cheque_30") {
+  //         return !isNaN(days) && days <= 30
+  //           ? "contra_entrega:cheque_<=30d:13%"
+  //           : "contra_entrega:cheque_>30d:0%";
+  //       }
+  //       return "contra_entrega:sin_regla";
+  //     } else {
+  //       if (isNaN(days)) return "cta_cte:invalido";
+  //       if (days <= 15) return "cta_cte:<=15d:13%";
+  //       if (days <= 30) return "cta_cte:<=30d:10%";
+  //       if (days > 45) return "cta_cte:>45d:actualizacion";
+  //       return "cta_cte:0%";
+  //     }
+  //   };
+
+  //   setIsSubmittingPayment(true);
+  //   try {
+  //     // 4) Armar payload con los nombres que exige el backend
+  //     const payload = {
+  //       user: currentUserId, // REQUIRED
+  //       customer: selectedClientId, // REQUIRED
+  //       type: mapType(), // REQUIRED (ajustá a tu enum real)
+  //       status: mapStatus(), // status válido
+  //       payment_condition: mapPaymentCondition(), // REQUIRED (ajustá a tu enum)
+
+  //       // total: el backend lo exige; usamos suma de valores (debe igualar neto si hay docs)
+  //       total: +totalValues.toFixed(2), // REQUIRED
+
+  //       // opcionales útiles
+  //       date: new Date().toISOString(),
+  //       comments,
+
+  //       // Valores: el backend exige "concept"
+  //       values: newValues.map((v) => ({
+  //         amount: +parseFloat(v.amount || "0").toFixed(2),
+  //         method: v.method, // si tu backend usa enum tipo "CASH|TRANSFER|CHECK", mapealo acá
+  //         concept: v.selectedReason, // 👈 REQUIRED por el backend
+  //         bank: v.bank || null,
+  //       })),
+
+  //       // Documentos: el backend exige estos nombres
+  //       documents: computedDiscounts.map((d) => ({
+  //         document_id: d.document_id, // si tu schema pide "document" en vez de "document_id", cambialo
+  //         number: d.number,
+  //         base_amount: +d.base.toFixed(2), // opcional, pero útil
+  //         discount_rate: d.rate, // 👈 REQUIRED
+  //         discount_amount: +d.discountAmount.toFixed(2), // 👈 REQUIRED
+  //         final_amount: +d.finalAmount.toFixed(2), // 👈 REQUIRED
+  //         rule_applied: buildRuleApplied(d.days), // 👈 REQUIRED (string descriptivo de la regla)
+  //       })),
+  //     } as unknown as CreatePayment;
+
+  //     // 5) Llamada
+  //     await createPayment(payload).unwrap();
+
+  //     // 6) Reset UI
+  //     setIsConfirmModalOpen(false);
+  //     setSubmittedPayment(true);
+  //     setNewValues([]);
+  //     setNewPayment([]);
+  //     setSelectedRows([]);
+  //     setComments("");
+  //     onClose();
+  //   } catch (err) {
+  //     console.error("CreatePayment error:", err);
+  //     alert(
+  //       "No se pudo crear el pago. Revisá los datos (enums y nombres) e intentá nuevamente."
+  //     );
+  //   } finally {
+  //     setIsSubmittingPayment(false);
+  //   }
+  // };
+
+  // Utils de redondeo (evita flotantes raros en la UI)
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const round4 = (n: number) =>
+    Math.round((n + Number.EPSILON) * 10000) / 10000;
+
+  // TODO: reemplazá por tu fuente real (AuthContext / Redux / NextAuth)
+  const getCurrentUserId = () => {
+    // ej: const { user } = useAuth(); return user?.id;
+    return (
+      (userData?._id) || ""
+    );
+  };
+
+  // TODO: si en tu app la condición de pago es un registro real, poné su ID de DB acá.
+  // Por ahora mando un id simbólico según la UI:
+  const getPaymentConditionId = () =>
+    paymentTypeUI === "cta_cte" ? "cta_cte" : "contra_entrega";
+
+  // Regla usada (string descriptivo)
+  const buildRuleApplied = (days: number) => {
+    if (paymentTypeUI === "contra_entrega") {
+      if (contraEntregaOpt === "efectivo_general")
+        return "contra_entrega:efectivo_general:20%";
+      if (contraEntregaOpt === "efectivo_promos")
+        return "contra_entrega:efectivo_promos:15%";
+      if (contraEntregaOpt === "cheque_30") {
+        return !isNaN(days) && days <= 30
+          ? "contra_entrega:cheque_<=30d:13%"
+          : "contra_entrega:cheque_>30d:0%";
+      }
+      return "contra_entrega:sin_regla";
+    } else {
+      if (isNaN(days)) return "cta_cte:invalido";
+      if (days <= 15) return "cta_cte:<=15d:13%";
+      if (days <= 30) return "cta_cte:<=30d:10%";
+      if (days > 45) return "cta_cte:>45d:actualizacion";
+      return "cta_cte:0%";
+    }
+  };
+
+  const handleCreatePayment = async () => {
+    if (isCreating || isSubmittingPayment) return;
+
+    const userId = getCurrentUserId();
+    if (!userId) return alert("Falta user.id (logueo).");
+
+    if (!selectedClientId) return alert("Falta customer.id.");
+    if (newValues.length === 0) return alert("Agregá al menos un valor.");
+
+    // si hay docs, neto y valores deben cerrar
+    if (computedDiscounts.length > 0 && Math.abs(diff) > 0.01) {
+      return alert(`La diferencia debe ser $0,00. Actual: ${formattedDiff}`);
+    }
+
+    setIsSubmittingPayment(true);
+    try {
+      const totals = {
+        gross: round2(totalBase),
+        discount: round2(totalDiscount),
+        net: round2(totalAfterDiscount),
+        values: round2(totalValues),
+        diff: round2(diff),
+      };
+
+      const payload = {
+        // enums en minúscula según tu schema:
+        status: "pending", // 'pending' | 'confirmed' | 'reversed'
+        type: paymentTypeUI, // 'contra_entrega' | 'cta_cte'
+        contra_entrega_choice:
+          paymentTypeUI === "contra_entrega" ? contraEntregaOpt : undefined,
+
+        date: new Date(), // el schema espera Date
+        currency: "ARS", // default, pero no molesta
+        comments,
+        source: "web",
+
+        customer: { id: String(selectedClientId) },
+        user: { id: String(userId) },
+        payment_condition: { id: getPaymentConditionId() },
+
+        totals,
+
+        // el schema dice: "total" (usar NETO). Tiene set toFixed(4)
+        total: round4(totalAfterDiscount),
+
+        // Detalle de documentos
+        documents: computedDiscounts.map((d) => ({
+          document_id: d.document_id,
+          number: d.number,
+          days_used: isNaN(d.days) ? undefined : d.days,
+          rule_applied: buildRuleApplied(d.days),
+          base: round2(d.base),
+          discount_rate: round4(d.rate), // 0.1300 etc.
+          discount_amount: round2(d.discountAmount),
+          final_amount: round2(d.finalAmount),
+          note: d.note || undefined,
+        })),
+
+        // Valores (medios de pago). method debe ser 'efectivo' | 'transferencia' | 'cheque'
+        values: newValues.map((v) => ({
+          amount: round2(parseFloat(v.amount || "0")),
+          concept: v.selectedReason,
+          method: v.method, // coincide con PaymentMethodEnum
+          bank: v.bank || undefined,
+          // receipt_url / receipt_original_name si ya subís archivos
+        })),
+      } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
+
+      // Debug opcional
+      // console.log("CreatePayment payload", payload);
+
+      await createPayment(payload).unwrap();
+
+      setIsConfirmModalOpen(false);
+      setSubmittedPayment(true);
+      setNewValues([]);
+      setNewPayment([]);
+      setSelectedRows([]);
+      setComments("");
+      onClose();
+    } catch (e) {
+      console.error("CreatePayment error:", e);
+      alert(
+        "No se pudo crear el pago. Revisá enums/minúsculas y los IDs anidados."
+      );
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
 
   function getDiscountRateForDoc(
     docDays: number,
@@ -610,9 +872,17 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       {/* Confirm Modal (sin cambios funcionales) */}
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-          {/* ... el resto del modal queda igual a tu versión actual ... */}
-        </div>
+        <ConfirmDialog
+          open={isConfirmModalOpen}
+          onCancel={() => setIsConfirmModalOpen(false)}
+          onConfirm={handleCreatePayment} // 👈 acá
+          isLoading={isCreating || isSubmittingPayment}
+          title="Confirmar envío"
+        >
+          <p className="text-sm text-zinc-600 dark:text-zinc-300">
+            ¿Querés confirmar la creación del pago?
+          </p>
+        </ConfirmDialog>
       )}
     </div>
   );
@@ -634,5 +904,62 @@ function InfoRow({
       <span className="text-zinc-400">{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
+  );
+}
+
+function ConfirmDialog({
+  open,
+  onCancel,
+  onConfirm,
+  isLoading,
+  title,
+  children,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isLoading?: boolean;
+  title: string;
+  children?: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!open || !mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-center justify-center">
+      {/* backdrop del confirm */}
+      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      {/* contenido del confirm */}
+      <div
+        className="relative w-full max-w-lg rounded-xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+          <h4 className="text-lg font-semibold">{title}</h4>
+        </div>
+        <div className="p-4 space-y-3">{children}</div>
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800">
+          <button
+            className="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            onClick={onCancel}
+          >
+            Cancelar
+          </button>
+          <button
+            className={`px-3 py-2 rounded text-white ${
+              isLoading
+                ? "bg-amber-500 cursor-wait"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? "Procesando..." : "Confirmar"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
