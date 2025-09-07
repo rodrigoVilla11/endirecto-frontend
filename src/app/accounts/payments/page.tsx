@@ -17,7 +17,6 @@ import {
   type Payment,
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
-import { StatusPill, TypePill } from "@/app/collections/summaries/page";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -595,6 +594,68 @@ function CustomerIdAndName({ id }: { id?: string }) {
       <span className="font-mono text-xs">{id}</span>
       <span>—</span>
       <span className="font-mono text-xs">{data?.name ?? "—"}</span>
+    </span>
+  );
+}
+
+function StatusPill({ status }: { status?: string }) {
+  const { t } = useTranslation();
+
+  const s = (status ?? "").toLowerCase();
+
+  const fallback =
+    s === "pending"
+      ? "Pending"
+      : s === "confirmed"
+      ? "Confirmed"
+      : s === "reversed"
+      ? "Reversed"
+      : s || "-";
+
+  // Clave i18n: paymentStatus.pending / .confirmed / .reversed
+  const label = t(`paymentStatus.${s}`, fallback);
+
+  const cls =
+    s === "pending"
+      ? "bg-amber-100 text-amber-800"
+      : s === "confirmed"
+      ? "bg-emerald-100 text-emerald-800"
+      : s === "reversed"
+      ? "bg-rose-100 text-rose-800"
+      : "bg-zinc-100 text-zinc-800";
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+function TypePill({ type }: { type?: string }) {
+  const { t } = useTranslation();
+  const k = (type ?? "").toLowerCase();
+
+  // Fallback legible si faltan traducciones
+  const fallback =
+    k === "contra_entrega"
+      ? "Cash on delivery"
+      : k === "cta_cte"
+      ? "On account"
+      : k || "-";
+
+  // paymentType.contra_entrega / paymentType.cta_cte
+  const label = t(`paymentType.${k}`, fallback);
+
+  const cls =
+    k === "contra_entrega"
+      ? "bg-blue-100 text-blue-800"
+      : k === "cta_cte"
+      ? "bg-violet-100 text-violet-800"
+      : "bg-zinc-100 text-zinc-800";
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
     </span>
   );
 }

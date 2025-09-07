@@ -786,7 +786,7 @@ function CustomerIdAndName({ id }: { id?: string }) {
   );
 }
 
-export function StatusPill({ status }: { status?: string }) {
+function StatusPill({ status }: { status?: string }) {
   const { t } = useTranslation();
 
   const s = (status ?? "").toLowerCase();
@@ -819,7 +819,7 @@ export function StatusPill({ status }: { status?: string }) {
   );
 }
 
-export function TypePill({ type }: { type?: string }) {
+function TypePill({ type }: { type?: string }) {
   const { t } = useTranslation();
   const k = (type ?? "").toLowerCase();
 
