@@ -172,31 +172,28 @@ const PaymentsPendingPage = () => {
     setConfirmComment("");
   };
 
-  // Confirmar marcado como cobrado (con comentario)
-  const confirmMarkCharged = async () => {
-    if (!confirmPayment) return;
-    try {
-      setMarkingId(confirmPayment._id);
+const confirmMarkCharged = async () => {
+  if (!confirmPayment) return;
+  try {
+    setMarkingId(confirmPayment._id);
 
-      // ⚠️ Ajustá este payload a tu API: muchos backends esperan { id, comments }
-      (await (markAsCharged as unknown as (args: any) => any)({
-        id: confirmPayment._id,
-        comments: confirmComment?.trim() || undefined,
-      }).unwrap?.()) ?? markAsCharged(confirmPayment._id).unwrap();
+    await markAsCharged({
+      id: confirmPayment._id,
+      value: true,
+      comments: confirmComment?.trim() || undefined,
+    }).unwrap();
 
-      // Sacamos el item de la lista local
-      setItems((prev) => prev.filter((p) => p._id !== confirmPayment._id));
+    // Actualización local de la lista
+    setItems((prev) => prev.filter((p) => p._id !== confirmPayment._id));
+    if (selected?._id === confirmPayment._id) closeDetails();
+    closeConfirm();
+  } catch (e) {
+    console.error("No se pudo marcar como cobrado:", e);
+  } finally {
+    setMarkingId(null);
+  }
+};
 
-      // Si el modal de detalle está abierto y es el mismo, lo cerramos
-      if (selected?._id === confirmPayment._id) closeDetails();
-
-      closeConfirm();
-    } catch (e) {
-      console.error("No se pudo marcar como cobrado:", e);
-    } finally {
-      setMarkingId(null);
-    }
-  };
 
   /* ===================== Helpers para columnas pedidas ===================== */
 

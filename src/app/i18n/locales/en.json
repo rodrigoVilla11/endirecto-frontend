@@ -1416,5 +1416,21 @@
   "paymentType": {
     "contra_entrega": "Cash on delivery",
     "cta_cte": "On account"
-  }
+  },
+  "instances": "Instances",
+  "retry": "Retry",
+  "notesPlaceholder": "Write notes here...",
+  "writeSomethingHelpful": "Write something helpful",
+  "none": "None",
+  "createdAt": "Created at",
+  "highPriorityInstance": "HIGH priority instance",
+  "priority.high": "High",
+  "priority.medium": "Medium",
+  "priority.low": "Low",
+  "instanceType.WHATSAPP_MESSAGE": "WhatsApp Message",
+  "instanceType.EMAIL": "Email",
+  "instanceType.CALL": "Call",
+  "validation.required": "This field is required",
+  "validation.maxChars": "Cannot exceed {{max}} characters",
+  "downloading": "Downloading..."
 }

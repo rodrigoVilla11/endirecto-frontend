@@ -13,7 +13,10 @@ import { IoMdPin } from "react-icons/io";
 import { FaInfoCircle } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { useGetCrmPagQuery, useLazyExportCrmQuery } from "@/redux/services/crmApi";
+import {
+  useGetCrmPagQuery,
+  useLazyExportCrmQuery,
+} from "@/redux/services/crmApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "../context/PrivateRoutes";
@@ -30,6 +33,9 @@ import { useAuth } from "../context/AuthContext";
 import MapModal from "./MapModal";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { AiOutlineDownload } from "react-icons/ai";
+import { FaPlus } from "react-icons/fa";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import CRM from "../accounts/status/CRM";
 
 const ITEMS_PER_PAGE = 15;
 const keyOf = (o: unknown) => JSON.stringify(o);
@@ -76,6 +82,30 @@ const Page = () => {
       setSellerFilter(userData.seller_id);
     }
   }, [userRole, userData]);
+
+  // -------- Cliente seleccionado (para instancias) --------
+  const { data: customerData } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
+
+  // Última instancia HIGH (sin created_at): recorre desde el final
+  const latestHighInstance = useMemo(() => {
+    const arr = Array.isArray(customerData?.instance)
+      ? customerData.instance
+      : [];
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i]?.priority === "HIGH") return arr[i];
+    }
+    return null;
+  }, [customerData]);
+
+  // Permite cerrar/ocultar el banner localmente
+  const [hideHighBanner, setHideHighBanner] = useState(false);
+  useEffect(() => {
+    // si cambia de cliente, mostramos de nuevo
+    setHideHighBanner(false);
+  }, [selectedClientId]);
 
   // -------- Filtro por cliente desde contexto --------
   const [customer_id, setCustomer_id] = useState("");
@@ -251,7 +281,15 @@ const Page = () => {
       sort: sortQuery || undefined,
       __v: resetSeq,
     }),
-    [startDate, endDate, customer_id, sellerFilter, searchQuery, sortQuery, resetSeq]
+    [
+      startDate,
+      endDate,
+      customer_id,
+      sellerFilter,
+      searchQuery,
+      sortQuery,
+      resetSeq,
+    ]
   );
 
   const { data: allVisitsData } = useGetCrmPagQuery(mapArgs, {
@@ -372,7 +410,12 @@ const Page = () => {
 
   const tableHeader = useMemo(
     () => [
-      { component: <IoInformationCircleOutline className="text-center text-xl" />, key: "info" },
+      {
+        component: (
+          <IoInformationCircleOutline className="text-center text-xl" />
+        ),
+        key: "info",
+      },
       { name: t("seller"), key: "seller", important: true },
       { name: t("customer"), key: "customer", important: true },
       { name: t("user"), key: "user" },
@@ -391,8 +434,12 @@ const Page = () => {
     () => ({
       buttons: [
         {
-          logo: <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />,
-          title: isExporting ? (t("exporting") || "Exportando...") : (t("download") || "Descargar"),
+          logo: (
+            <AiOutlineDownload className={isExporting ? "animate-spin" : ""} />
+          ),
+          title: isExporting
+            ? t("exporting") || "Exportando..."
+            : t("download") || "Descargar",
           onClick: handleExport,
           disabled: isExporting,
         },
@@ -400,6 +447,11 @@ const Page = () => {
           logo: <IoMdPin />,
           title: t("viewOnMap"),
           onClick: () => setViewAllMapModalOpen(true),
+        },
+        {
+          logo: <FaPlus />,
+          title: t("newInstance"),
+          onClick: () => setCreateModalOpen(true),
         },
       ],
       filters: [
@@ -428,7 +480,9 @@ const Page = () => {
         {
           content: (
             <select
-              value={userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter}
+              value={
+                userRole === "VENDEDOR" ? userData?.seller_id : sellerFilter
+              }
               onChange={(e) => {
                 if (userRole !== "VENDEDOR") {
                   setSellerFilter(e.target.value);
@@ -505,10 +559,57 @@ const Page = () => {
   }
 
   return (
-    <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}>
+    <PrivateRoute
+      requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
+    >
       <div className="gap-4">
         <h3 className="font-bold p-4">{t("crm")}</h3>
         <Header headerBody={headerBody} />
+
+        {!hideHighBanner && latestHighInstance && (
+          <div className="mx-4 my-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
+            <span
+              className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500"
+              aria-hidden="true"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-red-800">
+                  {t("highPriorityInstance") || "Instancia de ALTA prioridad"}
+                </span>
+                {latestHighInstance.type && (
+                  <span className="text-xs rounded-full bg-red-100 text-red-800 ring-1 ring-inset ring-red-200 px-2 py-0.5">
+                    {t("type")}: {latestHighInstance.type}
+                  </span>
+                )}
+              </div>
+              <p
+                className="mt-1 text-sm text-red-900 line-clamp-2"
+                title={latestHighInstance.notes || ""}
+              >
+                <span className="font-medium">{t("notes")}:</span>{" "}
+                {latestHighInstance.notes || t("none")}
+              </p>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <button
+                onClick={() => setCreateModalOpen(true)}
+                className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+              >
+                {t("newInstance")}
+              </button>
+              <button
+                onClick={() => setHideHighBanner(true)}
+                className="shrink-0 rounded-md bg-white px-2 py-1.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-100"
+                aria-label={t("close")}
+                title={t("close") as string}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {isQueryLoading && page === 1 ? (
           <div className="p-4 text-center">{t("loading")}</div>
@@ -528,25 +629,40 @@ const Page = () => {
 
       {/* Modal crear */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-        <CreateCRMComponent closeModal={closeCreateModal} />
+         <CRM
+          closeModal={closeCreateModal}
+          selectedClientId={selectedClientId}
+        />
       </Modal>
 
       {/* Modal ver GPS puntual */}
       {isViewGPSModalOpen && currentGPS && (
         <Modal isOpen={isViewGPSModalOpen} onClose={closeViewGPSModal}>
-          <MapComponent currentGPS={currentGPS} closeModal={closeViewGPSModal} />
+          <MapComponent
+            currentGPS={currentGPS}
+            closeModal={closeViewGPSModal}
+          />
         </Modal>
       )}
 
       {/* Modal ver todo en mapa */}
       {isViewAllMapModalOpen && (
-        <Modal isOpen={isViewAllMapModalOpen} onClose={() => setViewAllMapModalOpen(false)}>
-          <MapModal visit={markersVisits} onClose={() => setViewAllMapModalOpen(false)} />
+        <Modal
+          isOpen={isViewAllMapModalOpen}
+          onClose={() => setViewAllMapModalOpen(false)}
+        >
+          <MapModal
+            visit={markersVisits}
+            onClose={() => setViewAllMapModalOpen(false)}
+          />
         </Modal>
       )}
 
       {/* Modal detalles CRM */}
-      <Modal isOpen={modalState.type === "info"} onClose={() => handleModalClose("info")}>
+      <Modal
+        isOpen={modalState.type === "info"}
+        onClose={() => handleModalClose("info")}
+      >
         {modalState.crm && (
           <CRMDetail
             data={modalState.crm}

@@ -1413,5 +1413,21 @@
    "paymentType": {
     "contra_entrega": "Contra entrega",
     "cta_cte": "Cuenta corriente"
-  }
+  },
+  "instances": "Instancias",
+  "retry": "Reintentar",
+  "notesPlaceholder": "Escribe notas aquí...",
+  "writeSomethingHelpful": "Escribe información útil",
+  "none": "Ninguna",
+  "createdAt": "Creado el",
+  "highPriorityInstance": "Instancia de ALTA prioridad",
+  "priority.high": "Alta",
+  "priority.medium": "Media",
+  "priority.low": "Baja",
+  "instanceType.WHATSAPP_MESSAGE": "Mensaje de WhatsApp",
+  "instanceType.EMAIL": "Correo electrónico",
+  "instanceType.CALL": "Llamada",
+  "validation.required": "Este campo es obligatorio",
+  "validation.maxChars": "No puede superar los {{max}} caracteres",
+  "downloading": "Descargando..."
 }

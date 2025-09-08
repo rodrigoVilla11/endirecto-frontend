@@ -1,52 +1,125 @@
 "use client";
-import { useGetCustomerByIdQuery, InstanceType, PriorityInstance, useUpdateCustomerMutation } from "@/redux/services/customersApi";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useGetCustomerByIdQuery,
+  InstanceType,
+  PriorityInstance,
+  useUpdateCustomerMutation,
+} from "@/redux/services/customersApi";
 import { IoMdClose } from "react-icons/io";
 import { useClient } from "@/app/context/ClientContext";
-import { useAuth } from "@/app/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
-const CreateInstanceComponent = ({ closeModal }: { closeModal: () => void }) => {
+const MAX_NOTES = 500;
+
+type CreateInstanceComponentProps = { closeModal: () => void };
+
+const CreateInstanceComponent: React.FC<CreateInstanceComponentProps> = ({ closeModal }) => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
-  const { data: customer, error, isLoading, refetch } = useGetCustomerByIdQuery({
-    id: selectedClientId || "",
-  });
 
-  const [form, setForm] = useState({
-    type: InstanceType.WHATSAPP_MESSAGE,
-    priority: PriorityInstance.MEDIUM,
-    notes: "",
-  });
+  const {
+    data: customer,
+    isLoading,
+    error,
+  } = useGetCustomerByIdQuery({ id: selectedClientId || "" }, { skip: !selectedClientId });
 
   const [updateCustomer, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateCustomerMutation();
+
+  const [form, setForm] = useState({
+    type: InstanceType.WHATSAPP_MESSAGE as InstanceType,
+    priority: PriorityInstance.MEDIUM as PriorityInstance,
+    notes: "",
+  });
+
+  const [errors, setErrors] = useState<{ notes?: string }>({});
+
+  const firstFieldRef = useRef<HTMLSelectElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus inicial
+  useEffect(() => {
+    firstFieldRef.current?.focus();
+  }, []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeModal]);
+
+  const typeOptions = useMemo(
+    () => Object.values(InstanceType).filter((v) => typeof v === "string") as string[],
+    []
+  );
+  const priorityOptions = useMemo(
+    () => Object.values(PriorityInstance).filter((v) => typeof v === "string") as string[],
+    []
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value as any }));
+    if (name === "notes") {
+      if (!value.trim()) setErrors((p) => ({ ...p, notes: t("validation.required") as string }));
+      else if (value.length > MAX_NOTES)
+        setErrors((p) => ({ ...p, notes: t("validation.maxChars", { max: MAX_NOTES }) as string }));
+      else setErrors((p) => ({ ...p, notes: undefined }));
+    }
+  };
+
+  const canSubmit = useMemo(() => {
+    if (isUpdating) return false;
+    if (!form.notes.trim()) return false;
+    if (form.notes.length > MAX_NOTES) return false;
+    return true;
+  }, [form.notes, isUpdating]);
+
+  const handleKeyDownForm = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    // Enter para enviar si no estamos en textarea
+    const target = e.target as HTMLElement;
+    if (e.key === "Enter" && target.tagName !== "TEXTAREA") {
+      e.preventDefault();
+      if (canSubmit) void handleSubmit(e as any);
+    }
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === dialogRef.current) closeModal();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validación mínima
+    const errs: typeof errors = {};
+    if (!form.notes.trim()) errs.notes = t("validation.required") as string;
+    if (form.notes.length > MAX_NOTES)
+      errs.notes = t("validation.maxChars", { max: MAX_NOTES }) as string;
+
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    const currentInstances = Array.isArray(customer?.instance) ? customer!.instance : [];
+
+    const newInstance = {
+      type: form.type,
+      priority: form.priority,
+      notes: form.notes.trim(),
+      created_at: new Date().toISOString(),
+    };
+
     try {
-      const currentInstances = customer?.instance ?? [];
-      const newInstance = {
-        type: form.type,
-        priority: form.priority,
-        notes: form.notes,
-      };
-      const updatedInstances = [...currentInstances, newInstance];
-      const payload = {
+      await updateCustomer({
         id: selectedClientId || "",
-        instance: updatedInstances,
-      };
-      await updateCustomer(payload).unwrap();
+        instance: [...currentInstances, newInstance],
+      }).unwrap();
       closeModal();
     } catch (err) {
       console.error(t("errorCreatingInstance"), err);
@@ -54,84 +127,141 @@ const CreateInstanceComponent = ({ closeModal }: { closeModal: () => void }) => 
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-3xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">{t("newInstance")}</h2>
+    <div
+      ref={dialogRef}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-3"
+      onMouseDown={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("newInstance") as string}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h2 className="text-base font-semibold">{t("newInstance")}</h2>
           <button
             onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center"
-            aria-label={t("close")}
+            className="bg-gray-200 hover:bg-gray-300 rounded-full h-8 w-8 inline-flex items-center justify-center"
+            aria-label={t("close") as string}
+            type="button"
           >
-            <IoMdClose className="text-sm" />
+            <IoMdClose className="text-base" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* General Details */}
-          <div className="grid grid-cols-2 gap-4">
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDownForm} className="px-4 py-4 space-y-4">
+          {/* Info de carga/error del cliente */}
+          {isLoading && (
+            <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-600">
+              {t("loading")}…
+            </div>
+          )}
+          {error && (
+            <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {t("errorLoading")}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Type */}
             <div>
-              <label className="block text-xs font-medium">{t("type")}</label>
+              <label htmlFor="type" className="block text-xs font-medium text-gray-700">
+                {t("type")}
+              </label>
               <select
+                id="type"
                 name="type"
+                ref={firstFieldRef}
                 value={form.type}
                 onChange={handleChange}
-                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                className="mt-1 h-9 w-full rounded-md border px-2 text-sm outline-none focus:ring-2"
               >
-                {Object.values(InstanceType).map((st) => (
+                {typeOptions.map((st) => (
                   <option key={st} value={st}>
-                    {st}
+                    {t(`instanceType.${st}`, st)}
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* Priority */}
             <div>
-              <label className="block text-xs font-medium">{t("priority")}</label>
+              <label htmlFor="priority" className="block text-xs font-medium text-gray-700">
+                {t("priority")}
+              </label>
               <select
+                id="priority"
                 name="priority"
                 value={form.priority}
                 onChange={handleChange}
-                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                className="mt-1 h-9 w-full rounded-md border px-2 text-sm outline-none focus:ring-2"
               >
-                {Object.values(PriorityInstance).map((st) => (
+                {priorityOptions.map((st) => (
                   <option key={st} value={st}>
-                    {st}
+                    {t(`priority.${String(st).toLowerCase?.() ?? st}`, st)}
                   </option>
                 ))}
               </select>
             </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium">{t("notes")}</label>
+
+            {/* Notes */}
+            <div className="md:col-span-2">
+              <label htmlFor="notes" className="block text-xs font-medium text-gray-700">
+                {t("notes")}
+              </label>
               <textarea
+                id="notes"
                 name="notes"
-                onChange={handleChange}
+                rows={4}
                 value={form.notes}
-                className="border border-gray-300 rounded-md p-1 text-sm w-full"
+                onChange={handleChange}
+                maxLength={MAX_NOTES + 1} // para bloquear en 501 y mostrar error
+                className={`mt-1 w-full rounded-md border px-2 py-2 text-sm outline-none focus:ring-2 ${
+                  errors.notes ? "border-red-300 ring-red-200" : ""
+                }`}
+                placeholder={t("notesPlaceholder") as string}
               />
+              <div className="mt-1 flex items-center justify-between text-xs">
+                <span className={errors.notes ? "text-red-600" : "text-gray-500"}>
+                  {errors.notes ? errors.notes : t("writeSomethingHelpful")}
+                </span>
+                <span className={`tabular-nums ${form.notes.length > MAX_NOTES ? "text-red-600" : "text-gray-500"}`}>
+                  {form.notes.length}/{MAX_NOTES}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
+
+          {/* Footer */}
+          <div className="mt-2 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={closeModal}
-              className="bg-gray-400 text-white rounded-md px-3 py-1 text-sm"
+              className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
             >
               {t("cancel")}
             </button>
             <button
               type="submit"
-              className={`rounded-md px-3 py-1 text-sm text-white ${
-                isUpdating ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              disabled={!canSubmit}
+              className={`rounded-md px-3 py-2 text-sm font-medium text-white ${
+                canSubmit ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
               }`}
-              disabled={isUpdating}
             >
               {isUpdating ? t("saving") : t("save")}
             </button>
           </div>
-          {isSuccess && (
-            <p className="text-green-500 text-sm mt-2">{t("instanceCreatedSuccess")}</p>
+
+          {/* Feedback inline (opcional si no cerrás al éxito) */}
+          {!isUpdating && isSuccess && (
+            <p className="mt-2 text-xs text-green-600">{t("instanceCreatedSuccess")}</p>
           )}
-          {isError && (
-            <p className="text-red-500 text-sm mt-2">{t("errorCreatingInstance")}</p>
+          {!isUpdating && isError && (
+            <p className="mt-2 text-xs text-red-600">{t("errorCreatingInstance")}</p>
           )}
         </form>
       </div>

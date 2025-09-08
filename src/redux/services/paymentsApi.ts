@@ -4,16 +4,19 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 /* ========= Tipos ========= */
 
 export type PaymentType = "contra_entrega" | "cta_cte";
-export type ContraEntregaChoice = "efectivo_general" | "efectivo_promos" | "cheque_30";
+export type ContraEntregaChoice =
+  | "efectivo_general"
+  | "efectivo_promos"
+  | "cheque_30";
 export type PaymentMethodEnum = "efectivo" | "transferencia" | "cheque";
 export type PaymentStatus = "confirmed" | "reversed" | "pending";
 
 export interface PaymentTotals {
-  gross: number;     // suma base (bruto)
-  discount: number;  // suma descuentos
-  net: number;       // suma final (neto)
-  values: number;    // suma valores
-  diff: number;      // net - values
+  gross: number; // suma base (bruto)
+  discount: number; // suma descuentos
+  net: number; // suma final (neto)
+  values: number; // suma valores
+  diff: number; // net - values
 }
 
 export interface PaymentDocumentLine {
@@ -22,7 +25,7 @@ export interface PaymentDocumentLine {
   days_used?: number | null;
   rule_applied: string; // ej: "cta_cte<=15", "cheque<=30", "precio_facturado"
   base: number;
-  discount_rate: number;    // 0.13, 0.10, etc.
+  discount_rate: number; // 0.13, 0.10, etc.
   discount_amount: number;
   final_amount: number;
   note?: string;
@@ -43,20 +46,20 @@ export interface Payment {
   status: PaymentStatus;
   multisoft_id?: string;
   customer: { id: string };
-  currency: string;     // "ARS"
-  date: string;         // ISO string
+  currency: string; // "ARS"
+  date: string; // ISO string
   type: PaymentType;
   contra_entrega_choice?: ContraEntregaChoice;
   totals: PaymentTotals;
-  total: number;        // compat: igual a totals.net
+  total: number; // compat: igual a totals.net
   documents: PaymentDocumentLine[];
   payment_condition: { id: string };
   values: PaymentValueLine[];
   user: { id: string };
   comments?: string;
-  source?: string;      // "web" | "mobile" | "pos"
+  source?: string; // "web" | "mobile" | "pos"
   version?: number;
-  isCharged: boolean;   // default false
+  isCharged: boolean; // default false
   created_at: string;
   updated_at: string;
 
@@ -77,11 +80,10 @@ export interface Payment {
 
 /* ======= Payloads de requests ======= */
 
-export type CreatePayment =
-  Omit<
-    Payment,
-    "_id" | "created_at" | "updated_at" | "document_details" | "isCharged"
-  > & { isCharged?: boolean };
+export type CreatePayment = Omit<
+  Payment,
+  "_id" | "created_at" | "updated_at" | "document_details" | "isCharged"
+> & { isCharged?: boolean };
 
 export type UpdatePayment = Partial<CreatePayment>;
 
@@ -90,12 +92,12 @@ export type UpsertPayments = CreatePayment[]; // por _id si viene, sino crea
 export interface FindPaymentsArgs {
   page?: number;
   limit?: number;
-  startDate?: string;     // 'YYYY-MM-DD'
-  endDate?: string;       // 'YYYY-MM-DD'
+  startDate?: string; // 'YYYY-MM-DD'
+  endDate?: string; // 'YYYY-MM-DD'
   status?: string;
   customer_id?: string;
   seller_id?: string;
-  sort?: string;          // "field:asc|desc"
+  sort?: string; // "field:asc|desc"
   search?: string;
   includeLookup?: boolean;
   isCharged?: "true" | "false"; // si querés filtrar por cobrados
@@ -115,7 +117,6 @@ export const paymentsApi = createApi({
   }),
   tagTypes: ["Payments", "Payment"],
   endpoints: (builder) => ({
-
     /* ---- Listado con filtros ---- */
     getPayments: builder.query<PaymentsListResponse, FindPaymentsArgs | void>({
       query: (args) => {
@@ -144,7 +145,8 @@ export const paymentsApi = createApi({
         if (seller_id) params.append("seller_id", seller_id);
         if (sort) params.append("sort", sort);
         if (search) params.append("search", search);
-        if (includeLookup) params.append("includeLookup", String(includeLookup));
+        if (includeLookup)
+          params.append("includeLookup", String(includeLookup));
         if (isCharged) params.append("isCharged", isCharged);
 
         return `/payments?${params.toString()}`;
@@ -157,7 +159,10 @@ export const paymentsApi = createApi({
       providesTags: (result) =>
         result?.payments
           ? [
-              ...result.payments.map((p) => ({ type: "Payment" as const, id: p._id })),
+              ...result.payments.map((p) => ({
+                type: "Payment" as const,
+                id: p._id,
+              })),
               { type: "Payments" as const, id: "LIST" },
             ]
           : [{ type: "Payments" as const, id: "LIST" }],
@@ -199,7 +204,10 @@ export const paymentsApi = createApi({
     }),
 
     /* ---- Update uno ---- */
-    updatePayment: builder.mutation<Payment, { id: string; data: UpdatePayment }>({
+    updatePayment: builder.mutation<
+      Payment,
+      { id: string; data: UpdatePayment }
+    >({
       query: ({ id, data }) => ({
         url: `/payments/${id}?token=${process.env.NEXT_PUBLIC_TOKEN || ""}`,
         method: "PATCH",
@@ -222,20 +230,24 @@ export const paymentsApi = createApi({
     }),
 
     /* ---- Marcar como cobrado ---- */
-    markAsCharged: builder.mutation<Payment, string>({
-      query: (id) => ({
-        url: `/payments/${id}/charged?token=${process.env.NEXT_PUBLIC_TOKEN || ""}`,
+    // src/redux/services/payments.ts
+    markAsCharged: builder.mutation<
+      Payment,
+      { id: string; value: boolean; comments?: string }
+    >({
+      query: ({ id, value, comments }) => ({
+        url: `/payments/${id}/charged?token=${
+          process.env.NEXT_PUBLIC_TOKEN || ""
+        }`,
         method: "PATCH",
-        body: { value: true },
+        body: comments ? { value, comments } : { value },
       }),
-      invalidatesTags: (_res, _err, id) => [
-        { type: "Payment", id },
-        { type: "Payments", id: "LIST" },
-      ],
     }),
     setCharged: builder.mutation<Payment, { id: string; value: boolean }>({
       query: ({ id, value }) => ({
-        url: `/payments/${id}/charged?token=${process.env.NEXT_PUBLIC_TOKEN || ""}`,
+        url: `/payments/${id}/charged?token=${
+          process.env.NEXT_PUBLIC_TOKEN || ""
+        }`,
         method: "PATCH",
         body: { value },
       }),

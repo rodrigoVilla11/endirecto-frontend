@@ -25,7 +25,10 @@ import {
   useGetAllDocumentsQuery,
   useLazyExportDocumentsQuery,
 } from "@/redux/services/customersInformations";
-import { useGetCustomersQuery } from "@/redux/services/customersApi";
+import {
+  useGetCustomersQuery,
+  useGetCustomerByIdQuery,
+} from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
 // Constants
@@ -74,6 +77,20 @@ export default function Page() {
     () => (userRole === "VENDEDOR" ? userData?.seller_id : undefined),
     [userRole, userData]
   );
+  const { data: customerData } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }
+  );
+
+  const latestHighInstance = useMemo(() => {
+    const arr = Array.isArray(customerData?.instance)
+      ? customerData.instance
+      : [];
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i]?.priority === "HIGH") return arr[i];
+    }
+    return null;
+  }, [customerData]);
 
   // State
   const [page, setPage] = useState(1);
@@ -436,6 +453,39 @@ export default function Page() {
             results: t("results", { count: documentsData?.totalData || 0 }),
           }}
         />
+        {latestHighInstance && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 mx-4 py-3 flex items-start gap-3">
+            <span
+              className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500"
+              aria-hidden="true"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-red-800">
+                  {t("highPriorityInstance") || "Instancia de ALTA prioridad"}
+                </span>
+                {latestHighInstance.type && (
+                  <span className="text-xs rounded-full bg-red-100 text-red-800 ring-1 ring-inset ring-red-200 px-2 py-0.5">
+                    {t("type")}: {latestHighInstance.type}
+                  </span>
+                )}
+              </div>
+              <p
+                className="mt-1 text-sm text-red-900 line-clamp-2"
+                title={latestHighInstance.notes || ""}
+              >
+                <span className="font-medium">{t("notes")}:</span>{" "}
+                {latestHighInstance.notes || t("none")}
+              </p>
+            </div>
+            <button
+              onClick={openCreateModal}
+              className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+            >
+              {t("crm")}
+            </button>
+          </div>
+        )}
 
         {!isLoading && allDocs.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
