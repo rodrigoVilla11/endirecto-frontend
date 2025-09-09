@@ -794,7 +794,7 @@ type MethodTotalsBarProps = {
   onSelectMethod?: (method: string) => void; // opcional
 };
 
-export function MethodTotalsBar({
+function MethodTotalsBar({
   totals,
   grandTotal,
   format,
