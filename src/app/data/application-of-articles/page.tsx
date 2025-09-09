@@ -480,8 +480,6 @@ const EditArticleVehicleComponent: React.FC<
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("articleVehicle", articleVehicle);
-    console.log("articleVehicle.id", articleVehicle.id);
     try {
       await updateArticleVehicle({
         id: articleVehicle.id,

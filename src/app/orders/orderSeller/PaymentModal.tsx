@@ -65,7 +65,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     selectedReason: string;
     method: PaymentMethod;
     bank?: string;
-    receipt?: string;
+    receiptUrl?: string;
     receiptOriginalName?: string;
   };
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
@@ -113,136 +113,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
   const { userData } = useAuth();
 
-  // 👇 Agregar dentro del componente PaymentModal, antes del return
-  // const handleCreatePayment = async () => {
-  //   if (isCreating || isSubmittingPayment) return;
-
-  //   // 1) Tomar user id (ajustá a tu app)
-  //   // Si usás AuthContext: const { user: authUser } = useAuth();
-  //   const currentUserId = userData?._id
-  //   if (!currentUserId) {
-  //     alert(
-  //       "No se encontró el usuario logueado (user). Pasá el user.id desde tu AuthContext/Redux."
-  //     );
-  //     return;
-  //   }
-
-  //   // 2) Validaciones mínimas
-  //   if (!selectedClientId) {
-  //     alert("Falta el cliente (customer).");
-  //     return;
-  //   }
-  //   if (newValues.length === 0) {
-  //     alert("Agregá al menos un valor de pago.");
-  //     return;
-  //   }
-  //   // Si hay documentos, exigimos que neto y valores coincidan
-  //   if (computedDiscounts.length > 0 && Math.abs(diff) > 0.01) {
-  //     alert(
-  //       `La diferencia debe ser $0,00 para imputar a comprobantes. Actual: ${formattedDiff}`
-  //     );
-  //     return;
-  //   }
-
-  //   // 3) Helpers para campos que exige el backend
-  //   const mapPaymentCondition = () => {
-  //     // Ajustá estos strings a tu Enum de backend (ej.: "CUENTA_CORRIENTE" | "CONTRA_ENTREGA")
-  //     return paymentTypeUI === "cta_cte"
-  //       ? "CUENTA_CORRIENTE"
-  //       : "CONTRA_ENTREGA";
-  //   };
-
-  //   const mapType = () => {
-  //     // Ajustá a tu Enum real (ej.: "COLLECTION" | "PAYMENT" | "INCOME")
-  //     return "COLLECTION";
-  //   };
-
-  //   const mapStatus = (): PaymentStatus => {
-  //     // "CONFIRMED" no es válido en tu esquema.
-  //     // Usamos PENDING como valor seguro. Cambiá si tu enum permite "APPROVED" / "COMPLETED" etc.
-  //     return "PENDING" as PaymentStatus;
-  //   };
-
-  //   const buildRuleApplied = (days: number) => {
-  //     if (paymentTypeUI === "contra_entrega") {
-  //       if (contraEntregaOpt === "efectivo_general")
-  //         return "contra_entrega:efectivo_general:20%";
-  //       if (contraEntregaOpt === "efectivo_promos")
-  //         return "contra_entrega:efectivo_promos:15%";
-  //       if (contraEntregaOpt === "cheque_30") {
-  //         return !isNaN(days) && days <= 30
-  //           ? "contra_entrega:cheque_<=30d:13%"
-  //           : "contra_entrega:cheque_>30d:0%";
-  //       }
-  //       return "contra_entrega:sin_regla";
-  //     } else {
-  //       if (isNaN(days)) return "cta_cte:invalido";
-  //       if (days <= 15) return "cta_cte:<=15d:13%";
-  //       if (days <= 30) return "cta_cte:<=30d:10%";
-  //       if (days > 45) return "cta_cte:>45d:actualizacion";
-  //       return "cta_cte:0%";
-  //     }
-  //   };
-
-  //   setIsSubmittingPayment(true);
-  //   try {
-  //     // 4) Armar payload con los nombres que exige el backend
-  //     const payload = {
-  //       user: currentUserId, // REQUIRED
-  //       customer: selectedClientId, // REQUIRED
-  //       type: mapType(), // REQUIRED (ajustá a tu enum real)
-  //       status: mapStatus(), // status válido
-  //       payment_condition: mapPaymentCondition(), // REQUIRED (ajustá a tu enum)
-
-  //       // total: el backend lo exige; usamos suma de valores (debe igualar neto si hay docs)
-  //       total: +totalValues.toFixed(2), // REQUIRED
-
-  //       // opcionales útiles
-  //       date: new Date().toISOString(),
-  //       comments,
-
-  //       // Valores: el backend exige "concept"
-  //       values: newValues.map((v) => ({
-  //         amount: +parseFloat(v.amount || "0").toFixed(2),
-  //         method: v.method, // si tu backend usa enum tipo "CASH|TRANSFER|CHECK", mapealo acá
-  //         concept: v.selectedReason, // 👈 REQUIRED por el backend
-  //         bank: v.bank || null,
-  //       })),
-
-  //       // Documentos: el backend exige estos nombres
-  //       documents: computedDiscounts.map((d) => ({
-  //         document_id: d.document_id, // si tu schema pide "document" en vez de "document_id", cambialo
-  //         number: d.number,
-  //         base_amount: +d.base.toFixed(2), // opcional, pero útil
-  //         discount_rate: d.rate, // 👈 REQUIRED
-  //         discount_amount: +d.discountAmount.toFixed(2), // 👈 REQUIRED
-  //         final_amount: +d.finalAmount.toFixed(2), // 👈 REQUIRED
-  //         rule_applied: buildRuleApplied(d.days), // 👈 REQUIRED (string descriptivo de la regla)
-  //       })),
-  //     } as unknown as CreatePayment;
-
-  //     // 5) Llamada
-  //     await createPayment(payload).unwrap();
-
-  //     // 6) Reset UI
-  //     setIsConfirmModalOpen(false);
-  //     setSubmittedPayment(true);
-  //     setNewValues([]);
-  //     setNewPayment([]);
-  //     setSelectedRows([]);
-  //     setComments("");
-  //     onClose();
-  //   } catch (err) {
-  //     console.error("CreatePayment error:", err);
-  //     alert(
-  //       "No se pudo crear el pago. Revisá los datos (enums y nombres) e intentá nuevamente."
-  //     );
-  //   } finally {
-  //     setIsSubmittingPayment(false);
-  //   }
-  // };
-
-  // Utils de redondeo (evita flotantes raros en la UI)
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   const round4 = (n: number) =>
     Math.round((n + Number.EPSILON) * 10000) / 10000;
@@ -288,11 +158,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     if (!selectedClientId) return alert("Falta customer.id.");
     if (newValues.length === 0) return alert("Agregá al menos un valor.");
-
-    // si hay docs, neto y valores deben cerrar
-    if (computedDiscounts.length > 0 && Math.abs(diff) > 0.01) {
-      return alert(`La diferencia debe ser $0,00. Actual: ${formattedDiff}`);
-    }
 
     setIsSubmittingPayment(true);
     try {
@@ -344,13 +209,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           concept: v.selectedReason,
           method: v.method,
           bank: v.bank || undefined,
-          receipt_url: v.receipt || undefined, // 👈 ahora sí
+          receipt_url: v.receiptUrl || undefined, // 👈 ahora sí
           receipt_original_name: v.receiptOriginalName || undefined, // 👈 ahora sí
         })),
       } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
 
       // Debug opcional
-      console.log("CreatePayment payload", payload);
 
       await createPayment(payload).unwrap();
 
@@ -955,7 +819,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         ? "cheque"
                         : "efectivo";
 
-                    // armamos el ValueItem base
                     const base: ValueItem = {
                       amount: totalAfterDiscount.toFixed(2),
                       selectedReason: "Pago a factura",
@@ -963,17 +826,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       bank: undefined,
                     };
 
-                    // guardamos temporalmente para que el onChange lo complete (o lo agregue “as is” si se cancela)
-                    pendingValueRef.current = base;
-
-                    // abrimos el file picker; si el usuario cancela, igual se agrega sin comprobante
-                    fileInputRef.current?.click();
+                    // si ya existe un "Pago a factura", lo reemplazamos; si no, lo agregamos
+                    setNewValues((prev) => {
+                      const idx = prev.findIndex(
+                        (v) => v.selectedReason === base.selectedReason
+                      );
+                      if (idx >= 0) {
+                        const clone = [...prev];
+                        clone[idx] = { ...base };
+                        return clone;
+                      }
+                      return [base, ...prev];
+                    });
                   }}
-                  disabled={computedDiscounts.length === 0 || isUploading}
+                  disabled={
+                    computedDiscounts.length ===
+                    0 /* ya no dependemos de isUploading */
+                  }
                 >
-                  {isUploading
-                    ? "Subiendo..."
-                    : "Agregar a Valores (+ comprobante)"}
+                  Agregar a Valores
                 </button>
 
                 {/* Valores manuales */}

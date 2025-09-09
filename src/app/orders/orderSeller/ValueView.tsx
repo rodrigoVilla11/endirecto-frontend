@@ -85,7 +85,6 @@ export default function ValueView({
       setUploadingIdx(idx);
       const res = await uploadImage(file).unwrap();
       const url = extractCloudinaryUrl(res);
-      console.log("url")
       if (!url) throw new Error("No vino secure_url/url en la respuesta");
       updateRow(idx, { receipt: url, receiptOriginalName: file.name });
     } catch (e) {
