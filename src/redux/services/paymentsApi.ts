@@ -42,6 +42,7 @@ export interface PaymentValueLine {
 }
 
 export interface Payment {
+  isImputed: boolean | undefined;
   _id: string;
   status: PaymentStatus;
   multisoft_id?: string;
@@ -56,6 +57,7 @@ export interface Payment {
   payment_condition: { id: string };
   values: PaymentValueLine[];
   user: { id: string };
+  seller: { id: string };
   comments?: string;
   source?: string; // "web" | "mobile" | "pos"
   version?: number;
@@ -100,7 +102,8 @@ export interface FindPaymentsArgs {
   sort?: string; // "field:asc|desc"
   search?: string;
   includeLookup?: boolean;
-  isCharged?: "true" | "false"; // si querés filtrar por cobrados
+  isCharged?: "true" | "false";
+  isImputed?: "true" | "false"; // si querés filtrar por cobrados
 }
 
 export interface PaymentsListResponse {
@@ -132,6 +135,7 @@ export const paymentsApi = createApi({
           search,
           includeLookup,
           isCharged,
+          isImputed
         } = args || {};
         const params = new URLSearchParams({
           page: String(page),
@@ -148,7 +152,9 @@ export const paymentsApi = createApi({
         if (includeLookup)
           params.append("includeLookup", String(includeLookup));
         if (isCharged) params.append("isCharged", isCharged);
+        if (isImputed) params.append("isImputed", isImputed);
 
+        console.log(`/payments?${params.toString()}`)
         return `/payments?${params.toString()}`;
       },
       transformResponse: (response: PaymentsListResponse | undefined) => {

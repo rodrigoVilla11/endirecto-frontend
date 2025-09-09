@@ -318,6 +318,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         customer: { id: String(selectedClientId) },
         user: { id: String(userId) },
+        seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
