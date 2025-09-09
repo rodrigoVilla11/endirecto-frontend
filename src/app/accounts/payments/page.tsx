@@ -584,27 +584,6 @@ function DetailsModal({
               {t("close") || "Cerrar"}
             </button>
 
-            {/* Botón opcional para “desmarcar” si lo usás (mantuve tu API) */}
-            {onUnmark && (
-              <button
-                className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
-                  isToggling
-                    ? "bg-amber-500 cursor-wait"
-                    : "bg-rose-600 hover:bg-rose-700"
-                }`}
-                onClick={onUnmark}
-                disabled={isToggling}
-              >
-                {isToggling ? (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <FaSpinner className="animate-spin" />
-                    {t("processing") || "Procesando..."}
-                  </span>
-                ) : (
-                  t("unmark") || "Desmarcar"
-                )}
-              </button>
-            )}
           </div>
         </div>
       </div>
