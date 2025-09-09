@@ -542,20 +542,30 @@ function DetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden"
+        className="
+          w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-3xl
+          bg-white rounded-none sm:rounded-xl shadow-xl
+          overflow-hidden
+          flex flex-col
+        "
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-          <div className="flex flex-col">
-            <h4 className="text-lg font-semibold">
+        {/* Header (sticky) */}
+        <div className="
+          sticky top-0 z-10
+          flex items-center justify-between px-4 py-3
+          border-b border-zinc-200 dark:border-zinc-800
+          bg-white
+        ">
+          <div className="flex flex-col min-w-0">
+            <h4 className="text-base sm:text-lg font-semibold truncate">
               {t("paymentDetail") || "Detalle de pago"}
             </h4>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 truncate">
               {t("number")}: {payment.documents?.[0]?.number ?? "—"} ·{" "}
               {t("date")}:{" "}
               {payment.date
@@ -565,17 +575,17 @@ function DetailsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded hover:bg-zinc-100 dark:hoverbg-zinc-800"
+            className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
             title={t("close") || "Cerrar"}
           >
             <FaTimes />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-4 space-y-4">
+        {/* Body scrollable */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
           {/* Meta */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
             <Info
               label={t("customer") || "Cliente"}
               value={<CustomerIdAndName id={payment.customer?.id} />}
@@ -599,23 +609,11 @@ function DetailsModal({
             <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
               {t("totals") || "Totales"}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 text-sm">
-              <Info
-                label="Bruto"
-                value={currencyFmt.format(payment.totals?.gross ?? 0)}
-              />
-              <Info
-                label="Desc."
-                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
-              />
-              <Info
-                label="Neto"
-                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
-              />
-              <Info
-                label="Valores"
-                value={currencyFmt.format(payment.totals?.values ?? 0)}
-              />
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 text-sm">
+              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
+              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
+              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
+              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
               <Info
                 label="Dif."
                 valueClassName={
@@ -635,30 +633,57 @@ function DetailsModal({
             <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
               {t("documents") || "Documentos"}
             </div>
+
+            {/* Header solo desktop */}
+            <div className="hidden sm:grid grid-cols-6 px-3 py-2 text-xs text-zinc-500">
+              <span>{t("number")}</span>
+              <span>{t("days") || "Días"}</span>
+              <span>{t("base") || "Base"}</span>
+              <span>%</span>
+              <span>{t("discount") || "Desc."}</span>
+              <span>{t("final") || "Final"}</span>
+            </div>
+
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              <div className="grid grid-cols-6 px-3 py-2 text-xs text-zinc-500">
-                <span>{t("number")}</span>
-                <span>{t("days") || "Días"}</span>
-                <span>{t("base") || "Base"}</span>
-                <span>%</span>
-                <span>{t("discount") || "Desc."}</span>
-                <span>{t("final") || "Final"}</span>
-              </div>
               {(payment.documents || []).map((d) => (
                 <div
                   key={d.document_id}
-                  className="grid grid-cols-6 px-3 py-2 text-sm"
+                  className="grid grid-cols-1 sm:grid-cols-6 gap-x-3 gap-y-1 px-3 py-2 text-sm"
                 >
-                  <span>{d.number}</span>
-                  <span className={d.note ? "text-amber-600" : ""}>
-                    {d.days_used ?? "—"}
-                  </span>
-                  <span>{currencyFmt.format(d.base)}</span>
-                  <span>{(d.discount_rate * 100).toFixed(0)}%</span>
-                  <span>-{currencyFmt.format(d.discount_amount)}</span>
-                  <span className={d.note ? "text-amber-600" : ""}>
-                    {currencyFmt.format(d.final_amount)}
-                  </span>
+                  {/* Número */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("number")}:</span>
+                    <span className="truncate">{d.number}</span>
+                  </div>
+                  {/* Días */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("days") || "Días"}:</span>
+                    <span className={d.note ? "text-amber-600" : ""}>
+                      {d.days_used ?? "—"}
+                    </span>
+                  </div>
+                  {/* Base */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("base") || "Base"}:</span>
+                    <span>{currencyFmt.format(d.base)}</span>
+                  </div>
+                  {/* % */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">%</span>
+                    <span>{(d.discount_rate * 100).toFixed(0)}%</span>
+                  </div>
+                  {/* Desc */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("discount") || "Desc."}:</span>
+                    <span>-{currencyFmt.format(d.discount_amount)}</span>
+                  </div>
+                  {/* Final */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("final") || "Final"}:</span>
+                    <span className={d.note ? "text-amber-600" : ""}>
+                      {currencyFmt.format(d.final_amount)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -669,34 +694,57 @@ function DetailsModal({
             <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
               {t("values") || "Valores"}
             </div>
+
+            {/* Header solo desktop */}
+            <div className="hidden sm:grid grid-cols-5 px-3 py-2 text-xs text-zinc-500">
+              <span>{t("method") || "Medio"}</span>
+              <span>{t("concept") || "Concepto"}</span>
+              <span>{t("amount") || "Importe"}</span>
+              <span>{t("bank") || "Banco"}</span>
+              <span>{t("receipt") || "Comprobante"}</span>
+            </div>
+
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              <div className="grid grid-cols-5 px-3 py-2 text-xs text-zinc-500">
-                <span>{t("method") || "Medio"}</span>
-                <span>{t("concept") || "Concepto"}</span>
-                <span>{t("amount") || "Importe"}</span>
-                <span>{t("bank") || "Banco"}</span>
-                <span>{t("receipt") || "Comprobante"}</span>
-              </div>
               {(payment.values || []).map((v, i) => (
-                <div key={i} className="grid grid-cols-5 px-3 py-2 text-sm">
-                  <span className="uppercase">{(v as any)?.method}</span>
-                  <span>{(v as any)?.concept}</span>
-                  <span>{currencyFmt.format((v as any)?.amount)}</span>
-                  <span>{(v as any)?.bank || "—"}</span>
-                  <span>
-                    {(v as any)?.receipt_url ? (
-                      <a
-                        href={(v as any).receipt_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {t("view") || "Ver"}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </span>
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                  {/* Medio */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("method") || "Medio"}:</span>
+                    <span className="uppercase">{(v as any)?.method}</span>
+                  </div>
+                  {/* Concepto */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("concept") || "Concepto"}:</span>
+                    <span className="truncate">{(v as any)?.concept}</span>
+                  </div>
+                  {/* Importe */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("amount") || "Importe"}:</span>
+                    <span>{currencyFmt.format((v as any)?.amount)}</span>
+                  </div>
+                  {/* Banco */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("bank") || "Banco"}:</span>
+                    <span>{(v as any)?.bank || "—"}</span>
+                  </div>
+                  {/* Comprobante */}
+                  <div className="flex sm:block justify-between">
+                    <span className="text-xs text-zinc-500 sm:hidden">{t("receipt") || "Comprobante"}:</span>
+                    <span>
+                      {(v as any)?.receipt_url ? (
+                        <a
+                          href={(v as any).receipt_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 hover:underline break-all"
+                        >
+                          {t("view") || "Ver"}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -706,46 +754,51 @@ function DetailsModal({
           {payment.comments ? (
             <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
-              <div className="text-zinc-700 dark:text-zinc-300">
+              <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
                 {payment.comments}
               </div>
             </div>
           ) : null}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-200 dark:border-zinc-800">
-          <div className="text-xs text-zinc-500">
+        {/* Footer (sticky) */}
+        <div className="
+          sticky bottom-0 z-10
+          flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2
+          px-4 py-3 border-t border-zinc-200 dark:border-zinc-800
+          bg-white
+        ">
+          <div className="text-[10px] sm:text-xs text-zinc-500">
             ID: {payment._id} · {t("created") || "Creado"}:{" "}
             {payment.created_at
               ? format(new Date(payment.created_at), "dd/MM/yyyy HH:mm")
               : "—"}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
-              className="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="w-full sm:w-auto px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               onClick={onClose}
             >
               {t("close") || "Cerrar"}
             </button>
 
             <button
-              className={`px-3 py-2 rounded text-white ${
+              className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
                 isMarking
                   ? "bg-amber-500 cursor-wait"
                   : "bg-emerald-600 hover:bg-emerald-700"
               }`}
-              onClick={onMark} // <- abre el ConfirmMarkModal
+              onClick={onMark}
               disabled={isMarking}
             >
               {isMarking ? (
-                <span className="inline-flex items-center gap-2">
-                  <FaSpinner className="animate-spin" />{" "}
+                <span className="inline-flex items-center justify-center gap-2">
+                  <FaSpinner className="animate-spin" />
                   {t("processing") || "Procesando..."}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center justify-center gap-2">
                   <FaCheck /> {t("markAsCharged") || "Marcar cobrado"}
                 </span>
               )}
@@ -756,6 +809,7 @@ function DetailsModal({
     </div>
   );
 }
+
 
 function Info({
   label,
