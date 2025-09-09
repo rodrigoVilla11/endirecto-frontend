@@ -17,6 +17,7 @@ import {
   type Payment,
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useAuth } from "@/app/context/AuthContext";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -58,6 +59,9 @@ const PaymentsChargedPage = () => {
     }
   }, [selectedClientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { userData } = useAuth();
+  const role = userData?.role as "CUSTOMER" | "VENDEDOR" | string | undefined;
+
   useEffect(() => {
     const loadItems = async () => {
       if (isLoading) return;
@@ -70,16 +74,25 @@ const PaymentsChargedPage = () => {
           ? format(searchParams.endDate, "yyyy-MM-dd")
           : undefined;
 
-        const res = await fetchPayments({
+        const baseArgs: any = {
           page,
           limit: ITEMS_PER_PAGE,
           startDate,
           endDate,
           sort: sortQuery,
-          customer_id: customer_id || undefined,
-          isCharged: "true", // solo cobrados
-          includeLookup: false, // <- no viene seller_id; lo traemos con el hook por fila
-        }).unwrap();
+          includeLookup: false,
+        };
+
+        if (role === "VENDEDOR" && !selectedClientId) {
+          if (userData?.seller_id) {
+            baseArgs.seller_id = String(userData.seller_id);
+          }
+        } else if (selectedClientId || role === "CUSTOMER") {
+          const cid = selectedClientId || customer_id;
+          if (cid) baseArgs.customer_id = String(cid);
+        }
+
+        const res = await fetchPayments(baseArgs).unwrap();
 
         const newItems = res?.payments ?? [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
@@ -92,13 +105,17 @@ const PaymentsChargedPage = () => {
     };
 
     loadItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 👇 agregá role y userData a las deps para actualizar si cambian
   }, [
     page,
     sortQuery,
     customer_id,
     searchParams.startDate,
     searchParams.endDate,
+    role,
+    userData?.seller_id,
+    selectedClientId,
+    // isLoading, isFetching NO van acá
   ]);
 
   useEffect(() => {
@@ -144,10 +161,14 @@ const PaymentsChargedPage = () => {
     const msg =
       t("areYouSureUnmarkCharged") || "¿Desmarcar este pago como cobrado?";
     if (!window.confirm(msg)) return;
+
     try {
       setTogglingId(id);
       await setCharged({ id, value: false }).unwrap();
-      setItems((prev) => prev.filter((p) => p._id !== id)); // quita de la lista
+
+      // Sacar de la lista de "cobrados"
+      setItems((prev) => prev.filter((p) => p._id !== id));
+
       if (selected?._id === id) closeDetails();
     } catch (e) {
       console.error("No se pudo desmarcar como cobrado:", e);
