@@ -186,6 +186,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         customer: { id: String(selectedClientId) },
         user: { id: String(userId) },
+        seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
@@ -219,8 +220,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       // Debug opcional
 
-      await createPayment(payload).unwrap();
+      const created = await createPayment(payload).unwrap();
 
+      console.log(created)
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
