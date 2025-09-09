@@ -1434,5 +1434,7 @@
     "createdAt": "Fecha",
     "title": "Titulo",
     "status": "Estado"
-  }
+  },
+  "imputed": "Imputado"
+
 }

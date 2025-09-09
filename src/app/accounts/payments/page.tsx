@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FaEye, FaSpinner, FaTimes, FaUndo } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -117,6 +123,36 @@ const PaymentsChargedPage = () => {
     selectedClientId,
     // isLoading, isFetching NO van acá
   ]);
+
+  // Formateador ARS (podés ajustarlo si tenés multi-moneda)
+  const currencyFmt = useMemo(
+    () =>
+      new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
+  // Totales por método, sumando values.amount
+  const methodTotals = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const p of items) {
+      for (const v of (p.values ?? []) as any[]) {
+        const m = (v?.method ?? "—").toString().toLowerCase();
+        const amount = Number(v?.amount ?? 0);
+        acc[m] = (acc[m] ?? 0) + amount;
+      }
+    }
+    return acc;
+  }, [items]);
+
+  const grandTotal = useMemo(
+    () => Object.values(methodTotals).reduce((a, b) => a + b, 0),
+    [methodTotals]
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -307,6 +343,11 @@ const PaymentsChargedPage = () => {
           {t("chargedPayments") || "Pagos cobrados"}
         </h3>
         <Header headerBody={headerBody} />
+        <MethodTotalsBar
+          totals={methodTotals}
+          grandTotal={grandTotal}
+          format={(n) => currencyFmt.format(n)}
+        />
         <Table
           headers={tableHeader}
           data={tableData}
@@ -416,8 +457,14 @@ function DetailsModal({
               label={t("customer") || "Cliente"}
               value={<CustomerIdAndName id={payment.customer?.id} />}
             />
-            <Info label={t("status")} value={<StatusPill status={payment.status} />} />
-            <Info label={t("type") || "Tipo"} value={<TypePill type={payment.type} />} />
+            <Info
+              label={t("status")}
+              value={<StatusPill status={payment.status} />}
+            />
+            <Info
+              label={t("type") || "Tipo"}
+              value={<TypePill type={payment.type} />}
+            />
             <Info
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
@@ -430,10 +477,22 @@ function DetailsModal({
               {t("totals") || "Totales"}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 text-sm">
-              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
-              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
-              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
-              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
+              <Info
+                label="Bruto"
+                value={currencyFmt.format(payment.totals?.gross ?? 0)}
+              />
+              <Info
+                label="Desc."
+                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
+              />
+              <Info
+                label="Neto"
+                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
+              />
+              <Info
+                label="Valores"
+                value={currencyFmt.format(payment.totals?.values ?? 0)}
+              />
               <Info
                 label="Dif."
                 valueClassName={
@@ -471,15 +530,23 @@ function DetailsModal({
                   className="grid grid-cols-1 sm:grid-cols-6 gap-x-3 gap-y-1 px-3 py-2 text-sm"
                 >
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("number")}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("number")}:
+                    </span>
                     <span className="truncate">{d.number}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("days") || "Días"}:</span>
-                    <span className={d.note ? "text-amber-600" : ""}>{d.days_used ?? "—"}</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("days") || "Días"}:
+                    </span>
+                    <span className={d.note ? "text-amber-600" : ""}>
+                      {d.days_used ?? "—"}
+                    </span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("base") || "Base"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("base") || "Base"}:
+                    </span>
                     <span>{currencyFmt.format(d.base)}</span>
                   </div>
                   <div className="flex sm:block justify-between">
@@ -487,11 +554,15 @@ function DetailsModal({
                     <span>{(d.discount_rate * 100).toFixed(0)}%</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("discount") || "Desc."}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("discount") || "Desc."}:
+                    </span>
                     <span>-{currencyFmt.format(d.discount_amount)}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("final") || "Final"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("final") || "Final"}:
+                    </span>
                     <span className={d.note ? "text-amber-600" : ""}>
                       {currencyFmt.format(d.final_amount)}
                     </span>
@@ -518,25 +589,38 @@ function DetailsModal({
 
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {(payment.values || []).map((v, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                <div
+                  key={i}
+                  className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                >
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("method") || "Medio"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("method") || "Medio"}:
+                    </span>
                     <span className="uppercase">{v.method}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("concept") || "Concepto"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("concept") || "Concepto"}:
+                    </span>
                     <span className="truncate">{v.concept}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("amount") || "Importe"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("amount") || "Importe"}:
+                    </span>
                     <span>{currencyFmt.format(v.amount)}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("bank") || "Banco"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("bank") || "Banco"}:
+                    </span>
                     <span>{v.bank || "—"}</span>
                   </div>
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("receipt") || "Comprobante"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("receipt") || "Comprobante"}:
+                    </span>
                     <span>
                       {v.receipt_url ? (
                         <a
@@ -583,14 +667,12 @@ function DetailsModal({
             >
               {t("close") || "Cerrar"}
             </button>
-
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 
 function Info({
   label,
@@ -704,3 +786,164 @@ function ImputedPill({ imputed }: { imputed?: boolean }) {
     "px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1";
   return <span className={`${base} ${cls}`}>{label}</span>;
 }
+
+type MethodTotalsBarProps = {
+  totals: Record<string, number>;
+  grandTotal: number;
+  format: (n: number) => string;
+  onSelectMethod?: (method: string) => void; // opcional
+};
+
+export function MethodTotalsBar({
+  totals,
+  grandTotal,
+  format,
+  onSelectMethod,
+}: MethodTotalsBarProps) {
+  const entries = useMemo(() => {
+    const list = Object.entries(totals || {}).filter(([, v]) => v > 0);
+    list.sort((a, b) => b[1] - a[1]); // desc por monto
+    return list;
+  }, [totals]);
+
+  if (!entries.length || grandTotal <= 0) return null;
+
+  // Etiquetas lindas
+  const pretty = (m: string) => {
+    const k = m.toLowerCase();
+    if (k === "efectivo") return "Efectivo";
+    if (k === "transferencia") return "Transferencia";
+    if (k === "cheque") return "Cheque";
+    return m.toUpperCase();
+  };
+
+  // Paleta estable por método
+  const palette = (m: string) => {
+    const k = m.toLowerCase();
+    if (k === "efectivo")
+      return { solid: "bg-emerald-500", soft: "bg-emerald-100", text: "text-emerald-800" };
+    if (k === "transferencia")
+      return { solid: "bg-sky-500", soft: "bg-sky-100", text: "text-sky-800" };
+    if (k === "cheque")
+      return { solid: "bg-amber-500", soft: "bg-amber-100", text: "text-amber-800" };
+    // fallback rotativo
+    const fallbacks = [
+      { solid: "bg-violet-500", soft: "bg-violet-100", text: "text-violet-800" },
+      { solid: "bg-rose-500", soft: "bg-rose-100", text: "text-rose-800" },
+      { solid: "bg-indigo-500", soft: "bg-indigo-100", text: "text-indigo-800" },
+    ];
+    const idx = Math.abs(hashCode(k)) % fallbacks.length;
+    return fallbacks[idx];
+  };
+
+  // Emoji/icono simple por método (sin libs)
+  const icon = (m: string) => {
+    const k = m.toLowerCase();
+    if (k === "efectivo") return "💵";
+    if (k === "transferencia") return "🔁";
+    if (k === "cheque") return "🧾";
+    return "💳";
+  };
+
+  return (
+    <section
+      className="mx-4 my-3 rounded-xl border border-zinc-200 bg-white shadow-sm"
+      role="group"
+      aria-labelledby="method-totals-title"
+    >
+      {/* Header */}
+      <header className="flex items-center gap-3 px-4 pt-3">
+        <h3 id="method-totals-title" className="text-sm font-semibold text-zinc-800 ">
+          Resumen por medio de pago
+        </h3>
+        <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+          Total {format(grandTotal)}
+        </span>
+      </header>
+
+      {/* Stacked bar */}
+      <div className="px-4 pt-3">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+          <div className="flex h-full">
+            {entries.map(([m, val]) => {
+              const pct = (val / grandTotal) * 100;
+              const { solid } = palette(m);
+              return (
+                <div
+                  key={`seg-${m}`}
+                  className={`${solid} transition-[flex-basis] duration-300`}
+                  style={{ flexBasis: `${pct}%` }}
+                  title={`${pretty(m)}: ${format(val)} (${pct.toFixed(1)}%)`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Lista por método */}
+      <ul className="px-2 sm:px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {entries.map(([m, val]) => {
+          const pct = (val / grandTotal) * 100;
+          const { solid, soft, text } = palette(m);
+          const clickable = typeof onSelectMethod === "function";
+          const baseRow =
+            "group rounded-lg border border-zinc-200  bg-white p-3 transition hover:shadow-sm";
+          return (
+            <li key={m}>
+              <div
+                role={clickable ? "button" : undefined}
+                tabIndex={clickable ? 0 : -1}
+                onClick={clickable ? () => onSelectMethod!(m) : undefined}
+                onKeyDown={
+                  clickable
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") onSelectMethod!(m);
+                      }
+                    : undefined
+                }
+                className={`${baseRow} ${clickable ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-300" : ""}`}
+                aria-label={`${pretty(m)} ${format(val)} (${pct.toFixed(1)}%)`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`grid h-8 w-8 place-items-center rounded-full text-base ${soft} ${text}`}
+                    aria-hidden
+                  >
+                    {icon(m)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className="truncate text-sm font-medium text-zinc-800 ">
+                        {pretty(m)}
+                      </span>
+                      <span className="text-[11px] text-zinc-500">· {pct.toFixed(1)}%</span>
+                    </div>
+                    {/* mini progress */}
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-zinc-100  overflow-hidden">
+                      <div
+                        className={`${solid} h-full transition-all duration-500`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="ml-auto tabular-nums text-sm font-semibold text-zinc-800 ">
+                    {format(val)}
+                  </span>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/* util simple para paleta estable */
+function hashCode(str: string) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+  return h | 0;
+}
+
