@@ -1429,5 +1429,10 @@
   "instanceType.CALL": "Llamada",
   "validation.required": "Este campo es obligatorio",
   "validation.maxChars": "No puede superar los {{max}} caracteres",
-  "downloading": "Descargando..."
+  "downloading": "Descargando...",
+  "sort": {
+    "createdAt": "Fecha",
+    "title": "Titulo",
+    "status": "Estado"
+  }
 }

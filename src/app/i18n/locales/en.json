@@ -1432,5 +1432,10 @@
   "instanceType.CALL": "Call",
   "validation.required": "This field is required",
   "validation.maxChars": "Cannot exceed {{max}} characters",
-  "downloading": "Downloading..."
+  "downloading": "Downloading...",
+  "sort": {
+    "createdAt": "Created At",
+    "title": "Title",
+    "status": "Status"
+  }
 }

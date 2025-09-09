@@ -73,32 +73,6 @@ const PaymentsPendingPage = () => {
     useUpdatePaymentMutation(); // 👈 NUEVO
   const [imputedIdSaving, setImputedIdSaving] = useState<string | null>(null);
 
-  const toggleImputed = async (id: string, current: boolean) => {
-    try {
-      setImputedIdSaving(id);
-
-      // Optimistic update
-      setItems((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, isImputed: !current } : p))
-      );
-
-      await updatePayment({ id, data: { isImputed: !current } }).unwrap();
-
-      // Si el modal está abierto de ese pago, actualizalo también
-      if (selected?._id === id) {
-        setSelected((s) => (s ? { ...s, isImputed: !current } : s));
-      }
-    } catch (e) {
-      console.error("No se pudo actualizar isImputed:", e);
-      // revertir si falló
-      setItems((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, isImputed: current } : p))
-      );
-    } finally {
-      setImputedIdSaving(null);
-    }
-  };
-
   // Carga con paginación y orden
   useEffect(() => {
     const loadItems = async () => {
@@ -214,6 +188,15 @@ const PaymentsPendingPage = () => {
         comments: confirmComment?.trim() || undefined,
       }).unwrap();
 
+      try {
+        await updatePayment({
+          id: confirmPayment._id,
+          data: { isImputed: true, status: "confirmed" },
+        }).unwrap();
+      } catch (err) {
+        console.warn("Cobrado OK, pero no se pudo setear isImputed=true:", err);
+      }
+
       // Actualización local de la lista
       setItems((prev) => prev.filter((p) => p._id !== confirmPayment._id));
       if (selected?._id === confirmPayment._id) closeDetails();
@@ -285,14 +268,6 @@ const PaymentsPendingPage = () => {
 
         // 5) BANCO (desde values[].bank)
         bank: banksFromValues(p.values),
-
-        imputed: (
-          <ImputedPill
-            imputed={p.isImputed}
-            onToggle={() => toggleImputed(p._id, p.isImputed ?? false)}
-            loading={imputedIdSaving === p._id}
-          />
-        ),
         // 6) FECHA
         date: p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—",
 
@@ -315,7 +290,6 @@ const PaymentsPendingPage = () => {
     { name: t("paymentMethod"), key: "paymentMethod" },
     // 5) BANCO
     { name: t("bank"), key: "bank" },
-    { name: t("imputed") || "Imputado", key: "imputed" },
     // 6) FECHA
     { name: t("date"), key: "date" },
     // 7) DESCUENTO
@@ -394,11 +368,6 @@ const PaymentsPendingPage = () => {
           onClose={closeDetails}
           onMark={() => openConfirm(selected)}
           isMarking={isMarking || markingId === selected._id}
-          // 👇 NUEVO
-          onToggleImputed={() =>
-            toggleImputed(selected._id, selected.isImputed ?? false)
-          }
-          imputedLoading={imputedIdSaving === selected._id}
           t={t}
         />
       )}
@@ -555,9 +524,6 @@ type DetailsModalProps = {
   onMark: () => void;
   isMarking: boolean;
   t: (k: string) => string;
-  // 👇 NUEVO
-  onToggleImputed: () => void;
-  imputedLoading: boolean;
 };
 
 function DetailsModal({
@@ -566,8 +532,6 @@ function DetailsModal({
   onMark,
   isMarking,
   t,
-  onToggleImputed,
-  imputedLoading,
 }: DetailsModalProps) {
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -627,16 +591,6 @@ function DetailsModal({
             <Info
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
-            />
-            <Info
-              label={t("imputed") || "Imputado"}
-              value={
-                <ImputedPill
-                  imputed={payment.isImputed}
-                  onToggle={onToggleImputed}
-                  loading={imputedLoading}
-                />
-              }
             />
           </div>
 
@@ -900,46 +854,5 @@ function TypePill({ type }: { type?: string }) {
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
       {label}
     </span>
-  );
-}
-
-function ImputedPill({
-  imputed,
-  onToggle,
-  loading,
-}: {
-  imputed?: boolean;
-  onToggle?: () => void;
-  loading?: boolean;
-}) {
-  const { t } = useTranslation();
-  const labelYes = t("yes") || "Sí";
-  const labelNo = t("no") || "No";
-  const label = imputed ? labelYes : labelNo;
-  const cls = imputed
-    ? "bg-indigo-100 text-indigo-800"
-    : "bg-zinc-100 text-zinc-800";
-  const base =
-    "px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1";
-
-  if (!onToggle) return <span className={`${base} ${cls}`}>{label}</span>;
-
-  return (
-    <button
-      type="button"
-      className={`${base} ${cls} ${
-        loading ? "opacity-70 cursor-wait" : "hover:opacity-80"
-      }`}
-      onClick={onToggle}
-      disabled={loading}
-      title={
-        imputed
-          ? t("clickToUnset") || "Click para desimputar"
-          : t("clickToSet") || "Click para imputar"
-      }
-    >
-      {loading ? <FaSpinner className="animate-spin" /> : null}
-      <span>{label}</span>
-    </button>
   );
 }

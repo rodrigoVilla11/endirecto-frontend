@@ -214,6 +214,11 @@ const PaymentsChargedPage = () => {
         // 5) DOCUMENT (map de documents.number)
         documents: (p.documents ?? []).map((d) => d.number).join(", ") || "—",
 
+        imputed: (
+          <span>
+            <ImputedPill imputed={p.isImputed} />
+          </span>
+        ),
         // 6) TOTAL (total)
         total: p.total ?? 0,
 
@@ -237,6 +242,7 @@ const PaymentsChargedPage = () => {
 
     // 5) DOCUMENT
     { name: t("documents"), key: "documents" },
+    { name: t("imputed"), key: "imputed" },
 
     // 6) TOTAL
     { name: t("total"), key: "total", important: true },
@@ -554,26 +560,6 @@ function DetailsModal({
             >
               {t("close") || "Cerrar"}
             </button>
-            <button
-              className={`px-3 py-2 rounded text-white ${
-                isToggling
-                  ? "bg-amber-500 cursor-wait"
-                  : "bg-red-600 hover:bg-red-700"
-              }`}
-              onClick={onUnmark}
-              disabled={isToggling}
-            >
-              {isToggling ? (
-                <span className="inline-flex items-center gap-2">
-                  <FaSpinner className="animate-spin" />{" "}
-                  {t("processing") || "Procesando..."}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <FaUndo /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -679,4 +665,17 @@ function TypePill({ type }: { type?: string }) {
       {label}
     </span>
   );
+}
+
+function ImputedPill({ imputed }: { imputed?: boolean }) {
+  const { t } = useTranslation();
+  const labelYes = t("yes") || "Sí";
+  const labelNo = t("no") || "No";
+  const label = imputed ? labelYes : labelNo;
+  const cls = imputed
+    ? "bg-indigo-100 text-indigo-800"
+    : "bg-zinc-100 text-zinc-800";
+  const base =
+    "px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1";
+  return <span className={`${base} ${cls}`}>{label}</span>;
 }
