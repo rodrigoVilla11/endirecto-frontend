@@ -16,7 +16,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import { useAddNotificationToCustomerMutation } from "@/redux/services/customersApi";
-import { useAddNotificationToUserMutation } from "@/redux/services/usersApi";
+import { useAddNotificationToUserByIdMutation } from "@/redux/services/usersApi";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,7 +39,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [comments, setComments] = useState("");
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
-  const [addNotificationToUser] = useAddNotificationToUserMutation();
+  const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
 
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -222,7 +222,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       const created = await createPayment(payload).unwrap();
 
-      console.log(created)
+      console.log(created);
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
@@ -239,14 +239,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       try {
         const now = new Date();
         const in7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        const firstDoc = computedDiscounts[0];
 
-        await addNotificationToUser({
-          userId: "67a60be545b75a39f99a485b", // 👈 el _id que pasaste
+        await addNotificationToUserById({
+          id: "67a60be545b75a39f99a485b", // _id del user
           notification: {
             title: "Pago registrado",
-            // si no agregaste "PAGO" al tipo, usá "NOVEDAD" acá
-            type: "PAGO",
+            type: "PAGO", // si tu backend aún no soporta 'PAGO', usar "NOVEDAD"
             description: `Cliente ${selectedClientId} — Neto ${currencyFmt.format(
               totalAfterDiscount
             )} — Dif ${currencyFmt.format(diff)}`,

@@ -141,6 +141,16 @@ export const usersApi = createApi({
         body: { id, title },
       }),
     }),
+    addNotificationToUserById: builder.mutation<
+      User,
+      { id: string; notification: CreateUserNotificationDto }
+    >({
+      query: ({ id, notification }) => ({
+        url: `/users/${id}/add-notification?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: notification,
+      }),
+    }),
     exportUsersExcel: builder.query<Blob, { query?: string }>({
       query: ({ query = "" } = {}) => ({
         url: `/users/export?query=${query}&token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -174,5 +184,6 @@ export const {
   useAddNotificationToUserMutation,
   useAddNotificationToUsersByRolesMutation,
   useMarkNotificationAsReadMutation,
-  useLazyExportUsersExcelQuery
+  useLazyExportUsersExcelQuery,
+  useAddNotificationToUserByIdMutation,
 } = usersApi;
