@@ -15,7 +15,8 @@ import {
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
-
+import { useAddNotificationToCustomerMutation } from "@/redux/services/customersApi";
+import { useAddNotificationToUserMutation } from "@/redux/services/usersApi";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +38,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
+  const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
+  const [addNotificationToUser] = useAddNotificationToUserMutation();
 
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -183,7 +186,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         customer: { id: String(selectedClientId) },
         user: { id: String(userId) },
-        seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
@@ -219,6 +221,45 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       await createPayment(payload).unwrap();
 
+      await addNotificationToCustomer({
+        customerId: String(selectedClientId),
+        notification: {
+          title: "Pago registrado",
+          type: "PAGO",
+          description: `Neto: ${currencyFmt.format(
+            totalAfterDiscount
+          )} — Dif: ${currencyFmt.format(diff)}`,
+          link: "/payments",
+          schedule_from: new Date(),
+          schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      }).unwrap();
+      try {
+        const now = new Date();
+        const in7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const firstDoc = computedDiscounts[0];
+
+        await addNotificationToUser({
+          userId: "67a60be545b75a39f99a485b", // 👈 el _id que pasaste
+          notification: {
+            title: "Pago registrado",
+            // si no agregaste "PAGO" al tipo, usá "NOVEDAD" acá
+            type: "PAGO",
+            description: `Cliente ${selectedClientId} — Neto ${currencyFmt.format(
+              totalAfterDiscount
+            )} — Dif ${currencyFmt.format(diff)}`,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: in7d,
+            customer_id: String(selectedClientId),
+          },
+        }).unwrap();
+      } catch (err) {
+        console.warn(
+          "Pago creado, pero falló la notificación al usuario:",
+          err
+        );
+      }
       setIsConfirmModalOpen(false);
       setSubmittedPayment(true);
       setNewValues([]);

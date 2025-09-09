@@ -27,7 +27,7 @@ export interface CreateCustomerNotificationDto {
   schedule_from: Date;
   schedule_to: Date;
   title: string;
-  type: 'NOVEDAD' | 'PEDIDO' | 'PRESUPUESTO';
+  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO";
 }
 
 interface CustomersPagResponse {
@@ -101,6 +101,7 @@ export const customerApi = createApi({
         return response;
       },
     }),
+
     getCustomersPag: builder.query<
       CustomersPagResponse,
       {
@@ -145,13 +146,13 @@ export const customerApi = createApi({
         return fullUrl;
       },
       transformResponse: (response: any): CustomersPagResponse => {
-        // Asumiendo que el backend retorna la estructura correcta
         return {
           customers: response.customers,
           totalCustomers: response.totalCustomers,
         };
       },
     }),
+
     updateCustomer: builder.mutation<Customer, UpdateCustomersPayload>({
       query: ({ id, ...updatedCustomer }) => ({
         url: `/customers/update-one/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -159,21 +160,23 @@ export const customerApi = createApi({
         body: updatedCustomer,
       }),
     }),
+
     countCustomers: builder.query<number, { seller_id?: string }>({
       query: ({ seller_id = "" }) => {
         let url = `/customers/count?token=${process.env.NEXT_PUBLIC_TOKEN}`;
-
         if (seller_id) {
           url += `&sellerId=${seller_id}`;
         }
         return url;
       },
     }),
+
     getCustomerById: builder.query<Customer, { id: string }>({
       query: ({ id }) =>
         `/customers/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    // Endpoint para agregar una notificación a los customers que coincidan con el seller_id
+
+    // 🔔 MASIVO por seller_id (ya existente)
     addNotificationToCustomers: builder.mutation<
       Customer[],
       { sellerId: string; notification: CreateCustomerNotificationDto }
@@ -184,7 +187,20 @@ export const customerApi = createApi({
         body: payload,
       }),
     }),
-    // Nuevo endpoint: marcar una notificación como leída usando el title para identificarla
+
+    // 🔔 NUEVO: SOLO para un customer
+    addNotificationToCustomer: builder.mutation<
+      Customer,
+      { customerId: string; notification: CreateCustomerNotificationDto }
+    >({
+      query: ({ customerId, notification }) => ({
+        url: `/customers/${customerId}/add-notification?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "POST",
+        body: notification,
+      }),
+    }),
+
+    // Marcar notificación como leída
     markNotificationAsReadCustomer: builder.mutation<
       Customer,
       { id: string; notificationId: string }
@@ -205,6 +221,7 @@ export const {
   useCountCustomersQuery,
   useUpdateCustomerMutation,
   useLazyGetCustomersPagQuery,
-  useAddNotificationToCustomersMutation,
+  useAddNotificationToCustomersMutation,   // masivo por seller
+  useAddNotificationToCustomerMutation,    // 👈 nuevo: por customer
   useMarkNotificationAsReadCustomerMutation,
 } = customerApi;

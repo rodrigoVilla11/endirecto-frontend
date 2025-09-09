@@ -4,14 +4,15 @@ export enum NotificationType {
   NOVEDAD = "NOVEDAD",
   PEDIDO = "PEDIDO",
   PRESUPUESTO = "PRESUPUESTO",
+  PAGO = "PAGO"
 }
 
 export type Notifications = {
   _id: string;
   title: string;
   type: NotificationType;
-  brand_id: string;
-  article_id: string;
+  brand_id?: string;
+  article_id?: string;
   description: string;
   link: string;
   created_at?: Date;
@@ -21,8 +22,8 @@ export type Notifications = {
 export type CreateNotificationPayload = {
   title: string;
   type: NotificationType;
-  brand_id: string;
-  article_id: string;
+  brand_id?: string;
+  article_id?: string;
   description: string;
   link: string;
   created_at?: Date;

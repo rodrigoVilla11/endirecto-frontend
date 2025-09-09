@@ -47,7 +47,7 @@ export interface CreateUserNotificationDto {
   schedule_from: Date;
   schedule_to: Date;
   title: string;
-  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO";
+  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO";
   customer_id?: string;
 }
 
@@ -121,7 +121,6 @@ export const usersApi = createApi({
         body: payload,
       }),
     }),
-    // Nuevo endpoint para agregar una notificación a usuarios según su role.
     addNotificationToUsersByRoles: builder.mutation<
       User[],
       { roles: Roles[]; notification: CreateUserNotificationDto }
