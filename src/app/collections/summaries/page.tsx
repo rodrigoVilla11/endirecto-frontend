@@ -87,17 +87,21 @@ const PaymentsPendingPage = () => {
           ? format(searchParams.endDate, "yyyy-MM-dd")
           : undefined;
 
-        const result = await fetchPayments({
+        const baseArgs: any = {
           page,
           limit: ITEMS_PER_PAGE,
           startDate,
           endDate,
           sort: sortQuery,
-          customer_id: customer_id || undefined,
-          // 👇 clave para traer solo no cobrados
           isCharged: "false",
           includeLookup: false,
-        }).unwrap();
+        };
+
+        if (selectedClientId) {
+          const cid = selectedClientId || customer_id;
+          if (cid) baseArgs.customer_id = String(cid);
+        }
+        const result = await fetchPayments(baseArgs).unwrap();
 
         const newItems = result?.payments ?? [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
@@ -555,12 +559,14 @@ function DetailsModal({
         "
       >
         {/* Header (sticky) */}
-        <div className="
+        <div
+          className="
           sticky top-0 z-10
           flex items-center justify-between px-4 py-3
           border-b border-zinc-200 dark:border-zinc-800
           bg-white
-        ">
+        "
+        >
           <div className="flex flex-col min-w-0">
             <h4 className="text-base sm:text-lg font-semibold truncate">
               {t("paymentDetail") || "Detalle de pago"}
@@ -610,10 +616,22 @@ function DetailsModal({
               {t("totals") || "Totales"}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 text-sm">
-              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
-              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
-              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
-              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
+              <Info
+                label="Bruto"
+                value={currencyFmt.format(payment.totals?.gross ?? 0)}
+              />
+              <Info
+                label="Desc."
+                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
+              />
+              <Info
+                label="Neto"
+                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
+              />
+              <Info
+                label="Valores"
+                value={currencyFmt.format(payment.totals?.values ?? 0)}
+              />
               <Info
                 label="Dif."
                 valueClassName={
@@ -652,19 +670,25 @@ function DetailsModal({
                 >
                   {/* Número */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("number")}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("number")}:
+                    </span>
                     <span className="truncate">{d.number}</span>
                   </div>
                   {/* Días */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("days") || "Días"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("days") || "Días"}:
+                    </span>
                     <span className={d.note ? "text-amber-600" : ""}>
                       {d.days_used ?? "—"}
                     </span>
                   </div>
                   {/* Base */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("base") || "Base"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("base") || "Base"}:
+                    </span>
                     <span>{currencyFmt.format(d.base)}</span>
                   </div>
                   {/* % */}
@@ -674,12 +698,16 @@ function DetailsModal({
                   </div>
                   {/* Desc */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("discount") || "Desc."}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("discount") || "Desc."}:
+                    </span>
                     <span>-{currencyFmt.format(d.discount_amount)}</span>
                   </div>
                   {/* Final */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("final") || "Final"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("final") || "Final"}:
+                    </span>
                     <span className={d.note ? "text-amber-600" : ""}>
                       {currencyFmt.format(d.final_amount)}
                     </span>
@@ -706,30 +734,43 @@ function DetailsModal({
 
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {(payment.values || []).map((v, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                <div
+                  key={i}
+                  className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                >
                   {/* Medio */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("method") || "Medio"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("method") || "Medio"}:
+                    </span>
                     <span className="uppercase">{(v as any)?.method}</span>
                   </div>
                   {/* Concepto */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("concept") || "Concepto"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("concept") || "Concepto"}:
+                    </span>
                     <span className="truncate">{(v as any)?.concept}</span>
                   </div>
                   {/* Importe */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("amount") || "Importe"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("amount") || "Importe"}:
+                    </span>
                     <span>{currencyFmt.format((v as any)?.amount)}</span>
                   </div>
                   {/* Banco */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("bank") || "Banco"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("bank") || "Banco"}:
+                    </span>
                     <span>{(v as any)?.bank || "—"}</span>
                   </div>
                   {/* Comprobante */}
                   <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">{t("receipt") || "Comprobante"}:</span>
+                    <span className="text-xs text-zinc-500 sm:hidden">
+                      {t("receipt") || "Comprobante"}:
+                    </span>
                     <span>
                       {(v as any)?.receipt_url ? (
                         <a
@@ -762,12 +803,14 @@ function DetailsModal({
         </div>
 
         {/* Footer (sticky) */}
-        <div className="
+        <div
+          className="
           sticky bottom-0 z-10
           flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2
           px-4 py-3 border-t border-zinc-200 dark:border-zinc-800
           bg-white
-        ">
+        "
+        >
           <div className="text-[10px] sm:text-xs text-zinc-500">
             ID: {payment._id} · {t("created") || "Creado"}:{" "}
             {payment.created_at
@@ -809,7 +852,6 @@ function DetailsModal({
     </div>
   );
 }
-
 
 function Info({
   label,
