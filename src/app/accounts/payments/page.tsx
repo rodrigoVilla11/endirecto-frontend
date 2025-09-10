@@ -39,6 +39,9 @@ const PaymentsChargedPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc|desc"
   const [customer_id, setCustomer_id] = useState<string>("");
+  const [methodFilter, setMethodFilter] = useState<
+    "" | "efectivo" | "transferencia" | "cheque"
+  >("");
 
   const [searchParams, setSearchParams] = useState<{
     startDate: Date | null;
@@ -425,8 +428,15 @@ const PaymentsChargedPage = () => {
 
   /* ===================== Tabla con columnas solicitadas ===================== */
 
+  const filteredItems = useMemo(() => {
+    if (!methodFilter) return items;
+    return items.filter((p) =>
+      (p.values ?? []).some((v: any) => v?.method === methodFilter)
+    );
+  }, [items, methodFilter]);
+
   const tableData =
-    items?.map((p) => {
+    filteredItems?.map((p) => {
       const isThisRowToggling = togglingId === p._id;
 
       return {
@@ -565,6 +575,23 @@ const PaymentsChargedPage = () => {
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
+        ),
+      },
+      {
+        content: (
+          <select
+            value={methodFilter}
+            onChange={(e) => setMethodFilter(e.target.value as any)}
+            className="border border-gray-300 rounded p-2 text-sm"
+            title={t("paymentMethod") || "Forma de pago"}
+          >
+            <option value="">{t("all") || "Todas las formas"}</option>
+            <option value="efectivo">{t("cash") || "Efectivo"}</option>
+            <option value="transferencia">
+              {t("transfer") || "Transferencia"}
+            </option>
+            <option value="cheque">{t("cheque") || "Cheque"}</option>
+          </select>
         ),
       },
       {

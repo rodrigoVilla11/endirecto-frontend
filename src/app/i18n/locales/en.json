@@ -1450,5 +1450,6 @@
     "medium": "Medium",
     "high": "High"
   },
-  "tapToExpand": "Tap To Expand"
+  "tapToExpand": "Tap To Expand", 
+  "all": "All"
 }

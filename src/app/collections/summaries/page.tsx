@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
 import { FaEye, FaSpinner, FaTimes, FaCheck } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
@@ -18,6 +24,7 @@ import {
   type Payment,
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -32,6 +39,13 @@ const PaymentsPendingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc|desc"
   const [customer_id, setCustomer_id] = useState<string>("");
+  const [sellerFilter, setSellerFilter] = useState<string>(""); // vendedor
+  const [methodFilter, setMethodFilter] = useState<
+    "" | "efectivo" | "transferencia" | "cheque"
+  >("");
+
+  const { data: sellersData, isLoading: isSellersLoading } =
+    useGetSellersQuery(null);
 
   // Filtros
   const [searchParams, setSearchParams] = useState<{
@@ -101,6 +115,9 @@ const PaymentsPendingPage = () => {
           const cid = selectedClientId || customer_id;
           if (cid) baseArgs.customer_id = String(cid);
         }
+        
+        if (sellerFilter) baseArgs.seller_id = sellerFilter;
+
         const result = await fetchPayments(baseArgs).unwrap();
 
         const newItems = result?.payments ?? [];
@@ -239,8 +256,15 @@ const PaymentsPendingPage = () => {
 
   /* ===================== Tabla: SOLO las 8 columnas solicitadas ===================== */
 
+  const filteredItems = useMemo(() => {
+    if (!methodFilter) return items;
+    return items.filter((p) =>
+      (p.values ?? []).some((v: any) => v?.method === methodFilter)
+    );
+  }, [items, methodFilter]);
+
   const tableData =
-    items?.map((p) => {
+    filteredItems?.map((p) => {
       return {
         key: p._id,
 
@@ -303,6 +327,22 @@ const PaymentsPendingPage = () => {
   ];
 
   /* ===================== Header (filtros/contador) ===================== */
+  const sellerOptions = React.useMemo(() => {
+    const raw = (sellersData ?? sellersData ?? []) as any[];
+    return raw
+      .map((s) => {
+        const id = String(s?.id ?? s?._id ?? s?.seller_id ?? "");
+        const name =
+          s?.name ??
+          s?.fullName ??
+          ([s?.first_name, s?.last_name].filter(Boolean).join(" ") ||
+            s?.username ||
+            s?.email ||
+            id);
+        return id ? { id, name } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; name: string }>;
+  }, [sellersData]);
 
   const headerBody = {
     buttons: [],
@@ -337,6 +377,50 @@ const PaymentsPendingPage = () => {
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
+        ),
+      },
+      // ⬇️ NUEVO: Filtro por vendedor (server-side)
+      {
+        content: (
+          <select
+            value={sellerFilter}
+            onChange={(e) => {
+              setSellerFilter(e.target.value);
+              // reset de paginación/lista para aplicar el filtro
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            disabled={isSellersLoading}
+            className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
+            title={t("seller") || "Vendedor"}
+          >
+            <option value="">{t("all") || "Todos los vendedores"}</option>
+            {sellerOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+
+      // ⬇️ NUEVO: Filtro por forma de pago (client-side)
+      {
+        content: (
+          <select
+            value={methodFilter}
+            onChange={(e) => setMethodFilter(e.target.value as any)}
+            className="border border-gray-300 rounded p-2 text-sm"
+            title={t("paymentMethod") || "Forma de pago"}
+          >
+            <option value="">{t("all") || "Todas las formas"}</option>
+            <option value="efectivo">{t("cash") || "Efectivo"}</option>
+            <option value="transferencia">
+              {t("transfer") || "Transferencia"}
+            </option>
+            <option value="cheque">{t("cheque") || "Cheque"}</option>
+          </select>
         ),
       },
     ],
