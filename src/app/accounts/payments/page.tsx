@@ -15,12 +15,14 @@ import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useClient } from "@/app/context/ClientContext";
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 // RTK Query (payments)
 import {
   useLazyGetPaymentsQuery,
   useSetChargedMutation,
   type Payment,
+  useUpdatePaymentMutation,
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
@@ -53,6 +55,39 @@ const PaymentsChargedPage = () => {
   const [fetchPayments, { data, isFetching }] = useLazyGetPaymentsQuery();
   const [setCharged, { isLoading: isToggling }] = useSetChargedMutation();
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); // 👈 NUEVO
+  const [isRindiendo, setIsRindiendo] = useState(false); // 👈 NUEVO
+
+  const [updatePayment] = useUpdatePaymentMutation(); // 👈 NUEVO
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [
+    page,
+    sortQuery,
+    selectedClientId,
+    searchParams.startDate,
+    searchParams.endDate,
+  ]);
+
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleAll = (checked: boolean) => {
+    setSelectedIds(checked ? new Set(items.map((p) => p._id)) : new Set());
+  };
+
+  const effectiveItems = useMemo(
+    () =>
+      selectedIds.size ? items.filter((p) => selectedIds.has(p._id)) : items,
+    [items, selectedIds]
+  );
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -139,7 +174,7 @@ const PaymentsChargedPage = () => {
   // Totales por método, sumando values.amount
   const methodTotals = useMemo(() => {
     const acc: Record<string, number> = {};
-    for (const p of items) {
+    for (const p of effectiveItems) {
       for (const v of (p.values ?? []) as any[]) {
         const m = (v?.method ?? "—").toString().toLowerCase();
         const amount = Number(v?.amount ?? 0);
@@ -147,12 +182,187 @@ const PaymentsChargedPage = () => {
       }
     }
     return acc;
-  }, [items]);
+  }, [effectiveItems]);
 
   const grandTotal = useMemo(
     () => Object.values(methodTotals).reduce((a, b) => a + b, 0),
     [methodTotals]
   );
+
+  const prettyMethod = (m?: string) => {
+    const k = (m ?? "").toLowerCase();
+    if (k === "efectivo") return "Efectivo";
+    if (k === "transferencia") return "Transferencia";
+    if (k === "cheque") return "Cheque";
+    return (m || "—").toUpperCase();
+  };
+
+  // totales por método para una lista de pagos
+  const buildMethodTotals = (rows: Payment[]) => {
+    const acc: Record<string, { total: number; count: number }> = {};
+    for (const p of rows) {
+      for (const v of (p.values ?? []) as any[]) {
+        const m = (v?.method ?? "—").toString().toLowerCase();
+        const amount = Number(v?.amount ?? 0);
+        if (!acc[m]) acc[m] = { total: 0, count: 0 };
+        acc[m].total += amount;
+        acc[m].count += 1; // cantidad de valores (líneas) de ese método
+      }
+    }
+    return acc;
+  };
+
+  const downloadPDFFor = (rows: Payment[]) => {
+    if (!rows.length) return;
+
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Pagos rendidos", 40, 40);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const now = new Date();
+    doc.text(
+      `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+      40,
+      58
+    );
+
+    // Tabla de detalle de pagos rendidos
+    autoTable(doc, {
+      startY: 72,
+      head: [["Fecha", "Cliente", "Docs", "Métodos", "Neto", "Valores", "Dif"]],
+      body: rows.map((p) => {
+        const fecha = p.date
+          ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
+          : "—";
+        const cliente = p.customer?.id ?? "—";
+        const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+        const methods =
+          (p.values ?? []).map((v: any) => prettyMethod(v.method)).join(", ") ||
+          "—";
+        const neto = currencyFmt.format(p.totals?.net ?? p.total ?? 0);
+        const valores = currencyFmt.format(p.totals?.values ?? 0);
+        const dif = currencyFmt.format(
+          p.totals?.diff ?? (p.total ?? 0) - (p.totals?.values ?? 0)
+        );
+        return [fecha, cliente, docs, methods, neto, valores, dif];
+      }),
+      theme: "striped",
+      styles: { fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [2, 132, 199] },
+      margin: { left: 40, right: 40 },
+      didDrawPage: () => {
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFontSize(9);
+          doc.text(`Página ${i} / ${totalPages}`, pageW - 40, pageH - 20, {
+            align: "right",
+          });
+        }
+      },
+    });
+
+    // ===== NUEVO: Totales por método (solo de estos 'rows') =====
+    const yStart = (doc as any).lastAutoTable?.finalY
+      ? (doc as any).lastAutoTable.finalY + 24
+      : 120;
+
+    const totalsMap = buildMethodTotals(rows);
+    const totalsEntries = Object.entries(totalsMap).sort(
+      (a, b) => b[1].total - a[1].total
+    );
+    const grand = totalsEntries.reduce((s, [, o]) => s + o.total, 0);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Totales por método", 40, yStart - 8);
+
+    autoTable(doc, {
+      startY: yStart,
+      head: [["Método", "Cant. valores", "Total", "% del total"]],
+      body: totalsEntries.map(([m, o]) => [
+        prettyMethod(m),
+        String(o.count),
+        currencyFmt.format(o.total),
+        `${((o.total / (grand || 1)) * 100).toFixed(1)}%`,
+      ]),
+      foot: [
+        [
+          { content: "TOTAL", styles: { fontStyle: "bold" } },
+          {
+            content: String(totalsEntries.reduce((s, [, o]) => s + o.count, 0)),
+            styles: { fontStyle: "bold" },
+          },
+          { content: currencyFmt.format(grand), styles: { fontStyle: "bold" } },
+          { content: "100%", styles: { fontStyle: "bold" } },
+        ],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [34, 197, 94] }, // verde
+      margin: { left: 40, right: 40 },
+    });
+
+    doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+  };
+
+  const handleRendir = async () => {
+    // candidatos: seleccionados o todos
+    const candidates = selectedIds.size
+      ? items.filter((p) => selectedIds.has(p._id))
+      : items;
+
+    // solo los que NO están rendidos todavía
+    const toRendir = candidates.filter((p) => !(p as any).rendido);
+
+    if (!toRendir.length) {
+      alert("No hay pagos para rendir (ya están rendidos o no hay selección).");
+      return;
+    }
+
+    setIsRindiendo(true);
+    try {
+      // actualizamos en backend
+      const results = await Promise.allSettled(
+        toRendir.map((p) =>
+          updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
+        )
+      );
+
+      // ids que realmente quedaron rendidos OK
+      const okIds = results
+        .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
+        .filter((x): x is string => !!x);
+
+      if (!okIds.length) {
+        alert("No se pudo rendir ninguno de los pagos seleccionados.");
+        return;
+      }
+
+      // actualizamos lista local (optimistic)
+      setItems((prev) =>
+        prev.map((p) =>
+          okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
+        )
+      );
+
+      // pagos efectivamente rendidos → PDF
+      const okRows = toRendir.filter((p) => okIds.includes(p._id));
+      downloadPDFFor(okRows);
+
+      // limpiar selección
+      setSelectedIds(new Set());
+    } catch (e) {
+      console.error(e);
+      alert("Ocurrió un error al rendir.");
+    } finally {
+      setIsRindiendo(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -221,7 +431,14 @@ const PaymentsChargedPage = () => {
 
       return {
         key: p._id,
-
+        select: (
+          <input
+            type="checkbox"
+            aria-label="Seleccionar pago"
+            checked={selectedIds.has(p._id)}
+            onChange={(e) => toggleOne(p._id, e.target.checked)}
+          />
+        ),
         // 1) 👁️ (ver detalle)
         info: (
           <div className="grid place-items-center">
@@ -255,6 +472,11 @@ const PaymentsChargedPage = () => {
             <ImputedPill imputed={p.isImputed} />
           </span>
         ),
+        rendido: (
+          <span>
+            <ImputedPill imputed={p.rendido} />
+          </span>
+        ),
         // 6) TOTAL (total)
         total: p.total ?? 0,
 
@@ -263,7 +485,26 @@ const PaymentsChargedPage = () => {
       };
     }) ?? [];
 
+  const allSelected =
+    items.length > 0 && items.every((p) => selectedIds.has(p._id));
+  const someSelected =
+    !allSelected && items.some((p) => selectedIds.has(p._id));
+
   const tableHeader = [
+    {
+      component: (
+        <input
+          type="checkbox"
+          aria-label="Seleccionar todos"
+          checked={allSelected}
+          ref={(el) => {
+            if (el) el.indeterminate = someSelected;
+          }}
+          onChange={(e) => toggleAll(e.target.checked)}
+        />
+      ),
+      key: "select",
+    },
     // 1) 👁️
     { component: <FaEye className="text-center text-xl" />, key: "info" },
 
@@ -279,6 +520,7 @@ const PaymentsChargedPage = () => {
     // 5) DOCUMENT
     { name: t("documents"), key: "documents" },
     { name: t("imputed"), key: "imputed" },
+    { name: t("rendido"), key: "rendido" },
 
     // 6) TOTAL
     { name: t("total"), key: "total", important: true },
@@ -322,6 +564,22 @@ const PaymentsChargedPage = () => {
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
           />
+        ),
+      },
+      {
+        content: (
+          <button
+            onClick={handleRendir}
+            disabled={isRindiendo}
+            className={`px-3 py-2 rounded text-white ${
+              isRindiendo
+                ? "bg-amber-500 cursor-wait"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
+            title="Rendir y descargar PDF"
+          >
+            {isRindiendo ? "Rindiendo…" : "RENDIR"}
+          </button>
         ),
       },
     ],
@@ -821,16 +1079,32 @@ function MethodTotalsBar({
   const palette = (m: string) => {
     const k = m.toLowerCase();
     if (k === "efectivo")
-      return { solid: "bg-emerald-500", soft: "bg-emerald-100", text: "text-emerald-800" };
+      return {
+        solid: "bg-emerald-500",
+        soft: "bg-emerald-100",
+        text: "text-emerald-800",
+      };
     if (k === "transferencia")
       return { solid: "bg-sky-500", soft: "bg-sky-100", text: "text-sky-800" };
     if (k === "cheque")
-      return { solid: "bg-amber-500", soft: "bg-amber-100", text: "text-amber-800" };
+      return {
+        solid: "bg-amber-500",
+        soft: "bg-amber-100",
+        text: "text-amber-800",
+      };
     // fallback rotativo
     const fallbacks = [
-      { solid: "bg-violet-500", soft: "bg-violet-100", text: "text-violet-800" },
+      {
+        solid: "bg-violet-500",
+        soft: "bg-violet-100",
+        text: "text-violet-800",
+      },
       { solid: "bg-rose-500", soft: "bg-rose-100", text: "text-rose-800" },
-      { solid: "bg-indigo-500", soft: "bg-indigo-100", text: "text-indigo-800" },
+      {
+        solid: "bg-indigo-500",
+        soft: "bg-indigo-100",
+        text: "text-indigo-800",
+      },
     ];
     const idx = Math.abs(hashCode(k)) % fallbacks.length;
     return fallbacks[idx];
@@ -853,7 +1127,10 @@ function MethodTotalsBar({
     >
       {/* Header */}
       <header className="flex items-center gap-3 px-4 pt-3">
-        <h3 id="method-totals-title" className="text-sm font-semibold text-zinc-800 ">
+        <h3
+          id="method-totals-title"
+          className="text-sm font-semibold text-zinc-800 "
+        >
           Resumen por medio de pago
         </h3>
         <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
@@ -898,11 +1175,16 @@ function MethodTotalsBar({
                 onKeyDown={
                   clickable
                     ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") onSelectMethod!(m);
+                        if (e.key === "Enter" || e.key === " ")
+                          onSelectMethod!(m);
                       }
                     : undefined
                 }
-                className={`${baseRow} ${clickable ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-300" : ""}`}
+                className={`${baseRow} ${
+                  clickable
+                    ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-300"
+                    : ""
+                }`}
                 aria-label={`${pretty(m)} ${format(val)} (${pct.toFixed(1)}%)`}
               >
                 <div className="flex items-center gap-2">
@@ -917,7 +1199,9 @@ function MethodTotalsBar({
                       <span className="truncate text-sm font-medium text-zinc-800 ">
                         {pretty(m)}
                       </span>
-                      <span className="text-[11px] text-zinc-500">· {pct.toFixed(1)}%</span>
+                      <span className="text-[11px] text-zinc-500">
+                        · {pct.toFixed(1)}%
+                      </span>
                     </div>
                     {/* mini progress */}
                     <div className="mt-1 h-1.5 w-full rounded-full bg-zinc-100  overflow-hidden">
@@ -946,4 +1230,3 @@ function hashCode(str: string) {
   for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
   return h | 0;
 }
-

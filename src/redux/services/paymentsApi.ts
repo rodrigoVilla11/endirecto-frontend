@@ -62,6 +62,7 @@ export interface Payment {
   source?: string; // "web" | "mobile" | "pos"
   version?: number;
   isCharged: boolean; // default false
+  rendido: boolean; // default false
   created_at: string;
   updated_at: string;
 
