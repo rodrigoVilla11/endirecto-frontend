@@ -504,6 +504,7 @@ const PaymentsChargedPage = () => {
         />
       ),
       key: "select",
+      important: true,
     },
     // 1) 👁️
     { component: <FaEye className="text-center text-xl" />, key: "info" },
@@ -868,58 +869,86 @@ function DetailsModal({
             </div>
 
             {/* Header solo desktop */}
-            <div className="hidden sm:grid grid-cols-5 px-3 py-2 text-xs text-zinc-500">
-              <span>{t("method") || "Medio"}</span>
-              <span>{t("concept") || "Concepto"}</span>
-              <span>{t("amount") || "Importe"}</span>
-              <span>{t("bank") || "Banco"}</span>
-              <span>{t("receipt") || "Comprobante"}</span>
+            <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500">
+              <span className="col-span-2">{t("method") || "Medio"}</span>
+              <span className="col-span-4">{t("concept") || "Concepto"}</span>
+              <span className="col-span-2 text-right">
+                {t("amount") || "Importe"}
+              </span>
+              <span className="col-span-2">{t("bank") || "Banco"}</span>
+              <span className="col-span-2">
+                {t("receipt") || "Comprobante"}
+              </span>
             </div>
 
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {(payment.values || []).map((v, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-1 sm:grid-cols-5 gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                  className="
+          grid grid-cols-1 sm:grid-cols-12 items-center
+          gap-x-3 gap-y-1 px-3 py-2 text-sm
+          sm:[&>div]:min-w-0
+        "
                 >
-                  <div className="flex sm:block justify-between">
+                  {/* Medio */}
+                  <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("method") || "Medio"}:
                     </span>
-                    <span className="uppercase">{v.method}</span>
+                    <span className="uppercase truncate">{v.method}</span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Concepto (tooltip) */}
+                  <div className="flex sm:block justify-between sm:col-span-4">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("concept") || "Concepto"}:
                     </span>
-                    <span className="truncate">{v.concept}</span>
+                    <Tooltip content={v.concept}>
+                      <span className="truncate block">{v.concept}</span>
+                    </Tooltip>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Importe */}
+                  <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("amount") || "Importe"}:
                     </span>
-                    <span>{currencyFmt.format(v.amount)}</span>
+                    <span className="tabular-nums whitespace-nowrap sm:text-right sm:block">
+                      {currencyFmt.format(v.amount)}
+                    </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Banco (tooltip) */}
+                  <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("bank") || "Banco"}:
                     </span>
-                    <span>{v.bank || "—"}</span>
+                    <Tooltip content={v.bank || "—"}>
+                      <span className="truncate">{v.bank || "—"}</span>
+                    </Tooltip>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Comprobante (tooltip con nombre/url) */}
+                  <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("receipt") || "Comprobante"}:
                     </span>
-                    <span>
+                    <span className="truncate">
                       {v.receipt_url ? (
-                        <a
-                          href={v.receipt_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline break-all"
+                        <Tooltip
+                          content={v.receipt_original_name || v.receipt_url}
+                          side="bottom"
                         >
-                          {t("view") || "Ver"}
-                        </a>
+                          <a
+                            href={v.receipt_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline break-all inline-block max-w-full"
+                          >
+                            {t("view") || "Ver"}
+                          </a>
+                        </Tooltip>
                       ) : (
                         "—"
                       )}
@@ -1257,4 +1286,48 @@ function hashCode(str: string) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
   return h | 0;
+}
+
+function Tooltip({
+  content,
+  children,
+  side = "top",
+}: {
+  content: React.ReactNode;
+  children: React.ReactNode;
+  side?: "top" | "bottom";
+}) {
+  const pos = side === "top" ? "bottom-full mb-1" : "top-full mt-1";
+
+  return (
+    <span className="relative inline-flex group">
+      {/* target */}
+      <span
+        className="inline-flex min-w-0"
+        tabIndex={0}
+        title={
+          typeof content === "string"
+            ? content
+            : undefined /* fallback nativo */
+        }
+      >
+        {children}
+      </span>
+
+      {/* bubble */}
+      <span
+        role="tooltip"
+        className={`
+          pointer-events-none absolute ${pos} left-1/2 -translate-x-1/2
+          z-50 hidden group-hover:block group-focus-within:block
+          max-w-[80vw] sm:max-w-xs
+          whitespace-normal break-words
+          rounded-md px-2 py-1 text-xs
+          bg-black/85 text-white shadow-lg
+        `}
+      >
+        {content}
+      </span>
+    </span>
+  );
 }

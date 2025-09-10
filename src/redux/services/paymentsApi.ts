@@ -155,7 +155,6 @@ export const paymentsApi = createApi({
         if (isCharged) params.append("isCharged", isCharged);
         if (isImputed) params.append("isImputed", isImputed);
 
-        console.log(`/payments?${params.toString()}`)
         return `/payments?${params.toString()}`;
       },
       transformResponse: (response: PaymentsListResponse | undefined) => {

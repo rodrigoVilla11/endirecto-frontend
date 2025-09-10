@@ -429,6 +429,8 @@ const Page = () => {
     [t]
   );
 
+  const canCreate = userRole === "ADMINISTRADOR";
+
   // -------- Header config --------
   const headerBody = useMemo(
     () => ({
@@ -448,11 +450,13 @@ const Page = () => {
           title: t("viewOnMap"),
           onClick: () => setViewAllMapModalOpen(true),
         },
-        {
+         ...(canCreate
+      ? [{
           logo: <FaPlus />,
           title: t("newInstance"),
           onClick: () => setCreateModalOpen(true),
-        },
+        }]
+      : []),
       ],
       filters: [
         {

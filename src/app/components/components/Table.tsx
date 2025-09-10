@@ -7,7 +7,7 @@ interface TableHeader {
   key: string;
   component?: React.ReactNode;
   important?: boolean;
-  sortable?: boolean; // <-- Nuevo campo para indicar si la columna es ordenable
+  sortable?: boolean;
 }
 
 interface TableProps {
@@ -29,57 +29,112 @@ export default function Table({
   const validData = Array.isArray(rawData) ? rawData : [];
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
+  const labelOf = (h: TableHeader) => h.name ?? h.key;
+
   const renderMobileRow = (row: any, index: number) => {
     const isExpanded = expandedRow === index;
+    const importantHeaders = headers.filter((h) => h.important);
+    // fallback: si nadie marcó important, usamos las 2 primeras columnas con name
+    const fallback = headers.slice(0, 2);
+    const primary = importantHeaders.length ? importantHeaders : fallback;
+
+    const toggle = () =>
+      setExpandedRow((cur) => (cur === index ? null : index));
+
+    const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    };
 
     return (
       <div
-        key={row.key || index}
-        className="border-b border-gray-200 bg-white p-3 rounded-lg shadow-sm"
+        key={row.key ?? index}
+        className="rounded-2xl border border-zinc-200 bg-white shadow-sm ring-1 ring-black/5 mb-3 overflow-hidden"
       >
-        {/* Clave destacada arriba */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-primary font-bold bg-gray-100 px-2 py-1 rounded-md border-l-4 border-primary text-xs z-20">
-            {row.key}
+        {/* Header de la card */}
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-white">
+          <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] font-semibold text-primary tabular-nums">
+            {row.key ?? t("na")}
           </span>
-        </div>
 
-        {/* Fila principal en móviles (Nombre: Valor) */}
-        <div
-          className="p-2 cursor-pointer hover:bg-gray-100 rounded-md"
-          onClick={() => setExpandedRow(isExpanded ? null : index)}
-        >
-          <div className="grid grid-cols-2 gap-2 w-full">
-            {headers
-              .filter((h) => h.important)
-              .map((header) => (
-                <div key={header.key} className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-600">
-                    {header.name}:
-                  </span>
-                  <span className="text-xs text-gray-800">
-                    {row[header.key] || t("na")}
-                  </span>
-                </div>
-              ))}
+          {/* “chips” con los campos importantes */}
+          <div className="ml-auto flex items-center gap-1">
+            <span className="text-[11px] text-zinc-500">
+              {t("tapToExpand") || "Tocar para ver más"}
+            </span>
           </div>
         </div>
 
-        {/* Contenido expandible en móviles */}
+        {/* Cuerpo colapsado: solo importantes */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={onKeyDown}
+          className="px-3 py-2 active:scale-[0.99] transition"
+          aria-expanded={isExpanded}
+          aria-label={t("expandRow") || "Expandir fila"}
+        >
+          <div className="grid grid-cols-1 gap-2">
+            {primary.map((header) => (
+              <div
+                key={header.key}
+                className="flex items-start justify-between gap-3 rounded-lg bg-zinc-50 px-3 py-2"
+              >
+                <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                  {labelOf(header)}
+                </span>
+                <span
+                  className="max-w-[60%] text-sm text-zinc-900 truncate"
+                  title={
+                    typeof row[header.key] === "string"
+                      ? row[header.key]
+                      : undefined
+                  }
+                >
+                  {/* soporta ReactNode */}
+                  {row[header.key] ?? t("na")}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* caret */}
+          <div className="mt-2 flex items-center justify-center">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm">
+              <AiFillCaretDown
+                className={`text-zinc-500 transition-transform ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </span>
+          </div>
+        </div>
+
+        {/* Expandible: todos los campos, en dos columnas responsivas */}
         {isExpanded && (
-          <div className="p-3 bg-gray-50 rounded-b-md mt-2">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-3 pb-3">
+            <div className="mt-1 grid grid-cols-1 xs:grid-cols-2 gap-2">
               {headers.map((header) => (
                 <div
-                  key={header.key}
-                  className="flex justify-between items-center text-xs"
+                  key={`exp-${header.key}`}
+                  className="rounded-lg border border-zinc-100 bg-white px-3 py-2"
                 >
-                  <span className="font-medium text-gray-700">
-                    {header.name}:
-                  </span>
-                  <span className="text-gray-600">
-                    {row[header.key] || t("na")}
-                  </span>
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    {labelOf(header)}
+                  </div>
+                  <div
+                    className="mt-0.5 text-sm text-zinc-900 break-words"
+                    title={
+                      typeof row[header.key] === "string"
+                        ? row[header.key]
+                        : undefined
+                    }
+                  >
+                    {row[header.key] ?? t("na")}
+                  </div>
                 </div>
               ))}
             </div>
@@ -98,7 +153,6 @@ export default function Table({
             const iconRotation =
               isCurrentSort && sortOrder === "asc" ? "rotate-180" : "";
 
-            // Si el header es ordenable, mostramos ícono y onClick
             if (header.sortable) {
               return (
                 <th
@@ -118,7 +172,6 @@ export default function Table({
               );
             }
 
-            // Si no es ordenable, no mostramos ícono ni añadimos onClick
             return (
               <th
                 key={header.key}
@@ -161,14 +214,20 @@ export default function Table({
   );
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 mx-2 md:mx-4">
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 mx-2 md:mx-4">
       <div className="w-full">
-        {/* Tabla en móviles */}
-        <div className="md:hidden">
-          {validData.map((row, index) => renderMobileRow(row, index))}
+        {/* Mobile (cards) */}
+        <div className="md:hidden p-2">
+          {validData.length === 0 ? (
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 text-center text-sm text-zinc-500">
+              {t("noDataFound")}
+            </div>
+          ) : (
+            validData.map((row, index) => renderMobileRow(row, index))
+          )}
         </div>
 
-        {/* Tabla en desktop */}
+        {/* Desktop (tabla) */}
         <div className="hidden md:block overflow-x-auto">
           {renderDesktopTable()}
         </div>

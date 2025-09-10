@@ -1435,6 +1435,19 @@
     "title": "Titulo",
     "status": "Estado"
   },
-  "imputed": "Imputado"
+  "imputed": "Imputado",
+  
+  "instanceType": {
+    "collectionCall": "Llamado de cobranza",
+    "whatsappMessage": "Mensaje de WhatsApp",
+    "sendAccountSummary": "Enviar resumen de cuenta",
+    "paymentClaim": "Reclamo de pago"
+  },
+  "prioritys": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "tapToExpand": "Tocar para ver más"
 
 }

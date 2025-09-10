@@ -1438,6 +1438,17 @@
     "title": "Title",
     "status": "Status"
   },
-  "imputed": "Imputed"
-
+  "imputed": "Imputed",
+  "instanceType": {
+    "collectionCall": "Collection call",
+    "whatsappMessage": "WhatsApp message",
+    "sendAccountSummary": "Send account summary",
+    "paymentClaim": "Payment claim"
+  },
+  "prioritys": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "tapToExpand": "Tap To Expand"
 }

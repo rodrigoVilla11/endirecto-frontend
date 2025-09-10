@@ -264,6 +264,8 @@ export default function Page() {
     [selectedDocs]
   );
 
+  const canCreate = userRole === "ADMINISTRADOR";
+
   // Header filters
   const headerFilters = useMemo(
     () => [
@@ -441,7 +443,15 @@ export default function Page() {
                 // si tu <Header> soporta deshabilitar:
                 disabled: isFetching,
               },
-              { logo: <FaPlus />, title: t("crm"), onClick: openCreateModal },
+              ...(canCreate
+                ? [
+                    {
+                      logo: <FaPlus />,
+                      title: t("crm"),
+                      onClick: openCreateModal,
+                    },
+                  ]
+                : []),
             ],
             filters: headerFilters,
             secondSection: {

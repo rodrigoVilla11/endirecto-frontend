@@ -214,12 +214,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         })),
       } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
 
-      // Debug opcional
-      console.log("payload.values >>>", payload.values);
-
       const created = await createPayment(payload).unwrap();
 
-      console.log(created);
       const valuesSummary = (created.values ?? [])
         .map((v: any) => {
           const concept = (v?.concept || v?.method || "—").toString();
@@ -235,7 +231,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           type: "PAGO",
           description: `${valuesSummary} | Neto: ${currencyFmt.format(
             created?.totals?.net ?? totalAfterDiscount
-          )}`,
+          )} — Dif: ${currencyFmt.format(diff)}`,
           link: "/payments",
           schedule_from: new Date(),
           schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
