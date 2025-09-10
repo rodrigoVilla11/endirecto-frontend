@@ -776,7 +776,7 @@ function DetailsModal({
             </div>
 
             {/* Header solo desktop */}
-            <div className="hidden sm:grid grid-cols-6 px-3 py-2 text-xs text-zinc-500">
+            <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500">
               <span>{t("number")}</span>
               <span>{t("days") || "Días"}</span>
               <span>{t("base") || "Base"}</span>
@@ -789,43 +789,70 @@ function DetailsModal({
               {(payment.documents || []).map((d) => (
                 <div
                   key={d.document_id}
-                  className="grid grid-cols-1 sm:grid-cols-6 gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                  className="grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm"
                 >
-                  <div className="flex sm:block justify-between">
+                  {/* Número */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("number")}:
                     </span>
-                    <span className="truncate">{d.number}</span>
+                    <span className="block truncate" title={d.number}>
+                      {d.number}
+                    </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Días */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("days") || "Días"}:
                     </span>
-                    <span className={d.note ? "text-amber-600" : ""}>
+                    <span
+                      className={`sm:text-right tabular-nums ${
+                        d.note ? "text-amber-600" : ""
+                      }`}
+                    >
                       {d.days_used ?? "—"}
                     </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Base */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("base") || "Base"}:
                     </span>
-                    <span>{currencyFmt.format(d.base)}</span>
+                    <span className="sm:text-right tabular-nums">
+                      {currencyFmt.format(d.base)}
+                    </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* % */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">%</span>
-                    <span>{(d.discount_rate * 100).toFixed(0)}%</span>
+                    <span className="sm:text-right tabular-nums">
+                      {(d.discount_rate * 100).toFixed(0)}%
+                    </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Descuento */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("discount") || "Desc."}:
                     </span>
-                    <span>-{currencyFmt.format(d.discount_amount)}</span>
+                    <span className="sm:text-right tabular-nums">
+                      -{currencyFmt.format(d.discount_amount)}
+                    </span>
                   </div>
-                  <div className="flex sm:block justify-between">
+
+                  {/* Final */}
+                  <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("final") || "Final"}:
                     </span>
-                    <span className={d.note ? "text-amber-600" : ""}>
+                    <span
+                      className={`sm:text-right tabular-nums ${
+                        d.note ? "text-amber-600" : ""
+                      }`}
+                    >
                       {currencyFmt.format(d.final_amount)}
                     </span>
                   </div>

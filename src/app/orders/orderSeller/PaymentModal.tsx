@@ -7,11 +7,7 @@ import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/cus
 import ValueView from "./ValueView";
 import { CommentsView } from "./CommentsView";
 import { useTranslation } from "react-i18next";
-import {
-  CreatePayment,
-  PaymentStatus,
-  useCreatePaymentMutation,
-} from "@/redux/services/paymentsApi";
+import { useCreatePaymentMutation } from "@/redux/services/paymentsApi";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
@@ -219,9 +215,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
 
       // Debug opcional
+      console.log("payload.values >>>", payload.values);
 
       const created = await createPayment(payload).unwrap();
 
+      console.log(created);
       const valuesSummary = (created.values ?? [])
         .map((v: any) => {
           const concept = (v?.concept || v?.method || "—").toString();
@@ -406,6 +404,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     "comments",
   ];
 
+  const attachReceipt = (selectedReason: string) => {
+    const v = newValues.find((x) => x.selectedReason === selectedReason);
+    if (!v) return;
+    pendingValueRef.current = v;
+    fileInputRef.current?.click();
+  };
+
+  const clearReceipt = (selectedReason: string) => {
+    setNewValues((prev) =>
+      prev.map((v) =>
+        v.selectedReason === selectedReason
+          ? { ...v, receiptUrl: undefined, receiptOriginalName: undefined }
+          : v
+      )
+    );
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -561,14 +576,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </button>
                 </div>
 
-                {/* Aviso si hay documentos
-                {hasSelectedDocs && (
-                  <div className="text-xs text-amber-300">
-                    Hay comprobantes seleccionados: se aplica automáticamente{" "}
-                    <b>Cuenta corriente</b>.
-                  </div>
-                )} */}
-
                 {/* Opciones solo para Pago contra entrega (y solo si está permitido) */}
                 {paymentTypeUI === "contra_entrega" && !hasSelectedDocs && (
                   <div>
@@ -653,16 +660,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </div>
                 )}
 
-                {/* Nota para Cuenta Corriente */}
-                {/* {paymentTypeUI === "cta_cte" && (
-                  <div className="text-sm text-zinc-300">
-                    El descuento se calcula automáticamente por documento según{" "}
-                    <code>days_until_expiration_today</code>: ≤ 15 días = 13%, ≤
-                    30 días = 10%, 30–45 días = 0%, {">"} 45 días =
-                    actualización.
-                  </div>
-                )} */}
-
                 {/* Tabla de desglose */}
                 {computedDiscounts.length > 0 && (
                   <div className="space-y-3">
@@ -735,53 +732,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         </div>
                       </div>
                     ))}
-
-                    {/* Totales (en filas) */}
-                    {/* <div className="border border-zinc-700 rounded overflow-hidden">
-                      <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
-                        Total
-                      </div>
-                      <div className="divide-y divide-zinc-800 text-sm text-white">
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-zinc-400">Bruto</span>
-                          <span className="tabular-nums">
-                            {currencyFmt.format(totalBase)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-zinc-400">Desc.</span>
-                          <span className="tabular-nums">
-                            -{currencyFmt.format(totalDiscount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-zinc-400">Neto</span>
-                          <span className="tabular-nums">
-                            {currencyFmt.format(totalAfterDiscount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-zinc-400">Valores</span>
-                          <span className="tabular-nums">
-                            {currencyFmt.format(totalValues)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between px-3 py-2">
-                          <span className="text-zinc-400">Dif.</span>
-                          <span
-                            className={`tabular-nums ${
-                              diff === 0
-                                ? "text-emerald-400"
-                                : diff > 0
-                                ? "text-amber-400"
-                                : "text-red-400"
-                            }`}
-                          >
-                            {currencyFmt.format(diff)}
-                          </span>
-                        </div>
-                      </div>
-                    </div> */}
                   </div>
                 )}
 
@@ -818,11 +768,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       return;
                     }
 
+                    // (opcional) check de tamaño 10MB
+                    if (file.size > 10 * 1024 * 1024) {
+                      alert("El archivo supera 10MB.");
+                      return;
+                    }
+
                     try {
                       const res = await uploadImage(file).unwrap();
+                      const url =
+                        (res as any)?.secure_url ??
+                        (res as any)?.url ??
+                        (res as any)?.data?.secure_url ??
+                        (res as any)?.data?.url;
+
                       const withReceipt = {
                         ...base,
-                        receiptUrl: (res as any).secure_url || (res as any).url,
+                        receiptUrl: url, // 👈 usar receiptUrl (camelCase)
                         receiptOriginalName: file.name,
                       };
 
@@ -898,6 +860,89 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
                 {/* Valores manuales */}
                 <ValueView setNewValues={setNewValues} newValues={newValues} />
+
+                {/* Comprobantes por valor */}
+                {newValues.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-white">
+                      Comprobantes
+                    </h4>
+                    <ul className="space-y-2">
+                      {newValues.map((v) => {
+                        const isImg =
+                          v.receiptUrl &&
+                          !v.receiptUrl.toLowerCase().endsWith(".pdf");
+                        return (
+                          <li
+                            key={v.selectedReason}
+                            className="rounded border border-zinc-700 p-3 flex items-center gap-3 text-white"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium truncate">
+                                {v.selectedReason}
+                              </div>
+                              <div className="text-xs text-zinc-400">
+                                {currencyFmt.format(
+                                  parseFloat(v.amount || "0")
+                                )}{" "}
+                                · {v.method.toUpperCase()}
+                              </div>
+
+                              {v.receiptUrl ? (
+                                <div className="mt-2 flex items-center gap-3">
+                                  {isImg ? (
+                                    <img
+                                      src={v.receiptUrl}
+                                      alt={
+                                        v.receiptOriginalName || "Comprobante"
+                                      }
+                                      className="h-14 w-14 object-cover rounded border border-zinc-700"
+                                    />
+                                  ) : (
+                                    <span className="text-xs px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
+                                      PDF adjunto
+                                    </span>
+                                  )}
+                                  <a
+                                    href={v.receiptUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-blue-300 underline break-all"
+                                  >
+                                    {v.receiptOriginalName || v.receiptUrl}
+                                  </a>
+                                </div>
+                              ) : (
+                                <div className="mt-2 text-xs text-zinc-400">
+                                  Sin comprobante
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 rounded bg-zinc-700 text-white hover:bg-zinc-600"
+                                onClick={() => attachReceipt(v.selectedReason)}
+                              >
+                                {v.receiptUrl ? "Reemplazar" : "Adjuntar"}
+                              </button>
+                              {v.receiptUrl && (
+                                <button
+                                  type="button"
+                                  className="px-3 py-1.5 rounded border border-red-500 text-red-400 hover:bg-red-500/10"
+                                  onClick={() => clearReceipt(v.selectedReason)}
+                                >
+                                  Quitar
+                                </button>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
