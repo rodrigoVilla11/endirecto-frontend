@@ -570,15 +570,19 @@ const PaymentsChargedPage = () => {
         content: (
           <button
             onClick={handleRendir}
-            disabled={isRindiendo}
+            disabled={selectedIds.size === 0 || isRindiendo}
             className={`px-3 py-2 rounded text-white ${
-              isRindiendo
-                ? "bg-amber-500 cursor-wait"
+              selectedIds.size === 0 || isRindiendo
+                ? "bg-zinc-300 cursor-not-allowed"
                 : "bg-emerald-600 hover:bg-emerald-700"
             }`}
-            title="Rendir y descargar PDF"
+            title={
+              selectedIds.size === 0
+                ? "Seleccioná al menos un pago"
+                : "Rendir pagos seleccionados"
+            }
           >
-            {isRindiendo ? "Rindiendo…" : "RENDIR"}
+            {isRindiendo ? "Rindiendo..." : "Rendir"}
           </button>
         ),
       },
@@ -913,10 +917,7 @@ function DetailsModal({
         {/* Footer (sticky) */}
         <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-white">
           <div className="text-[10px] sm:text-xs text-zinc-500">
-            ID: {payment._id} · {t("created") || "Creado"}:{" "}
-            {payment.created_at
-              ? format(new Date(payment.created_at), "dd/MM/yyyy HH:mm")
-              : "—"}
+            ID: {payment._id}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button

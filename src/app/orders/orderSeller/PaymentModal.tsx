@@ -222,15 +222,22 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       const created = await createPayment(payload).unwrap();
 
-      console.log(created);
+      const valuesSummary = (created.values ?? [])
+        .map((v: any) => {
+          const concept = (v?.concept || v?.method || "—").toString();
+          const amount = Number(v?.amount ?? 0);
+          return `${concept}: ${currencyFmt.format(amount)}`;
+        })
+        .join(" • ");
+
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
-          title: "Pago registrado",
+          title: "Pago registrado ${created._id}",
           type: "PAGO",
-          description: `Neto: ${currencyFmt.format(
-            totalAfterDiscount
-          )} — Dif: ${currencyFmt.format(diff)}`,
+          description: `${valuesSummary} | Neto: ${currencyFmt.format(
+            created?.totals?.net ?? totalAfterDiscount
+          )}`,
           link: "/payments",
           schedule_from: new Date(),
           schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

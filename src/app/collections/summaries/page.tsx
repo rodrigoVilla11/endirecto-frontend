@@ -799,7 +799,7 @@ function DetailsModal({
                 </span>
               ) : (
                 <span className="inline-flex items-center justify-center gap-2">
-                  <FaCheck /> {t("markAsCharged") || "Marcar cobrado"}
+                  <FaCheck /> {t("markAsCharged") || "Marcar imputado"}
                 </span>
               )}
             </button>
