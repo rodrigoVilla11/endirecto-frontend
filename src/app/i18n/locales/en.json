@@ -1451,5 +1451,6 @@
     "high": "High"
   },
   "tapToExpand": "Tap To Expand", 
-  "all": "All"
+  "all": "All",
+  "commentsFilter": "Comments Filter"
 }

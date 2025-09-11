@@ -93,6 +93,7 @@ export const crmApi = createApi({
     user_id?: string;
     action?: string;
     search?: string;
+    commentsFilter?: string;
   }
 >({
   query: ({
@@ -109,6 +110,7 @@ export const crmApi = createApi({
     user_id,
     action,
     search,
+    commentsFilter
   } = {}) => {
     const url = `/crm`;
     const params = new URLSearchParams({
@@ -127,6 +129,7 @@ export const crmApi = createApi({
     if (user_id) params.append("user_id", user_id);
     if (action) params.append("action", action);
     if (search) params.append("search", search);
+    if (commentsFilter) params.append("commentsFilter", commentsFilter);
     
     return `${url}?${params.toString()}`;
   },

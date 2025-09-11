@@ -21,7 +21,6 @@ import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import PrivateRoute from "../context/PrivateRoutes";
 import Modal from "../components/components/Modal";
-import CreateCRMComponent from "./CreateCRM";
 import { useClient } from "../context/ClientContext";
 import { useTranslation } from "react-i18next";
 import debounce from "../context/debounce";
@@ -69,6 +68,9 @@ const Page = () => {
     type: "update" | "delete" | "info" | null;
     crm: any | null;
   }>({ type: null, crm: null });
+  // NUEVO: filtro por comentarios predefinidos (solo aplica a VISIT)
+  const [predefOpen, setPredefOpen] = useState(false);
+  const [predefSelected, setPredefSelected] = useState<string[]>([]); // guarda SOLO hojas (rutas completas)
 
   // -------- Datos relacionados --------
   const { data: customersData } = useGetCustomersQuery(null);
@@ -134,6 +136,9 @@ const Page = () => {
         user_id: undefined,
         action: undefined,
         search: searchQuery || undefined,
+        ...(typeFilter === "VISIT" && predefSelected.length > 0
+          ? { commentsFilter: predefSelected }
+          : {}),
       }).unwrap();
 
       const url = window.URL.createObjectURL(blob);
@@ -223,9 +228,17 @@ const Page = () => {
     [sortQuery, resetPagination]
   );
 
+  const sameArray = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    const A = [...a].sort();
+    const B = [...b].sort();
+    for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) return false;
+    return true;
+  };
+
   // -------- Args para query principal (mem) --------
   const listArgs = useMemo(() => {
-    return {
+    const args: any = {
       page,
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? startOfDay(startDate).toISOString() : undefined,
@@ -238,6 +251,12 @@ const Page = () => {
       sort: sortQuery || undefined,
       __v: resetSeq, // token
     };
+
+    if (typeFilter === "VISIT" && predefSelected.length > 0) {
+      args.commentsFilter = predefSelected;
+    }
+
+    return args;
   }, [
     page,
     startDate,
@@ -450,13 +469,28 @@ const Page = () => {
           title: t("viewOnMap"),
           onClick: () => setViewAllMapModalOpen(true),
         },
-         ...(canCreate
-      ? [{
-          logo: <FaPlus />,
-          title: t("newInstance"),
-          onClick: () => setCreateModalOpen(true),
-        }]
-      : []),
+        ...(typeFilter === "VISIT"
+          ? [
+              {
+                logo: <FaInfoCircle />,
+                title:
+                  (t("commentsFilter") as string) ||
+                  `Comentarios${
+                    predefSelected.length ? ` (${predefSelected.length})` : ""
+                  }`,
+                onClick: () => setPredefOpen((v) => !v),
+              },
+            ]
+          : []),
+        ...(canCreate
+          ? [
+              {
+                logo: <FaPlus />,
+                title: t("newInstance"),
+                onClick: () => setCreateModalOpen(true),
+              },
+            ]
+          : []),
       ],
       filters: [
         {
@@ -570,6 +604,24 @@ const Page = () => {
         <h3 className="font-bold p-4">{t("crm")}</h3>
         <Header headerBody={headerBody} />
 
+        {predefOpen && typeFilter === "VISIT" && (
+          <div className="mx-4 mb-3 rounded-lg border border-zinc-800 bg-zinc-900">
+            {/* ... */}
+            <div className="px-3 pb-3">
+              <PredefinedCommentsTreeFilter
+                selectedLeafs={predefSelected}
+                onChange={(leafs) => {
+                  // 👇 Solo setear si cambió
+                  if (!sameArray(leafs, predefSelected)) {
+                    setPredefSelected(leafs);
+                    resetPagination();
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {!hideHighBanner && latestHighInstance && (
           <div className="mx-4 my-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <span
@@ -633,7 +685,7 @@ const Page = () => {
 
       {/* Modal crear */}
       <Modal isOpen={isCreateModalOpen} onClose={closeCreateModal}>
-         <CRM
+        <CRM
           closeModal={closeCreateModal}
           selectedClientId={selectedClientId}
         />
@@ -677,5 +729,385 @@ const Page = () => {
     </PrivateRoute>
   );
 };
+type Node = { label: string; children?: Node[] };
+
+const PREDEFINED_TREE: Node[] = [
+  {
+    label: "Venta realizada",
+    children: [
+      { label: "Lubricantes" },
+      { label: "Filtros" },
+      { label: "Cubiertas" },
+      { label: "Baterías" },
+      { label: "Autopartes" },
+      { label: "Aditivos" },
+    ],
+  },
+  {
+    label: "No venta",
+    children: [
+      {
+        label: "Lubricantes",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Total" },
+              { label: "ELF" },
+              { label: "YPF" },
+              { label: "Shell" },
+              { label: "Castrol" },
+              { label: "Motul" },
+              { label: "Petronas" },
+              { label: "Valvoline" },
+              { label: "Gulf" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Filtros",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Mahle" },
+              { label: "Fram" },
+              { label: "Maan" },
+              { label: "Wega" },
+              { label: "Bosch" },
+              { label: "Acdelco" },
+              { label: "WIX" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Cubiertas",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Dunlop" },
+              { label: "Corven" },
+              { label: "Chaoyang" },
+              { label: "Pirelli" },
+              { label: "Fate" },
+              { label: "Firestone" },
+              { label: "Goodyear" },
+              { label: "Michelin" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Baterías",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Moura" },
+              { label: "Willard" },
+              { label: "Bosch" },
+              { label: "Heliar" },
+              { label: "Prestolite" },
+              { label: "Varta" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Autopartes",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Corven" },
+              { label: "Nakata" },
+              { label: "SKF" },
+              { label: "Monroe" },
+              { label: "Sachs" },
+              { label: "Sadar" },
+              { label: "Fric Rot" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Aditivos",
+        children: [
+          { label: "Cliente no interesado" },
+          { label: "Decisión postergada" },
+          {
+            label: "Competencia",
+            children: [
+              { label: "Liqui Moly" },
+              { label: "Molykote" },
+              { label: "Ceramo" },
+              { label: "Mannol" },
+              { label: "Bardahl" },
+              { label: "Wynn´s" },
+              { label: "STP" },
+              { label: "Otro" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Cobranza",
+    children: [
+      { label: "Cobro total" },
+      { label: "Cobro parcial" },
+      { label: "Cliente incobrable" },
+    ],
+  },
+  {
+    label: "Prospección / Cliente nuevo",
+    children: [
+      { label: "Se pudo dar de alta" },
+      { label: "Hubo interés" },
+      { label: "Se hizo alguna venta inicial" },
+    ],
+  },
+];
+
+function gatherLeafPaths(node: Node, prefix = ""): string[] {
+  const path = prefix ? `${prefix} > ${node.label}` : node.label;
+  if (!node.children?.length) return [path];
+  return node.children.flatMap((c) => gatherLeafPaths(c, path));
+}
+function gatherAllPaths(node: Node, prefix = ""): string[] {
+  const path = prefix ? `${prefix} > ${node.label}` : node.label;
+  if (!node.children?.length) return [path];
+  return [path, ...node.children.flatMap((c) => gatherAllPaths(c, path))];
+}
+function computeTriState(node: Node, checked: Set<string>, prefix = "") {
+  const leafs = gatherLeafPaths(node, prefix);
+  const selected = leafs.filter((p) => checked.has(p)).length;
+  const all = leafs.length;
+  return {
+    checked: all > 0 && selected === all,
+    indeterminate: selected > 0 && selected < all,
+  };
+}
+
+export function PredefinedCommentsTreeFilter({
+  selectedLeafs,
+  onChange,
+}: {
+  selectedLeafs: string[];
+  onChange: (leafs: string[]) => void;
+}) {
+  const [checked, setChecked] = useState<Set<string>>(new Set(selectedLeafs));
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const lastEmittedRef = useRef<string>(""); // 👈 guarda último payload emitido
+
+  // 🔁 Si cambian las props desde afuera, sincronizá 'checked' SOLO si difieren
+  useEffect(() => {
+    const curr = Array.from(checked).sort();
+    const next = [...selectedLeafs].sort();
+    if (curr.length !== next.length || curr.some((v, i) => v !== next[i])) {
+      setChecked(new Set(selectedLeafs));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeafs]);
+
+  // 🧠 Emití solo si hay diferencia real vs último emitido
+  useEffect(() => {
+    const leafsOnly = Array.from(checked).filter(
+      (path) =>
+        !Array.from(checked).some(
+          (o) => o !== path && o.startsWith(path + " > ")
+        )
+    );
+    const payload = JSON.stringify([...leafsOnly].sort());
+    if (payload !== lastEmittedRef.current) {
+      lastEmittedRef.current = payload;
+      onChange(leafsOnly);
+    }
+  }, [checked, onChange]);
+
+  const toggleNode = (node: Node, prefix = "") => {
+    const paths = gatherAllPaths(node, prefix); // padre + hijos
+    const leafs = gatherLeafPaths(node, prefix);
+    setChecked((prev) => {
+      const next = new Set(prev);
+      const anyLeafSelected = leafs.some((p) => next.has(p));
+      if (anyLeafSelected) {
+        // deselecciona TODAS las hojas de esa rama
+        leafs.forEach((p) => next.delete(p));
+      } else {
+        // selecciona TODAS las hojas de esa rama
+        leafs.forEach((p) => next.add(p));
+      }
+      // limpiamos posibles padres residuales (por si vinieran en selectedLeafs)
+      paths.forEach((p) => {
+        if (next.has(p) && !leafs.includes(p)) next.delete(p);
+      });
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    const map: Record<string, boolean> = {};
+    const walk = (n: Node, prefix = "") => {
+      const path = prefix ? `${prefix} > ${n.label}` : n.label;
+      map[path] = true;
+      n.children?.forEach((c) => walk(c, path));
+    };
+    PREDEFINED_TREE.forEach((n) => walk(n));
+    setOpenMap(map);
+  };
+  const collapseAll = () => setOpenMap({});
+  const clear = () => setChecked(new Set());
+
+  return (
+    <div className="rounded-md bg-zinc-900/40">
+      <div className="flex items-center gap-2 py-2">
+        <button
+          onClick={expandAll}
+          className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+        >
+          Expandir todo
+        </button>
+        <button
+          onClick={collapseAll}
+          className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+        >
+          Contraer todo
+        </button>
+        <button
+          onClick={clear}
+          className="ml-auto text-xs px-2 py-1 rounded bg-red-600/80 text-white hover:bg-red-600"
+        >
+          Limpiar selección
+        </button>
+      </div>
+
+      <div className="space-y-1">
+        {PREDEFINED_TREE.map((node) => (
+          <TreeNodeUI
+            key={node.label}
+            node={node}
+            prefix=""
+            openMap={openMap}
+            setOpenMap={setOpenMap}
+            checked={checked}
+            onToggle={toggleNode}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TreeNodeUI({
+  node,
+  prefix,
+  openMap,
+  setOpenMap,
+  checked,
+  onToggle,
+}: {
+  node: Node;
+  prefix: string;
+  openMap: Record<string, boolean>;
+  setOpenMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  checked: Set<string>;
+  onToggle: (node: Node, prefix?: string) => void;
+}) {
+  const path = prefix ? `${prefix} > ${node.label}` : node.label;
+  const hasChildren = !!node.children?.length;
+  const { checked: isChecked, indeterminate } = computeTriState(
+    node,
+    checked,
+    prefix
+  );
+  const isOpen = !!openMap[path];
+
+  const cbRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (cbRef.current)
+      cbRef.current.indeterminate = indeterminate && !isChecked;
+  }, [indeterminate, isChecked]);
+
+  return (
+    <div className="pl-1">
+      <div className="group flex items-center gap-2 py-1 pr-2 rounded hover:bg-zinc-800/60">
+        {hasChildren ? (
+          <button
+            type="button"
+            aria-label={isOpen ? "Contraer" : "Expandir"}
+            onClick={() => setOpenMap((m) => ({ ...m, [path]: !isOpen }))}
+            className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-white"
+          >
+            <span
+              className={`inline-block transform transition-transform ${
+                isOpen ? "rotate-90" : ""
+              }`}
+            >
+              ▶
+            </span>
+          </button>
+        ) : (
+          <span className="w-5" />
+        )}
+
+        <input
+          ref={cbRef}
+          id={path}
+          type="checkbox"
+          className="accent-blue-500"
+          checked={isChecked}
+          onChange={() => onToggle(node, prefix)}
+          title={node.label}
+        />
+        <label
+          htmlFor={path}
+          className="cursor-pointer select-none text-sm text-zinc-200"
+        >
+          {node.label}
+        </label>
+      </div>
+
+      {hasChildren && (
+        <div
+          className={`ml-6 border-l border-zinc-700/60 pl-3 overflow-hidden transition-all duration-200 ${
+            isOpen ? "max-h-[999px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          {node.children!.map((child) => (
+            <TreeNodeUI
+              key={child.label}
+              node={child}
+              prefix={path}
+              openMap={openMap}
+              setOpenMap={setOpenMap}
+              checked={checked}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Page;
