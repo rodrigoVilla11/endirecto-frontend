@@ -908,7 +908,7 @@ function computeTriState(node: Node, checked: Set<string>, prefix = "") {
   };
 }
 
-export function PredefinedCommentsTreeFilter({
+function PredefinedCommentsTreeFilter({
   selectedLeafs,
   onChange,
 }: {
