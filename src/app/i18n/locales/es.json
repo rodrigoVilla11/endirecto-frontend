@@ -1450,7 +1450,8 @@
   },
   "tapToExpand": "Tocar para ver más",
   "all": "Todos",
-  "commentsFilter": "Filtro de Comentarios"
+  "commentsFilter": "Filtro de Comentarios",
+  "filterByComments": "Comentarios predefinidos"
 
 
 }
