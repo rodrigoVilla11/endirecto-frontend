@@ -18,15 +18,12 @@ interface PaymentModalProps {
   onClose: () => void;
 }
 
-type PaymentType = "contra_entrega" | "cta_cte";
-type ContraEntregaOption = "efectivo_general" | "efectivo_promos" | "cheque_30";
-
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { t } = useTranslation();
   // 🔁 Valores primero
   const [activeTab, setActiveTab] = useState<
     "documents" | "values" | "comments"
-  >("values");
+  >("documents");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -41,6 +38,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
 
+  type PaymentType = "pago_anticipado" | "cta_cte";
+
+  const [paymentTypeUI, setPaymentTypeUI] = useState<PaymentType>("cta_cte"); // o "pago_anticipado" si preferís
+  // ✅ eliminar: ContraEntregaOption, contraEntregaOpt, contraEntregaMonto
   // Documentos seleccionados (llenados por DocumentsView)
   const [newPayment, setNewPayment] = useState<
     {
@@ -79,17 +80,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     maximumFractionDigits: 2,
   });
 
-  // ---- Lógica de descuentos ----
-  const [paymentTypeUI, setPaymentTypeUI] =
-    useState<PaymentType>("contra_entrega");
-  const [contraEntregaOpt, setContraEntregaOpt] =
-    useState<ContraEntregaOption>("efectivo_general");
-  const [contraEntregaMonto, setContraEntregaMonto] = useState<string>("");
-
   // ⛔️ Si hay documentos seleccionados, bloquear contra_entrega y forzar cta_cte
   const hasSelectedDocs = newPayment.length > 0;
   useEffect(() => {
-    if (hasSelectedDocs && paymentTypeUI === "contra_entrega") {
+    if (hasSelectedDocs && paymentTypeUI === "pago_anticipado") {
       setPaymentTypeUI("cta_cte");
     }
   }, [hasSelectedDocs, paymentTypeUI]);
@@ -101,6 +95,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const diffMs = today.getTime() - d.getTime();
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }
+
+  const isNoDiscountCondition = (txt?: string) => {
+    const v = (txt || "").toLowerCase().trim();
+    return (
+      v === "segun pliego" ||
+      v === "según pliego" || // por si viene con tilde
+      v === "no especificado" ||
+      v === "not specified"
+    );
+  };
 
   function getDocDays(doc: {
     days_until_expiration_today?: any;
@@ -125,28 +129,22 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // TODO: si en tu app la condición de pago es un registro real, poné su ID de DB acá.
   // Por ahora mando un id simbólico según la UI:
   const getPaymentConditionId = () =>
-    paymentTypeUI === "cta_cte" ? "cta_cte" : "contra_entrega";
+    paymentTypeUI === "cta_cte" ? "cta_cte" : "pago_anticipado";
 
   // Regla usada (string descriptivo)
-  const buildRuleApplied = (days: number) => {
-    if (paymentTypeUI === "contra_entrega") {
-      if (contraEntregaOpt === "efectivo_general")
-        return "contra_entrega:efectivo_general:20%";
-      if (contraEntregaOpt === "efectivo_promos")
-        return "contra_entrega:efectivo_promos:15%";
-      if (contraEntregaOpt === "cheque_30") {
-        return !isNaN(days) && days <= 30
-          ? "contra_entrega:cheque_<=30d:13%"
-          : "contra_entrega:cheque_>30d:0%";
-      }
-      return "contra_entrega:sin_regla";
-    } else {
-      if (isNaN(days)) return "cta_cte:invalido";
-      if (days <= 15) return "cta_cte:<=15d:13%";
-      if (days <= 30) return "cta_cte:<=30d:10%";
-      if (days > 45) return "cta_cte:>45d:actualizacion";
-      return "cta_cte:0%";
+  const buildRuleApplied = (days: number, blockedNoDiscount = false) => {
+    if (blockedNoDiscount) return `${paymentTypeUI}:cond_pago_sin_descuento`;
+
+    if (paymentTypeUI === "pago_anticipado") {
+      return "pago_anticipado:sin_regla";
     }
+
+    // cta_cte como lo tenías
+    if (isNaN(days)) return "cta_cte:invalido";
+    if (days <= 15) return "cta_cte:<=15d:13%";
+    if (days <= 30) return "cta_cte:<=30d:10%";
+    if (days > 45) return "cta_cte:>45d:actualizacion";
+    return "cta_cte:0%";
   };
 
   const handleCreatePayment = async () => {
@@ -168,13 +166,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         diff: round2(diff),
       };
 
+
       const payload = {
         // enums en minúscula según tu schema:
         status: "pending", // 'pending' | 'confirmed' | 'reversed'
         type: paymentTypeUI, // 'contra_entrega' | 'cta_cte'
-        contra_entrega_choice:
-          paymentTypeUI === "contra_entrega" ? contraEntregaOpt : undefined,
-
         date: new Date(), // el schema espera Date
         currency: "ARS", // default, pero no molesta
         comments,
@@ -195,7 +191,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           document_id: d.document_id,
           number: d.number,
           days_used: isNaN(d.days) ? undefined : d.days,
-          rule_applied: buildRuleApplied(d.days),
+          rule_applied: buildRuleApplied(d.days, d.noDiscountBlocked),
           base: round2(d.base),
           discount_rate: round4(d.rate), // 0.1300 etc.
           discount_amount: round2(d.discountAmount),
@@ -214,6 +210,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         })),
       } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
 
+      console.log("payload", payload)
       const created = await createPayment(payload).unwrap();
 
       const valuesSummary = (created.values ?? [])
@@ -281,17 +278,17 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   function getDiscountRateForDoc(
     docDays: number,
     type: PaymentType,
-    contraEntregaChoice: ContraEntregaOption
+    docPaymentCondition?: string
   ): { rate: number; note?: string } {
-    if (type === "contra_entrega") {
-      if (contraEntregaChoice === "efectivo_general") return { rate: 0.2 };
-      if (contraEntregaChoice === "efectivo_promos") return { rate: 0.15 };
-      if (contraEntregaChoice === "cheque_30") {
-        if (!isNaN(docDays) && docDays <= 30) return { rate: 0.13 };
-        return { rate: 0, note: "Cheque > 30 días: sin descuento" };
-      }
-      return { rate: 0 };
+    if (isNoDiscountCondition(docPaymentCondition)) {
+      return { rate: 0, note: "Sin descuento por condición de pago" };
     }
+
+    if (type === "pago_anticipado") {
+      return { rate: 0, note: "Pago anticipado sin regla" };
+    }
+
+    // cta_cte (igual que antes)
     if (isNaN(docDays))
       return { rate: 0, note: "Fecha/estimación de días inválida" };
     if (docDays <= 15) return { rate: 0.13 };
@@ -300,47 +297,47 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return { rate: 0, note: "Precio facturado (0%)" };
   }
 
-  const addContraEntregaValor = () => {
-    const n = parseFloat((contraEntregaMonto || "").replace(",", "."));
-    if (!Number.isFinite(n) || n <= 0) return;
+  // const addContraEntregaValor = () => {
+  //   const n = parseFloat((contraEntregaMonto || "").replace(",", "."));
+  //   if (!Number.isFinite(n) || n <= 0) return;
 
-    const concept =
-      contraEntregaOpt === "efectivo_general"
-        ? "Pago contra entrega (General 20%)"
-        : contraEntregaOpt === "efectivo_promos"
-        ? "Pago contra entrega (Promos 15%)"
-        : "Pago contra entrega (Cheque ≤ 30 días 13%)";
+  //   const concept =
+  //     contraEntregaOpt === "efectivo_general"
+  //       ? "Pago contra entrega (General 20%)"
+  //       : contraEntregaOpt === "efectivo_promos"
+  //       ? "Pago contra entrega (Promos 15%)"
+  //       : "Pago contra entrega (Cheque ≤ 30 días 13%)";
 
-    const method: PaymentMethod =
-      contraEntregaOpt === "cheque_30" ? "cheque" : "efectivo";
+  //   const method: PaymentMethod =
+  //     contraEntregaOpt === "cheque_30" ? "cheque" : "efectivo";
 
-    const next: ValueItem = {
-      amount: n.toFixed(2),
-      selectedReason: concept,
-      method,
-    };
+  //   const next: ValueItem = {
+  //     amount: n.toFixed(2),
+  //     selectedReason: concept,
+  //     method,
+  //   };
 
-    const idx = newValues.findIndex((v) => v.selectedReason === concept);
-    if (idx >= 0) {
-      const clone = [...newValues];
-      clone[idx] = next;
-      setNewValues(clone);
-    } else {
-      setNewValues([next, ...newValues]);
-    }
-    setContraEntregaMonto("");
-  };
+  //   const idx = newValues.findIndex((v) => v.selectedReason === concept);
+  //   if (idx >= 0) {
+  //     const clone = [...newValues];
+  //     clone[idx] = next;
+  //     setNewValues(clone);
+  //   } else {
+  //     setNewValues([next, ...newValues]);
+  //   }
+  //   setContraEntregaMonto("");
+  // };
 
   const computedDiscounts = newPayment.map((doc) => {
     const days = getDocDays(doc);
-    const { rate, note } = getDiscountRateForDoc(
-      days,
-      paymentTypeUI,
-      contraEntregaOpt
-    );
+    const noDiscountBlocked = isNoDiscountCondition(doc.payment_condition);
+
+    const { rate, note } = getDiscountRateForDoc(days, paymentTypeUI);
+
     const base = parseFloat(doc.saldo_a_pagar || "0") || 0;
     const discountAmount = +(base * rate).toFixed(2);
     const finalAmount = +(base - discountAmount).toFixed(2);
+
     return {
       document_id: doc.document_id,
       number: doc.number,
@@ -350,6 +347,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       discountAmount,
       finalAmount,
       note,
+      noDiscountBlocked, // 👈 para “rule_applied”
     };
   });
 
@@ -395,8 +393,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 👇 reordenamos tabs: Valores, Comprobantes, Comentarios
   const tabsOrder: Array<"values" | "documents" | "comments"> = [
-    "values",
     "documents",
+    "values",
     "comments",
   ];
 
@@ -417,6 +415,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     );
   };
 
+  console.log(newPayment);
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -528,7 +527,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       selectedRows={selectedRows}
                       setNewPayment={setNewPayment}
                       paymentType={paymentTypeUI}
-                      contraEntregaOpt={contraEntregaOpt}
                     />
                   ))}
               </div>
@@ -538,28 +536,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               <div className="text-white space-y-4">
                 {/* Selector de condición */}
                 <div className="flex gap-2">
-                  {/* Pago contra entrega (deshabilitado si hay docs) */}
-                  <button
-                    className={`px-3 py-2 rounded ${
-                      paymentTypeUI === "contra_entrega"
-                        ? "bg-white text-black"
-                        : "bg-zinc-700 text-white"
-                    } ${
-                      hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() => {
-                      if (!hasSelectedDocs) setPaymentTypeUI("contra_entrega");
-                    }}
-                    disabled={hasSelectedDocs}
-                    title={
-                      hasSelectedDocs
-                        ? "Con comprobantes seleccionados solo se permite Cuenta corriente"
-                        : "Pago contra entrega"
-                    }
-                  >
-                    Pago contra entrega
-                  </button>
-
                   <button
                     className={`px-3 py-2 rounded ${
                       paymentTypeUI === "cta_cte"
@@ -570,91 +546,28 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   >
                     Cuenta corriente
                   </button>
-                </div>
 
-                {/* Opciones solo para Pago contra entrega (y solo si está permitido) */}
-                {paymentTypeUI === "contra_entrega" && !hasSelectedDocs && (
-                  <div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <label
-                        className={`px-3 py-2 rounded cursor-pointer text-center ${
-                          contraEntregaOpt === "efectivo_general"
-                            ? "bg-emerald-500 text-black"
-                            : "bg-zinc-700 text-white"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={contraEntregaOpt === "efectivo_general"}
-                          onChange={() =>
-                            setContraEntregaOpt("efectivo_general")
-                          }
-                        />
-                        Efectivo (General 20%)
-                      </label>
-                      <label
-                        className={`px-3 py-2 rounded cursor-pointer text-center ${
-                          contraEntregaOpt === "efectivo_promos"
-                            ? "bg-emerald-500 text-black"
-                            : "bg-zinc-700 text-white"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={contraEntregaOpt === "efectivo_promos"}
-                          onChange={() =>
-                            setContraEntregaOpt("efectivo_promos")
-                          }
-                        />
-                        Efectivo (Promos 15%)
-                      </label>
-                      <label
-                        className={`px-3 py-2 rounded cursor-pointer text-center ${
-                          contraEntregaOpt === "cheque_30"
-                            ? "bg-emerald-500 text-black"
-                            : "bg-zinc-700 text-white"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={contraEntregaOpt === "cheque_30"}
-                          onChange={() => setContraEntregaOpt("cheque_30")}
-                        />
-                        Cheque ≤ 30 días (13%)
-                      </label>
-                    </div>
-                    <div className="mt-3 flex gap-2 w-full">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        min="0"
-                        placeholder="Monto (ARS)"
-                        value={contraEntregaMonto}
-                        onChange={(e) => setContraEntregaMonto(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") addContraEntregaValor();
-                        }}
-                        className="w-full p-2 rounded bg-zinc-800 text-white border border-zinc-700"
-                      />
-                      <button
-                        onClick={addContraEntregaValor}
-                        disabled={
-                          !contraEntregaMonto ||
-                          parseFloat(
-                            (contraEntregaMonto || "").replace(",", ".")
-                          ) <= 0
-                        }
-                        className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  <button
+                    className={`px-3 py-2 rounded ${
+                      paymentTypeUI === "pago_anticipado"
+                        ? "bg-white text-black"
+                        : "bg-zinc-700 text-white"
+                    } ${
+                      hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() => {
+                      if (!hasSelectedDocs) setPaymentTypeUI("pago_anticipado");
+                    }}
+                    disabled={hasSelectedDocs}
+                    title={
+                      hasSelectedDocs
+                        ? "Con comprobantes seleccionados solo se permite Cuenta corriente"
+                        : "Pago anticipado"
+                    }
+                  >
+                    Pago anticipado
+                  </button>
+                </div>
 
                 {/* Tabla de desglose */}
                 {computedDiscounts.length > 0 && (
@@ -820,11 +733,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   className="mt-1 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
                   onClick={() => {
                     // método sugerido según opción elegida
-                    const method: PaymentMethod =
-                      paymentTypeUI === "contra_entrega" &&
-                      contraEntregaOpt === "cheque_30"
-                        ? "cheque"
-                        : "efectivo";
+                    const method: PaymentMethod = "efectivo"; // default; el usuario puede cambiar en ValueView
 
                     const base: ValueItem = {
                       amount: totalAfterDiscount.toFixed(2),

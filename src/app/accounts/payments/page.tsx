@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FaEye, FaSpinner, FaTimes, FaUndo } from "react-icons/fa";
+import { FaEye, FaSpinner, FaTimes } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useClient } from "@/app/context/ClientContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
 // RTK Query (payments)
 import {
   useLazyGetPaymentsQuery,
@@ -37,8 +38,9 @@ const PaymentsChargedPage = () => {
   const [items, setItems] = useState<Payment[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [sortQuery, setSortQuery] = useState<string>(""); // "campo:asc|desc"
+  const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState<string>("");
+
   const [methodFilter, setMethodFilter] = useState<
     "" | "efectivo" | "transferencia" | "cheque"
   >("");
@@ -58,10 +60,10 @@ const PaymentsChargedPage = () => {
   const [fetchPayments, { data, isFetching }] = useLazyGetPaymentsQuery();
   const [setCharged, { isLoading: isToggling }] = useSetChargedMutation();
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); // 👈 NUEVO
-  const [isRindiendo, setIsRindiendo] = useState(false); // 👈 NUEVO
 
-  const [updatePayment] = useUpdatePaymentMutation(); // 👈 NUEVO
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isRindiendo, setIsRindiendo] = useState(false);
+  const [updatePayment] = useUpdatePaymentMutation();
 
   useEffect(() => {
     setSelectedIds(new Set());
@@ -85,12 +87,6 @@ const PaymentsChargedPage = () => {
   const toggleAll = (checked: boolean) => {
     setSelectedIds(checked ? new Set(items.map((p) => p._id)) : new Set());
   };
-
-  const effectiveItems = useMemo(
-    () =>
-      selectedIds.size ? items.filter((p) => selectedIds.has(p._id)) : items,
-    [items, selectedIds]
-  );
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,6 +121,7 @@ const PaymentsChargedPage = () => {
           endDate,
           sort: sortQuery,
           includeLookup: false,
+          isCharged: "true", // ✅ solo cobrados en esta vista
         };
 
         if (role === "VENDEDOR" && !selectedClientId) {
@@ -136,8 +133,10 @@ const PaymentsChargedPage = () => {
           if (cid) baseArgs.customer_id = String(cid);
         }
 
+        console.log("baseArgs", baseArgs)
         const res = await fetchPayments(baseArgs).unwrap();
 
+        console.log("res", res)
         const newItems = res?.payments ?? [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         setHasMore(newItems.length === ITEMS_PER_PAGE);
@@ -149,7 +148,6 @@ const PaymentsChargedPage = () => {
     };
 
     loadItems();
-    // 👇 agregá role y userData a las deps para actualizar si cambian
   }, [
     page,
     sortQuery,
@@ -159,10 +157,8 @@ const PaymentsChargedPage = () => {
     role,
     userData?.seller_id,
     selectedClientId,
-    // isLoading, isFetching NO van acá
   ]);
 
-  // Formateador ARS (podés ajustarlo si tenés multi-moneda)
   const currencyFmt = useMemo(
     () =>
       new Intl.NumberFormat("es-AR", {
@@ -174,7 +170,24 @@ const PaymentsChargedPage = () => {
     []
   );
 
-  // Totales por método, sumando values.amount
+  // ================== VISIBLE (aplica filtro por método) ==================
+  const visibleItems = useMemo(() => {
+    if (!methodFilter) return items;
+    return items.filter((p) =>
+      (p.values ?? []).some((v: any) => v?.method === methodFilter)
+    );
+  }, [items, methodFilter]);
+
+  // ================== EFECTIVOS (si hay selección, intersección con visible) ==================
+  const effectiveItems = useMemo(
+    () =>
+      selectedIds.size
+        ? visibleItems.filter((p) => selectedIds.has(p._id))
+        : visibleItems,
+    [visibleItems, selectedIds]
+  );
+
+  // Totales por método sobre lo “efectivo” (visible ∩ seleccionado)
   const methodTotals = useMemo(() => {
     const acc: Record<string, number> = {};
     for (const p of effectiveItems) {
@@ -200,7 +213,7 @@ const PaymentsChargedPage = () => {
     return (m || "—").toUpperCase();
   };
 
-  // totales por método para una lista de pagos
+  // totales por método para una lista arbitraria (para PDF)
   const buildMethodTotals = (rows: Payment[]) => {
     const acc: Record<string, { total: number; count: number }> = {};
     for (const p of rows) {
@@ -209,7 +222,7 @@ const PaymentsChargedPage = () => {
         const amount = Number(v?.amount ?? 0);
         if (!acc[m]) acc[m] = { total: 0, count: 0 };
         acc[m].total += amount;
-        acc[m].count += 1; // cantidad de valores (líneas) de ese método
+        acc[m].count += 1;
       }
     }
     return acc;
@@ -224,7 +237,7 @@ const PaymentsChargedPage = () => {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("Pagos rendidos", 40, 40);
+    doc.text("Rendición de pagos", 40, 40);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     const now = new Date();
@@ -234,7 +247,6 @@ const PaymentsChargedPage = () => {
       58
     );
 
-    // Tabla de detalle de pagos rendidos
     autoTable(doc, {
       startY: 72,
       head: [["Fecha", "Cliente", "Docs", "Métodos", "Neto", "Valores", "Dif"]],
@@ -270,7 +282,7 @@ const PaymentsChargedPage = () => {
       },
     });
 
-    // ===== NUEVO: Totales por método (solo de estos 'rows') =====
+    // Totales por método (solo de “rows”)
     const yStart = (doc as any).lastAutoTable?.finalY
       ? (doc as any).lastAutoTable.finalY + 24
       : 120;
@@ -306,7 +318,7 @@ const PaymentsChargedPage = () => {
       ],
       theme: "grid",
       styles: { fontSize: 9, cellPadding: 5 },
-      headStyles: { fillColor: [34, 197, 94] }, // verde
+      headStyles: { fillColor: [34, 197, 94] },
       margin: { left: 40, right: 40 },
     });
 
@@ -314,12 +326,7 @@ const PaymentsChargedPage = () => {
   };
 
   const handleRendir = async () => {
-    // candidatos: seleccionados o todos
-    const candidates = selectedIds.size
-      ? items.filter((p) => selectedIds.has(p._id))
-      : items;
-
-    // solo los que NO están rendidos todavía
+    const candidates = selectedIds.size ? items.filter((p) => selectedIds.has(p._id)) : items;
     const toRendir = candidates.filter((p) => !(p as any).rendido);
 
     if (!toRendir.length) {
@@ -329,14 +336,12 @@ const PaymentsChargedPage = () => {
 
     setIsRindiendo(true);
     try {
-      // actualizamos en backend
       const results = await Promise.allSettled(
         toRendir.map((p) =>
           updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
         )
       );
 
-      // ids que realmente quedaron rendidos OK
       const okIds = results
         .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
         .filter((x): x is string => !!x);
@@ -346,18 +351,15 @@ const PaymentsChargedPage = () => {
         return;
       }
 
-      // actualizamos lista local (optimistic)
       setItems((prev) =>
         prev.map((p) =>
           okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
         )
       );
 
-      // pagos efectivamente rendidos → PDF
       const okRows = toRendir.filter((p) => okIds.includes(p._id));
       downloadPDFFor(okRows);
 
-      // limpiar selección
       setSelectedIds(new Set());
     } catch (e) {
       console.error(e);
@@ -415,7 +417,7 @@ const PaymentsChargedPage = () => {
       setTogglingId(id);
       await setCharged({ id, value: false }).unwrap();
 
-      // Sacar de la lista de "cobrados"
+      // Sacar de la lista “cobrados”
       setItems((prev) => prev.filter((p) => p._id !== id));
 
       if (selected?._id === id) closeDetails();
@@ -426,17 +428,10 @@ const PaymentsChargedPage = () => {
     }
   };
 
-  /* ===================== Tabla con columnas solicitadas ===================== */
-
-  const filteredItems = useMemo(() => {
-    if (!methodFilter) return items;
-    return items.filter((p) =>
-      (p.values ?? []).some((v: any) => v?.method === methodFilter)
-    );
-  }, [items, methodFilter]);
+  // ===================== Tabla =====================
 
   const tableData =
-    filteredItems?.map((p) => {
+    visibleItems?.map((p) => {
       const isThisRowToggling = togglingId === p._id;
 
       return {
@@ -449,10 +444,8 @@ const PaymentsChargedPage = () => {
             onChange={(e) => toggleOne(p._id, e.target.checked)}
           />
         ),
-        // 1) 👁️ (ver detalle)
         info: (
           <div className="grid place-items-center">
-            {/* centra horizontal y vertical dentro de la celda */}
             <button
               type="button"
               className="inline-flex items-center justify-center w-6 h-6 rounded "
@@ -460,23 +453,18 @@ const PaymentsChargedPage = () => {
               onClick={() => openDetails(p)}
               aria-label={t("view") as string}
             >
-              <FaEye className="text-base leading-none" />
+              {isThisRowToggling ? (
+                <FaSpinner className="animate-spin text-base leading-none" />
+              ) : (
+                <FaEye className="text-base leading-none" />
+              )}
             </button>
           </div>
         ),
-
-        // 2) CLIENTE (customer.id)
         customer: <CustomerIdAndName id={p.customer?.id} />,
-
-        // 3) VENDEDOR (customer.seller_id) --> lo resolvemos con el componente que usa el hook
         seller: <CustomerSellerCell customerId={p.customer?.id} />,
-
-        // 4) FECHA
         date: p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—",
-
-        // 5) DOCUMENT (map de documents.number)
         documents: (p.documents ?? []).map((d) => d.number).join(", ") || "—",
-
         imputed: (
           <span>
             <ImputedPill imputed={p.isImputed} />
@@ -487,10 +475,7 @@ const PaymentsChargedPage = () => {
             <ImputedPill imputed={p.rendido} />
           </span>
         ),
-        // 6) TOTAL (total)
         total: p.total ?? 0,
-
-        // 7) NOTAS (comments)
         notes: p.comments ?? "",
       };
     }) ?? [];
@@ -516,31 +501,18 @@ const PaymentsChargedPage = () => {
       key: "select",
       important: true,
     },
-    // 1) 👁️
     { component: <FaEye className="text-center text-xl" />, key: "info" },
-
-    // 2) CLIENTE
     { name: t("customer"), key: "customer", important: true },
-
-    // 3) VENDEDOR
     { name: t("seller") || "Vendedor", key: "seller" },
-
-    // 4) FECHA
     { name: t("date"), key: "date" },
-
-    // 5) DOCUMENT
     { name: t("documents"), key: "documents" },
     { name: t("imputed"), key: "imputed" },
     { name: t("rendido"), key: "rendido" },
-
-    // 6) TOTAL
     { name: t("total"), key: "total", important: true },
-
-    // 7) NOTAS
     { name: t("notes"), key: "notes" },
   ];
 
-  /* ===================== Header (filtros/contador) ===================== */
+  // ===================== Header (filtros/acciones) =====================
 
   const headerBody = {
     buttons: [],
@@ -633,11 +605,13 @@ const PaymentsChargedPage = () => {
           {t("chargedPayments") || "Pagos cobrados"}
         </h3>
         <Header headerBody={headerBody} />
+
         <MethodTotalsBar
           totals={methodTotals}
           grandTotal={grandTotal}
           format={(n) => currencyFmt.format(n)}
         />
+
         <Table
           headers={tableHeader}
           data={tableData}
@@ -647,7 +621,6 @@ const PaymentsChargedPage = () => {
         />
       </div>
 
-      {/* Modal de Detalles (sin cambios funcionales) */}
       {isDetailOpen && selected && (
         <DetailsModal
           payment={selected}
@@ -665,7 +638,7 @@ const PaymentsChargedPage = () => {
 
 export default PaymentsChargedPage;
 
-/* ===================== Celda de Vendedor (usa el hook correctamente) ===================== */
+/* ===================== Celda de Vendedor ===================== */
 
 function CustomerSellerCell({ customerId }: { customerId?: string }) {
   const { data, isFetching, isError } = useGetCustomerByIdQuery(
@@ -711,13 +684,13 @@ function DetailsModal({
       <div
         onClick={(e) => e.stopPropagation()}
         className="
-          w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-3xl
+          w-full h-full sm:h-auto sm:max-h[90vh] sm:max-w-3xl
           bg-white rounded-none sm:rounded-xl shadow-xl
           overflow-hidden flex flex-col
         "
       >
-        {/* Header (sticky) */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-white">
           <div className="flex flex-col min-w-0">
             <h4 className="text-base sm:text-lg font-semibold truncate">
               {t("paymentDetail") || "Detalle de pago"}
@@ -732,14 +705,14 @@ function DetailsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="p-2 rounded hover:bg-zinc-100"
             title={t("close") || "Cerrar"}
           >
             <FaTimes />
           </button>
         </div>
 
-        {/* Body (scrollable) */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
           {/* Meta */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
@@ -747,42 +720,24 @@ function DetailsModal({
               label={t("customer") || "Cliente"}
               value={<CustomerIdAndName id={payment.customer?.id} />}
             />
-            <Info
-              label={t("status")}
-              value={<StatusPill status={payment.status} />}
-            />
-            <Info
-              label={t("type") || "Tipo"}
-              value={<TypePill type={payment.type} />}
-            />
+            <Info label={t("status")} value={<StatusPill status={payment.status} />} />
+            <Info label={t("type") || "Tipo"} value={<TypePill type={payment.type} />} />
             <Info
               label={t("charged") || "Cobrado"}
-              value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
+              value={payment.isCharged ? (t("yes") || "Sí") : (t("no") || "No")}
             />
           </div>
 
           {/* Totales */}
-          <div className="rounded border border-zinc-200 dark:border-zinc-800">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+          <div className="rounded border border-zinc-200">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
               {t("totals") || "Totales"}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 text-sm">
-              <Info
-                label="Bruto"
-                value={currencyFmt.format(payment.totals?.gross ?? 0)}
-              />
-              <Info
-                label="Desc."
-                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
-              />
-              <Info
-                label="Neto"
-                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
-              />
-              <Info
-                label="Valores"
-                value={currencyFmt.format(payment.totals?.values ?? 0)}
-              />
+              <Info label="Bruto" value={currencyFmt.format(payment.totals?.gross ?? 0)} />
+              <Info label="Desc." value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`} />
+              <Info label="Neto" value={currencyFmt.format(payment.totals?.net ?? payment.total)} />
+              <Info label="Valores" value={currencyFmt.format(payment.totals?.values ?? 0)} />
               <Info
                 label="Dif."
                 valueClassName={
@@ -798,12 +753,12 @@ function DetailsModal({
           </div>
 
           {/* Documentos */}
-          <div className="rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+          <div className="rounded border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
               {t("documents") || "Documentos"}
             </div>
 
-            {/* Header solo desktop */}
+            {/* Header desktop */}
             <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500">
               <span>{t("number")}</span>
               <span>{t("days") || "Días"}</span>
@@ -813,13 +768,12 @@ function DetailsModal({
               <span>{t("final") || "Final"}</span>
             </div>
 
-            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <div className="divide-y divide-zinc-200">
               {(payment.documents || []).map((d) => (
                 <div
                   key={d.document_id}
                   className="grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm"
                 >
-                  {/* Número */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("number")}:
@@ -829,21 +783,15 @@ function DetailsModal({
                     </span>
                   </div>
 
-                  {/* Días */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("days") || "Días"}:
                     </span>
-                    <span
-                      className={`sm:text-right tabular-nums ${
-                        d.note ? "text-amber-600" : ""
-                      }`}
-                    >
+                    <span className={`sm:text-right tabular-nums ${d.note ? "text-amber-600" : ""}`}>
                       {d.days_used ?? "—"}
                     </span>
                   </div>
 
-                  {/* Base */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("base") || "Base"}:
@@ -853,7 +801,6 @@ function DetailsModal({
                     </span>
                   </div>
 
-                  {/* % */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">%</span>
                     <span className="sm:text-right tabular-nums">
@@ -861,7 +808,6 @@ function DetailsModal({
                     </span>
                   </div>
 
-                  {/* Descuento */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("discount") || "Desc."}:
@@ -871,16 +817,11 @@ function DetailsModal({
                     </span>
                   </div>
 
-                  {/* Final */}
                   <div className="flex sm:block justify-between min-w-0">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("final") || "Final"}:
                     </span>
-                    <span
-                      className={`sm:text-right tabular-nums ${
-                        d.note ? "text-amber-600" : ""
-                      }`}
-                    >
+                    <span className={`sm:text-right tabular-nums ${d.note ? "text-amber-600" : ""}`}>
                       {currencyFmt.format(d.final_amount)}
                     </span>
                   </div>
@@ -890,12 +831,11 @@ function DetailsModal({
           </div>
 
           {/* Valores */}
-          <div className="rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+          <div className="rounded border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
               {t("values") || "Valores"}
             </div>
 
-            {/* Header solo desktop */}
             <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500">
               <span className="col-span-2">{t("method") || "Medio"}</span>
               <span className="col-span-4">{t("concept") || "Concepto"}</span>
@@ -903,22 +843,19 @@ function DetailsModal({
                 {t("amount") || "Importe"}
               </span>
               <span className="col-span-2">{t("bank") || "Banco"}</span>
-              <span className="col-span-2">
-                {t("receipt") || "Comprobante"}
-              </span>
+              <span className="col-span-2">{t("receipt") || "Comprobante"}</span>
             </div>
 
-            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <div className="divide-y divide-zinc-200">
               {(payment.values || []).map((v, i) => (
                 <div
                   key={i}
                   className="
-          grid grid-cols-1 sm:grid-cols-12 items-center
-          gap-x-3 gap-y-1 px-3 py-2 text-sm
-          sm:[&>div]:min-w-0
-        "
+                    grid grid-cols-1 sm:grid-cols-12 items-center
+                    gap-x-3 gap-y-1 px-3 py-2 text-sm
+                    sm:[&>div]:min-w-0
+                  "
                 >
-                  {/* Medio */}
                   <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("method") || "Medio"}:
@@ -926,7 +863,6 @@ function DetailsModal({
                     <span className="uppercase truncate">{v.method}</span>
                   </div>
 
-                  {/* Concepto (tooltip) */}
                   <div className="flex sm:block justify-between sm:col-span-4">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("concept") || "Concepto"}:
@@ -936,7 +872,6 @@ function DetailsModal({
                     </Tooltip>
                   </div>
 
-                  {/* Importe */}
                   <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("amount") || "Importe"}:
@@ -946,7 +881,6 @@ function DetailsModal({
                     </span>
                   </div>
 
-                  {/* Banco (tooltip) */}
                   <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("bank") || "Banco"}:
@@ -956,7 +890,6 @@ function DetailsModal({
                     </Tooltip>
                   </div>
 
-                  {/* Comprobante (tooltip con nombre/url) */}
                   <div className="flex sm:block justify-between sm:col-span-2">
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("receipt") || "Comprobante"}:
@@ -986,28 +919,36 @@ function DetailsModal({
             </div>
           </div>
 
-          {/* Comentarios */}
           {payment.comments ? (
-            <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
+            <div className="rounded border border-zinc-200 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
-              <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+              <div className="text-zinc-700 whitespace-pre-wrap break-words">
                 {payment.comments}
               </div>
             </div>
           ) : null}
         </div>
 
-        {/* Footer (sticky) */}
-        <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-white">
+        {/* Footer */}
+        <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-t border-zinc-200 bg-white">
           <div className="text-[10px] sm:text-xs text-zinc-500">
             ID: {payment._id}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
-              className="w-full sm:w-auto px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="w-full sm:w-auto px-3 py-2 rounded border border-zinc-300 hover:bg-zinc-100"
               onClick={onClose}
             >
               {t("close") || "Cerrar"}
+            </button>
+            <button
+              className="w-full sm:w-auto px-3 py-2 rounded border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+              onClick={onUnmark}
+              disabled={isToggling}
+              title={t("areYouSureUnmarkCharged") || "Desmarcar como cobrado"}
+            >
+              {isToggling ? <FaSpinner className="animate-spin inline" /> : null}{" "}
+              {t("unmarkCharged") || "Desmarcar cobrado"}
             </button>
           </div>
         </div>
@@ -1044,7 +985,6 @@ function CustomerIdAndName({ id }: { id?: string }) {
   if (!id) return <>—</>;
   if (isFetching) return <span className="text-zinc-400">…</span>;
   if (isError) return <>{id} — —</>;
-
   return (
     <span className="inline-flex items-center gap-2">
       <span className="font-mono text-xs">{id}</span>
@@ -1068,7 +1008,6 @@ function StatusPill({ status }: { status?: string }) {
       ? "Reversed"
       : s || "-";
 
-  // Clave i18n: paymentStatus.pending / .confirmed / .reversed
   const label = t(`paymentStatus.${s}`, fallback);
 
   const cls =
@@ -1089,21 +1028,21 @@ function StatusPill({ status }: { status?: string }) {
 
 function TypePill({ type }: { type?: string }) {
   const { t } = useTranslation();
-  const k = (type ?? "").toLowerCase();
+  const raw = (type ?? "").toLowerCase();
+  // ✅ Soporta legacy "contra_entrega" pero muestra “Pago anticipado”
+  const k = raw === "contra_entrega" ? "pago_anticipado" : raw;
 
-  // Fallback legible si faltan traducciones
   const fallback =
-    k === "contra_entrega"
-      ? "Cash on delivery"
+    k === "pago_anticipado"
+      ? "Pago anticipado"
       : k === "cta_cte"
-      ? "On account"
+      ? "Cuenta corriente"
       : k || "-";
 
-  // paymentType.contra_entrega / paymentType.cta_cte
   const label = t(`paymentType.${k}`, fallback);
 
   const cls =
-    k === "contra_entrega"
+    k === "pago_anticipado"
       ? "bg-blue-100 text-blue-800"
       : k === "cta_cte"
       ? "bg-violet-100 text-violet-800"
@@ -1133,7 +1072,7 @@ type MethodTotalsBarProps = {
   totals: Record<string, number>;
   grandTotal: number;
   format: (n: number) => string;
-  onSelectMethod?: (method: string) => void; // opcional
+  onSelectMethod?: (method: string) => void;
 };
 
 function MethodTotalsBar({
@@ -1144,13 +1083,12 @@ function MethodTotalsBar({
 }: MethodTotalsBarProps) {
   const entries = useMemo(() => {
     const list = Object.entries(totals || {}).filter(([, v]) => v > 0);
-    list.sort((a, b) => b[1] - a[1]); // desc por monto
+    list.sort((a, b) => b[1] - a[1]);
     return list;
   }, [totals]);
 
   if (!entries.length || grandTotal <= 0) return null;
 
-  // Etiquetas lindas
   const pretty = (m: string) => {
     const k = m.toLowerCase();
     if (k === "efectivo") return "Efectivo";
@@ -1159,7 +1097,6 @@ function MethodTotalsBar({
     return m.toUpperCase();
   };
 
-  // Paleta estable por método
   const palette = (m: string) => {
     const k = m.toLowerCase();
     if (k === "efectivo")
@@ -1176,7 +1113,6 @@ function MethodTotalsBar({
         soft: "bg-amber-100",
         text: "text-amber-800",
       };
-    // fallback rotativo
     const fallbacks = [
       {
         solid: "bg-violet-500",
@@ -1194,7 +1130,6 @@ function MethodTotalsBar({
     return fallbacks[idx];
   };
 
-  // Emoji/icono simple por método (sin libs)
   const icon = (m: string) => {
     const k = m.toLowerCase();
     if (k === "efectivo") return "💵";
@@ -1209,12 +1144,8 @@ function MethodTotalsBar({
       role="group"
       aria-labelledby="method-totals-title"
     >
-      {/* Header */}
       <header className="flex items-center gap-3 px-4 pt-3">
-        <h3
-          id="method-totals-title"
-          className="text-sm font-semibold text-zinc-800 "
-        >
+        <h3 id="method-totals-title" className="text-sm font-semibold text-zinc-800">
           Resumen por medio de pago
         </h3>
         <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
@@ -1222,7 +1153,6 @@ function MethodTotalsBar({
         </span>
       </header>
 
-      {/* Stacked bar */}
       <div className="px-4 pt-3">
         <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
           <div className="flex h-full">
@@ -1242,14 +1172,13 @@ function MethodTotalsBar({
         </div>
       </div>
 
-      {/* Lista por método */}
       <ul className="px-2 sm:px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
         {entries.map(([m, val]) => {
           const pct = (val / grandTotal) * 100;
           const { solid, soft, text } = palette(m);
           const clickable = typeof onSelectMethod === "function";
           const baseRow =
-            "group rounded-lg border border-zinc-200  bg-white p-3 transition hover:shadow-sm";
+            "group rounded-lg border border-zinc-200 bg-white p-3 transition hover:shadow-sm";
           return (
             <li key={m}>
               <div
@@ -1280,22 +1209,16 @@ function MethodTotalsBar({
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <span className="truncate text-sm font-medium text-zinc-800 ">
+                      <span className="truncate text-sm font-medium text-zinc-800">
                         {pretty(m)}
                       </span>
-                      <span className="text-[11px] text-zinc-500">
-                        · {pct.toFixed(1)}%
-                      </span>
+                      <span className="text-[11px] text-zinc-500">· {pct.toFixed(1)}%</span>
                     </div>
-                    {/* mini progress */}
-                    <div className="mt-1 h-1.5 w-full rounded-full bg-zinc-100  overflow-hidden">
-                      <div
-                        className={`${solid} h-full transition-all duration-500`}
-                        style={{ width: `${pct}%` }}
-                      />
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+                      <div className={`${solid} h-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-                  <span className="ml-auto tabular-nums text-sm font-semibold text-zinc-800 ">
+                  <span className="ml-auto tabular-nums text-sm font-semibold text-zinc-800">
                     {format(val)}
                   </span>
                 </div>
@@ -1308,7 +1231,7 @@ function MethodTotalsBar({
   );
 }
 
-/* util simple para paleta estable */
+/* util para paleta estable */
 function hashCode(str: string) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
@@ -1328,20 +1251,13 @@ function Tooltip({
 
   return (
     <span className="relative inline-flex group">
-      {/* target */}
       <span
         className="inline-flex min-w-0"
         tabIndex={0}
-        title={
-          typeof content === "string"
-            ? content
-            : undefined /* fallback nativo */
-        }
+        title={typeof content === "string" ? content : undefined}
       >
         {children}
       </span>
-
-      {/* bubble */}
       <span
         role="tooltip"
         className={`

@@ -83,16 +83,13 @@ const PaymentsPendingPage = () => {
     }
   }, [selectedClientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [updatePayment, { isLoading: isImputedSaving }] =
-    useUpdatePaymentMutation(); // 👈 NUEVO
-  const [imputedIdSaving, setImputedIdSaving] = useState<string | null>(null);
+  const [updatePayment] = useUpdatePaymentMutation();
 
   // Carga con paginación y orden
   useEffect(() => {
     const loadItems = async () => {
       if (isLoading) return;
       setIsLoading(true);
-
       try {
         const startDate = searchParams.startDate
           ? format(searchParams.startDate, "yyyy-MM-dd")
@@ -115,9 +112,7 @@ const PaymentsPendingPage = () => {
           const cid = selectedClientId || customer_id;
           if (cid) baseArgs.customer_id = String(cid);
         }
-        
-        if (sellerFilter) baseArgs.seller_id = sellerFilter;
-
+        if (sellerFilter) baseArgs.seller_id = sellerFilter; // 👈 ya lo tenías
         const result = await fetchPayments(baseArgs).unwrap();
 
         const newItems = result?.payments ?? [];
@@ -131,13 +126,14 @@ const PaymentsPendingPage = () => {
     };
 
     loadItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // ⬇️ agregá sellerFilter
   }, [
     page,
     sortQuery,
     customer_id,
     searchParams.startDate,
     searchParams.endDate,
+    sellerFilter, // ✅ NUEVO
   ]);
 
   // IntersectionObserver
@@ -926,7 +922,7 @@ function DetailsModal({
                 </span>
               ) : (
                 <span className="inline-flex items-center justify-center gap-2">
-                  <FaCheck /> {t("markAsCharged") || "Marcar imputado"}
+                  <FaCheck /> {t("markAsCharged") || "Marcar cobrado"}
                 </span>
               )}
             </button>
@@ -1010,21 +1006,20 @@ function StatusPill({ status }: { status?: string }) {
 
 function TypePill({ type }: { type?: string }) {
   const { t } = useTranslation();
-  const k = (type ?? "").toLowerCase();
+  const raw = (type ?? "").toLowerCase();
+  const k = raw === "contra_entrega" ? "pago_anticipado" : raw;
 
-  // Fallback legible si faltan traducciones
   const fallback =
-    k === "contra_entrega"
-      ? "Cash on delivery"
+    k === "pago_anticipado"
+      ? "Pago anticipado"
       : k === "cta_cte"
-      ? "On account"
+      ? "Cuenta corriente"
       : k || "-";
 
-  // paymentType.contra_entrega / paymentType.cta_cte
   const label = t(`paymentType.${k}`, fallback);
 
   const cls =
-    k === "contra_entrega"
+    k === "pago_anticipado"
       ? "bg-blue-100 text-blue-800"
       : k === "cta_cte"
       ? "bg-violet-100 text-violet-800"

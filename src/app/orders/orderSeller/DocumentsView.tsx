@@ -13,9 +13,8 @@ export interface ExpandableTableProps {
   selectedRows?: string[];
   setNewPayment?: any;
 
-  // 👇 nuevas props para la lógica de descuento
-  paymentType: "contra_entrega" | "cta_cte";
-  contraEntregaOpt: "efectivo_general" | "efectivo_promos" | "cheque_30";
+  // ✅ Nuevo: sólo estos modos
+  paymentType: "pago_anticipado" | "cta_cte";
 }
 
 export function DocumentsView({
@@ -25,7 +24,6 @@ export function DocumentsView({
   customerInformation,
   setNewPayment,
   paymentType,
-  contraEntregaOpt,
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -45,7 +43,6 @@ export function DocumentsView({
 
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-  // Acepta ISO (2025-09-05, 2025-09-05T12:00:00Z) y dd/MM/yyyy
   function parseFlexibleDate(s?: string): Date | null {
     if (!s) return null;
     if (s.includes("/")) {
@@ -91,31 +88,39 @@ export function DocumentsView({
     return `${formattedNumber}`;
   }
 
-  /* ===================== Regla de descuento ===================== */
+  /* ===================== Reglas de descuento (nuevo modelo) ===================== */
 
-  function getDiscountRule(docDays: number): { rate: number; note?: string; rule_applied: string } {
-    if (paymentType === "contra_entrega") {
-      if (contraEntregaOpt === "efectivo_general") {
-        return { rate: 0.20, rule_applied: "contra_entrega:efectivo_general:20%" };
-      }
-      if (contraEntregaOpt === "efectivo_promos") {
-        return { rate: 0.15, rule_applied: "contra_entrega:efectivo_promos:15%" };
-      }
-      if (contraEntregaOpt === "cheque_30") {
-        if (!isNaN(docDays) && docDays <= 30) {
-          return { rate: 0.13, rule_applied: "contra_entrega:cheque_<=30d:13%" };
-        }
-        return { rate: 0, note: "Cheque > 30 días: sin descuento", rule_applied: "contra_entrega:cheque_>30d:0%" };
-      }
-      return { rate: 0, rule_applied: "contra_entrega:sin_regla" };
+  const isNoDiscountCondition = (txt?: string) => {
+    const v = (txt || "").toLowerCase().trim();
+    return (
+      v === "segun pliego" ||
+      v === "según pliego" ||
+      v === "no especificado" ||
+      v === "not specified"
+    );
+  };
+
+  function getDiscountRule(
+    docDays: number,
+    paymentType: "pago_anticipado" | "cta_cte",
+    docPaymentCondition?: string
+  ): { rate: number; note?: string } {
+    // 1) Condición de pago del documento bloquea descuentos
+    if (isNoDiscountCondition(docPaymentCondition)) {
+      return { rate: 0, note: "Sin descuento por condición de pago" };
     }
 
-    // cta_cte
-    if (isNaN(docDays)) return { rate: 0, note: "Fecha/estimación inválida", rule_applied: "cta_cte:invalido" };
-    if (docDays <= 15) return { rate: 0.13, rule_applied: "cta_cte:<=15d:13%" };
-    if (docDays <= 30) return { rate: 0.10, rule_applied: "cta_cte:<=30d:10%" };
-    if (docDays > 45)  return { rate: 0, note: "Actualización de precios", rule_applied: "cta_cte:>45d:actualizacion" };
-    return { rate: 0, rule_applied: "cta_cte:0%" };
+    // 2) Pago anticipado: sin reglas de % (0%)
+    if (paymentType === "pago_anticipado") {
+      return { rate: 0, note: "Pago anticipado sin regla" };
+    }
+
+    // 3) Cuenta corriente: por días
+    if (isNaN(docDays)) return { rate: 0, note: "Fecha/estimación inválida" };
+    if (docDays <= 15) return { rate: 0.13 };
+    if (docDays <= 30) return { rate: 0.10 };
+    if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
+    return { rate: 0, note: "Precio facturado (0%)" };
   }
 
   /* ===================== Derivados del documento ===================== */
@@ -125,19 +130,22 @@ export function DocumentsView({
   const docNumber = data?.number ?? "";
   const amount = Number(data?.amount ?? 0);
 
-  const days_until_expiration = daysBetween(invoiceDateStr, expirationDateStr); // días entre emisión y vto
-  const days_since_invoice = daysFromTo(invoiceDateStr); // días desde emisión hasta hoy (equiv. a days_until_expiration_today)
+  const days_until_expiration = daysBetween(invoiceDateStr, expirationDateStr);
+  const days_since_invoice = daysFromTo(invoiceDateStr);
   const balanceRaw = Number(customerInformation?.document_balance ?? amount ?? 0);
   const balance = isNaN(balanceRaw) ? 0 : balanceRaw;
 
-  const { rate, note } = getDiscountRule(days_since_invoice);
+  const paymentConditionName = paymentsConditionsData?.name || t("document.noEspecificado");
+  const { rate, note } = getDiscountRule(
+    days_since_invoice,
+    paymentType,
+    paymentConditionName
+  );
+
   const discountAmount = round2(balance * rate);
   const finalAmount = round2(balance - discountAmount);
 
   /* ===================== Integración con selección ===================== */
-
-  const today = new Date();
-  const todayLabel = today.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const documentDetails = {
     document_id: data?.id || "",
@@ -146,8 +154,8 @@ export function DocumentsView({
     expiration_date: formatDateDDMMYYYY(expirationDateStr || ""),
     amount: String(amount ?? ""),
     document_balance: String(balance),
-    payment_condition: paymentsConditionsData?.name || t("document.noEspecificado"),
-    saldo_a_pagar: String(balance), // base actual
+    payment_condition: paymentConditionName,
+    saldo_a_pagar: String(balance),
     days_until_expiration: Number.isFinite(days_until_expiration) ? days_until_expiration : NaN,
     days_until_expiration_today: Number.isFinite(days_since_invoice) ? days_since_invoice : NaN,
   };
@@ -167,7 +175,7 @@ export function DocumentsView({
     <div className="w-full space-y-2">
       {data && (
         <div key={data.id} className="bg-gray-900 rounded-lg overflow-hidden">
-          {/* Main Row */}
+          {/* Fila principal */}
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <input
@@ -198,7 +206,7 @@ export function DocumentsView({
             </span>
           </div>
 
-          {/* Expanded Content */}
+          {/* Detalle expandido */}
           {expandedRows.includes(data.id) && (
             <div className="px-4 py-3 bg-gray-800 border-t border-gray-700">
               <div className="flex flex-col gap-4 text-sm">
@@ -210,7 +218,7 @@ export function DocumentsView({
                   <div className="flex justify-between">
                     <span className="text-gray-400">{t("document.condicionPago")}</span>
                     <span className="text-gray-200">
-                      {paymentsConditionsData?.name || t("document.noEspecificado")}
+                      {paymentConditionName}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -221,7 +229,7 @@ export function DocumentsView({
                   </div>
                 </div>
 
-                {/* Saldo actual (base del cálculo) */}
+                {/* Saldo actual */}
                 <div className="flex justify-between">
                   <span className="text-gray-400">{t("document.saldo") || "Saldo"}</span>
                   <span className="text-gray-200">

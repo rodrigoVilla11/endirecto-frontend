@@ -3,31 +3,28 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 /* ========= Tipos ========= */
 
-export type PaymentType = "contra_entrega" | "cta_cte";
-export type ContraEntregaChoice =
-  | "efectivo_general"
-  | "efectivo_promos"
-  | "cheque_30";
+export type PaymentType = "pago_anticipado" | "cta_cte";
 export type PaymentMethodEnum = "efectivo" | "transferencia" | "cheque";
 export type PaymentStatus = "confirmed" | "reversed" | "pending";
 
 export interface PaymentTotals {
-  gross: number; // suma base (bruto)
+  gross: number;    // suma base (bruto)
   discount: number; // suma descuentos
-  net: number; // suma final (neto)
-  values: number; // suma valores
-  diff: number; // net - values
+  net: number;      // suma final (neto)
+  values: number;   // suma valores
+  diff: number;     // net - values
 }
 
 export interface PaymentDocumentLine {
   document_id: string;
   number: string;
   days_used?: number | null;
-  rule_applied: string; // ej: "cta_cte<=15", "cheque<=30", "precio_facturado"
+  // ej. "pago_anticipado:sin_regla", "cta_cte:<=15d:13%", "cta_cte:>45d:actualizacion"
+  rule_applied: string;
   base: number;
-  discount_rate: number; // 0.13, 0.10, etc.
-  discount_amount: number;
-  final_amount: number;
+  discount_rate: number;   // 0.13, 0.10, etc.
+  discount_amount: number; // base * discount_rate
+  final_amount: number;    // base - discount_amount
   note?: string;
 }
 
@@ -48,9 +45,8 @@ export interface Payment {
   multisoft_id?: string;
   customer: { id: string };
   currency: string; // "ARS"
-  date: string; // ISO string
-  type: PaymentType;
-  contra_entrega_choice?: ContraEntregaChoice;
+  date: string;     // ISO string
+  type: PaymentType; // 👈 ahora "pago_anticipado" | "cta_cte"
   totals: PaymentTotals;
   total: number; // compat: igual a totals.net
   documents: PaymentDocumentLine[];
@@ -62,7 +58,7 @@ export interface Payment {
   source?: string; // "web" | "mobile" | "pos"
   version?: number;
   isCharged: boolean; // default false
-  rendido: boolean; // default false
+  rendido: boolean;   // default false
   created_at: string;
   updated_at: string;
 
@@ -83,20 +79,20 @@ export interface Payment {
 
 /* ======= Payloads de requests ======= */
 
+// ✅ sin contra_entrega_choice
 export type CreatePayment = Omit<
   Payment,
   "_id" | "created_at" | "updated_at" | "document_details" | "isCharged"
 > & { isCharged?: boolean };
 
 export type UpdatePayment = Partial<CreatePayment>;
-
-export type UpsertPayments = CreatePayment[]; // por _id si viene, sino crea
+export type UpsertPayments = CreatePayment[];
 
 export interface FindPaymentsArgs {
   page?: number;
   limit?: number;
   startDate?: string; // 'YYYY-MM-DD'
-  endDate?: string; // 'YYYY-MM-DD'
+  endDate?: string;   // 'YYYY-MM-DD'
   status?: string;
   customer_id?: string;
   seller_id?: string;
@@ -104,7 +100,8 @@ export interface FindPaymentsArgs {
   search?: string;
   includeLookup?: boolean;
   isCharged?: "true" | "false";
-  isImputed?: "true" | "false"; // si querés filtrar por cobrados
+  isImputed?: "true" | "false";
+  type?: PaymentType; // 👈 nuevo filtro
 }
 
 export interface PaymentsListResponse {
@@ -136,7 +133,8 @@ export const paymentsApi = createApi({
           search,
           includeLookup,
           isCharged,
-          isImputed
+          isImputed,
+          type, // 👈
         } = args || {};
         const params = new URLSearchParams({
           page: String(page),
@@ -150,12 +148,12 @@ export const paymentsApi = createApi({
         if (seller_id) params.append("seller_id", seller_id);
         if (sort) params.append("sort", sort);
         if (search) params.append("search", search);
-        if (includeLookup)
-          params.append("includeLookup", String(includeLookup));
+        if (includeLookup) params.append("includeLookup", String(includeLookup));
         if (isCharged) params.append("isCharged", isCharged);
         if (isImputed) params.append("isImputed", isImputed);
+        if (type) params.append("type", type); // 👈
 
-        console.log(`/payments?${params.toString()}`)
+        console.log(`/payments?${params.toString()}`);
         return `/payments?${params.toString()}`;
       },
       transformResponse: (response: PaymentsListResponse | undefined) => {
@@ -182,7 +180,7 @@ export const paymentsApi = createApi({
       providesTags: (_res, _err, id) => [{ type: "Payment", id }],
     }),
 
-    /* ---- Crear (uno o varios) ---- */
+    /* ---- Crear (uno) ---- */
     createPayment: builder.mutation<Payment, CreatePayment>({
       query: (body) => ({
         url: `/payments?token=${process.env.NEXT_PUBLIC_TOKEN || ""}`,
@@ -191,6 +189,8 @@ export const paymentsApi = createApi({
       }),
       invalidatesTags: [{ type: "Payments", id: "LIST" }],
     }),
+
+    /* ---- Crear (varios) ---- */
     createPayments: builder.mutation<Payment[], CreatePayment[]>({
       query: (body) => ({
         url: `/payments?token=${process.env.NEXT_PUBLIC_TOKEN || ""}`,
@@ -237,7 +237,6 @@ export const paymentsApi = createApi({
     }),
 
     /* ---- Marcar como cobrado ---- */
-    // src/redux/services/payments.ts
     markAsCharged: builder.mutation<
       Payment,
       { id: string; value: boolean; comments?: string }
@@ -250,6 +249,7 @@ export const paymentsApi = createApi({
         body: comments ? { value, comments } : { value },
       }),
     }),
+
     setCharged: builder.mutation<Payment, { id: string; value: boolean }>({
       query: ({ id, value }) => ({
         url: `/payments/${id}/charged?token=${

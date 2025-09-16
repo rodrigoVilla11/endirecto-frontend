@@ -266,11 +266,33 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                     <span className="text-red-500">{locError}</span>
                     <button
                       type="button"
-                      onClick={handleGetLocation}
+                      onClick={retryAskLocation}
                       className="text-xs px-2 py-0.5 rounded bg-zinc-200 text-zinc-900 hover:bg-white"
                     >
                       Reintentar
                     </button>
+                    {permState === "denied" && (
+                      <details className="ml-2">
+                        <summary className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                          ¿Cómo habilitar?
+                        </summary>
+                        <div className="mt-1 text-xs text-zinc-300 max-w-[260px]">
+                          <p>
+                            • Chrome (desktop): clic en el candado → Permisos
+                            del sitio → Ubicación → Permitir, y recargá la
+                            página.
+                          </p>
+                          <p>
+                            • Android (Chrome): candado → Permisos → Ubicación →
+                            Permitir.
+                          </p>
+                          <p>
+                            • iOS (Safari): Ajustes → Safari → Ubicación →
+                            Preguntar/Permitir; luego recargá.
+                          </p>
+                        </div>
+                      </details>
+                    )}
                   </span>
                 ) : insitu === null ? (
                   <span className="text-gray-500">
