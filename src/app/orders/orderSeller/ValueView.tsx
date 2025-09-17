@@ -1,27 +1,39 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
+import React, { useEffect, useMemo, useState } from "react";
 
 type PaymentMethod = "efectivo" | "transferencia" | "cheque";
 
 export type ValueItem = {
+  /** Monto imputable. Para cheques, es el NETO (original - interés). */
   amount: string;
-  selectedReason: string; // Concepto / motivo
+  /** Solo cheques: monto original ingresado por el usuario. */
+  rawAmount?: string;
+  selectedReason: string;
   method: PaymentMethod;
   bank?: string;
-  /** URL del comprobante en Cloudinary */
-  receipt?: string;
-  /** Nombre original del archivo subido */
-  receiptOriginalName?: string;
+  /** Solo cheques: fecha de cobro (YYYY-MM-DD) */
+  chequeDate?: string;
 };
 
 export default function ValueView({
   newValues,
   setNewValues,
+  /** tasa anual (ej: 96) */
+  annualInterestPct,
+  /** suma con signo de ajustes por documentos (+desc / -rec) */
+  docAdjustmentSigned = 0,
+  /** total a pagar (neto) calculado por los documentos */
+  netToPay = 0,
+  /** gracia para cheques (por defecto 45) */
+  chequeGraceDays = 45,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
+  annualInterestPct: number;
+  docAdjustmentSigned?: number;
+  netToPay?: number;
+  chequeGraceDays?: number;
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -34,18 +46,15 @@ export default function ValueView({
     []
   );
 
-  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
-  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-
   const addRow = () => {
     setNewValues((prev) => [
       {
         amount: "",
+        rawAmount: "",
         selectedReason: "",
         method: "efectivo",
         bank: "",
-        receipt: undefined,
-        receiptOriginalName: undefined,
+        chequeDate: "",
       },
       ...prev,
     ]);
@@ -55,54 +64,123 @@ export default function ValueView({
     setNewValues((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const updateRow = (idx: number, patch: Partial<ValueItem>) => {
+  const patchRow = (idx: number, patch: Partial<ValueItem>) => {
     setNewValues((prev) => {
       const clone = [...prev];
       clone[idx] = { ...clone[idx], ...patch };
-      if (patch.method === "efectivo") {
-        clone[idx].bank = "";
-        clone[idx].receipt = undefined;
-        clone[idx].receiptOriginalName = undefined;
-      }
       return clone;
     });
   };
 
-  const extractCloudinaryUrl = (res: any) =>
-    res?.secure_url ??
-    res?.url ??
-    res?.data?.secure_url ??
-    res?.data?.url ??
-    null;
+  // ======= Cálculos de interés simple para cheques =======
+  const dailyRate = useMemo(() => (annualInterestPct / 100) / 365, [annualInterestPct]);
 
-  // Sube a Cloudinary APENAS se elige un archivo y guarda el URL (string)
-  const handleFileChange = async (idx: number, file?: File) => {
-    if (!file) {
-      updateRow(idx, { receipt: undefined, receiptOriginalName: undefined });
-      return;
-    }
-    try {
-      setUploadingIdx(idx);
-      const res = await uploadImage(file).unwrap();
-      const url = extractCloudinaryUrl(res);
-      if (!url) throw new Error("No vino secure_url/url en la respuesta");
-      updateRow(idx, { receipt: url, receiptOriginalName: file.name });
-    } catch (e) {
-      console.error("Upload error:", e);
-      alert("No se pudo subir el comprobante. Probá de nuevo.");
-      updateRow(idx, { receipt: undefined, receiptOriginalName: undefined });
-    } finally {
-      setUploadingIdx(null);
-    }
+  const daysBetweenToday = (iso?: string) => {
+    if (!iso) return 0;
+    const d = new Date(iso);
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    return Math.max(diff, 0);
   };
 
-  const isImageUrl = (url?: string) =>
-    !!url && /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(url);
+  /** Días que generan interés (aplica gracia) */
+  const chargeableDays = (iso?: string) => {
+    const days = daysBetweenToday(iso);
+    return Math.max(0, days - (chequeGraceDays ?? 0));
+  };
 
+  /** Interés $ sobre el monto ORIGINAL del cheque */
+  const chequeInterest = (v: ValueItem) => {
+    if (v.method !== "cheque") return 0;
+    const base = parseFloat((v.rawAmount ?? v.amount) || "0") || 0;
+    if (!base) return 0;
+    const days = chargeableDays(v.chequeDate);
+    const pct = dailyRate * days; // proporción acumulada
+    return +(base * pct).toFixed(2);
+  };
+
+  /** Neto imputable desde monto ORIGINAL (rawAmount) */
+  const computeChequeNeto = (raw: string, iso?: string) => {
+    const base = parseFloat(raw || "0") || 0;
+    const int$ = +(base * (dailyRate * chargeableDays(iso))).toFixed(2);
+    const neto = Math.max(0, +(base - int$).toFixed(2));
+    return { neto, int$ };
+  };
+
+  /** Valor efectivo imputable (para otros medios = amount; para cheques ya es neto) */
+  const effectiveValue = (v: ValueItem) => parseFloat(v.amount || "0") || 0;
+
+  // ======= Normalización automática del estado (clave) =======
+  // Mantiene amount (imputable) = neto para todos los cheques
+  useEffect(() => {
+    let changed = false;
+    const next = newValues.map((v) => {
+      if (v.method !== "cheque") return v;
+      const raw = v.rawAmount ?? v.amount ?? "0";
+      const { neto } = computeChequeNeto(raw, v.chequeDate);
+      const current = parseFloat(v.amount || "0") || 0;
+      if (Math.abs(current - neto) > 0.009 || v.rawAmount == null) {
+        changed = true;
+        return { ...v, rawAmount: raw, amount: neto.toFixed(2) };
+      }
+      return v;
+    });
+    if (changed) setNewValues(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newValues, dailyRate, chequeGraceDays]);
+
+  // ======= Totales =======
   const totalValues = useMemo(
-    () => newValues.reduce((acc, v) => acc + (parseFloat(v.amount || "0") || 0), 0),
+    () => newValues.reduce((acc, v) => acc + effectiveValue(v), 0),
     [newValues]
   );
+
+  const recargoChequesTotal = useMemo(
+    () => newValues.reduce((acc, v) => acc + chequeInterest(v), 0),
+    [newValues, dailyRate, chequeGraceDays]
+  );
+
+  const totalDtosRecargo = useMemo(
+    () => +(docAdjustmentSigned + recargoChequesTotal).toFixed(2),
+    [docAdjustmentSigned, recargoChequesTotal]
+  );
+
+  const saldo = useMemo(
+    () => +(netToPay - totalValues).toFixed(2),
+    [netToPay, totalValues]
+  );
+
+  // ======= Handlers =======
+  const handleAmountChange = (idx: number, value: string, v: ValueItem) => {
+    if (v.method !== "cheque") {
+      patchRow(idx, { amount: value, rawAmount: undefined });
+      return;
+    }
+    const { neto } = computeChequeNeto(value, v.chequeDate);
+    patchRow(idx, { rawAmount: value, amount: neto.toFixed(2) });
+  };
+
+  const handleMethodChange = (idx: number, method: PaymentMethod, v: ValueItem) => {
+    if (method !== "cheque") {
+      patchRow(idx, { method, rawAmount: undefined }); // amount ya es imputable
+      return;
+    }
+    const raw = v.rawAmount ?? v.amount ?? "0";
+    const { neto } = computeChequeNeto(raw, v.chequeDate);
+    patchRow(idx, { method, rawAmount: raw, amount: neto.toFixed(2) });
+  };
+
+  const handleChequeDateChange = (idx: number, iso: string, v: ValueItem) => {
+    if (v.method !== "cheque") {
+      patchRow(idx, { chequeDate: iso });
+      return;
+    }
+    const raw = v.rawAmount ?? v.amount ?? "0";
+    const { neto } = computeChequeNeto(raw, iso);
+    patchRow(idx, { chequeDate: iso, rawAmount: raw, amount: neto.toFixed(2) });
+  };
 
   return (
     <div className="space-y-3">
@@ -122,9 +200,16 @@ export default function ValueView({
 
       <div className="space-y-2">
         {newValues.map((v, idx) => {
-          const showBankAndReceipt =
-            v.method === "transferencia" || v.method === "cheque";
-          const isThisUploading = uploadingIdx === idx && isUploading;
+          const showBank = v.method === "transferencia" || v.method === "cheque";
+
+          const daysTotal = daysBetweenToday(v.chequeDate);
+          const daysGrav = v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
+          const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
+          const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
+
+          // En el input de cheque mostramos el monto ORIGINAL (rawAmount)
+          const shownAmountInput =
+            v.method === "cheque" ? (v.rawAmount ?? v.amount) : v.amount;
 
           return (
             <div
@@ -141,56 +226,52 @@ export default function ValueView({
               >
                 {/* Monto */}
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Monto</label>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    {v.method === "cheque" ? "Monto original" : "Monto"}
+                  </label>
                   <input
                     type="number"
                     inputMode="decimal"
                     step="0.01"
                     placeholder="0.00"
-                    value={v.amount}
-                    onChange={(e) => updateRow(idx, { amount: e.target.value })}
+                    value={shownAmountInput}
+                    onChange={(e) => handleAmountChange(idx, e.target.value, v)}
                     className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none tabular-nums"
                   />
                 </div>
 
                 {/* Concepto */}
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
-                    Concepto
-                  </label>
+                  <label className="block text-xs text-zinc-400 mb-1">Concepto</label>
                   <input
                     type="text"
                     placeholder="Ej: Pago factura 001-0000123"
                     value={v.selectedReason}
-                    onChange={(e) =>
-                      updateRow(idx, { selectedReason: e.target.value })
-                    }
+                    onChange={(e) => patchRow(idx, { selectedReason: e.target.value })}
                     className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                   />
                 </div>
 
                 {/* Medio de pago */}
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
-                    Medio de pago
-                  </label>
+                  <label className="block text-xs text-zinc-400 mb-1">Medio de pago</label>
                   <div className="flex gap-2 overflow-x-auto md:overflow-visible flex-nowrap md:flex-nowrap pr-1">
                     <RadioPill
                       label="Efectivo"
                       selected={v.method === "efectivo"}
-                      onClick={() => updateRow(idx, { method: "efectivo" })}
+                      onClick={() => handleMethodChange(idx, "efectivo", v)}
                       className="min-w-[8.5rem]"
                     />
                     <RadioPill
                       label="Transferencia"
                       selected={v.method === "transferencia"}
-                      onClick={() => updateRow(idx, { method: "transferencia" })}
+                      onClick={() => handleMethodChange(idx, "transferencia", v)}
                       className="min-w-[9.5rem]"
                     />
                     <RadioPill
                       label="Cheque"
                       selected={v.method === "cheque"}
-                      onClick={() => updateRow(idx, { method: "cheque" })}
+                      onClick={() => handleMethodChange(idx, "cheque", v)}
                       className="min-w-[7.5rem]"
                     />
                   </div>
@@ -208,46 +289,80 @@ export default function ValueView({
               </div>
 
               {/* Campos condicionales */}
-              {showBankAndReceipt && (
+              {showBank && (
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
                   {/* Banco */}
                   <div className="md:col-span-4">
-                    <label className="block text-xs text-zinc-400 mb-1">
-                      Banco
-                    </label>
+                    <label className="block text-xs text-zinc-400 mb-1">Banco</label>
                     <input
                       type="text"
                       placeholder="Ej: Banco Galicia"
                       value={v.bank || ""}
-                      onChange={(e) => updateRow(idx, { bank: e.target.value })}
+                      onChange={(e) => patchRow(idx, { bank: e.target.value })}
                       className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                     />
                   </div>
+
+                  {/* Solo cheques: fecha + métricas */}
+                  {v.method === "cheque" && (
+                    <>
+                      <div className="md:col-span-3">
+                        <label className="block text-xs text-zinc-400 mb-1">
+                          Fecha de cobro
+                        </label>
+                        <input
+                          type="date"
+                          value={v.chequeDate || ""}
+                          onChange={(e) => handleChequeDateChange(idx, e.target.value, v)}
+                          className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
+                        />
+                        <div className="mt-1 text-[10px] text-zinc-500">
+                          Días totales: {daysTotal} · Gracia: {chequeGraceDays}
+                        </div>
+                      </div>
+
+                      {/* <div className="md:col-span-5 grid grid-cols-4 gap-3">
+                        <Metric label="DÍAS GRAV." value={String(daysGrav)} />
+                        <Metric label="% INT" value={`${(pctInt * 100).toFixed(1)}%`} />
+                        <Metric label="REC" value={currencyFmt.format(interest$)} />
+                        <Metric
+                          label="IMP."
+                          value={currencyFmt.format(parseFloat(v.amount || "0") || 0)}
+                        />
+                      </div> */}
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* Pie: monto formateado */}
+              {/* Pie: valor imputable */}
               <div className="mt-3 text-xs text-zinc-400">
-                {v.amount
-                  ? `≈ ${currencyFmt.format(
-                      parseFloat(v.amount || "0") || 0
-                    )}`
-                  : ""}
+                {`Imputa ≈ ${currencyFmt.format(parseFloat(v.amount || "0") || 0)}`}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Total de valores */}
-      <div className="text-right text-sm text-white">
-        Total valores: <strong>{currencyFmt.format(totalValues)}</strong>
-      </div>
+      {/* Resumen inferior
+      <div className="mt-4 space-y-1 text-sm">
+        <RowSummary label="TOTAL PAGADO" value={currencyFmt.format(totalValues)} bold />
+        <RowSummary label="REC S/CHEQUES" value={currencyFmt.format(recargoChequesTotal)} />
+        <RowSummary
+          label="TOTAL DTOS/RECARGO"
+          value={currencyFmt.format(totalDtosRecargo)}
+        />
+        <RowSummary
+          label="SALDO"
+          value={currencyFmt.format(saldo)}
+          highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
+        />
+      </div> */}
     </div>
   );
 }
 
-/* ================== UI helper ================== */
+/* ================== UI helpers ================== */
 function RadioPill({
   label,
   selected,
@@ -269,5 +384,43 @@ function RadioPill({
     >
       {label}
     </button>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-zinc-700 p-2 text-center">
+      <div className="text-[10px] text-zinc-400">{label}</div>
+      <div className="text-white tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function RowSummary({
+  label,
+  value,
+  bold,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  highlight?: "ok" | "bad" | "warn";
+}) {
+  const color =
+    highlight === "ok"
+      ? "text-emerald-500"
+      : highlight === "bad"
+      ? "text-red-500"
+      : highlight === "warn"
+      ? "text-amber-400"
+      : "text-white";
+  return (
+    <div className="flex justify-between">
+      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>{label}</span>
+      <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
+        {value}
+      </span>
+    </div>
   );
 }
