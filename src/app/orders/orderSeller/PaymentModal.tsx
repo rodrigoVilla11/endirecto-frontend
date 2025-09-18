@@ -37,6 +37,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
+  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -61,7 +64,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       if (!isNaN(cached)) setAnnualInterestPct(cached);
     }
   }, [interestSetting]);
-  
+
   const [paymentTypeUI, setPaymentTypeUI] = useState<PaymentType>("cta_cte"); // o "pago_anticipado" si preferís
   // ✅ eliminar: ContraEntregaOption, contraEntregaOpt, contraEntregaMonto
   // Documentos seleccionados (llenados por DocumentsView)
@@ -201,14 +204,21 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     paymentTypeUI === "cta_cte" ? "cta_cte" : "pago_anticipado";
 
   // Regla usada (string descriptivo)
-  const buildRuleApplied = (days: number, blockedNoDiscount = false) => {
+  // antes: const buildRuleApplied = (days: number, blockedNoDiscount = false) => {
+  const buildRuleApplied = (
+    days: number,
+    blockedNoDiscount = false,
+    manualTenPct = false
+  ) => {
     if (blockedNoDiscount) return `${paymentTypeUI}:cond_pago_sin_descuento`;
 
     if (paymentTypeUI === "pago_anticipado") {
       return "pago_anticipado:sin_regla";
     }
 
-    // cta_cte como lo tenías
+    // 👇 nueva marca si se activó checkbox 30–37 días
+    if (manualTenPct) return "cta_cte:30-37d:10%:manual";
+
     if (isNaN(days)) return "cta_cte:invalido";
     if (days <= 15) return "cta_cte:<=15d:13%";
     if (days <= 30) return "cta_cte:<=30d:10%";
@@ -301,7 +311,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           document_id: d.document_id,
           number: d.number,
           days_used: isNaN(d.days) ? undefined : d.days,
-          rule_applied: buildRuleApplied(d.days, d.noDiscountBlocked),
+          // 👇 pasa el flag manual para que quede rastreado
+          rule_applied: buildRuleApplied(
+            d.days,
+            d.noDiscountBlocked,
+            d.manualTenApplied
+          ),
           base: round2(d.base),
           discount_rate: round4(d.rate),
           discount_amount: round2(d.signedAdjustment),
@@ -380,30 +395,30 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   function getAdjustmentRate(
     days: number,
     type: PaymentType,
-    docPaymentCondition?: string
+    docPaymentCondition?: string,
+    forceTenPct: boolean = false // 👈 nuevo
   ): { rate: number; note?: string } {
-    // bloquear descuentos si la condición lo indica
     if (isNoDiscountCondition(docPaymentCondition)) {
       return { rate: 0, note: "Sin descuento por condición de pago" };
     }
-
-    // pago anticipado: sin regla (tu caso de uso actual)
     if (type === "pago_anticipado") {
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
 
-    // cuenta corriente
+    // 👇 si el checkbox está activo, imponemos 10%
+    if (forceTenPct) {
+      return { rate: +0.1, note: "Descuento 10% (30–37 días activado)" };
+    }
+
     if (isNaN(days))
       return { rate: 0, note: "Fecha/estimación de días inválida" };
     if (days <= 15) return { rate: +0.13, note: "Descuento 13%" };
     if (days <= 30) return { rate: +0.1, note: "Descuento 10%" };
     if (days <= 45) return { rate: 0, note: "Sin ajuste (0%)" };
 
-    // >45 días: recargo por interés simple desde el día 46
     const daysOver = days - 45;
-    const daily = annualInterest / 365; // tasa diaria
-    const surchargeRate = +(daily * daysOver).toFixed(4); // % acumulado
-    // Nota: usamos rate NEGATIVO para indicar recargo (así final = base - base*rate suma)
+    const daily = annualInterest / 365;
+    const surchargeRate = +(daily * daysOver).toFixed(4);
     return { rate: -surchargeRate, note: `Recargo por ${daysOver} días` };
   }
 
@@ -441,18 +456,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const days = getDocDays(doc);
     const noDiscountBlocked = isNoDiscountCondition(doc.payment_condition);
 
+    // elegible para checkbox: cta_cte, sin bloqueo, 31–37 días
+    const eligibleManual10 =
+      paymentTypeUI === "cta_cte" &&
+      !noDiscountBlocked &&
+      Number.isFinite(days) &&
+      days > 30 &&
+      days <= 37;
+
+    const forceTen = !!graceDiscount[doc.document_id] && eligibleManual10;
+
     const { rate, note } = getAdjustmentRate(
       days,
       paymentTypeUI,
-      doc.payment_condition
+      doc.payment_condition,
+      forceTen // 👈
     );
 
     const base = parseFloat(doc.saldo_a_pagar || "0") || 0;
-
-    // ajuste con signo: +descuento / -recargo
     const signedAdjustment = +(base * rate).toFixed(2);
-
-    // final = base - (ajuste con signo)
     const finalAmount = +(base - signedAdjustment).toFixed(2);
 
     return {
@@ -461,10 +483,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days,
       base,
       rate, // +descuento / -recargo
-      signedAdjustment, // monto con signo
+      signedAdjustment,
       finalAmount,
       note,
       noDiscountBlocked,
+      eligibleManual10, // 👈 para la UI
+      manualTenApplied: forceTen, // 👈 para payload/regla
     };
   });
 
@@ -752,6 +776,30 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               {currencyFmt.format(d.base)}
                             </span>
                           </div>
+                          {/* Activador de descuento manual 10% (30–37 días) */}
+                          {d.eligibleManual10 && (
+                            <div className="flex items-center justify-between px-3 py-2">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={!!graceDiscount[d.document_id]}
+                                  onChange={(e) =>
+                                    setGraceDiscount((prev) => ({
+                                      ...prev,
+                                      [d.document_id]: e.target.checked,
+                                    }))
+                                  }
+                                />
+                                <span>Aplicar 10% (30–37 días)</span>
+                              </label>
+                              <span className="text-xs text-zinc-400">
+                                {graceDiscount[d.document_id]
+                                  ? "Activo"
+                                  : "Opcional"}
+                              </span>
+                            </div>
+                          )}
 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">%</span>
