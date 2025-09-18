@@ -13,6 +13,10 @@ import {
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import { useTranslation } from "react-i18next";
 import { FaCheckCircle } from "react-icons/fa";
+import {
+  useGetInterestRateQuery,
+  useUpdateInterestRateMutation,
+} from "@/redux/services/settingsApi";
 
 const Page = () => {
   const { t } = useTranslation();
@@ -34,14 +38,21 @@ const Page = () => {
   const [phone, setPhone] = useState("");
   const [logo, setLogo] = useState("");
   const [profileImg, setProfileImg] = useState("");
-  const [selectedFileProfile, setSelectedFileProfile] = useState<File | null>(null);
-  const [uploadResponseProfile, setUploadResponseProfile] = useState<string>("");
+  const [selectedFileProfile, setSelectedFileProfile] = useState<File | null>(
+    null
+  );
+  const [uploadResponseProfile, setUploadResponseProfile] =
+    useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File | null>(null);
   const [uploadResponses, setUploadResponses] = useState<string>("");
 
   const [
     uploadImage,
-    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
+    {
+      isLoading: isLoadingUpload,
+      isSuccess: isSuccessUpload,
+      isError: isErrorUpload,
+    },
   ] = useUploadImageMutation();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +61,9 @@ const Page = () => {
     }
   };
 
-  const handleFileChangeProfile = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChangeProfile = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFileProfile(event.target.files[0]);
     }
@@ -81,6 +94,27 @@ const Page = () => {
       console.error(t("profile.noFileSelected"));
     }
   };
+
+  // ¿es admin?
+  const isAdmin = userData?.role === "ADMINISTRADOR";
+
+  // tasa anual (default 96 hasta que llega del backend)
+  const [interestPct, setInterestPct] = useState<number>(96);
+
+  // leer tasa persistida
+  const { data: interestSetting, isFetching: isLoadingRate } =
+    useGetInterestRateQuery();
+
+  // actualizar tasa persistida
+  const [updateInterestRate, { isLoading: isSavingRate }] =
+    useUpdateInterestRateMutation();
+
+  // aplicar la tasa que venga del backend
+  useEffect(() => {
+    if (typeof interestSetting?.value === "number") {
+      setInterestPct(interestSetting.value);
+    }
+  }, [interestSetting]);
 
   useEffect(() => {
     if (selectedClientId && data) {
@@ -388,24 +422,34 @@ const Page = () => {
                             <tr className="hover:bg-gray-50">
                               <td className="border border-gray-300 p-2">
                                 <img
-                                  src={uploadResponseProfile || data?.profileImg}
+                                  src={
+                                    uploadResponseProfile || data?.profileImg
+                                  }
                                   alt=""
                                   className="h-10 w-auto rounded-md"
                                 />
                               </td>
                               <td className="border border-gray-300 p-2">
                                 <a
-                                  href={uploadResponseProfile || data?.profileImg}
+                                  href={
+                                    uploadResponseProfile || data?.profileImg
+                                  }
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-500 hover:underline"
                                 >
                                   {data?.profileImg
                                     ? data?.profileImg.length > 30
-                                      ? `${data?.profileImg.substring(0, 30)}...`
+                                      ? `${data?.profileImg.substring(
+                                          0,
+                                          30
+                                        )}...`
                                       : data?.profileImg
                                     : uploadResponseProfile.length > 30
-                                    ? `${uploadResponseProfile.substring(0, 30)}...`
+                                    ? `${uploadResponseProfile.substring(
+                                        0,
+                                        30
+                                      )}...`
                                     : uploadResponseProfile}
                                 </a>
                               </td>
@@ -432,7 +476,9 @@ const Page = () => {
                     <input
                       type="checkbox"
                       checked={receiveNotifications}
-                      onChange={() => setReceiveNotifications(!receiveNotifications)}
+                      onChange={() =>
+                        setReceiveNotifications(!receiveNotifications)
+                      }
                       className="h-6 w-6 text-indigo-600 border-gray-300 rounded"
                     />
                   </div>
@@ -520,7 +566,9 @@ const Page = () => {
                   disabled={isUpdating}
                   className="inline-block py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md disabled:bg-gray-400"
                 >
-                  {isUpdating ? t("profile.updating") : t("profile.updateInformation")}
+                  {isUpdating
+                    ? t("profile.updating")
+                    : t("profile.updateInformation")}
                 </button>
               </form>
             </div>
@@ -529,25 +577,84 @@ const Page = () => {
           <div className="w-full mx-auto p-6">
             <div className="bg-white shadow-md rounded-md p-6 space-y-4 flex flex-col justify-center">
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">{t("profile.id")}</span>
+                <span className="text-gray-600 font-medium">
+                  {t("profile.id")}
+                </span>
                 <span className="text-gray-800 font-mono">{userData?._id}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">{t("profile.name")}</span>
+                <span className="text-gray-600 font-medium">
+                  {t("profile.name")}
+                </span>
                 <span className="text-gray-800">{userData?.username}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">{t("profile.role")}</span>
+                <span className="text-gray-600 font-medium">
+                  {t("profile.role")}
+                </span>
                 <span className="text-gray-800">{userData?.role}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">{t("profile.email")}</span>
+                <span className="text-gray-600 font-medium">
+                  {t("profile.email")}
+                </span>
                 <span className="text-gray-800">{userData?.email}</span>
               </div>
               <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                <span className="text-gray-600 font-medium">{t("profile.branch")}</span>
+                <span className="text-gray-600 font-medium">
+                  {t("profile.branch")}
+                </span>
                 <span className="text-gray-800">{userData?.branch}</span>
               </div>
+              {isAdmin && (
+                <div className="col-span-2 p-4 bg-white rounded-md shadow-md border border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tasa anual
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      value={interestPct}
+                      onChange={(e) =>
+                        setInterestPct(Number(e.target.value) || 0)
+                      }
+                      className="w-24 border-gray-300 rounded-md shadow-sm px-2 py-1"
+                      disabled={isLoadingRate}
+                    />
+                    <span className="text-gray-700">%</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await updateInterestRate({
+                            value: interestPct,
+                          }).unwrap();
+                          setShowTick(true);
+                          setTimeout(() => setShowTick(false), 1500);
+                        } catch (e) {
+                          alert("No se pudo guardar la tasa.");
+                          console.error(e);
+                        }
+                      }}
+                      disabled={isSavingRate || isLoadingRate}
+                      className={`px-3 py-2 rounded-md text-white ${
+                        isSavingRate || isLoadingRate
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
+                      title="Guardar como predeterminada"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Esta tasa queda guardada como predeterminada hasta que la
+                    cambies.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

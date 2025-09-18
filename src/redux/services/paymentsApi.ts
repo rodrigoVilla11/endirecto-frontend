@@ -8,11 +8,27 @@ export type PaymentMethodEnum = "efectivo" | "transferencia" | "cheque";
 export type PaymentStatus = "confirmed" | "reversed" | "pending";
 
 export interface PaymentTotals {
-  gross: number;    // suma base (bruto)
-  discount: number; // suma descuentos
-  net: number;      // suma final (neto)
-  values: number;   // suma valores
-  diff: number;     // net - values
+  /** suma base (bruto) de documentos */
+  gross: number;
+  /** suma con signo: +descuentos / -recargos de documentos */
+  discount: number;
+  /** total a pagar por documentos (gross - discount) */
+  net: number;
+
+  /** suma de valores imputados (cheque ya neto) */
+  values: number;
+  /** diferencia: net - values */
+  diff: number;
+
+  /** ===== Extensiones para cheques / trazabilidad ===== */
+  /** suma de montos originales de los valores (cheques usan raw_amount) */
+  values_raw?: number;
+  /** suma de intereses cobrados por cheques */
+  cheque_interest?: number;
+  /** días de gracia aplicados a cheques (p.ej. 45) */
+  cheque_grace_days?: number;
+  /** tasa anual usada para cheques (p.ej. 96) */
+  interest_annual_pct?: number;
 }
 
 export interface PaymentDocumentLine {
@@ -22,19 +38,50 @@ export interface PaymentDocumentLine {
   // ej. "pago_anticipado:sin_regla", "cta_cte:<=15d:13%", "cta_cte:>45d:actualizacion"
   rule_applied: string;
   base: number;
-  discount_rate: number;   // 0.13, 0.10, etc.
+  /** puede ser negativo si es recargo (>45d) */
+  discount_rate: number;   // 0.13, 0.10, -0.1427, etc.
+  /** monto con signo: +descuento / -recargo */
   discount_amount: number; // base * discount_rate
-  final_amount: number;    // base - discount_amount
+  /** base - discount_amount */
+  final_amount: number;
   note?: string;
 }
 
 export interface PaymentValueLine {
+  /** monto imputado (para cheque = neto: raw - interés) */
   amount: number;
   concept: string;
   method: PaymentMethodEnum;
   bank?: string;
+
+  /** archivo adjunto */
   receipt_url?: string;
   receipt_original_name?: string;
+
+  /** ===== Extensiones para cheques ===== */
+  /** monto original del cheque */
+  raw_amount?: number;
+  cheque?: {
+    /** fecha de cobro (ISO yyyy-mm-dd) */
+    collection_date?: string | null;
+    /** días totales hasta la fecha de cobro (hoy → fecha) */
+    days_total?: number;
+    /** días de gracia aplicados (p.ej. 45) */
+    grace_days?: number;
+    /** días gravados (days_total - grace_days, min 0) */
+    days_charged?: number;
+    /** tasa anual informativa (p.ej. 96) */
+    annual_interest_pct?: number;
+    /** tasa diaria (annual/365) */
+    daily_rate?: number;
+    /** % acumulado por días gravados (proporción: 0.1427 = 14.27%) */
+    interest_pct?: number;
+    /** $ de interés cobrado al cheque */
+    interest_amount?: number;
+    /** $ neto imputado (raw_amount - interest_amount) */
+    net_amount?: number;
+  };
+
   created_at?: string;
 }
 
@@ -46,9 +93,10 @@ export interface Payment {
   customer: { id: string };
   currency: string; // "ARS"
   date: string;     // ISO string
-  type: PaymentType; // 👈 ahora "pago_anticipado" | "cta_cte"
+  type: PaymentType; // "pago_anticipado" | "cta_cte"
   totals: PaymentTotals;
-  total: number; // compat: igual a totals.net
+  /** compat: igual a totals.net */
+  total: number;
   documents: PaymentDocumentLine[];
   payment_condition: { id: string };
   values: PaymentValueLine[];
@@ -79,7 +127,7 @@ export interface Payment {
 
 /* ======= Payloads de requests ======= */
 
-// ✅ sin contra_entrega_choice
+// ✅ CreatePayment acepta las extensiones nuevas (cheques/totales)
 export type CreatePayment = Omit<
   Payment,
   "_id" | "created_at" | "updated_at" | "document_details" | "isCharged"
@@ -101,7 +149,7 @@ export interface FindPaymentsArgs {
   includeLookup?: boolean;
   isCharged?: "true" | "false";
   isImputed?: "true" | "false";
-  type?: PaymentType; // 👈 nuevo filtro
+  type?: PaymentType;
 }
 
 export interface PaymentsListResponse {
@@ -134,7 +182,7 @@ export const paymentsApi = createApi({
           includeLookup,
           isCharged,
           isImputed,
-          type, // 👈
+          type,
         } = args || {};
         const params = new URLSearchParams({
           page: String(page),
@@ -151,7 +199,7 @@ export const paymentsApi = createApi({
         if (includeLookup) params.append("includeLookup", String(includeLookup));
         if (isCharged) params.append("isCharged", isCharged);
         if (isImputed) params.append("isImputed", isImputed);
-        if (type) params.append("type", type); // 👈
+        if (type) params.append("type", type);
 
         console.log(`/payments?${params.toString()}`);
         return `/payments?${params.toString()}`;

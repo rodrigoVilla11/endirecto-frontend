@@ -13,6 +13,10 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import { useAddNotificationToCustomerMutation } from "@/redux/services/customersApi";
 import { useAddNotificationToUserByIdMutation } from "@/redux/services/usersApi";
+import {
+  useGetInterestRateQuery,
+  useUpdateInterestRateMutation,
+} from "@/redux/services/settingsApi";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,12 +37,33 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
+  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
 
   type PaymentType = "pago_anticipado" | "cta_cte";
+
+  const { data: interestSetting, isFetching: isLoadingRate } =
+    useGetInterestRateQuery();
+  const [updateInterestRate, { isLoading: isSavingRate }] =
+    useUpdateInterestRateMutation();
+
+  useEffect(() => {
+    if (typeof interestSetting?.value === "number") {
+      setAnnualInterestPct(interestSetting.value);
+      localStorage.setItem(
+        "interest_annual_pct",
+        String(interestSetting.value)
+      );
+    } else {
+      const cached = Number(localStorage.getItem("interest_annual_pct"));
+      if (!isNaN(cached)) setAnnualInterestPct(cached);
+    }
+  }, [interestSetting]);
 
   const [paymentTypeUI, setPaymentTypeUI] = useState<PaymentType>("cta_cte"); // o "pago_anticipado" si preferís
   // ✅ eliminar: ContraEntregaOption, contraEntregaOpt, contraEntregaMonto
@@ -58,20 +83,67 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }[]
   >([]);
 
+  const [annualInterestPct, setAnnualInterestPct] = useState<number>(96);
+  const annualInterest = annualInterestPct / 100;
+
   // Valores ingresados
   type PaymentMethod = "efectivo" | "transferencia" | "cheque";
   type ValueItem = {
+    /** Monto imputable (para cheque = neto) */
     amount: string;
+    /** Solo cheques: monto original ingresado */
+    rawAmount?: string;
+    /** Solo cheques: fecha de cobro */
+    chequeDate?: string;
+
     selectedReason: string;
     method: PaymentMethod;
     bank?: string;
+
+    /** adjuntos */
     receiptUrl?: string;
     receiptOriginalName?: string;
   };
+
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
 
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [submittedPayment, setSubmittedPayment] = useState(false);
+
+  const CHEQUE_GRACE_DAYS = 45; // misma gracia que en tu planilla
+
+  function daysBetweenToday(iso?: string) {
+    if (!iso) return 0;
+    const d = new Date(iso);
+    const today = new Date();
+    const start = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    ).getTime();
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    return Math.max(diff, 0);
+  }
+
+  function computeChequeMeta(v: ValueItem) {
+    const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0; // monto ORIGINAL
+    const days_total = daysBetweenToday(v.chequeDate);
+    const days_charged = Math.max(0, days_total - CHEQUE_GRACE_DAYS);
+    const daily = annualInterestPct / 100 / 365;
+    const interest_pct = daily * days_charged; // proporción (0.1427 = 14.27%)
+    const interest_amount = +(raw * interest_pct).toFixed(2);
+    const net_amount = +(raw - interest_amount).toFixed(2); // lo que se imputa
+    return {
+      raw,
+      days_total,
+      days_charged,
+      daily,
+      interest_pct,
+      interest_amount,
+      net_amount,
+    };
+  }
 
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -132,14 +204,21 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     paymentTypeUI === "cta_cte" ? "cta_cte" : "pago_anticipado";
 
   // Regla usada (string descriptivo)
-  const buildRuleApplied = (days: number, blockedNoDiscount = false) => {
+  // antes: const buildRuleApplied = (days: number, blockedNoDiscount = false) => {
+  const buildRuleApplied = (
+    days: number,
+    blockedNoDiscount = false,
+    manualTenPct = false
+  ) => {
     if (blockedNoDiscount) return `${paymentTypeUI}:cond_pago_sin_descuento`;
 
     if (paymentTypeUI === "pago_anticipado") {
       return "pago_anticipado:sin_regla";
     }
 
-    // cta_cte como lo tenías
+    // 👇 nueva marca si se activó checkbox 30–37 días
+    if (manualTenPct) return "cta_cte:30-37d:10%:manual";
+
     if (isNaN(days)) return "cta_cte:invalido";
     if (days <= 15) return "cta_cte:<=15d:13%";
     if (days <= 30) return "cta_cte:<=30d:10%";
@@ -158,59 +237,97 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     setIsSubmittingPayment(true);
     try {
+      let valuesRawTotal = 0; // suma de montos originales (cheque usa raw)
+      let chequeInterestTotal = 0; // suma de intereses calculados en cheques
+
+      const valuesPayload = newValues.map((v) => {
+        const amountNet = round2(parseFloat(v.amount || "0")); // lo que ya venís imputando
+
+        const common = {
+          amount: amountNet,
+          concept: v.selectedReason,
+          method: v.method,
+          bank: v.bank || undefined,
+          receipt_url: v.receiptUrl || undefined,
+          receipt_original_name: v.receiptOriginalName || undefined,
+        };
+
+        if (v.method !== "cheque") {
+          valuesRawTotal += amountNet;
+          return common;
+        }
+
+        const m = computeChequeMeta(v);
+        chequeInterestTotal += m.interest_amount;
+        valuesRawTotal += m.raw;
+
+        return {
+          ...common,
+          raw_amount: round2(m.raw), // monto original del cheque
+          cheque: {
+            collection_date: v.chequeDate || null,
+            days_total: m.days_total,
+            grace_days: CHEQUE_GRACE_DAYS,
+            days_charged: m.days_charged,
+            annual_interest_pct: annualInterestPct, // ej 96
+            daily_rate: round4(m.daily), // 0.0026…
+            interest_pct: round4(m.interest_pct), // proporción acumulada (0.1427…)
+            interest_amount: round2(m.interest_amount),
+            net_amount: round2(m.net_amount), // debería coincidir con 'amount'
+          },
+        };
+      });
+
+      // ——— Totales generales (incluyendo extras de valores) ———
       const totals = {
         gross: round2(totalBase),
-        discount: round2(totalDiscount),
-        net: round2(totalAfterDiscount),
-        values: round2(totalValues),
-        diff: round2(diff),
+        discount: round2(totalAdjustmentSigned), // +descuento / -recargo (DOCUMENTOS)
+        net: round2(totalAfterDiscount), // total a pagar por documentos
+        values: round2(totalValues), // suma de valores imputables (cheque ya neto)
+        values_raw: round2(valuesRawTotal), // suma de montos originales
+        cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
+        cheque_grace_days: CHEQUE_GRACE_DAYS,
+        interest_annual_pct: annualInterestPct,
+        diff: diff,
       };
 
-
+      // ——— Payload final ———
       const payload = {
-        // enums en minúscula según tu schema:
-        status: "pending", // 'pending' | 'confirmed' | 'reversed'
-        type: paymentTypeUI, // 'contra_entrega' | 'cta_cte'
-        date: new Date(), // el schema espera Date
-        currency: "ARS", // default, pero no molesta
+        status: "pending",
+        type: paymentTypeUI,
+        date: new Date(),
+        currency: "ARS",
         comments,
         source: "web",
-
         customer: { id: String(selectedClientId) },
         user: { id: String(userId) },
         seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
-
-        // el schema dice: "total" (usar NETO). Tiene set toFixed(4)
         total: round4(totalAfterDiscount),
 
-        // Detalle de documentos
         documents: computedDiscounts.map((d) => ({
           document_id: d.document_id,
           number: d.number,
           days_used: isNaN(d.days) ? undefined : d.days,
-          rule_applied: buildRuleApplied(d.days, d.noDiscountBlocked),
+          // 👇 pasa el flag manual para que quede rastreado
+          rule_applied: buildRuleApplied(
+            d.days,
+            d.noDiscountBlocked,
+            d.manualTenApplied
+          ),
           base: round2(d.base),
-          discount_rate: round4(d.rate), // 0.1300 etc.
-          discount_amount: round2(d.discountAmount),
+          discount_rate: round4(d.rate),
+          discount_amount: round2(d.signedAdjustment),
           final_amount: round2(d.finalAmount),
           note: d.note || undefined,
         })),
 
-        // Valores (medios de pago). method debe ser 'efectivo' | 'transferencia' | 'cheque'
-        values: newValues.map((v) => ({
-          amount: round2(parseFloat(v.amount || "0")),
-          concept: v.selectedReason,
-          method: v.method,
-          bank: v.bank || undefined,
-          receipt_url: v.receiptUrl || undefined, // 👈 ahora sí
-          receipt_original_name: v.receiptOriginalName || undefined, // 👈 ahora sí
-        })),
-      } as any; // <- si tu tipo TS frontend no coincide, casteá a any o actualizá el DTO
+        values: valuesPayload,
+      } as any;
 
-      console.log("payload", payload)
+      console.log("payload", payload);
       const created = await createPayment(payload).unwrap();
 
       const valuesSummary = (created.values ?? [])
@@ -275,29 +392,36 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
   };
 
-  function getDiscountRateForDoc(
-    docDays: number,
+  function getAdjustmentRate(
+    days: number,
     type: PaymentType,
-    docPaymentCondition?: string
+    docPaymentCondition?: string,
+    forceTenPct: boolean = false // 👈 nuevo
   ): { rate: number; note?: string } {
     if (isNoDiscountCondition(docPaymentCondition)) {
       return { rate: 0, note: "Sin descuento por condición de pago" };
     }
-
     if (type === "pago_anticipado") {
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
 
-    // cta_cte (igual que antes)
-    if (isNaN(docDays))
+    // 👇 si el checkbox está activo, imponemos 10%
+    if (forceTenPct) {
+      return { rate: +0.1, note: "Descuento 10% (30–37 días activado)" };
+    }
+
+    if (isNaN(days))
       return { rate: 0, note: "Fecha/estimación de días inválida" };
-    if (docDays <= 15) return { rate: 0.13 };
-    if (docDays <= 30) return { rate: 0.1 };
-    if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
-    return { rate: 0, note: "Precio facturado (0%)" };
+    if (days <= 15) return { rate: +0.13, note: "Descuento 13%" };
+    if (days <= 30) return { rate: +0.1, note: "Descuento 10%" };
+    if (days <= 45) return { rate: 0, note: "Sin ajuste (0%)" };
+
+    const daysOver = days - 45;
+    const daily = annualInterest / 365;
+    const surchargeRate = +(daily * daysOver).toFixed(4);
+    return { rate: -surchargeRate, note: `Recargo por ${daysOver} días` };
   }
 
-  // const addContraEntregaValor = () => {
   //   const n = parseFloat((contraEntregaMonto || "").replace(",", "."));
   //   if (!Number.isFinite(n) || n <= 0) return;
 
@@ -332,28 +456,46 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const days = getDocDays(doc);
     const noDiscountBlocked = isNoDiscountCondition(doc.payment_condition);
 
-    const { rate, note } = getDiscountRateForDoc(days, paymentTypeUI);
+    // elegible para checkbox: cta_cte, sin bloqueo, 31–37 días
+    const eligibleManual10 =
+      paymentTypeUI === "cta_cte" &&
+      !noDiscountBlocked &&
+      Number.isFinite(days) &&
+      days > 30 &&
+      days <= 37;
+
+    const forceTen = !!graceDiscount[doc.document_id] && eligibleManual10;
+
+    const { rate, note } = getAdjustmentRate(
+      days,
+      paymentTypeUI,
+      doc.payment_condition,
+      forceTen // 👈
+    );
 
     const base = parseFloat(doc.saldo_a_pagar || "0") || 0;
-    const discountAmount = +(base * rate).toFixed(2);
-    const finalAmount = +(base - discountAmount).toFixed(2);
+    const signedAdjustment = +(base * rate).toFixed(2);
+    const finalAmount = +(base - signedAdjustment).toFixed(2);
 
     return {
       document_id: doc.document_id,
       number: doc.number,
       days,
       base,
-      rate,
-      discountAmount,
+      rate, // +descuento / -recargo
+      signedAdjustment,
       finalAmount,
       note,
-      noDiscountBlocked, // 👈 para “rule_applied”
+      noDiscountBlocked,
+      eligibleManual10, // 👈 para la UI
+      manualTenApplied: forceTen, // 👈 para payload/regla
     };
   });
 
   const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
-  const totalDiscount = computedDiscounts.reduce(
-    (a, d) => a + d.discountAmount,
+  // suma con signo: descuentos positivos, recargos negativos (como en tu planilla)
+  const totalAdjustmentSigned = computedDiscounts.reduce(
+    (a, d) => a + d.signedAdjustment,
     0
   );
   const totalAfterDiscount = computedDiscounts.reduce(
@@ -415,6 +557,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     );
   };
 
+  const anySurcharge =
+    paymentTypeUI === "cta_cte" && computedDiscounts.some((d) => d.rate < 0);
+
+  const formattedDtoRec = `${
+    totalAdjustmentSigned >= 0 ? "-" : "+"
+  }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
+
   console.log(newPayment);
   return (
     <div
@@ -455,8 +604,27 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 </span>
               }
             />
+
+            {/* SUBTOTAL */}
             <InfoRow label="Importe bruto" value={formattedTotalGross} />
-            <InfoRow label="Importe neto (c/desc)" value={formattedTotalNet} />
+
+            {/* 🆕 DTO/REC con signo (descuento = -, recargo = +) */}
+            <InfoRow
+              label="DTO/REC s/FACT"
+              value={formattedDtoRec}
+              valueClassName={
+                totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
+              }
+            />
+
+            {/* 🆕 Total a pagar (neto con desc/rec) */}
+            <InfoRow
+              label="TOTAL A PAGAR"
+              value={formattedTotalNet}
+              valueClassName="text-emerald-500 font-semibold"
+            />
+
+            {/* Valores y Diferencia (igual que antes) */}
             <InfoRow label="Valores" value={formattedTotalValues} />
             <InfoRow
               label="Diferencia"
@@ -469,6 +637,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   : "text-red-500"
               }
             />
+
             {newPayment.length > 0 &&
               newPayment.map((item, index) => (
                 <InfoRow
@@ -607,18 +776,48 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               {currencyFmt.format(d.base)}
                             </span>
                           </div>
+                          {/* Activador de descuento manual 10% (30–37 días) */}
+                          {d.eligibleManual10 && (
+                            <div className="flex items-center justify-between px-3 py-2">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={!!graceDiscount[d.document_id]}
+                                  onChange={(e) =>
+                                    setGraceDiscount((prev) => ({
+                                      ...prev,
+                                      [d.document_id]: e.target.checked,
+                                    }))
+                                  }
+                                />
+                                <span>Aplicar 10% (30–37 días)</span>
+                              </label>
+                              <span className="text-xs text-zinc-400">
+                                {graceDiscount[d.document_id]
+                                  ? "Activo"
+                                  : "Opcional"}
+                              </span>
+                            </div>
+                          )}
 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">%</span>
                             <span className="tabular-nums">
-                              {(d.rate * 100).toFixed(0)}%
+                              {`${d.rate >= 0 ? "-" : "+"}${(
+                                Math.abs(d.rate) * 100
+                              ).toFixed(1)}%`}
                             </span>
                           </div>
 
                           <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">Desc.</span>
+                            <span className="text-zinc-400">
+                              {d.rate >= 0 ? "Desc." : "Recargo"}
+                            </span>
                             <span className="tabular-nums">
-                              -{currencyFmt.format(d.discountAmount)}
+                              {`${d.rate >= 0 ? "-" : "+"}${currencyFmt.format(
+                                Math.abs(d.signedAdjustment)
+                              )}`}
                             </span>
                           </div>
 
@@ -764,7 +963,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 </button>
 
                 {/* Valores manuales */}
-                <ValueView setNewValues={setNewValues} newValues={newValues} />
+                <ValueView
+                  newValues={newValues}
+                  setNewValues={setNewValues}
+                  annualInterestPct={annualInterestPct} // ej: 96
+                  docAdjustmentSigned={totalAdjustmentSigned} // DTO/REC s/FACT (con signo)
+                  netToPay={totalAfterDiscount} // TOTAL A PAGAR (neto)
+                />
 
                 {/* Comprobantes por valor */}
                 {newValues.length > 0 && (
