@@ -27,7 +27,7 @@ export default function ValueView({
   /** total a pagar (neto) calculado por los documentos */
   netToPay = 0,
   /** gracia para cheques (por defecto 45) */
-  chequeGraceDays = 45,
+  chequeGraceDays = 10,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;

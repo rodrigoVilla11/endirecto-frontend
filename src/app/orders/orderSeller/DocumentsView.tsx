@@ -101,18 +101,21 @@ export function DocumentsView({
   }
 
   /* ===================== Derivados del documento ===================== */
-
   const invoiceDateStr = data?.date;
   const expirationDateStr = data?.expiration_date;
   const docNumber = data?.number ?? "";
   const amount = Number(data?.amount ?? 0);
 
   // días calendario exactos usando utilidades compartidas
-  const days_until_expiration = diffCalendarDays(invoiceDateStr, expirationDateStr);
+  const days_until_expiration = diffCalendarDays(
+    invoiceDateStr,
+    expirationDateStr
+  );
   const days_since_invoice = diffFromDateToToday(invoiceDateStr);
 
-
-  const balanceRaw = Number(customerInformation?.document_balance ?? amount ?? 0);
+  const balanceRaw = Number(
+    customerInformation?.document_balance ?? amount ?? 0
+  );
   const balance = isNaN(balanceRaw) ? 0 : balanceRaw;
 
   const paymentConditionName =
@@ -124,12 +127,23 @@ export function DocumentsView({
     paymentConditionName
   );
 
+  const isDesc = rate > 0;
+  const isRec = rate < 0;
+  const isNone = !rate || rate === 0;
+
+  const adjPct = Math.abs(rate) * 100;
+  const adjAmount = round2(balance * Math.abs(rate));
+  const finalAmount = isDesc
+    ? round2(balance - adjAmount)
+    : isRec
+    ? round2(balance + adjAmount)
+    : balance;
+
   const discountAmount = round2(balance * rate);
-  const finalAmount = round2(balance - discountAmount);
 
   /* ===================== Selección: payload consistente ===================== */
 
-  console.log("data", data)
+  console.log("data", data);
   const documentDetails = {
     document_id: data?.id || "",
     number: docNumber,
@@ -153,7 +167,7 @@ export function DocumentsView({
       ? days_since_invoice
       : NaN,
   };
-  console.log("documentDetails", documentDetails)
+  console.log("documentDetails", documentDetails);
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
     if (checked) {
@@ -178,7 +192,9 @@ export function DocumentsView({
               <input
                 type="checkbox"
                 checked={selectedRows.includes(data.id)}
-                onChange={(e) => handleCheckboxChange(data.id, e.target.checked)}
+                onChange={(e) =>
+                  handleCheckboxChange(data.id, e.target.checked)
+                }
                 className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
               />
               <button
@@ -194,7 +210,8 @@ export function DocumentsView({
               <div className="flex flex-col">
                 <span className="text-gray-200 font-medium">{docNumber}</span>
                 <span className="text-sm text-gray-400">
-                  {formatDateDDMMYYYY(invoiceDateStr || "")} - {t("document.vto")}{" "}
+                  {formatDateDDMMYYYY(invoiceDateStr || "")} -{" "}
+                  {t("document.vto")}{" "}
                   {formatDateDDMMYYYY(expirationDateStr || "")}
                 </span>
               </div>
@@ -210,15 +227,23 @@ export function DocumentsView({
               <div className="flex flex-col gap-4 text-sm">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.comprobante")}</span>
+                    <span className="text-gray-400">
+                      {t("document.comprobante")}
+                    </span>
                     <span className="text-gray-200">{docNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.condicionPago")}</span>
-                    <span className="text-gray-200">{paymentConditionName}</span>
+                    <span className="text-gray-400">
+                      {t("document.condicionPago")}
+                    </span>
+                    <span className="text-gray-200">
+                      {paymentConditionName}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.importe")}</span>
+                    <span className="text-gray-400">
+                      {t("document.importe")}
+                    </span>
                     <span className="text-gray-200">
                       {formatPriceWithCurrency(amount)}
                     </span>
@@ -227,47 +252,82 @@ export function DocumentsView({
 
                 {/* Saldo actual */}
                 <div className="flex justify-between">
-                  <span className="text-gray-400">{t("document.saldo") || "Saldo"}</span>
+                  <span className="text-gray-400">
+                    {t("document.saldo") || "Saldo"}
+                  </span>
                   <span className="text-gray-200">
                     {formatPriceWithCurrency(balance)}
                   </span>
                 </div>
 
                 {/* Días / Descuento / Final */}
+                {/* Días / Descuento / Final */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-400">
                       {t("document.diasDesdeEmision") || "Días desde emisión"}
                     </span>
-                    <span className={`text-gray-200 ${note ? "text-amber-400" : ""}`}>
-                      {Number.isFinite(days_since_invoice) ? days_since_invoice : "—"}
+                    <span
+                      className={`text-gray-200 ${
+                        note ? "text-amber-400" : ""
+                      }`}
+                    >
+                      {Number.isFinite(days_since_invoice)
+                        ? days_since_invoice
+                        : "—"}
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.descuento")}</span>
-                    <span className="text-gray-200">{(rate * 100).toFixed(0)}%</span>
-                  </div>
+                  {/* Solo mostrar si hay ajuste */}
+                  {!isNone && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">
+                          {isDesc
+                            ? t("document.descuento")
+                            : t("document.recargo")}
+                        </span>
+                        <span
+                          className={`font-medium ${
+                            isDesc ? "text-emerald-500" : "text-rose-400"
+                          }`}
+                        >
+                          {adjPct.toFixed(0)}%
+                        </span>
+                      </div>
 
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {t("document.importeDescuento") || "Importe desc."}
-                    </span>
-                    <span className="text-gray-200">
-                      -{formatPriceWithCurrency(discountAmount)}
-                    </span>
-                  </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">
+                          {isDesc
+                            ? t("document.importeDescuento") || "Importe desc."
+                            : t("document.importeRecargo") || "Importe rec."}
+                        </span>
+                        <span
+                          className={`text-gray-200 ${
+                            isDesc ? "text-emerald-500" : "text-rose-400"
+                          }`}
+                        >
+                          {isDesc ? "-" : "+"}
+                          {formatPriceWithCurrency(adjAmount)}
+                        </span>
+                      </div>
 
-                  <div className="flex justify-between font-medium">
-                    <span className="text-gray-400">
-                      {t("document.finalConDescuento") || "Final c/desc."}
-                    </span>
-                    <span className={`text-gray-200 ${note ? "text-amber-400" : ""}`}>
-                      {formatPriceWithCurrency(finalAmount)}
-                    </span>
-                  </div>
+                      <div className="flex justify-between font-medium">
+                        <span className="text-gray-400">
+                          {isDesc
+                            ? t("document.finalConDescuento") || "Final c/desc."
+                            : t("document.finalConRecargo") || "Final c/rec."}
+                        </span>
+                        <span className="text-gray-200">
+                          {formatPriceWithCurrency(finalAmount)}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
-                  {note ? <div className="text-xs text-amber-400 mt-1">{note}</div> : null}
+                  {note ? (
+                    <div className="text-xs text-amber-400 mt-1">{note}</div>
+                  ) : null}
                 </div>
               </div>
             </div>
