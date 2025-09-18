@@ -733,7 +733,7 @@ function DetailsModal({
             </div>
 
             {/* Header solo desktop */}
-            <div className="hidden sm:grid grid-cols-6 px-3 py-2 text-xs text-zinc-500">
+            <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500">
               <span>{t("number")}</span>
               <span>{t("days") || "Días"}</span>
               <span>{t("base") || "Base"}</span>
@@ -746,7 +746,7 @@ function DetailsModal({
               {(payment.documents || []).map((d) => (
                 <div
                   key={d.document_id}
-                  className="grid grid-cols-1 sm:grid-cols-6 gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                  className="grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm"
                 >
                   {/* Número */}
                   <div className="flex sm:block justify-between">
