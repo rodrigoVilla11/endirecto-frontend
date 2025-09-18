@@ -96,56 +96,7 @@ const Page = () => {
   };
 
   // ¿es admin?
-  const isAdmin = userData?.role === "ADMINISTRADOR";
-
-  // tasa anual (default 96 hasta que llega del backend)
-  const [interestPct, setInterestPct] = useState<number>(96);
-
-  // leer tasa persistida
-  const { data: interestSetting, isFetching: isLoadingRate } =
-    useGetInterestRateQuery();
-
-  // actualizar tasa persistida
-  const [updateInterestRate, { isLoading: isSavingRate, isError, error }] =
-    useUpdateInterestRateMutation();
-
-  const saveRate = async (rate: any) => {
-    try {
-      // según cómo definiste el endpoint (ver más abajo):
-      // Opción A: el endpoint recibe un número
-      await updateInterestRate(rate).unwrap();
-
-      // Opción B: el endpoint recibe { value }
-      // await updateInterestRate({ value: rate }).unwrap();
-
-      // listo
-    } catch (e) {
-      const msg = getRtqErrorMessage(e);
-      console.error("updateInterestRate error:", e);
-      alert(msg);
-    }
-  };
-
-  function getRtqErrorMessage(e: unknown): string {
-    if (e && typeof e === "object" && "status" in e) {
-      const err = e as { status: number | string; data?: any };
-      if (typeof err.data === "string") return `${err.status}: ${err.data}`;
-      if (err.data?.message) return `${err.status}: ${err.data.message}`;
-      if (err.data?.error) return `${err.status}: ${err.data.error}`;
-      return `Error ${err.status}`;
-    }
-    if (e && typeof e === "object" && "message" in e) {
-      return String((e as any).message);
-    }
-    return "Error desconocido al actualizar la tasa.";
-  }
-
-  // aplicar la tasa que venga del backend
-  useEffect(() => {
-    if (typeof interestSetting?.value === "number") {
-      setInterestPct(interestSetting.value);
-    }
-  }, [interestSetting]);
+ 
 
   useEffect(() => {
     if (selectedClientId && data) {
@@ -638,61 +589,6 @@ const Page = () => {
                 </span>
                 <span className="text-gray-800">{userData?.branch}</span>
               </div>
-              {isAdmin && (
-                <div className="col-span-2 p-4 bg-white rounded-md shadow-md border border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tasa anual
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      value={interestPct}
-                      onChange={(e) =>
-                        setInterestPct(Number(e.target.value) || 0)
-                      }
-                      className="w-24 border-gray-300 rounded-md shadow-sm px-2 py-1"
-                      disabled={isLoadingRate}
-                    />
-                    <span className="text-gray-700">%</span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          // PRUEBA 1: objeto { value }
-                          await updateInterestRate({
-                            value: Number(interestPct),
-                          }).unwrap();
-                          setShowTick(true);
-                          setTimeout(() => setShowTick(false), 1500);
-                        } catch (e) {
-                          alert(getRtqErrorMessage(e));
-                          console.error("updateInterestRate error:", e);
-                        }
-                      }}
-                      disabled={isSavingRate || isLoadingRate}
-                      className={`px-3 py-2 rounded-md text-white ${
-                        isSavingRate || isLoadingRate
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
-                      title="Guardar como predeterminada"
-                    >
-                      Guardar
-                    </button>
-                    {isError && (
-                      <p className="text-xs text-red-600">
-                        {getRtqErrorMessage(error as any)}
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Esta tasa queda guardada como predeterminada hasta que la
-                    cambies.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { diffFromTodayToDate } from "@/lib/dateUtils";
 import React, { useEffect, useMemo, useState } from "react";
 
 type PaymentMethod = "efectivo" | "transferencia" | "cheque";
@@ -72,18 +73,32 @@ export default function ValueView({
     });
   };
 
-  // ======= Cálculos de interés simple para cheques =======
-  const dailyRate = useMemo(() => (annualInterestPct / 100) / 365, [annualInterestPct]);
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-  const daysBetweenToday = (iso?: string) => {
-    if (!iso) return 0;
+  function toLocalMidnightUTC(d: Date) {
+    // Normaliza a medianoche local y devuelve timestamp UTC
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function parseISOAsLocal(iso?: string): Date | null {
+    if (!iso) return null;
+    // <input type="date" /> => 'YYYY-MM-DD' (sin zona)
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      const [, y, mo, d] = m;
+      return new Date(Number(y), Number(mo) - 1, Number(d)); // medianoche LOCAL
+    }
     const d = new Date(iso);
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    return Math.max(diff, 0);
-  };
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // ======= Cálculos de interés simple para cheques =======
+  const dailyRate = useMemo(
+    () => annualInterestPct / 100 / 365,
+    [annualInterestPct]
+  );
+
+  const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
 
   /** Días que generan interés (aplica gracia) */
   const chargeableDays = (iso?: string) => {
@@ -162,7 +177,11 @@ export default function ValueView({
     patchRow(idx, { rawAmount: value, amount: neto.toFixed(2) });
   };
 
-  const handleMethodChange = (idx: number, method: PaymentMethod, v: ValueItem) => {
+  const handleMethodChange = (
+    idx: number,
+    method: PaymentMethod,
+    v: ValueItem
+  ) => {
     if (method !== "cheque") {
       patchRow(idx, { method, rawAmount: undefined }); // amount ya es imputable
       return;
@@ -200,16 +219,18 @@ export default function ValueView({
 
       <div className="space-y-2">
         {newValues.map((v, idx) => {
-          const showBank = v.method === "transferencia" || v.method === "cheque";
+          const showBank =
+            v.method === "transferencia" || v.method === "cheque";
 
           const daysTotal = daysBetweenToday(v.chequeDate);
-          const daysGrav = v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
+          const daysGrav =
+            v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
           const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
           // En el input de cheque mostramos el monto ORIGINAL (rawAmount)
           const shownAmountInput =
-            v.method === "cheque" ? (v.rawAmount ?? v.amount) : v.amount;
+            v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
 
           return (
             <div
@@ -242,19 +263,25 @@ export default function ValueView({
 
                 {/* Concepto */}
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Concepto</label>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Concepto
+                  </label>
                   <input
                     type="text"
                     placeholder="Ej: Pago factura 001-0000123"
                     value={v.selectedReason}
-                    onChange={(e) => patchRow(idx, { selectedReason: e.target.value })}
+                    onChange={(e) =>
+                      patchRow(idx, { selectedReason: e.target.value })
+                    }
                     className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                   />
                 </div>
 
                 {/* Medio de pago */}
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Medio de pago</label>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Medio de pago
+                  </label>
                   <div className="flex gap-2 overflow-x-auto md:overflow-visible flex-nowrap md:flex-nowrap pr-1">
                     <RadioPill
                       label="Efectivo"
@@ -265,7 +292,9 @@ export default function ValueView({
                     <RadioPill
                       label="Transferencia"
                       selected={v.method === "transferencia"}
-                      onClick={() => handleMethodChange(idx, "transferencia", v)}
+                      onClick={() =>
+                        handleMethodChange(idx, "transferencia", v)
+                      }
                       className="min-w-[9.5rem]"
                     />
                     <RadioPill
@@ -293,7 +322,9 @@ export default function ValueView({
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
                   {/* Banco */}
                   <div className="md:col-span-4">
-                    <label className="block text-xs text-zinc-400 mb-1">Banco</label>
+                    <label className="block text-xs text-zinc-400 mb-1">
+                      Banco
+                    </label>
                     <input
                       type="text"
                       placeholder="Ej: Banco Galicia"
@@ -313,7 +344,9 @@ export default function ValueView({
                         <input
                           type="date"
                           value={v.chequeDate || ""}
-                          onChange={(e) => handleChequeDateChange(idx, e.target.value, v)}
+                          onChange={(e) =>
+                            handleChequeDateChange(idx, e.target.value, v)
+                          }
                           className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                         />
                         <div className="mt-1 text-[10px] text-zinc-500">
@@ -337,7 +370,9 @@ export default function ValueView({
 
               {/* Pie: valor imputable */}
               <div className="mt-3 text-xs text-zinc-400">
-                {`Imputa ≈ ${currencyFmt.format(parseFloat(v.amount || "0") || 0)}`}
+                {`Imputa ≈ ${currencyFmt.format(
+                  parseFloat(v.amount || "0") || 0
+                )}`}
               </div>
             </div>
           );
@@ -417,7 +452,9 @@ function RowSummary({
       : "text-white";
   return (
     <div className="flex justify-between">
-      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>{label}</span>
+      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>
+        {label}
+      </span>
       <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
         {value}
       </span>

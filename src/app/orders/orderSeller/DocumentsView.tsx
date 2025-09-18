@@ -5,6 +5,11 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useGetDocumentByIdQuery } from "@/redux/services/documentsApi";
 import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
+import {
+  diffCalendarDays,
+  diffFromDateToToday,
+  parseDateOnlyLocal,
+} from "@/lib/dateUtils";
 
 export interface ExpandableTableProps {
   document_id: string;
@@ -12,8 +17,6 @@ export interface ExpandableTableProps {
   onRowSelect?: (id: string, checked: boolean) => void;
   selectedRows?: string[];
   setNewPayment?: any;
-
-  // ✅ Nuevo: sólo estos modos
   paymentType: "pago_anticipado" | "cta_cte";
 }
 
@@ -27,7 +30,8 @@ export function DocumentsView({
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-  const { data, error, isLoading } = useGetDocumentByIdQuery({ id: document_id });
+
+  const { data } = useGetDocumentByIdQuery({ id: document_id });
 
   const { data: paymentsConditionsData } = useGetPaymentConditionByIdQuery({
     id: data?.payment_condition_id || "",
@@ -39,40 +43,18 @@ export function DocumentsView({
     );
   };
 
-  /* ===================== Helpers de fecha y números ===================== */
+  /* ===================== Helpers ===================== */
 
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-  function parseFlexibleDate(s?: string): Date | null {
-    if (!s) return null;
-    if (s.includes("/")) {
-      const [dd, mm, yyyy] = s.split("/");
-      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-      return isNaN(d.getTime()) ? null : d;
-    }
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? null : d;
-  }
-
-  function formatDateDDMMYYYY(date: string) {
-    const d = parseFlexibleDate(date);
+  function formatDateDDMMYYYY(date?: string) {
+    const d = parseDateOnlyLocal(date);
     if (!d) return "—";
-    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-  }
-
-  function daysBetween(a?: string, b?: string): number {
-    const da = parseFlexibleDate(a);
-    const db = parseFlexibleDate(b);
-    if (!da || !db) return NaN;
-    const ms = db.getTime() - da.getTime();
-    return Math.ceil(ms / (1000 * 60 * 60 * 24));
-  }
-
-  function daysFromTo(start?: string, endDate: Date = new Date()) {
-    const d = parseFlexibleDate(start);
-    if (!d) return NaN;
-    const ms = endDate.getTime() - d.getTime();
-    return Math.floor(ms / (1000 * 60 * 60 * 24));
+    return d.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   }
 
   function formatPriceWithCurrency(price: number): string {
@@ -88,7 +70,7 @@ export function DocumentsView({
     return `${formattedNumber}`;
   }
 
-  /* ===================== Reglas de descuento (nuevo modelo) ===================== */
+  /* ===================== Reglas de descuento ===================== */
 
   const isNoDiscountCondition = (txt?: string) => {
     const v = (txt || "").toLowerCase().trim();
@@ -102,23 +84,18 @@ export function DocumentsView({
 
   function getDiscountRule(
     docDays: number,
-    paymentType: "pago_anticipado" | "cta_cte",
+    pt: "pago_anticipado" | "cta_cte",
     docPaymentCondition?: string
   ): { rate: number; note?: string } {
-    // 1) Condición de pago del documento bloquea descuentos
     if (isNoDiscountCondition(docPaymentCondition)) {
       return { rate: 0, note: "Sin descuento por condición de pago" };
     }
-
-    // 2) Pago anticipado: sin reglas de % (0%)
-    if (paymentType === "pago_anticipado") {
+    if (pt === "pago_anticipado") {
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
-
-    // 3) Cuenta corriente: por días
     if (isNaN(docDays)) return { rate: 0, note: "Fecha/estimación inválida" };
     if (docDays <= 15) return { rate: 0.13 };
-    if (docDays <= 30) return { rate: 0.10 };
+    if (docDays <= 30) return { rate: 0.1 };
     if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
     return { rate: 0, note: "Precio facturado (0%)" };
   }
@@ -130,12 +107,17 @@ export function DocumentsView({
   const docNumber = data?.number ?? "";
   const amount = Number(data?.amount ?? 0);
 
-  const days_until_expiration = daysBetween(invoiceDateStr, expirationDateStr);
-  const days_since_invoice = daysFromTo(invoiceDateStr);
+  // días calendario exactos usando utilidades compartidas
+  const days_until_expiration = diffCalendarDays(invoiceDateStr, expirationDateStr);
+  const days_since_invoice = diffFromDateToToday(invoiceDateStr);
+
+
   const balanceRaw = Number(customerInformation?.document_balance ?? amount ?? 0);
   const balance = isNaN(balanceRaw) ? 0 : balanceRaw;
 
-  const paymentConditionName = paymentsConditionsData?.name || t("document.noEspecificado");
+  const paymentConditionName =
+    paymentsConditionsData?.name || t("document.noEspecificado");
+
   const { rate, note } = getDiscountRule(
     days_since_invoice,
     paymentType,
@@ -145,26 +127,41 @@ export function DocumentsView({
   const discountAmount = round2(balance * rate);
   const finalAmount = round2(balance - discountAmount);
 
-  /* ===================== Integración con selección ===================== */
+  /* ===================== Selección: payload consistente ===================== */
 
+  console.log("data", data)
   const documentDetails = {
     document_id: data?.id || "",
     number: docNumber,
+
+    // guardamos crudo + formateado (para futuros recálculos correctos)
+    date_raw: invoiceDateStr || "",
     date: formatDateDDMMYYYY(invoiceDateStr || ""),
+
+    expiration_date_raw: expirationDateStr || "",
     expiration_date: formatDateDDMMYYYY(expirationDateStr || ""),
+
     amount: String(amount ?? ""),
     document_balance: String(balance),
     payment_condition: paymentConditionName,
     saldo_a_pagar: String(balance),
-    days_until_expiration: Number.isFinite(days_until_expiration) ? days_until_expiration : NaN,
-    days_until_expiration_today: Number.isFinite(days_since_invoice) ? days_since_invoice : NaN,
+
+    days_until_expiration: Number.isFinite(days_until_expiration)
+      ? days_until_expiration
+      : NaN,
+    days_until_expiration_today: Number.isFinite(days_since_invoice)
+      ? days_since_invoice
+      : NaN,
   };
+  console.log("documentDetails", documentDetails)
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
     if (checked) {
       setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
     } else {
-      setNewPayment?.((prev: any[]) => prev.filter((doc) => doc.document_id !== id));
+      setNewPayment?.((prev: any[]) =>
+        prev.filter((doc) => doc.document_id !== id)
+      );
     }
     onRowSelect?.(id, checked);
   };
@@ -197,7 +194,8 @@ export function DocumentsView({
               <div className="flex flex-col">
                 <span className="text-gray-200 font-medium">{docNumber}</span>
                 <span className="text-sm text-gray-400">
-                  {formatDateDDMMYYYY(invoiceDateStr || "")} - {t("document.vto")} {formatDateDDMMYYYY(expirationDateStr || "")}
+                  {formatDateDDMMYYYY(invoiceDateStr || "")} - {t("document.vto")}{" "}
+                  {formatDateDDMMYYYY(expirationDateStr || "")}
                 </span>
               </div>
             </div>
@@ -217,9 +215,7 @@ export function DocumentsView({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">{t("document.condicionPago")}</span>
-                    <span className="text-gray-200">
-                      {paymentConditionName}
-                    </span>
+                    <span className="text-gray-200">{paymentConditionName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">{t("document.importe")}</span>
@@ -240,7 +236,9 @@ export function DocumentsView({
                 {/* Días / Descuento / Final */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.diasDesdeEmision") || "Días desde emisión"}</span>
+                    <span className="text-gray-400">
+                      {t("document.diasDesdeEmision") || "Días desde emisión"}
+                    </span>
                     <span className={`text-gray-200 ${note ? "text-amber-400" : ""}`}>
                       {Number.isFinite(days_since_invoice) ? days_since_invoice : "—"}
                     </span>
@@ -248,28 +246,28 @@ export function DocumentsView({
 
                   <div className="flex justify-between">
                     <span className="text-gray-400">{t("document.descuento")}</span>
-                    <span className="text-gray-200">
-                      {(rate * 100).toFixed(0)}%
-                    </span>
+                    <span className="text-gray-200">{(rate * 100).toFixed(0)}%</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-gray-400">{t("document.importeDescuento") || "Importe desc."}</span>
+                    <span className="text-gray-400">
+                      {t("document.importeDescuento") || "Importe desc."}
+                    </span>
                     <span className="text-gray-200">
                       -{formatPriceWithCurrency(discountAmount)}
                     </span>
                   </div>
 
                   <div className="flex justify-between font-medium">
-                    <span className="text-gray-400">{t("document.finalConDescuento") || "Final c/desc."}</span>
+                    <span className="text-gray-400">
+                      {t("document.finalConDescuento") || "Final c/desc."}
+                    </span>
                     <span className={`text-gray-200 ${note ? "text-amber-400" : ""}`}>
                       {formatPriceWithCurrency(finalAmount)}
                     </span>
                   </div>
 
-                  {note ? (
-                    <div className="text-xs text-amber-400 mt-1">{note}</div>
-                  ) : null}
+                  {note ? <div className="text-xs text-amber-400 mt-1">{note}</div> : null}
                 </div>
               </div>
             </div>

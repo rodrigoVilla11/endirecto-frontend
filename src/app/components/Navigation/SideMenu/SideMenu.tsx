@@ -24,6 +24,7 @@ import { useMobile } from "@/app/context/ResponsiveContext";
 import { useSideMenu } from "@/app/context/SideMenuContext";
 import { useTranslation } from "react-i18next";
 import { FaRegNoteSticky } from "react-icons/fa6";
+import { RiBankFill } from "react-icons/ri";
 
 const SideMenu = () => {
   const { isOpen, setIsOpen, setOpenSubCategory } = useSideMenu();
@@ -193,6 +194,16 @@ const SideMenu = () => {
           name: t("vouchers"),
           path: "/accounts/vouchers",
         },
+      ],
+    },
+     {
+      icon: <RiBankFill />,
+      name: t("finance"),
+      path: "/finance",
+      allowedRoles: [
+        "ADMINISTRADOR",
+        "OPERADOR",
+        "VENDEDOR",
       ],
     },
     {

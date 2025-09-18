@@ -17,6 +17,7 @@ import {
   useGetInterestRateQuery,
   useUpdateInterestRateMutation,
 } from "@/redux/services/settingsApi";
+import { diffCalendarDays, diffFromDateToToday } from "@/lib/dateUtils";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,6 +42,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     {}
   );
 
+  console.log(
+    "Test 30/07 → 18/09 =",
+    diffCalendarDays("2025-07-30", "2025-09-18")
+  );
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
@@ -49,8 +54,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const { data: interestSetting, isFetching: isLoadingRate } =
     useGetInterestRateQuery();
-  const [updateInterestRate, { isLoading: isSavingRate }] =
-    useUpdateInterestRateMutation();
 
   useEffect(() => {
     if (typeof interestSetting?.value === "number") {
@@ -160,12 +163,35 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
   }, [hasSelectedDocs, paymentTypeUI]);
 
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  function toLocalMidnightUTC(d: Date) {
+    // Normaliza a medianoche *local* y lo expresa en UTC para evitar DST
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function parseAsLocalDate(dateStr: string): Date {
+    // Si viene 'YYYY-MM-DD', forzamos medianoche LOCAL (evita el shift de UTC)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split("-").map(Number);
+      return new Date(y, m - 1, d); // local 00:00
+    }
+    // Para ISO con hora/zona, dejamos que el motor lo resuelva
+    return new Date(dateStr);
+  }
+
   function daysFromInvoice(dateStr?: string) {
     if (!dateStr) return NaN;
-    const d = new Date(dateStr);
+    const inv = parseAsLocalDate(dateStr);
+    if (Number.isNaN(inv.getTime())) return NaN;
+
     const today = new Date();
-    const diffMs = today.getTime() - d.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    const diffDays =
+      (toLocalMidnightUTC(today) - toLocalMidnightUTC(inv)) / MS_PER_DAY;
+
+    // ya están normalizadas a medianoche → floor/round dan lo mismo
+    return Math.max(0, Math.round(diffDays));
   }
 
   const isNoDiscountCondition = (txt?: string) => {
@@ -184,7 +210,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }) {
     const v = Number(doc.days_until_expiration_today);
     if (Number.isFinite(v)) return v;
-    return daysFromInvoice(doc.date);
+    return diffFromDateToToday(doc.date); // 👈 antes: daysFromInvoice
   }
   const { userData } = useAuth();
 
