@@ -106,8 +106,39 @@ const Page = () => {
     useGetInterestRateQuery();
 
   // actualizar tasa persistida
-  const [updateInterestRate, { isLoading: isSavingRate }] =
+  const [updateInterestRate, { isLoading: isSavingRate, isError, error }] =
     useUpdateInterestRateMutation();
+
+  const saveRate = async (rate: any) => {
+    try {
+      // según cómo definiste el endpoint (ver más abajo):
+      // Opción A: el endpoint recibe un número
+      await updateInterestRate(rate).unwrap();
+
+      // Opción B: el endpoint recibe { value }
+      // await updateInterestRate({ value: rate }).unwrap();
+
+      // listo
+    } catch (e) {
+      const msg = getRtqErrorMessage(e);
+      console.error("updateInterestRate error:", e);
+      alert(msg);
+    }
+  };
+
+  function getRtqErrorMessage(e: unknown): string {
+    if (e && typeof e === "object" && "status" in e) {
+      const err = e as { status: number | string; data?: any };
+      if (typeof err.data === "string") return `${err.status}: ${err.data}`;
+      if (err.data?.message) return `${err.status}: ${err.data.message}`;
+      if (err.data?.error) return `${err.status}: ${err.data.error}`;
+      return `Error ${err.status}`;
+    }
+    if (e && typeof e === "object" && "message" in e) {
+      return String((e as any).message);
+    }
+    return "Error desconocido al actualizar la tasa.";
+  }
 
   // aplicar la tasa que venga del backend
   useEffect(() => {
@@ -178,6 +209,7 @@ const Page = () => {
     };
     await updateCustomer(payload);
   };
+  
 
   return (
     <PrivateRoute
@@ -628,14 +660,15 @@ const Page = () => {
                       type="button"
                       onClick={async () => {
                         try {
+                          // PRUEBA 1: objeto { value }
                           await updateInterestRate({
-                            value: interestPct,
+                            value: Number(interestPct),
                           }).unwrap();
                           setShowTick(true);
                           setTimeout(() => setShowTick(false), 1500);
                         } catch (e) {
-                          alert("No se pudo guardar la tasa.");
-                          console.error(e);
+                          alert(getRtqErrorMessage(e));
+                          console.error("updateInterestRate error:", e);
                         }
                       }}
                       disabled={isSavingRate || isLoadingRate}
@@ -648,6 +681,11 @@ const Page = () => {
                     >
                       Guardar
                     </button>
+                    {isError && (
+                      <p className="text-xs text-red-600">
+                        {getRtqErrorMessage(error as any)}
+                      </p>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
                     Esta tasa queda guardada como predeterminada hasta que la
