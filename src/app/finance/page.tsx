@@ -9,6 +9,7 @@ import {
 } from "@/redux/services/settingsApi";
 import { useAuth } from "../context/AuthContext";
 import { FaCheck, FaSpinner } from "react-icons/fa";
+import PlanCalculator from "./planCaluculator";
 
 const Page = () => {
   const { t } = useTranslation();
@@ -155,6 +156,10 @@ const Page = () => {
             }
             graceDays={45}
           />
+        </section>
+
+         <section className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm">
+         <PlanCalculator />
         </section>
       </div>
     </PrivateRoute>
