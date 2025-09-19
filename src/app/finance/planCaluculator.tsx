@@ -132,14 +132,14 @@ export default function PlanCalculator({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-gray-900 font-semibold">{title}</h4>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-white">
           Máximo 3 meses · cuotas iguales
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Fecha inicio</label>
+          <label className="block text-xs text-white mb-1">Fecha inicio</label>
           <input
             type="date"
             value={startISO}
@@ -149,7 +149,7 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Importe total (PV)</label>
+          <label className="block text-xs text-white mb-1">Importe total (PV)</label>
           <input
             type="number"
             inputMode="decimal"
@@ -162,7 +162,7 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Meses (1–3)</label>
+          <label className="block text-xs text-white mb-1">Meses (1–3)</label>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
@@ -175,7 +175,7 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Tasa mensual (%)</label>
+          <label className="block text-xs text-white mb-1">Tasa mensual (%)</label>
           <input
             type="number"
             inputMode="decimal"
@@ -198,7 +198,7 @@ export default function PlanCalculator({
         <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
           Cronograma
         </div>
-        <div className="hidden md:grid grid-cols-3 px-3 py-2 text-xs text-zinc-500">
+        <div className="hidden md:grid grid-cols-3 px-3 py-2 text-xs text-white">
           <span>Cheque</span>
           <span>Días</span>
           <span>Fecha</span>
@@ -207,8 +207,8 @@ export default function PlanCalculator({
           {schedule.map((it) => (
             <div key={it.k} className="grid grid-cols-1 md:grid-cols-3 px-3 py-2 text-sm">
               <div className="font-medium">{fmt.format(it.amount)}</div>
-              <div className="text-zinc-600">{it.days}</div>
-              <div className="text-zinc-900">{it.dateISO}</div>
+              <div className="text-white">{it.days}</div>
+              <div className="text-white">{it.dateISO}</div>
             </div>
           ))}
           {schedule.length === 0 && (
