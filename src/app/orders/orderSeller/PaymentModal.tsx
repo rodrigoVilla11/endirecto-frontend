@@ -11,7 +11,10 @@ import { useCreatePaymentMutation } from "@/redux/services/paymentsApi";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
 import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
-import { useAddNotificationToCustomerMutation } from "@/redux/services/customersApi";
+import {
+  useAddNotificationToCustomerMutation,
+  useGetCustomerByIdQuery,
+} from "@/redux/services/customersApi";
 import { useAddNotificationToUserByIdMutation } from "@/redux/services/usersApi";
 import {
   useGetInterestRateQuery,
@@ -41,6 +44,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
     {}
   );
+  const [isValuesValid, setIsValuesValid] = useState(true);
 
   console.log(
     "Test 30/07 → 18/09 =",
@@ -106,6 +110,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     /** adjuntos */
     receiptUrl?: string;
     receiptOriginalName?: string;
+    chequeNumber?: string;
   };
 
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
@@ -251,6 +256,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (days > 45) return "cta_cte:>45d:actualizacion";
     return "cta_cte:0%";
   };
+  const {
+    data: customer,
+    isFetching,
+    isError,
+  } = useGetCustomerByIdQuery(
+    { id: selectedClientId ?? "" },
+    { skip: !selectedClientId }
+  );
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
@@ -276,6 +289,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           bank: v.bank || undefined,
           receipt_url: v.receiptUrl || undefined,
           receipt_original_name: v.receiptOriginalName || undefined,
+          cheque_number: v.chequeNumber || undefined,
         };
 
         if (v.method !== "cheque") {
@@ -367,11 +381,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
-          title: "Pago registrado ${created._id}",
+          title: "PAGO REGISTRADO",
           type: "PAGO",
           description: `${valuesSummary} | Neto: ${currencyFmt.format(
             created?.totals?.net ?? totalAfterDiscount
-          )} — Dif: ${currencyFmt.format(diff)}`,
+          )}`,
           link: "/payments",
           schedule_from: new Date(),
           schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -386,9 +400,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           notification: {
             title: "Pago registrado",
             type: "PAGO", // si tu backend aún no soporta 'PAGO', usar "NOVEDAD"
-            description: `Cliente ${selectedClientId} — Neto ${currencyFmt.format(
-              totalAfterDiscount
-            )} — Dif ${currencyFmt.format(diff)}`,
+            description: `Cliente ${selectedClientId} - ${
+              customer?.name
+            }  — Neto ${currencyFmt.format(totalAfterDiscount)}`,
             link: "/payments",
             schedule_from: now,
             schedule_to: in7d,
@@ -995,6 +1009,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   annualInterestPct={annualInterestPct} // ej: 96
                   docAdjustmentSigned={totalAdjustmentSigned} // DTO/REC s/FACT (con signo)
                   netToPay={totalAfterDiscount} // TOTAL A PAGAR (neto)
+                  onValidityChange={setIsValuesValid}
                 />
 
                 {/* Comprobantes por valor */}
@@ -1106,8 +1121,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         <ConfirmDialog
           open={isConfirmModalOpen}
           onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={handleCreatePayment} // 👈 acá
+          onConfirm={handleCreatePayment}
           isLoading={isCreating || isSubmittingPayment}
+          canConfirm={isValuesValid} // 👈 NUEVO
+          invalidReason="Completá el banco para cheque/transferencia" // opcional
           title="Confirmar envío"
         >
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
@@ -1143,6 +1160,8 @@ function ConfirmDialog({
   onCancel,
   onConfirm,
   isLoading,
+  canConfirm = true, // 👈 NUEVO
+  invalidReason, // 👈 NUEVO (opcional)
   title,
   children,
 }: {
@@ -1150,6 +1169,8 @@ function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
   isLoading?: boolean;
+  canConfirm?: boolean;
+  invalidReason?: string;
   title: string;
   children?: React.ReactNode;
 }) {
@@ -1157,34 +1178,63 @@ function ConfirmDialog({
   useEffect(() => setMounted(true), []);
   if (!open || !mounted) return null;
 
+  const disabled = isLoading || !canConfirm;
+
+  const handleConfirmClick = () => {
+    if (disabled) return; // 👈 hard stop
+    onConfirm();
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center">
-      {/* backdrop del confirm */}
       <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
-      {/* contenido del confirm */}
       <div
         className="relative w-full max-w-lg rounded-xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
       >
         <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h4 className="text-lg font-semibold">{title}</h4>
+          <h4 id="confirm-title" className="text-lg font-semibold">
+            {title}
+          </h4>
         </div>
-        <div className="p-4 space-y-3">{children}</div>
+
+        <div className="p-4 space-y-3">
+          {children}
+          {!canConfirm && !!invalidReason && (
+            <div className="text-sm text-red-500 mt-1">{invalidReason}</div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800">
           <button
+            type="button"
             className="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             onClick={onCancel}
           >
             Cancelar
           </button>
+
           <button
-            className={`px-3 py-2 rounded text-white ${
-              isLoading
-                ? "bg-amber-500 cursor-wait"
-                : "bg-emerald-600 hover:bg-emerald-700"
-            }`}
-            onClick={onConfirm}
-            disabled={isLoading}
+            type="button"
+            onClick={handleConfirmClick}
+            disabled={disabled}
+            aria-disabled={disabled}
+            className={`px-3 py-2 rounded text-white
+              ${
+                disabled
+                  ? "bg-zinc-500 cursor-not-allowed"
+                  : isLoading
+                  ? "bg-amber-500 cursor-wait"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+            title={
+              !canConfirm && !isLoading
+                ? invalidReason || "Completar campos requeridos"
+                : undefined
+            }
           >
             {isLoading ? "Procesando..." : "Confirmar"}
           </button>

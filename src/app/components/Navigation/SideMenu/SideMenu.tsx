@@ -176,11 +176,7 @@ const SideMenu = () => {
     {
       icon: <BsCash />,
       name: t("currentAccounts"),
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "VENDEDOR",
-      ],
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "VENDEDOR"],
       subCategories: [
         {
           name: t("documentStatus"),
@@ -196,14 +192,23 @@ const SideMenu = () => {
         },
       ],
     },
-     {
+    {
       icon: <RiBankFill />,
       name: t("finance"),
-      path: "/finance",
-      allowedRoles: [
-        "ADMINISTRADOR",
-        "OPERADOR",
-        "VENDEDOR",
+      allowedRoles: ["ADMINISTRADOR", "OPERADOR", "VENDEDOR"],
+      subCategories: [
+        {
+          name: t("Ajustes"),
+          path: "/finance/settings",
+        },
+        {
+          name: t("Calculadora de Cheques"),
+          path: "/finance/checkCalculator",
+        },
+        {
+          name: t("Calculadora de Plan"),
+          path: "/finance/planCalculator",
+        },
       ],
     },
     {

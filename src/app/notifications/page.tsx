@@ -163,12 +163,6 @@ const Page = () => {
     type: notification.type,
     title: notification.title,
     description: notification.description,
-    brand:
-      branchData?.find((b) => b.id === notification.brand_id)?.name ||
-      t("table.noBrand"),
-    article:
-      articleData?.find((a) => a.id === notification.article_id)?.name ||
-      t("table.noBrand"),
     read: (
       <button
         onClick={(e) => handleNotificationClick(notification, e)}
@@ -185,8 +179,6 @@ const Page = () => {
     { name: t("table.type"), key: "type", important: true },
     { name: t("table.title"), key: "title", important: true },
     { name: t("table.description"), key: "description" },
-    { name: t("table.brand"), key: "brand" },
-    { name: t("table.article"), key: "article" },
     { name: t("table.read"), key: "read" },
   ];
 

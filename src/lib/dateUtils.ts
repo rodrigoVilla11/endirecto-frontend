@@ -78,7 +78,7 @@ export function diffCalendarDays(a?: string, b?: string): number {
 /** Días calendario desde una fecha (start) hasta HOY (local). Nunca negativo. */
 export function diffFromDateToToday(
   start?: string,
-  { inclusive = true }: { inclusive?: boolean } = {}
+  { inclusive = false }: { inclusive?: boolean } = {}
 ): number {
   const d = parseDateOnlyLocal(start);
   if (!d) return NaN;
@@ -92,7 +92,6 @@ export function diffFromDateToToday(
   // diffDays ya es entero (medias noches exactas), pero por robustez:
   const whole = Math.trunc(diffDays);
 
-  console.log("whole", whole + 1)
   if (whole < 0) return 0; // si start es futuro, nunca negativo
   return inclusive ? whole + 1 : whole;
 }

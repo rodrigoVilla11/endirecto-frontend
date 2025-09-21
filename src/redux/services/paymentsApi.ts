@@ -39,7 +39,7 @@ export interface PaymentDocumentLine {
   rule_applied: string;
   base: number;
   /** puede ser negativo si es recargo (>45d) */
-  discount_rate: number;   // 0.13, 0.10, -0.1427, etc.
+  discount_rate: number; // 0.13, 0.10, -0.1427, etc.
   /** monto con signo: +descuento / -recargo */
   discount_amount: number; // base * discount_rate
   /** base - discount_amount */
@@ -57,7 +57,7 @@ export interface PaymentValueLine {
   /** archivo adjunto */
   receipt_url?: string;
   receipt_original_name?: string;
-
+  cheque_number?: string;
   /** ===== Extensiones para cheques ===== */
   /** monto original del cheque */
   raw_amount?: number;
@@ -92,7 +92,7 @@ export interface Payment {
   multisoft_id?: string;
   customer: { id: string };
   currency: string; // "ARS"
-  date: string;     // ISO string
+  date: string; // ISO string
   type: PaymentType; // "pago_anticipado" | "cta_cte"
   totals: PaymentTotals;
   /** compat: igual a totals.net */
@@ -106,7 +106,7 @@ export interface Payment {
   source?: string; // "web" | "mobile" | "pos"
   version?: number;
   isCharged: boolean; // default false
-  rendido: boolean;   // default false
+  rendido: boolean; // default false
   created_at: string;
   updated_at: string;
 
@@ -140,7 +140,7 @@ export interface FindPaymentsArgs {
   page?: number;
   limit?: number;
   startDate?: string; // 'YYYY-MM-DD'
-  endDate?: string;   // 'YYYY-MM-DD'
+  endDate?: string; // 'YYYY-MM-DD'
   status?: string;
   customer_id?: string;
   seller_id?: string;
@@ -196,7 +196,8 @@ export const paymentsApi = createApi({
         if (seller_id) params.append("seller_id", seller_id);
         if (sort) params.append("sort", sort);
         if (search) params.append("search", search);
-        if (includeLookup) params.append("includeLookup", String(includeLookup));
+        if (includeLookup)
+          params.append("includeLookup", String(includeLookup));
         if (isCharged) params.append("isCharged", isCharged);
         if (isImputed) params.append("isImputed", isImputed);
         if (type) params.append("type", type);

@@ -2,6 +2,7 @@
 
 import { diffFromTodayToDate } from "@/lib/dateUtils";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type PaymentMethod = "efectivo" | "transferencia" | "cheque";
 
@@ -15,6 +16,7 @@ export type ValueItem = {
   bank?: string;
   /** Solo cheques: fecha de cobro (YYYY-MM-DD) */
   chequeDate?: string;
+  chequeNumber?: string;
 };
 
 export default function ValueView({
@@ -28,6 +30,7 @@ export default function ValueView({
   netToPay = 0,
   /** gracia para cheques (por defecto 45) */
   chequeGraceDays = 10,
+  onValidityChange,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -35,6 +38,7 @@ export default function ValueView({
   docAdjustmentSigned?: number;
   netToPay?: number;
   chequeGraceDays?: number;
+  onValidityChange?: (isValid: boolean) => void;
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -46,16 +50,30 @@ export default function ValueView({
       }),
     []
   );
+  const { t } = useTranslation();
+  const NO_CONCEPTO = t("document.noConcepto") || "No Concepto";
+  const needsBank = (m: PaymentMethod) =>
+    m === "cheque" || m === "transferencia";
+  // Errores por fila (true = hay error)
+  const rowErrors = newValues.map((v) => ({
+    bank: needsBank(v.method) && !(v.bank || "").trim(),
+  }));
+
+  const hasErrors = rowErrors.some((e) => e.bank);
+  useEffect(() => {
+    onValidityChange?.(!hasErrors);
+  }, [hasErrors, onValidityChange]);
 
   const addRow = () => {
     setNewValues((prev) => [
       {
         amount: "",
         rawAmount: "",
-        selectedReason: "",
+        selectedReason: NO_CONCEPTO,
         method: "efectivo",
         bank: "",
         chequeDate: "",
+        chequeNumber: "",
       },
       ...prev,
     ]);
@@ -68,30 +86,17 @@ export default function ValueView({
   const patchRow = (idx: number, patch: Partial<ValueItem>) => {
     setNewValues((prev) => {
       const clone = [...prev];
-      clone[idx] = { ...clone[idx], ...patch };
+      const merged = { ...clone[idx], ...patch };
+
+      // 👇 si no hay concepto, forzamos "No Concepto"
+      if (!merged.selectedReason?.trim()) {
+        merged.selectedReason = NO_CONCEPTO;
+      }
+
+      clone[idx] = merged;
       return clone;
     });
   };
-
-  const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-  function toLocalMidnightUTC(d: Date) {
-    // Normaliza a medianoche local y devuelve timestamp UTC
-    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-
-  function parseISOAsLocal(iso?: string): Date | null {
-    if (!iso) return null;
-    // <input type="date" /> => 'YYYY-MM-DD' (sin zona)
-    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (m) {
-      const [, y, mo, d] = m;
-      return new Date(Number(y), Number(mo) - 1, Number(d)); // medianoche LOCAL
-    }
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? null : d;
-  }
-
   // ======= Cálculos de interés simple para cheques =======
   const dailyRate = useMemo(
     () => annualInterestPct / 100 / 365,
@@ -270,9 +275,12 @@ export default function ValueView({
                     type="text"
                     placeholder="Ej: Pago factura 001-0000123"
                     value={v.selectedReason}
-                    onChange={(e) =>
-                      patchRow(idx, { selectedReason: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      patchRow(idx, {
+                        selectedReason: val.trim() === "" ? NO_CONCEPTO : val,
+                      });
+                    }}
                     className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                   />
                 </div>
@@ -323,15 +331,25 @@ export default function ValueView({
                   {/* Banco */}
                   <div className="md:col-span-4">
                     <label className="block text-xs text-zinc-400 mb-1">
-                      Banco
+                      {t("document.banco") || "Banco"}
                     </label>
                     <input
                       type="text"
                       placeholder="Ej: Banco Galicia"
                       value={v.bank || ""}
                       onChange={(e) => patchRow(idx, { bank: e.target.value })}
-                      className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
+                      className={`w-full h-10 px-3 rounded text-white outline-none
+      ${
+        rowErrors[idx].bank
+          ? "bg-zinc-700 border border-red-500"
+          : "bg-zinc-700 border border-transparent"
+      }`}
                     />
+                    {rowErrors[idx].bank && (
+                      <div className="mt-1 text-[11px] text-red-500">
+                        {t("document.bancoRequerido") || "Banco requerido"}
+                      </div>
+                    )}
                   </div>
 
                   {/* Solo cheques: fecha + métricas */}
@@ -339,7 +357,7 @@ export default function ValueView({
                     <>
                       <div className="md:col-span-3">
                         <label className="block text-xs text-zinc-400 mb-1">
-                          Fecha de cobro
+                          {t("document.fechaCobro") || "Fecha de cobro"}
                         </label>
                         <input
                           type="date"
@@ -354,35 +372,106 @@ export default function ValueView({
                         </div>
                       </div>
 
-                      {/* <div className="md:col-span-5 grid grid-cols-4 gap-3">
-                        <Metric label="DÍAS GRAV." value={String(daysGrav)} />
-                        <Metric label="% INT" value={`${(pctInt * 100).toFixed(1)}%`} />
-                        <Metric label="REC" value={currencyFmt.format(interest$)} />
-                        <Metric
-                          label="IMP."
-                          value={currencyFmt.format(parseFloat(v.amount || "0") || 0)}
+                      {/* 👇 N° de cheque */}
+                      <div className="md:col-span-5">
+                        <label className="block text-xs text-zinc-400 mb-1">
+                          {t("document.numeroCheque") || "N° de cheque"}
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Ej: 00012345"
+                          value={v.chequeNumber || ""}
+                          onChange={(e) =>
+                            // solo dígitos, hasta 20 chars (ajustá si querés)
+                            patchRow(idx, {
+                              chequeNumber: e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 20),
+                            })
+                          }
+                          className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
+                          autoComplete="off"
                         />
-                      </div> */}
+                      </div>
                     </>
                   )}
                 </div>
               )}
 
-              {/* Pie: valor imputable */}
-              <div className="mt-3 text-xs text-zinc-400">
-                {`Imputa ≈ ${currencyFmt.format(
-                  parseFloat(v.amount || "0") || 0
-                )}`}
+              {/* Resumen por ítem */}
+              <div className="mt-3 rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
+                  {/* Valor (cheque usa monto ORIGINAL) */}
+                  <div className="flex justify-between">
+                    <span className="text-zinc-300">Valor</span>
+                    <span className="text-white tabular-nums">
+                      {currencyFmt.format(
+                        v.method === "cheque"
+                          ? parseFloat(v.rawAmount || v.amount || "0") || 0
+                          : parseFloat(v.amount || "0") || 0
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Días (solo se muestra si es cheque) */}
+                  {v.method === "cheque" && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-300">Días</span>
+                      <span className="text-white tabular-nums">
+                        {Number.isFinite(daysTotal) ? daysTotal : "—"}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* % (solo cheque; calculado sobre días gravados) */}
+                  {v.method === "cheque" && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-300">%</span>
+                      <span className="text-rose-400 tabular-nums">
+                        {fmtPctSigned(pctInt)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Costo financiero (solo cheque) */}
+                  {v.method === "cheque" && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-300">Costo financiero</span>
+                      <span className="text-rose-400 tabular-nums">
+                        {currencyFmt.format(interest$)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Valor Neto (siempre; en cheque = original - costo) */}
+                  <div className="flex justify-between sm:col-span-2">
+                    <span className="text-zinc-300 font-medium">
+                      Valor Neto
+                    </span>
+                    <span className="text-white font-medium tabular-nums">
+                      {currencyFmt.format(parseFloat(v.amount || "0") || 0)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Resumen inferior
+      {/* Resumen inferior */}
       <div className="mt-4 space-y-1 text-sm">
-        <RowSummary label="TOTAL PAGADO" value={currencyFmt.format(totalValues)} bold />
-        <RowSummary label="REC S/CHEQUES" value={currencyFmt.format(recargoChequesTotal)} />
+        <RowSummary
+          label="TOTAL PAGADO"
+          value={currencyFmt.format(totalValues)}
+          bold
+        />
+        <RowSummary
+          label="REC S/CHEQUES"
+          value={currencyFmt.format(recargoChequesTotal)}
+        />
         <RowSummary
           label="TOTAL DTOS/RECARGO"
           value={currencyFmt.format(totalDtosRecargo)}
@@ -392,10 +481,20 @@ export default function ValueView({
           value={currencyFmt.format(saldo)}
           highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
         />
-      </div> */}
+      </div>
+
+      {hasErrors && (
+        <div className="mt-3 text-sm text-red-400">
+          {t("document.hayErroresEnValores") ||
+            "Hay errores en los valores cargados"}
+        </div>
+      )}
     </div>
   );
 }
+
+const fmtPctSigned = (p: number) =>
+  `${p >= 0 ? "+" : ""}${(p * 100).toFixed(1)}%`;
 
 /* ================== UI helpers ================== */
 function RadioPill({

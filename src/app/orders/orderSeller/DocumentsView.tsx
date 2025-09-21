@@ -47,6 +47,23 @@ export function DocumentsView({
 
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
+  // ======= Recargo por vencido =======
+  const graceDays = Number(customerInformation?.grace_days ?? 45);
+  const annualInterestPct = Number(
+    customerInformation?.annual_interest_pct ?? 96
+  );
+
+  const getOverdueSurcharge = (docDays: number) => {
+    // días que generan recargo
+    const chargeableDays = Math.max(0, docDays - graceDays);
+    if (!Number.isFinite(docDays) || chargeableDays <= 0) {
+      return { pct: 0, amount: 0, days: 0 };
+    }
+    const dailyRate = annualInterestPct / 100 / 365;
+    const pct = dailyRate * chargeableDays; // ej: 0.01578 = 1.578%
+    return { pct, amount: 0, days: chargeableDays };
+  };
+
   function formatDateDDMMYYYY(date?: string) {
     const d = parseDateOnlyLocal(date);
     if (!d) return "—";
@@ -126,18 +143,26 @@ export function DocumentsView({
     paymentType,
     paymentConditionName
   );
-
   const isDesc = rate > 0;
-  const isRec = rate < 0;
-  const isNone = !rate || rate === 0;
+  const surcharge = getOverdueSurcharge(days_since_invoice);
+  const hasSurcharge = !isDesc && surcharge.pct > 0;
 
-  const adjPct = Math.abs(rate) * 100;
-  const adjAmount = round2(balance * Math.abs(rate));
+  const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
+  const adjAmount = round2(
+    balance * Math.abs(isDesc ? rate : hasSurcharge ? surcharge.pct : 0)
+  );
+
   const finalAmount = isDesc
     ? round2(balance - adjAmount)
-    : isRec
+    : hasSurcharge
     ? round2(balance + adjAmount)
     : balance;
+
+  const bannerNote = isDesc
+    ? null
+    : hasSurcharge
+    ? `Recargo por ${surcharge.days} días`
+    : note || null;
 
   const discountAmount = round2(balance * rate);
 
@@ -260,26 +285,21 @@ export function DocumentsView({
                   </span>
                 </div>
 
-                {/* Días / Descuento / Final */}
-                {/* Días / Descuento / Final */}
+                {/* Días / Ajuste / Final */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-400">
                       {t("document.diasDesdeEmision") || "Días desde emisión"}
                     </span>
-                    <span
-                      className={`text-gray-200 ${
-                        note ? "text-amber-400" : ""
-                      }`}
-                    >
+                    <span className="text-gray-200">
                       {Number.isFinite(days_since_invoice)
                         ? days_since_invoice
                         : "—"}
                     </span>
                   </div>
 
-                  {/* Solo mostrar si hay ajuste */}
-                  {!isNone && (
+                  {/* Mostrar ajuste si hay descuento o recargo */}
+                  {(isDesc || hasSurcharge) && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-gray-400">
@@ -292,7 +312,7 @@ export function DocumentsView({
                             isDesc ? "text-emerald-500" : "text-rose-400"
                           }`}
                         >
-                          {adjPct.toFixed(0)}%
+                          {adjPct.toFixed(1)}%
                         </span>
                       </div>
 
@@ -325,8 +345,11 @@ export function DocumentsView({
                     </>
                   )}
 
-                  {note ? (
-                    <div className="text-xs text-amber-400 mt-1">{note}</div>
+                  {/* Nota (descuento 0%, recargo, etc.) */}
+                  {bannerNote ? (
+                    <div className="text-xs text-amber-400 mt-1">
+                      {bannerNote}
+                    </div>
                   ) : null}
                 </div>
               </div>

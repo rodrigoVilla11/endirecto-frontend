@@ -926,14 +926,30 @@
     "comprobante": "Comprobante",
     "condicionPago": "Condición de Pago",
     "importe": "Importe",
-    "descuento": "Descuento",
-    "saldoAPagar": "Saldo a Pagar",
-    "vto": "Vto:",
-    "noEspecificado": "No especificado",
     "saldo": "Saldo",
     "diasDesdeEmision": "Días desde emisión",
+    "descuento": "Descuento",
+    "recargo": "Recargo",
     "importeDescuento": "Importe desc.",
-    "finalConDescuento": "Final c/desc."
+    "importeRecargo": "Importe rec.",
+    "finalConDescuento": "Final c/desc.",
+    "finalConRecargo": "Final c/rec.",
+    "noEspecificado": "No especificado",
+    "sinDescuento": "Sin descuento por condición de pago",
+    "pagoAnticipadoSinRegla": "Pago anticipado sin regla",
+    "fechaInvalida": "Fecha/estimación inválida",
+    "actualizacionPrecios": "Actualización de precios",
+    "precioFacturado": "Precio facturado (0%)",
+    "recargoPorDias": "Recargo por {{days}} días",
+    "descuentoPorcentaje": "Descuento {{percent}}%",
+    "recargoPorcentaje": "Recargo {{percent}}%",
+    "noConcepto": "No Concepto",
+    "bancoRequerido": "Banco requerido",
+    "hayErroresEnValores": "Hay errores en los valores cargados",
+
+    "numeroCheque": "N° de cheque",
+    "fechaCobro": "Fecha de cobro",
+    "banco": "Banco"
   },
   "customerDashboard": {
     "newOrder": "Nuevo Pedido",
@@ -997,7 +1013,7 @@
     "label": "Observaciones",
     "placeholder": "Ingrese sus observaciones..."
   },
-  "stats":{
+  "stats": {
     "title": "Estadísticas",
     "filters": "Filtros",
     "selectBrand": "Marca",
@@ -1012,7 +1028,7 @@
     "previousMonth": "Mes anterior",
     "last12Months": "Últimos 12 meses"
   },
-  
+
   "updateMassive": {
     "title": "Actualización Masiva",
     "description": "Ingrese un nuevo margen para la actualización masiva por marca:",
@@ -1324,7 +1340,7 @@
   "expiredDebt": "D. Vencida",
   "articlesOnCart": "Art. En Carrito",
   "search": "Buscar",
-"allTypes": "Tipos",
+  "allTypes": "Tipos",
   "allSellers": "Vendedores",
   "allCustomers": "Clientes",
   "searchFilter": "Buscar",
@@ -1405,12 +1421,12 @@
   "optional": "opcional",
   "commentPlaceholder": "Escribí un comentario...",
   "confirm": "Confirmar",
-   "paymentStatus": {
+  "paymentStatus": {
     "pending": "Pendiente",
     "confirmed": "Confirmado",
     "reversed": "Revertido"
   },
-   "paymentType": {
+  "paymentType": {
     "contra_entrega": "Contra entrega",
     "cta_cte": "Cuenta corriente"
   },
@@ -1436,7 +1452,7 @@
     "status": "Estado"
   },
   "imputed": "Imputado",
-  
+
   "instanceType": {
     "collectionCall": "Llamado de cobranza",
     "whatsappMessage": "Mensaje de WhatsApp",
@@ -1453,6 +1469,4 @@
   "commentsFilter": "Filtro de Comentarios",
   "filterByComments": "Comentarios predefinidos",
   "finance": "Finanzas"
-
-
 }
