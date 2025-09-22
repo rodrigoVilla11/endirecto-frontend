@@ -905,6 +905,10 @@ function DetailsModal({
                                 label="Fecha de cobro"
                                 value={fmtDate(v.cheque.collection_date)}
                               />
+                               <Info
+                                label="Numero de Cheque"
+                                value={(v.cheque.chequeNumber)}
+                              />
                               <Info
                                 label="Monto original"
                                 value={currencyFmt.format(

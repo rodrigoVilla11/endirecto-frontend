@@ -968,6 +968,10 @@ function DetailsModal({
                                 value={fmtDate(v.cheque.collection_date)}
                               />
                               <Info
+                                label="Numero de Cheque"
+                                value={(v.cheque.chequeNumber)}
+                              />
+                              <Info
                                 label="Monto original"
                                 value={currencyFmt.format(
                                   Number(v.raw_amount ?? v.amount ?? 0)
