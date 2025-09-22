@@ -35,6 +35,7 @@ const SideMenu = () => {
   const { isMobile } = useMobile();
 
   const pathname = usePathname();
+  const { userData } = useAuth();
 
   const isSelectCustomers = pathname === "/selectCustomer";
 
@@ -197,8 +198,8 @@ const SideMenu = () => {
       name: t("finance"),
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "VENDEDOR"],
       subCategories: [
-        {
-          name: t("Ajustes"),
+        role === "ADMINISTRADOR" && {
+          name: t("settings"),
           path: "/finance/settings",
         },
         {

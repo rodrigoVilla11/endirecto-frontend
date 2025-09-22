@@ -391,7 +391,7 @@ const PaymentsPendingPage = () => {
             className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
             title={t("seller") || "Vendedor"}
           >
-            <option value="">{t("all") || "Todos los vendedores"}</option>
+            <option value="">{"Todos los vendedores"}</option>
             {sellerOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -410,7 +410,7 @@ const PaymentsPendingPage = () => {
             className="border border-gray-300 rounded p-2 text-sm"
             title={t("paymentMethod") || "Forma de pago"}
           >
-            <option value="">{t("all") || "Todas las formas"}</option>
+            <option value="">{"Todos los metodos de pago"}</option>
             <option value="efectivo">{t("cash") || "Efectivo"}</option>
             <option value="transferencia">
               {t("transfer") || "Transferencia"}

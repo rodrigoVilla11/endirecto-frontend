@@ -949,10 +949,13 @@
     "vto": "Vencimiento",
     "numeroCheque": "N° de cheque",
     "fechaCobro": "Fecha de cobro",
-    "banco": "Banco"
+    "banco": "Banco",
+    "numeroChequeRequerido": "N° requerido",
+    "montoOriginalRequerido": "Monto requerido"
   },
   "noDocuments": "Sin documentos",
   "adjustment": "Ajustes",
+  "settings": "Configuraciones",
   "customerDashboard": {
     "newOrder": "Nuevo Pedido",
     "newPayment": "Nuevo Pago",

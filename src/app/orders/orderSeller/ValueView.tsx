@@ -59,10 +59,17 @@ export default function ValueView({
     const bankErr = needsBank(v.method) && !(v.bank || "").trim();
     const chequeNumErr =
       v.method === "cheque" && !(v.chequeNumber || "").trim();
-    return { bank: bankErr, chequeNumber: chequeNumErr };
+
+    // ✅ Monto requerido (> 0). En cheque se valida el monto ORIGINAL (rawAmount)
+    const amountStr =
+      v.method === "cheque" ? v.rawAmount ?? v.amount ?? "" : v.amount ?? "";
+    const amountNum = parseFloat((amountStr || "").replace(",", "."));
+    const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
+
+    return { bank: bankErr, chequeNumber: chequeNumErr, amount: amountErr };
   });
 
-  const hasErrors = rowErrors.some((e) => e.bank || e.chequeNumber);
+  const hasErrors = rowErrors.some((e) => e.bank || e.chequeNumber || e.amount);
   useEffect(() => {
     onValidityChange?.(!hasErrors);
   }, [hasErrors, onValidityChange]);
@@ -265,8 +272,21 @@ export default function ValueView({
                     placeholder="0.00"
                     value={shownAmountInput}
                     onChange={(e) => handleAmountChange(idx, e.target.value, v)}
-                    className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none tabular-nums"
+                    className={`w-full h-10 px-3 rounded text-white outline-none tabular-nums
+    ${
+      rowErrors[idx].amount
+        ? "bg-zinc-700 border border-red-500"
+        : "bg-zinc-700 border border-transparent"
+    }`}
                   />
+                  {rowErrors[idx].amount && (
+                    <div className="mt-1 text-[11px] text-red-500">
+                      {v.method === "cheque"
+                        ? t("document.montoOriginalRequerido") ||
+                          "Monto original requerido"
+                        : t("document.montoRequerido") || "Monto requerido"}
+                    </div>
+                  )}
                 </div>
 
                 {/* Concepto */}

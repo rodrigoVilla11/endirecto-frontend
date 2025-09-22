@@ -952,8 +952,12 @@
     "hayErroresEnValores": "Hay errores en los valores cargados",
     "numeroCheque": "Check number",
     "fechaCobro": "Collection date",
-    "banco": "Bank"
+    "banco": "Bank",
+    "numeroChequeRequerido": "N° required",
+    "montoOriginalRequerido": "Amount required"
   },
+  "adjustment": "Adjustments",
+  "settings": "Settings",
   "customerDashboard": {
     "newOrder": "New Order",
     "newPayment": "New Payment",
