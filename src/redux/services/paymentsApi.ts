@@ -57,13 +57,13 @@ export interface PaymentValueLine {
   /** archivo adjunto */
   receipt_url?: string;
   receipt_original_name?: string;
-  cheque_number?: string;
   /** ===== Extensiones para cheques ===== */
   /** monto original del cheque */
   raw_amount?: number;
   cheque?: {
     /** fecha de cobro (ISO yyyy-mm-dd) */
     collection_date?: string | null;
+    cheque_number?: string;
     /** días totales hasta la fecha de cobro (hoy → fecha) */
     days_total?: number;
     /** días de gracia aplicados (p.ej. 45) */

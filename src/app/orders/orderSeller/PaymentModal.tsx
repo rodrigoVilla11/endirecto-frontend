@@ -289,7 +289,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           bank: v.bank || undefined,
           receipt_url: v.receiptUrl || undefined,
           receipt_original_name: v.receiptOriginalName || undefined,
-          cheque_number: v.chequeNumber || undefined,
         };
 
         if (v.method !== "cheque") {
@@ -314,6 +313,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             interest_pct: round4(m.interest_pct), // proporción acumulada (0.1427…)
             interest_amount: round2(m.interest_amount),
             net_amount: round2(m.net_amount), // debería coincidir con 'amount'
+            cheque_number: v.chequeNumber || undefined,
           },
         };
       });
