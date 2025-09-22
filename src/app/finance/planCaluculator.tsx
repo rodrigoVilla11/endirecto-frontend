@@ -18,58 +18,82 @@ function addDaysLocal(dateISO: string, days: number) {
   return toYMD(d1);
 }
 
-/* ===== Matemática (igual a ChequeCalculator, pero sin gracia) ===== */
+/* ===== Matemática (idéntica a ChequeCalculator) ===== */
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/** tasa diaria desde tasa anual (%) */
 const dailyRateFromAnnual = (annualInterestPct: number) =>
   annualInterestPct / 100 / 365;
 
-/** días totales HOY → chequeISO (sin gracia) */
-function getChequeDays(chequeISO?: string) {
+/** días (HOY → chequeISO) y días gravados con gracia */
+function getChequeDays(chequeISO?: string, graceDays = 45) {
   const daysTotal = diffFromTodayToDate(chequeISO) || 0;
-  return { daysTotal, daysCharged: daysTotal };
+  const daysCharged = Math.max(0, daysTotal - graceDays);
+  return { daysTotal, daysCharged };
 }
 
 /**
- * PV = Σ [ C / (1 + i_diaria * días_k) ]  ⇒  C = PV / Σ [ 1 / (1 + i*d_k) ]
+ * PV = Σ [ C / (1 + i_diaria * días_grav_k) ]  ⇒  C = PV / Σ [ 1 / (1 + i*d_k) ]
  * - i_diaria = (annual/100)/365
- * - días_k = HOY→cheque_k (sin gracia)
+ * - días_grav_k = max(0, días_totales(HOY->cheque_k) - graceDays)
  */
 function computeEqualChequeAmountFromISOs(params: {
   presentValue: number;
   chequeDatesISO: string[];
   annualInterestPct: number;
+  graceDays?: number;
 }) {
-  const { presentValue: PV, chequeDatesISO, annualInterestPct } = params;
+  const {
+    presentValue: PV,
+    chequeDatesISO,
+    annualInterestPct,
+    graceDays = 45,
+  } = params;
   if (PV <= 0 || chequeDatesISO.length === 0) return 0;
 
   const iDaily = dailyRateFromAnnual(annualInterestPct);
   let sumInvDf = 0;
   for (const iso of chequeDatesISO) {
-    const { daysCharged } = getChequeDays(iso);
-    const df = 1 + iDaily * daysCharged;
+    const { daysCharged } = getChequeDays(iso, graceDays);
+    const df = 1 + iDaily * daysCharged; // interés simple (igual que ChequeCalculator)
     sumInvDf += 1 / df;
   }
   if (sumInvDf === 0) return 0;
   return round2(PV / sumInvDf);
 }
 
-/** Cronograma (sin gracia) */
+/** Construye el cronograma mostrando % del período (informativo) */
 function buildScheduleWithRates(params: {
   startISO: string;
   n: number;
   chequeValue: number;
   annualInterestPct: number;
+  graceDays?: number;
 }) {
-  const { startISO, n, chequeValue, annualInterestPct } = params;
+  const {
+    startISO,
+    n,
+    chequeValue,
+    annualInterestPct,
+    graceDays = 45,
+  } = params;
   const iDaily = dailyRateFromAnnual(annualInterestPct);
 
   const items = [];
   for (let k = 1; k <= n; k++) {
     const days = 30 * k;
     const dateISO = addDaysLocal(startISO, days);
-    const { daysTotal } = getChequeDays(dateISO);
-    const periodPct = iDaily * daysTotal * 100;
-    items.push({ k, days, dateISO, daysTotal, amount: chequeValue, periodPct });
+    const { daysTotal, daysCharged } = getChequeDays(dateISO, graceDays);
+    const periodPct = iDaily * daysCharged * 100; // % simple del período (como ChequeCalculator)
+    items.push({
+      k,
+      days,
+      dateISO,
+      daysTotal,
+      daysCharged,
+      amount: chequeValue,
+      periodPct,
+    });
   }
   return items;
 }
@@ -77,10 +101,14 @@ function buildScheduleWithRates(params: {
 /* ====== UI ====== */
 export default function PlanCalculator({
   title = "Cálculo de pagos a plazo (30/60/90)",
+  graceDays = 45, // misma gracia que usás en cheques
 }: {
   title?: string;
+  graceDays?: number;
 }) {
   const { data: interestSetting } = useGetInterestRateQuery();
+
+  // Tasa anual (misma fuente que usás en ChequeCalculator)
   const annualInterestPct =
     typeof interestSetting?.value === "number" ? interestSetting.value : 96;
 
@@ -101,6 +129,7 @@ export default function PlanCalculator({
 
   const PV = parseFloat(total || "0") || 0;
 
+  // Fechas reales de cada cheque (30/60/90 a partir de HOY/inicio)
   const chequeDates = useMemo(
     () =>
       Array.from({ length: months }, (_, i) =>
@@ -109,14 +138,16 @@ export default function PlanCalculator({
     [startISO, months]
   );
 
+  // CUOTA igual calculada con la MISMA lógica que cheques
   const chequeValue = useMemo(
     () =>
       computeEqualChequeAmountFromISOs({
         presentValue: PV,
         chequeDatesISO: chequeDates,
         annualInterestPct,
+        graceDays,
       }),
-    [PV, chequeDates, annualInterestPct]
+    [PV, chequeDates, annualInterestPct, graceDays]
   );
 
   const schedule = useMemo(
@@ -126,8 +157,9 @@ export default function PlanCalculator({
         n: months,
         chequeValue,
         annualInterestPct,
+        graceDays,
       }),
-    [startISO, months, chequeValue, annualInterestPct]
+    [startISO, months, chequeValue, annualInterestPct, graceDays]
   );
 
   const totalNominal = round2(chequeValue * (schedule.length || 0));
@@ -138,7 +170,8 @@ export default function PlanCalculator({
         <h4 className="text-gray-900 font-semibold">{title}</h4>
         <div className="text-xs text-white">
           Máximo 3 meses · cuotas iguales · Tasa anual:{" "}
-          <span className="font-semibold">{annualInterestPct}%</span>
+          <span className="font-semibold">{annualInterestPct}%</span> · Gracia:{" "}
+          <span className="font-semibold">{graceDays}</span> días
         </div>
       </div>
 
@@ -181,10 +214,9 @@ export default function PlanCalculator({
           </select>
         </div>
 
+        {/* Informativo (no editable): muestra i_diaria y lógica usada */}
         <div>
-          <label className="block text-xs text-white mb-1">
-            TASA MENSUAL
-          </label>
+          <label className="block text-xs text-white mb-1">TASA MENSUAL</label>
           <div className="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 flex items-center border border-gray-300">
             {(dailyRateFromAnnual(annualInterestPct) * 30 * 100).toFixed(2)}%
           </div>
@@ -203,9 +235,10 @@ export default function PlanCalculator({
           Cronograma
         </div>
 
-        <div className="hidden md:grid grid-cols-4 px-3 py-2 text-xs text-white">
+        <div className="hidden md:grid grid-cols-5 px-3 py-2 text-xs text-white">
           <span>Cheque</span>
           <span>Días totales</span>
+          <span>Días gravados</span>
           <span>% período</span>
           <span>Fecha</span>
         </div>
@@ -214,10 +247,11 @@ export default function PlanCalculator({
           {schedule.map((it) => (
             <div
               key={it.k}
-              className="grid grid-cols-1 md:grid-cols-4 px-3 py-2 text-sm"
+              className="grid grid-cols-1 md:grid-cols-5 px-3 py-2 text-sm"
             >
               <div className="font-medium">{fmt.format(it.amount)}</div>
               <div className="text-white">{it.daysTotal}</div>
+              <div className="text-white">{it.daysCharged}</div>
               <div className="text-white">{it.periodPct.toFixed(2)}%</div>
               <div className="text-white">{it.dateISO}</div>
             </div>
