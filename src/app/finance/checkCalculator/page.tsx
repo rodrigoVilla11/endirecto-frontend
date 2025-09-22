@@ -3,17 +3,27 @@
 import React from "react";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import { useTranslation } from "react-i18next";
-import { useGetInterestRateQuery } from "@/redux/services/settingsApi";
+import {
+  useGetCalculatorChequeGraceDaysQuery,
+  useGetInterestRateQuery,
+} from "@/redux/services/settingsApi";
 import ChequeCalculator from "../checkCalculator";
 
 export default function ChequeCalculatorPage() {
   const { t } = useTranslation();
   const { data: interestSetting } = useGetInterestRateQuery();
+  const { data: calcGrace } = useGetCalculatorChequeGraceDaysQuery();
 
   const annual = (() => {
     const v = (interestSetting as any)?.value;
     const n = typeof v === "number" ? v : Number(v);
     return Number.isFinite(n) ? n : 96; // fallback
+  })();
+
+  const grace = (() => {
+    const v = (calcGrace as any)?.value;
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : 45; // fallback para simulador
   })();
 
   return (
@@ -32,7 +42,8 @@ export default function ChequeCalculatorPage() {
         </div>
 
         <section className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm">
-          <ChequeCalculator annualInterestPct={annual} graceDays={45} />
+          {/* 👇 ahora se lo pasás por props; adentro hay fallback a 45 si viniera undefined */}
+          <ChequeCalculator annualInterestPct={annual} graceDays={grace} />
         </section>
       </div>
     </PrivateRoute>

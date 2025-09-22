@@ -18,7 +18,8 @@ import {
 import { useAddNotificationToUserByIdMutation } from "@/redux/services/usersApi";
 import {
   useGetInterestRateQuery,
-  useUpdateInterestRateMutation,
+  useGetChequeGraceDaysQuery,
+  useGetDocumentsGraceDaysQuery,
 } from "@/redux/services/settingsApi";
 import { diffCalendarDays, diffFromDateToToday } from "@/lib/dateUtils";
 interface PaymentModalProps {
@@ -45,11 +46,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     {}
   );
   const [isValuesValid, setIsValuesValid] = useState(true);
+  const { data: checkGrace } = useGetChequeGraceDaysQuery();
+  const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
 
-  console.log(
-    "Test 30/07 → 18/09 =",
-    diffCalendarDays("2025-07-30", "2025-09-18")
-  );
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
@@ -366,8 +365,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         values: valuesPayload,
       } as any;
-
-      console.log("payload", payload);
       const created = await createPayment(payload).unwrap();
 
       const valuesSummary = (created.values ?? [])
@@ -604,7 +601,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     totalAdjustmentSigned >= 0 ? "-" : "+"
   }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
 
-  console.log(newPayment);
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -736,6 +732,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       selectedRows={selectedRows}
                       setNewPayment={setNewPayment}
                       paymentType={paymentTypeUI}
+                      graceDays={documentsGrace?.value ? documentsGrace?.value : 45}
                     />
                   ))}
               </div>
@@ -1010,6 +1007,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   docAdjustmentSigned={totalAdjustmentSigned} // DTO/REC s/FACT (con signo)
                   netToPay={totalAfterDiscount} // TOTAL A PAGAR (neto)
                   onValidityChange={setIsValuesValid}
+                  chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
                 />
 
                 {/* Comprobantes por valor */}

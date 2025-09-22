@@ -4,12 +4,11 @@ import React, { useMemo, useState } from "react";
 import { useGetInterestRateQuery } from "@/redux/services/settingsApi";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
 
-/* ===== Helpers de fecha (sin sorpresas de timezone) ===== */
+/* ===== Helpers de fecha ===== */
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
-/** Suma días calendario manteniendo medianoche local */
 function addDaysLocal(dateISO: string, days: number) {
   const [y, m, d] = dateISO.split("-").map(Number);
   const d0 = new Date(y, (m ?? 1) - 1, d ?? 1);
@@ -18,51 +17,38 @@ function addDaysLocal(dateISO: string, days: number) {
   return toYMD(d1);
 }
 
-/* ===== Matemática (idéntica a ChequeCalculator) ===== */
+/* ===== Matemática (igual a ChequeCalculator) ===== */
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-
-/** tasa diaria desde tasa anual (%) */
 const dailyRateFromAnnual = (annualInterestPct: number) =>
-  annualInterestPct / 100 / 365;
+  (annualInterestPct / 100) / 365;
 
-/** días (HOY → chequeISO) y días gravados con gracia */
-function getChequeDays(chequeISO?: string, graceDays = 45) {
+function getChequeDays(chequeISO?: string, graceDays?: number) {
   const daysTotal = diffFromTodayToDate(chequeISO) || 0;
-  const daysCharged = Math.max(0, daysTotal - graceDays);
-  return { daysTotal, daysCharged };
+  const g = Number.isFinite(graceDays as any) ? (graceDays as number) : 0; // fallback 0 = sin gracia
+  const daysCharged = Math.max(0, daysTotal - g);
+  return { daysTotal, daysCharged, graceUsed: g };
 }
 
-/**
- * PV = Σ [ C / (1 + i_diaria * días_grav_k) ]  ⇒  C = PV / Σ [ 1 / (1 + i*d_k) ]
- * - i_diaria = (annual/100)/365
- * - días_grav_k = max(0, días_totales(HOY->cheque_k) - graceDays)
- */
 function computeEqualChequeAmountFromISOs(params: {
   presentValue: number;
   chequeDatesISO: string[];
   annualInterestPct: number;
   graceDays?: number;
 }) {
-  const {
-    presentValue: PV,
-    chequeDatesISO,
-    annualInterestPct,
-    graceDays = 45,
-  } = params;
+  const { presentValue: PV, chequeDatesISO, annualInterestPct, graceDays } = params;
   if (PV <= 0 || chequeDatesISO.length === 0) return 0;
 
   const iDaily = dailyRateFromAnnual(annualInterestPct);
   let sumInvDf = 0;
   for (const iso of chequeDatesISO) {
     const { daysCharged } = getChequeDays(iso, graceDays);
-    const df = 1 + iDaily * daysCharged; // interés simple (igual que ChequeCalculator)
+    const df = 1 + iDaily * daysCharged; // interés simple
     sumInvDf += 1 / df;
   }
   if (sumInvDf === 0) return 0;
   return round2(PV / sumInvDf);
 }
 
-/** Construye el cronograma mostrando % del período (informativo) */
 function buildScheduleWithRates(params: {
   startISO: string;
   n: number;
@@ -70,30 +56,16 @@ function buildScheduleWithRates(params: {
   annualInterestPct: number;
   graceDays?: number;
 }) {
-  const {
-    startISO,
-    n,
-    chequeValue,
-    annualInterestPct,
-    graceDays = 45,
-  } = params;
+  const { startISO, n, chequeValue, annualInterestPct, graceDays } = params;
   const iDaily = dailyRateFromAnnual(annualInterestPct);
 
   const items = [];
   for (let k = 1; k <= n; k++) {
     const days = 30 * k;
     const dateISO = addDaysLocal(startISO, days);
-    const { daysTotal, daysCharged } = getChequeDays(dateISO, graceDays);
-    const periodPct = iDaily * daysCharged * 100; // % simple del período (como ChequeCalculator)
-    items.push({
-      k,
-      days,
-      dateISO,
-      daysTotal,
-      daysCharged,
-      amount: chequeValue,
-      periodPct,
-    });
+    const { daysTotal, daysCharged, graceUsed } = getChequeDays(dateISO, graceDays);
+    const periodPct = iDaily * daysCharged * 100; // % simple del período
+    items.push({ k, days, dateISO, daysTotal, daysCharged, graceUsed, amount: chequeValue, periodPct });
   }
   return items;
 }
@@ -101,14 +73,12 @@ function buildScheduleWithRates(params: {
 /* ====== UI ====== */
 export default function PlanCalculator({
   title = "Cálculo de pagos a plazo (30/60/90)",
-  graceDays = 45, // misma gracia que usás en cheques
+  graceDays, // 👈 viene del padre
 }: {
   title?: string;
   graceDays?: number;
 }) {
   const { data: interestSetting } = useGetInterestRateQuery();
-
-  // Tasa anual (misma fuente que usás en ChequeCalculator)
   const annualInterestPct =
     typeof interestSetting?.value === "number" ? interestSetting.value : 96;
 
@@ -129,23 +99,18 @@ export default function PlanCalculator({
 
   const PV = parseFloat(total || "0") || 0;
 
-  // Fechas reales de cada cheque (30/60/90 a partir de HOY/inicio)
   const chequeDates = useMemo(
-    () =>
-      Array.from({ length: months }, (_, i) =>
-        addDaysLocal(startISO, 30 * (i + 1))
-      ),
+    () => Array.from({ length: months }, (_, i) => addDaysLocal(startISO, 30 * (i + 1))),
     [startISO, months]
   );
 
-  // CUOTA igual calculada con la MISMA lógica que cheques
   const chequeValue = useMemo(
     () =>
       computeEqualChequeAmountFromISOs({
         presentValue: PV,
         chequeDatesISO: chequeDates,
         annualInterestPct,
-        graceDays,
+        graceDays, // 👈 usa lo que venga del padre (o 0 si undefined)
       }),
     [PV, chequeDates, annualInterestPct, graceDays]
   );
@@ -157,12 +122,14 @@ export default function PlanCalculator({
         n: months,
         chequeValue,
         annualInterestPct,
-        graceDays,
+        graceDays, // 👈 idem
       }),
     [startISO, months, chequeValue, annualInterestPct, graceDays]
   );
 
   const totalNominal = round2(chequeValue * (schedule.length || 0));
+  const graceUsedDisplay =
+    Number.isFinite(graceDays as any) ? (graceDays as number) : 0;
 
   return (
     <div className="space-y-4">
@@ -171,7 +138,7 @@ export default function PlanCalculator({
         <div className="text-xs text-white">
           Máximo 3 meses · cuotas iguales · Tasa anual:{" "}
           <span className="font-semibold">{annualInterestPct}%</span> · Gracia:{" "}
-          <span className="font-semibold">{graceDays}</span> días
+          <span className="font-semibold">{graceUsedDisplay}</span> días
         </div>
       </div>
 
@@ -187,9 +154,7 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white mb-1">
-            Importe total (PV)
-          </label>
+          <label className="block text-xs text-white mb-1">Importe total (PV)</label>
           <input
             type="number"
             inputMode="decimal"
@@ -214,7 +179,7 @@ export default function PlanCalculator({
           </select>
         </div>
 
-        {/* Informativo (no editable): muestra i_diaria y lógica usada */}
+        {/* Tasa mensual informativa (simple ≈ 30 días) */}
         <div>
           <label className="block text-xs text-white mb-1">TASA MENSUAL</label>
           <div className="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 flex items-center border border-gray-300">
@@ -270,9 +235,7 @@ export default function PlanCalculator({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-center shadow-sm">
-      <div className="text-[11px] uppercase tracking-wide text-gray-500">
-        {label}
-      </div>
+      <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
       <div className="text-gray-900 tabular-nums mt-0.5">{value}</div>
     </div>
   );

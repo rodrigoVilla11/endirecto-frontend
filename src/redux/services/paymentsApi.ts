@@ -202,7 +202,6 @@ export const paymentsApi = createApi({
         if (isImputed) params.append("isImputed", isImputed);
         if (type) params.append("type", type);
 
-        console.log(`/payments?${params.toString()}`);
         return `/payments?${params.toString()}`;
       },
       transformResponse: (response: PaymentsListResponse | undefined) => {

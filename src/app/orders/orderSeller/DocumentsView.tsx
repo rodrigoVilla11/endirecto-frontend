@@ -18,6 +18,7 @@ export interface ExpandableTableProps {
   selectedRows?: string[];
   setNewPayment?: any;
   paymentType: "pago_anticipado" | "cta_cte";
+  graceDays: number;
 }
 
 export function DocumentsView({
@@ -27,6 +28,7 @@ export function DocumentsView({
   customerInformation,
   setNewPayment,
   paymentType,
+  graceDays
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -48,7 +50,6 @@ export function DocumentsView({
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   // ======= Recargo por vencido =======
-  const graceDays = Number(customerInformation?.grace_days ?? 45);
   const annualInterestPct = Number(
     customerInformation?.annual_interest_pct ?? 96
   );
@@ -168,7 +169,6 @@ export function DocumentsView({
 
   /* ===================== Selección: payload consistente ===================== */
 
-  console.log("data", data);
   const documentDetails = {
     document_id: data?.id || "",
     number: docNumber,
@@ -192,7 +192,6 @@ export function DocumentsView({
       ? days_since_invoice
       : NaN,
   };
-  console.log("documentDetails", documentDetails);
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
     if (checked) {

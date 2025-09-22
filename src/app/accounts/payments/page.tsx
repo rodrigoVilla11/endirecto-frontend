@@ -132,11 +132,8 @@ const PaymentsChargedPage = () => {
           const cid = selectedClientId || customer_id;
           if (cid) baseArgs.customer_id = String(cid);
         }
-
-        console.log("baseArgs", baseArgs);
         const res = await fetchPayments(baseArgs).unwrap();
 
-        console.log("res", res);
         const newItems = res?.payments ?? [];
         setItems((prev) => (page === 1 ? newItems : [...prev, ...newItems]));
         setHasMore(newItems.length === ITEMS_PER_PAGE);
