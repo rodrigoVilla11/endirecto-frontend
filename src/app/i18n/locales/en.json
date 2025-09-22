@@ -947,7 +947,7 @@
     "recargoPorDias": "Surcharge for {{days}} days",
     "descuentoPorcentaje": "Discount {{percent}}%",
     "recargoPorcentaje": "Surcharge {{percent}}%",
-    "noConcepto": "No Concepto",
+    "noConcepto": "Without Concept",
     "bancoRequerido": "Banco requerido",
     "hayErroresEnValores": "Hay errores en los valores cargados",
     "numeroCheque": "Check number",

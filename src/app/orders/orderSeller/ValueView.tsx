@@ -51,15 +51,18 @@ export default function ValueView({
     []
   );
   const { t } = useTranslation();
-  const NO_CONCEPTO = t("document.noConcepto") || "No Concepto";
+  const NO_CONCEPTO = t("document.noConcepto") || "Sin Concepto";
   const needsBank = (m: PaymentMethod) =>
     m === "cheque" || m === "transferencia";
   // Errores por fila (true = hay error)
-  const rowErrors = newValues.map((v) => ({
-    bank: needsBank(v.method) && !(v.bank || "").trim(),
-  }));
+  const rowErrors = newValues.map((v) => {
+    const bankErr = needsBank(v.method) && !(v.bank || "").trim();
+    const chequeNumErr =
+      v.method === "cheque" && !(v.chequeNumber || "").trim();
+    return { bank: bankErr, chequeNumber: chequeNumErr };
+  });
 
-  const hasErrors = rowErrors.some((e) => e.bank);
+  const hasErrors = rowErrors.some((e) => e.bank || e.chequeNumber);
   useEffect(() => {
     onValidityChange?.(!hasErrors);
   }, [hasErrors, onValidityChange]);
@@ -384,16 +387,31 @@ export default function ValueView({
                           placeholder="Ej: 00012345"
                           value={v.chequeNumber || ""}
                           onChange={(e) =>
-                            // solo dígitos, hasta 20 chars (ajustá si querés)
                             patchRow(idx, {
+                              // solo dígitos, hasta 20 chars
                               chequeNumber: e.target.value
                                 .replace(/\D/g, "")
                                 .slice(0, 20),
                             })
                           }
-                          className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
+                          required
+                          aria-invalid={
+                            rowErrors[idx].chequeNumber ? true : false
+                          }
+                          className={`w-full h-10 px-3 rounded text-white outline-none tabular-nums
+          ${
+            rowErrors[idx].chequeNumber
+              ? "bg-zinc-700 border border-red-500"
+              : "bg-zinc-700 border border-transparent"
+          }`}
                           autoComplete="off"
                         />
+                        {rowErrors[idx].chequeNumber && (
+                          <div className="mt-1 text-[11px] text-red-500">
+                            {t("document.numeroChequeRequerido") ||
+                              "N° de cheque requerido"}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}

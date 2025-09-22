@@ -943,14 +943,16 @@
     "recargoPorDias": "Recargo por {{days}} días",
     "descuentoPorcentaje": "Descuento {{percent}}%",
     "recargoPorcentaje": "Recargo {{percent}}%",
-    "noConcepto": "No Concepto",
+    "noConcepto": "Sin Concepto",
     "bancoRequerido": "Banco requerido",
     "hayErroresEnValores": "Hay errores en los valores cargados",
-
+    "vto": "Vencimiento",
     "numeroCheque": "N° de cheque",
     "fechaCobro": "Fecha de cobro",
     "banco": "Banco"
   },
+  "noDocuments": "Sin documentos",
+  "adjustment": "Ajustes",
   "customerDashboard": {
     "newOrder": "Nuevo Pedido",
     "newPayment": "Nuevo Pago",
