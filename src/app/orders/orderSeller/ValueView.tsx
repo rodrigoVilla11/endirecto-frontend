@@ -216,6 +216,11 @@ export default function ValueView({
     patchRow(idx, { chequeDate: iso, rawAmount: raw, amount: neto.toFixed(2) });
   };
 
+  const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
+  const isOpen = (i: number) => !!openRows[i];
+  const toggleRow = (i: number) =>
+    setOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -236,33 +241,31 @@ export default function ValueView({
         {newValues.map((v, idx) => {
           const showBank =
             v.method === "transferencia" || v.method === "cheque";
-
           const daysTotal = daysBetweenToday(v.chequeDate);
           const daysGrav =
             v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
           const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
-          // En el input de cheque mostramos el monto ORIGINAL (rawAmount)
           const shownAmountInput =
             v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
+
+          const hasRowError =
+            rowErrors[idx].amount ||
+            rowErrors[idx].bank ||
+            rowErrors[idx].chequeNumber;
 
           return (
             <div
               key={idx}
-              className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50"
+              className={`rounded-lg bg-zinc-800/50 p-2 md:p-3 transition-colors
+          ${hasRowError ? "border border-red-500" : "border border-zinc-700"}`}
             >
-              {/* Fila principal */}
-              <div
-                className="
-                  grid grid-cols-1
-                  md:grid-cols-[8rem,1fr,26rem,7rem]
-                  gap-3 items-start
-                "
-              >
-                {/* Medio de pago */}
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
+              {/* CABECERA SIEMPRE VISIBLE */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                {/* Medio de pago (siempre visible) */}
+                <div className="w-full md:w-72">
+                  <label className="block text-[11px] text-zinc-400 mb-1">
                     Medio de pago
                   </label>
                   <select
@@ -274,7 +277,8 @@ export default function ValueView({
                         v
                       )
                     }
-                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-2 py-1"
+                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700
+                         bg-white dark:bg-zinc-900 text-sm px-2 py-1"
                   >
                     <option value="efectivo">Efectivo</option>
                     <option value="transferencia">Transferencia</option>
@@ -282,215 +286,232 @@ export default function ValueView({
                   </select>
                 </div>
 
-                {/* Monto */}
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
-                    {v.method === "cheque" ? "Monto original" : "Monto"}
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={shownAmountInput}
-                    onChange={(e) => handleAmountChange(idx, e.target.value, v)}
-                    className={`w-full h-10 px-3 rounded text-white outline-none tabular-nums
-    ${
-      rowErrors[idx].amount
-        ? "bg-zinc-700 border border-red-500"
-        : "bg-zinc-700 border border-transparent"
-    }`}
-                  />
-                  {rowErrors[idx].amount && (
-                    <div className="mt-1 text-[11px] text-red-500">
-                      {v.method === "cheque"
-                        ? t("document.montoOriginalRequerido") ||
-                          "Monto original requerido"
-                        : t("document.montoRequerido") || "Monto requerido"}
-                    </div>
+                {/* indicador de error / botón expandir */}
+                <div className="flex items-center gap-2 md:ml-auto">
+                  {hasRowError && (
+                    <span className="text-[12px] text-red-400">
+                      Faltan datos en este valor
+                    </span>
                   )}
-                </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleRow(idx)}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded
+                ${
+                  isOpen(idx)
+                    ? "bg-zinc-700 text-white"
+                    : "bg-zinc-700/60 text-zinc-200"
+                }
+                hover:bg-zinc-600 transition`}
+                  >
+                    <svg
+                      viewBox="0 0 20 20"
+                      className={`w-4 h-4 transition-transform ${
+                        isOpen(idx) ? "rotate-180" : ""
+                      }`}
+                      fill="currentColor"
+                    >
+                      <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
+                    </svg>
+                  </button>
 
-                {/* Concepto */}
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
-                    Concepto
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Pago factura 001-0000123"
-                    value={v.selectedReason}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      patchRow(idx, {
-                        selectedReason: val.trim() === "" ? NO_CONCEPTO : val,
-                      });
-                    }}
-                    className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
-                  />
-                </div>
-
-                {/* Acciones */}
-                <div className="flex md:justify-end">
+                  {/* eliminar (accesible aún colapsado) */}
                   <button
                     onClick={() => removeRow(idx)}
-                    className="w-full md:w-auto h-10 px-3 rounded bg-zinc-700 text-white hover:bg-zinc-600"
+                    className="px-3 py-1.5 rounded bg-zinc-700 text-white hover:bg-zinc-600"
                   >
                     Eliminar
                   </button>
                 </div>
               </div>
 
-              {/* Campos condicionales */}
-              {showBank && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
-                  {/* Banco */}
-                  <div className="md:col-span-4">
-                    <label className="block text-xs text-zinc-400 mb-1">
-                      {t("document.banco") || "Banco"}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Banco Galicia"
-                      value={v.bank || ""}
-                      onChange={(e) => patchRow(idx, { bank: e.target.value })}
-                      className={`w-full h-10 px-3 rounded text-white outline-none
-      ${
-        rowErrors[idx].bank
-          ? "bg-zinc-700 border border-red-500"
-          : "bg-zinc-700 border border-transparent"
-      }`}
-                    />
-                    {rowErrors[idx].bank && (
-                      <div className="mt-1 text-[11px] text-red-500">
-                        {t("document.bancoRequerido") || "Banco requerido"}
-                      </div>
-                    )}
+              {/* CONTENIDO EXPANDIBLE */}
+              {isOpen(idx) && (
+                <div className="mt-3 space-y-3">
+                  {/* Fila principal */}
+                  <div
+                    className="
+                grid grid-cols-1
+                md:grid-cols-[minmax(10rem,16rem),1fr,minmax(14rem,22rem)]
+                gap-2 items-start
+              "
+                  >
+                    {/* Monto */}
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">
+                        {v.method === "cheque" ? "Monto original" : "Monto"}
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={shownAmountInput}
+                        onChange={(e) =>
+                          handleAmountChange(idx, e.target.value, v)
+                        }
+                        className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
+                    ${
+                      rowErrors[idx].amount
+                        ? "bg-zinc-700 border border-red-500"
+                        : "bg-zinc-700 border border-transparent"
+                    }`}
+                      />
+                    </div>
+
+                    {/* Concepto */}
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">
+                        Concepto
+                      </label>
+                      <textarea
+                        rows={1}
+                        placeholder="Ej: Pago factura 001-0000123"
+                        value={v.selectedReason}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          patchRow(idx, {
+                            selectedReason:
+                              val.trim() === "" ? NO_CONCEPTO : val,
+                          });
+                        }}
+                        className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none resize-y"
+                      />
+                    </div>
+
+                    {/* (espacio reservado para acciones si quisieras algo más) */}
+                    <div className="hidden md:block" />
                   </div>
 
-                  {/* Solo cheques: fecha + métricas */}
-                  {v.method === "cheque" && (
-                    <>
-                      <div className="md:col-span-3">
-                        <label className="block text-xs text-zinc-400 mb-1">
-                          {t("document.fechaCobro") || "Fecha de cobro"}
-                        </label>
-                        <input
-                          type="date"
-                          value={v.chequeDate || ""}
-                          onChange={(e) =>
-                            handleChequeDateChange(idx, e.target.value, v)
-                          }
-                          className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
-                        />
-                        <div className="mt-1 text-[10px] text-zinc-500">
-                          Días totales: {daysTotal} · Gracia: {chequeGraceDays}
-                        </div>
-                      </div>
-
-                      {/* 👇 N° de cheque */}
-                      <div className="md:col-span-5">
-                        <label className="block text-xs text-zinc-400 mb-1">
-                          {t("document.numeroCheque") || "N° de cheque"}
+                  {/* Campos condicionales */}
+                  {showBank && (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                      {/* Banco */}
+                      <div className="md:col-span-4">
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          {t("document.banco") || "Banco"}
                         </label>
                         <input
                           type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          placeholder="Ej: 00012345"
-                          value={v.chequeNumber || ""}
+                          placeholder="Ej: Banco Galicia"
+                          value={v.bank || ""}
                           onChange={(e) =>
-                            patchRow(idx, {
-                              // solo dígitos, hasta 20 chars
-                              chequeNumber: e.target.value
-                                .replace(/\D/g, "")
-                                .slice(0, 20),
-                            })
+                            patchRow(idx, { bank: e.target.value })
                           }
-                          required
-                          aria-invalid={
-                            rowErrors[idx].chequeNumber ? true : false
-                          }
-                          className={`w-full h-10 px-3 rounded text-white outline-none tabular-nums
-          ${
-            rowErrors[idx].chequeNumber
-              ? "bg-zinc-700 border border-red-500"
-              : "bg-zinc-700 border border-transparent"
-          }`}
-                          autoComplete="off"
+                          className={`w-full px-2 py-1 rounded text-white outline-none
+                      ${
+                        rowErrors[idx].bank
+                          ? "bg-zinc-700 border border-red-500"
+                          : "bg-zinc-700 border border-transparent"
+                      }`}
                         />
-                        {rowErrors[idx].chequeNumber && (
-                          <div className="mt-1 text-[11px] text-red-500">
-                            {t("document.numeroChequeRequerido") ||
-                              "N° de cheque requerido"}
-                          </div>
-                        )}
                       </div>
-                    </>
+
+                      {/* Solo cheques: fecha + nro */}
+                      {v.method === "cheque" && (
+                        <>
+                          <div className="md:col-span-3">
+                            <label className="block text-[11px] text-zinc-400 mb-1">
+                              {t("document.fechaCobro") || "Fecha de cobro"}
+                            </label>
+                            <input
+                              type="date"
+                              value={v.chequeDate || ""}
+                              onChange={(e) =>
+                                handleChequeDateChange(idx, e.target.value, v)
+                              }
+                              className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none"
+                            />
+                            <div className="mt-1 text-[10px] text-zinc-500">
+                              Días totales: {daysTotal} · Gracia:{" "}
+                              {chequeGraceDays}
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-5">
+                            <label className="block text-[11px] text-zinc-400 mb-1">
+                              {t("document.numeroCheque") || "N° de cheque"}
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={v.chequeNumber || ""}
+                              onChange={(e) =>
+                                patchRow(idx, {
+                                  chequeNumber: e.target.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 20),
+                                })
+                              }
+                              className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
+                          ${
+                            rowErrors[idx].chequeNumber
+                              ? "bg-zinc-700 border border-red-500"
+                              : "bg-zinc-700 border border-transparent"
+                          }`}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
                   )}
+
+                  {/* Resumen por ítem */}
+                  <div className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-zinc-300">Valor</span>
+                        <span className="text-white tabular-nums">
+                          {currencyFmt.format(
+                            v.method === "cheque"
+                              ? parseFloat(v.rawAmount || v.amount || "0") || 0
+                              : parseFloat(v.amount || "0") || 0
+                          )}
+                        </span>
+                      </div>
+
+                      {v.method === "cheque" && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-zinc-300">Días</span>
+                            <span className="text-white tabular-nums">
+                              {Number.isFinite(daysTotal) ? daysTotal : "—"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-zinc-300">%</span>
+                            <span className="text-rose-400 tabular-nums">
+                              {fmtPctSigned(pctInt)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-zinc-300">
+                              Costo financiero
+                            </span>
+                            <span className="text-rose-400 tabular-nums">
+                              {currencyFmt.format(interest$)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex justify-between sm:col-span-2">
+                        <span className="text-zinc-300 font-medium">
+                          Valor Neto
+                        </span>
+                        <span className="text-white font-medium tabular-nums">
+                          {currencyFmt.format(parseFloat(v.amount || "0") || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
-
-              {/* Resumen por ítem */}
-              <div className="mt-3 rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
-                  {/* Valor (cheque usa monto ORIGINAL) */}
-                  <div className="flex justify-between">
-                    <span className="text-zinc-300">Valor</span>
-                    <span className="text-white tabular-nums">
-                      {currencyFmt.format(
-                        v.method === "cheque"
-                          ? parseFloat(v.rawAmount || v.amount || "0") || 0
-                          : parseFloat(v.amount || "0") || 0
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Días (solo se muestra si es cheque) */}
-                  {v.method === "cheque" && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-300">Días</span>
-                      <span className="text-white tabular-nums">
-                        {Number.isFinite(daysTotal) ? daysTotal : "—"}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* % (solo cheque; calculado sobre días gravados) */}
-                  {v.method === "cheque" && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-300">%</span>
-                      <span className="text-rose-400 tabular-nums">
-                        {fmtPctSigned(pctInt)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Costo financiero (solo cheque) */}
-                  {v.method === "cheque" && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-300">Costo financiero</span>
-                      <span className="text-rose-400 tabular-nums">
-                        {currencyFmt.format(interest$)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Valor Neto (siempre; en cheque = original - costo) */}
-                  <div className="flex justify-between sm:col-span-2">
-                    <span className="text-zinc-300 font-medium">
-                      Valor Neto
-                    </span>
-                    <span className="text-white font-medium tabular-nums">
-                      {currencyFmt.format(parseFloat(v.amount || "0") || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           );
         })}
       </div>
+
       {/* ======= Resumen inferior (lista de ítems) ======= */}
       {newValues.length > 0 && (
         <div className="mt-4 space-y-2">
