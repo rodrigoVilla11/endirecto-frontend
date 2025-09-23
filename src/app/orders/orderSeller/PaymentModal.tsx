@@ -456,7 +456,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     const daysOver = days - 45;
     const daily = annualInterest / 365;
-    const surchargeRate = +(daily * daysOver).toFixed(4);
+    const surchargeRate = +(daily * daysOver);
+    console.log("surchargeRate", surchargeRate)
     return { rate: -surchargeRate, note: `Recargo por ${daysOver} días` };
   }
 
