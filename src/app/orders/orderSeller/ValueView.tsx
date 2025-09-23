@@ -260,6 +260,28 @@ export default function ValueView({
                   gap-3 items-start
                 "
               >
+                {/* Medio de pago */}
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Medio de pago
+                  </label>
+                  <select
+                    value={v.method}
+                    onChange={(e) =>
+                      handleMethodChange(
+                        idx,
+                        e.target.value as PaymentMethod,
+                        v
+                      )
+                    }
+                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-2 py-1"
+                  >
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
+
                 {/* Monto */}
                 <div>
                   <label className="block text-xs text-zinc-400 mb-1">
@@ -306,35 +328,6 @@ export default function ValueView({
                     }}
                     className="w-full h-10 px-3 rounded bg-zinc-700 text-white outline-none"
                   />
-                </div>
-
-                {/* Medio de pago */}
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
-                    Medio de pago
-                  </label>
-                  <div className="flex gap-2 overflow-x-auto md:overflow-visible flex-nowrap md:flex-nowrap pr-1">
-                    <RadioPill
-                      label="Efectivo"
-                      selected={v.method === "efectivo"}
-                      onClick={() => handleMethodChange(idx, "efectivo", v)}
-                      className="min-w-[8.5rem]"
-                    />
-                    <RadioPill
-                      label="Transferencia"
-                      selected={v.method === "transferencia"}
-                      onClick={() =>
-                        handleMethodChange(idx, "transferencia", v)
-                      }
-                      className="min-w-[9.5rem]"
-                    />
-                    <RadioPill
-                      label="Cheque"
-                      selected={v.method === "cheque"}
-                      onClick={() => handleMethodChange(idx, "cheque", v)}
-                      className="min-w-[7.5rem]"
-                    />
-                  </div>
                 </div>
 
                 {/* Acciones */}
@@ -498,7 +491,106 @@ export default function ValueView({
           );
         })}
       </div>
+      {/* ======= Resumen inferior (lista de ítems) ======= */}
+      {newValues.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="text-sm text-zinc-300 font-semibold">
+            Resumen de valores
+          </div>
 
+          <div className="space-y-2">
+            {newValues.map((v, i) => {
+              const isCheque = v.method === "cheque";
+              const isTransf = v.method === "transferencia";
+              const valorOriginal = isCheque
+                ? parseFloat(v.rawAmount || v.amount || "0") || 0
+                : undefined;
+              const neto = parseFloat(v.amount || "0") || 0;
+              const daysTotal = isCheque
+                ? daysBetweenToday(v.chequeDate)
+                : undefined;
+              const daysGrav = isCheque
+                ? chargeableDays(v.chequeDate)
+                : undefined;
+              const pctInt = isCheque ? dailyRate * (daysGrav || 0) : undefined;
+              const interest$ = isCheque ? chequeInterest(v) : undefined;
+
+              return (
+                <div
+                  key={`resumen-${i}`}
+                  className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-zinc-200 font-medium">
+                      {i + 1}. {labelMedio(v.method)}
+                    </div>
+                    <div className="text-sm text-white tabular-nums">
+                      {currencyFmt.format(neto)}
+                    </div>
+                  </div>
+
+                  {/* Campos por tipo */}
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-1 text-[13px]">
+                    {/* Efectivo */}
+                    {v.method === "efectivo" && (
+                      <>
+                        <ResumenKV k="Monto" v={currencyFmt.format(neto)} />
+                        <ResumenKV
+                          k="Concepto"
+                          v={v.selectedReason || NO_CONCEPTO}
+                        />
+                      </>
+                    )}
+
+                    {/* Transferencia */}
+                    {isTransf && (
+                      <>
+                        <ResumenKV k="Monto" v={currencyFmt.format(neto)} />
+                        <ResumenKV
+                          k="Banco"
+                          v={(v.bank || "").trim() || "—"}
+                          error={rowErrors[i].bank}
+                        />
+                        <ResumenKV k="Comprobante" v="—" muted />
+                        <ResumenKV
+                          k="Concepto"
+                          v={v.selectedReason || NO_CONCEPTO}
+                        />
+                      </>
+                    )}
+
+                    {/* Cheque */}
+                    {isCheque && (
+                      <>
+                        <ResumenKV
+                          k="Monto (original)"
+                          v={currencyFmt.format(valorOriginal || 0)}
+                        />
+                        <ResumenKV
+                          k="Banco/Suc."
+                          v={(v.bank || "").trim() || "—"}
+                          error={rowErrors[i].bank}
+                        />
+                        <ResumenKV
+                          k="N° de cheque"
+                          v={(v.chequeNumber || "").trim() || "—"}
+                          error={rowErrors[i].chequeNumber}
+                        />
+                        <ResumenKV k="Fecha cobro" v={v.chequeDate || "—"} />
+                        <ResumenKV k="Comprobante" v="—" muted />
+                        <ResumenKV
+                          k="Concepto"
+                          v={v.selectedReason || NO_CONCEPTO}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Resumen inferior */}
       <div className="mt-4 space-y-1 text-sm">
         <RowSummary
@@ -559,15 +651,6 @@ function RadioPill({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-zinc-700 p-2 text-center">
-      <div className="text-[10px] text-zinc-400">{label}</div>
-      <div className="text-white tabular-nums">{value}</div>
-    </div>
-  );
-}
-
 function RowSummary({
   label,
   value,
@@ -594,6 +677,43 @@ function RowSummary({
       </span>
       <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
         {value}
+      </span>
+    </div>
+  );
+}
+function labelMedio(m: PaymentMethod) {
+  if (m === "efectivo") return "EFECTIVO";
+  if (m === "transferencia") return "TRANSFERENCIA";
+  return "CHEQUE";
+}
+
+function ResumenKV({
+  k,
+  v,
+  strong,
+  warn,
+  muted,
+  error,
+}: {
+  k: string;
+  v: string;
+  strong?: boolean;
+  warn?: boolean;
+  muted?: boolean;
+  error?: boolean;
+}) {
+  const vColor = error
+    ? "text-red-400"
+    : warn
+    ? "text-rose-400"
+    : muted
+    ? "text-zinc-500"
+    : "text-white";
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-zinc-400">{k}</span>
+      <span className={`tabular-nums ${vColor} ${strong ? "font-medium" : ""}`}>
+        {v}
       </span>
     </div>
   );

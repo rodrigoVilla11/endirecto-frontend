@@ -795,7 +795,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               {d.number}
                             </span>
                           </div>
-
+{/* 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">Días</span>
                             <span
@@ -814,7 +814,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                             </span>
                           </div>
                           {/* Activador de descuento manual 10% (30–37 días) */}
-                          {d.eligibleManual10 && (
+                          {/* {d.eligibleManual10 && (
                             <div className="flex items-center justify-between px-3 py-2">
                               <label className="flex items-center gap-2 text-sm">
                                 <input
@@ -836,17 +836,17 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                                   : "Opcional"}
                               </span>
                             </div>
-                          )}
+                          )} */}
 
-                          <div className="flex justify-between px-3 py-2">
+                          {/* <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">%</span>
                             <span className="tabular-nums">
                               {`${d.rate >= 0 ? "-" : "+"}${(
                                 Math.abs(d.rate) * 100
                               ).toFixed(1)}%`}
                             </span>
-                          </div>
-
+                          </div> */}
+{/* 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">
                               {d.rate >= 0 ? "Desc." : "Recargo"}
@@ -856,7 +856,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                                 Math.abs(d.signedAdjustment)
                               )}`}
                             </span>
-                          </div>
+                          </div> */}
 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">Final</span>
@@ -873,7 +873,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                             <div className="px-3 py-2 text-xs text-yellow-400">
                               {d.note}
                             </div>
-                          )}
+                          )} 
                         </div>
                       </div>
                     ))}

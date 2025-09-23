@@ -951,7 +951,8 @@
     "fechaCobro": "Fecha de cobro",
     "banco": "Banco",
     "numeroChequeRequerido": "N° requerido",
-    "montoOriginalRequerido": "Monto requerido"
+    "montoOriginalRequerido": "Monto requerido",
+    "montoRequerido": "Monto requerido"
   },
   "noDocuments": "Sin documentos",
   "adjustment": "Ajustes",
