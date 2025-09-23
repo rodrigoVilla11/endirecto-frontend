@@ -19,6 +19,7 @@ export interface ExpandableTableProps {
   setNewPayment?: any;
   paymentType: "pago_anticipado" | "cta_cte";
   graceDays: number;
+  annualInterestPct: number
 }
 
 export function DocumentsView({
@@ -28,7 +29,8 @@ export function DocumentsView({
   customerInformation,
   setNewPayment,
   paymentType,
-  graceDays
+  graceDays,
+  annualInterestPct
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -50,9 +52,7 @@ export function DocumentsView({
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   // ======= Recargo por vencido =======
-  const annualInterestPct = Number(
-    customerInformation?.annual_interest_pct ?? 96
-  );
+ 
 
   const getOverdueSurcharge = (docDays: number) => {
     // días que generan recargo

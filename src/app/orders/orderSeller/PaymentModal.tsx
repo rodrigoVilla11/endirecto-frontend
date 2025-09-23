@@ -319,15 +319,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       // ——— Totales generales (incluyendo extras de valores) ———
       const totals = {
-        gross: round2(totalBase),
-        discount: round2(totalAdjustmentSigned), // +descuento / -recargo (DOCUMENTOS)
-        net: round2(totalAfterDiscount), // total a pagar por documentos
+        gross: round2(totalBase), // base por documentos
+        // 🔁 ahora el ajuste mostrado es el aplicado a VALORES
+        discount: round2(totalAdjustmentSigned), // +desc / -rec aplicado a valores
+        net: round2(totalToPayWithValuesAdj), // total a pagar (base - ajuste en valores)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
-        values_raw: round2(valuesRawTotal), // suma de montos originales
+        values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
         cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         cheque_grace_days: CHEQUE_GRACE_DAYS,
         interest_annual_pct: annualInterestPct,
-        diff: diff,
+        diff: round2(diff), // (net - values)
       };
 
       // ——— Payload final ———
@@ -344,7 +345,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
-        total: round4(totalAfterDiscount),
+        total: round4(totalToPayWithValuesAdj),
 
         documents: computedDiscounts.map((d) => ({
           document_id: d.document_id,
@@ -381,7 +382,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           title: "PAGO REGISTRADO",
           type: "PAGO",
           description: `${valuesSummary} | Neto: ${currencyFmt.format(
-            created?.totals?.net ?? totalAfterDiscount
+            created?.totals?.net ?? totalToPayWithValuesAdj
           )}`,
           link: "/payments",
           schedule_from: new Date(),
@@ -399,7 +400,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             type: "PAGO", // si tu backend aún no soporta 'PAGO', usar "NOVEDAD"
             description: `Cliente ${selectedClientId} - ${
               customer?.name
-            }  — Neto ${currencyFmt.format(totalAfterDiscount)}`,
+            }  — Neto ${currencyFmt.format(totalToPayWithValuesAdj)}`,
             link: "/payments",
             schedule_from: now,
             schedule_to: in7d,
@@ -528,26 +529,44 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       manualTenApplied: forceTen, // 👈 para payload/regla
     };
   });
+  // ===== TOTALES (ajuste % aplicado sobre VALORES) =====
 
+  // total base de documentos (ya lo tenías)
   const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
-  // suma con signo: descuentos positivos, recargos negativos (como en tu planilla)
-  const totalAdjustmentSigned = computedDiscounts.reduce(
-    (a, d) => a + d.signedAdjustment,
-    0
-  );
-  const totalAfterDiscount = computedDiscounts.reduce(
-    (a, d) => a + d.finalAmount,
-    0
-  );
 
+  // total de valores ingresados (ya lo tenías)
   const totalValues = newValues.reduce(
     (total, v) => total + parseFloat(v.amount || "0"),
     0
   );
-  const diff = +(totalAfterDiscount - totalValues).toFixed(2);
 
+  // 1) tasa efectiva desde documentos
+  //    - si hay 1 doc: usa su tasa
+  //    - si hay varios: promedio ponderado por base (d.base / totalBase)
+  const effectiveRate =
+    totalBase > 0 && computedDiscounts.length > 0
+      ? computedDiscounts.reduce(
+          (acc, d) => acc + d.rate * (d.base / totalBase),
+          0
+        )
+      : 0;
+
+  // 2) AJUSTE TOTAL aplicado sobre VALORES (este es el que querés)
+  const totalAdjustmentSigned = round2(totalValues * effectiveRate);
+  // Nota de signo: rate + => descuento (ajuste +), rate - => recargo (ajuste -)
+
+  // 3) TOTAL a pagar = base - ajuste_sobre_valores
+  const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
+
+  // 4) Diferencia final
+  const diff = round2(totalToPayWithValuesAdj - totalValues);
+
+  // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
-  const formattedTotalNet = currencyFmt.format(totalAfterDiscount);
+  const formattedDtoRec = `${
+    totalAdjustmentSigned >= 0 ? "-" : "+"
+  }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`; // "DTO/REC s/VAL"
+  const formattedTotalNet = currencyFmt.format(totalToPayWithValuesAdj);
   const formattedTotalValues = currencyFmt.format(totalValues);
   const formattedDiff = currencyFmt.format(diff);
 
@@ -596,10 +615,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const anySurcharge =
     paymentTypeUI === "cta_cte" && computedDiscounts.some((d) => d.rate < 0);
-
-  const formattedDtoRec = `${
-    totalAdjustmentSigned >= 0 ? "-" : "+"
-  }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
 
   return (
     <div
@@ -732,7 +747,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       selectedRows={selectedRows}
                       setNewPayment={setNewPayment}
                       paymentType={paymentTypeUI}
-                      graceDays={documentsGrace?.value ? documentsGrace?.value : 45}
+                      graceDays={
+                        documentsGrace?.value ? documentsGrace?.value : 45
+                      }
+                      annualInterestPct={interestSetting?.value ? interestSetting.value : 96}
                     />
                   ))}
               </div>
@@ -795,7 +813,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               {d.number}
                             </span>
                           </div>
-{/* 
+                          {/* 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">Días</span>
                             <span
@@ -846,7 +864,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               ).toFixed(1)}%`}
                             </span>
                           </div> */}
-{/* 
+                          {/* 
                           <div className="flex justify-between px-3 py-2">
                             <span className="text-zinc-400">
                               {d.rate >= 0 ? "Desc." : "Recargo"}
@@ -873,7 +891,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                             <div className="px-3 py-2 text-xs text-yellow-400">
                               {d.note}
                             </div>
-                          )} 
+                          )}
                         </div>
                       </div>
                     ))}
@@ -972,7 +990,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     const method: PaymentMethod = "efectivo"; // default; el usuario puede cambiar en ValueView
 
                     const base: ValueItem = {
-                      amount: totalAfterDiscount.toFixed(2),
+                      amount: totalToPayWithValuesAdj.toFixed(2),
                       selectedReason: "Pago a factura",
                       method,
                       bank: undefined,
@@ -1005,7 +1023,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   setNewValues={setNewValues}
                   annualInterestPct={annualInterestPct} // ej: 96
                   docAdjustmentSigned={totalAdjustmentSigned} // DTO/REC s/FACT (con signo)
-                  netToPay={totalAfterDiscount} // TOTAL A PAGAR (neto)
+                  netToPay={totalToPayWithValuesAdj} // TOTAL A PAGAR (neto)
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
                 />
