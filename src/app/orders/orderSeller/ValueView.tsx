@@ -24,9 +24,9 @@ export default function ValueView({
   setNewValues,
   /** tasa anual (ej: 96) */
   annualInterestPct,
-  /** suma con signo de ajustes por documentos (+desc / -rec) */
+  /** ajuste de documentos (+desc / -rec) que ves en PaymentModal */
   docAdjustmentSigned = 0,
-  /** total a pagar (neto) calculado por los documentos */
+  /** neto que ves en PaymentModal (usá totalNetForUI) */
   netToPay = 0,
   /** gracia para cheques (por defecto 45) */
   chequeGraceDays,
@@ -52,20 +52,17 @@ export default function ValueView({
   );
   const { t } = useTranslation();
   const NO_CONCEPTO = t("document.noConcepto") || "Sin Concepto";
-  const needsBank = (m: PaymentMethod) =>
-    m === "cheque" || m === "transferencia";
-  // Errores por fila (true = hay error)
+
+  const needsBank = (m: PaymentMethod) => m === "cheque" || m === "transferencia";
+
+  // ===== Validación por fila =====
   const rowErrors = newValues.map((v) => {
     const bankErr = needsBank(v.method) && !(v.bank || "").trim();
-    const chequeNumErr =
-      v.method === "cheque" && !(v.chequeNumber || "").trim();
-
-    // ✅ Monto requerido (> 0). En cheque se valida el monto ORIGINAL (rawAmount)
-    const amountStr =
-      v.method === "cheque" ? v.rawAmount ?? v.amount ?? "" : v.amount ?? "";
+    const chequeNumErr = v.method === "cheque" && !(v.chequeNumber || "").trim();
+    // Monto requerido (> 0). En cheque se valida el ORIGINAL (rawAmount)
+    const amountStr = v.method === "cheque" ? v.rawAmount ?? v.amount ?? "" : v.amount ?? "";
     const amountNum = parseFloat((amountStr || "").replace(",", "."));
     const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
-
     return { bank: bankErr, chequeNumber: chequeNumErr, amount: amountErr };
   });
 
@@ -74,6 +71,63 @@ export default function ValueView({
     onValidityChange?.(!hasErrors);
   }, [hasErrors, onValidityChange]);
 
+  const toNum = (s?: string) => Number.parseFloat((s ?? "").replace(",", ".")) || 0;
+
+  // ===== Cálculo interés simple cheques =====
+  const dailyRate = useMemo(() => annualInterestPct / 100 / 365, [annualInterestPct]);
+  const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
+
+  /** Días gravados (aplica gracia; default 45) */
+  const chargeableDays = (iso?: string) => {
+    const days = daysBetweenToday(iso);
+    const grace = chequeGraceDays ?? 45;
+    return Math.max(0, days - grace);
+  };
+
+  /** Interés $ sobre monto ORIGINAL del cheque */
+  const chequeInterest = (v: ValueItem) => {
+    if (v.method !== "cheque") return 0;
+    const base = toNum(v.rawAmount ?? v.amount);
+    if (!base) return 0;
+    const pct = dailyRate * chargeableDays(v.chequeDate);
+    return +(base * pct).toFixed(2);
+  };
+
+  /** Neto imputable desde monto ORIGINAL (rawAmount) */
+  const computeChequeNeto = (raw: string, iso?: string) => {
+    const base = toNum(raw);
+    const int$ = +(base * (dailyRate * chargeableDays(iso))).toFixed(2);
+    const neto = Math.max(0, +(base - int$).toFixed(2));
+    return { neto, int$ };
+  };
+
+  // ===== Normalización: en cheques, amount = neto =====
+  useEffect(() => {
+    let changed = false;
+    const next = newValues.map((v) => {
+      if (v.method !== "cheque") return v;
+      const raw = v.rawAmount ?? v.amount ?? "0";
+      const { neto } = computeChequeNeto(raw, v.chequeDate);
+      const current = toNum(v.amount);
+      if (Math.abs(current - neto) > 0.009 || v.rawAmount == null) {
+        changed = true;
+        return { ...v, rawAmount: raw, amount: neto.toFixed(2) };
+      }
+      return v;
+    });
+    if (changed) setNewValues(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newValues, dailyRate, chequeGraceDays]);
+
+  // ===== Totales =====
+  const totalValues = useMemo(
+    () => newValues.reduce((acc, v) => acc + toNum(v.amount), 0),
+    [newValues]
+  );
+
+  const saldo = useMemo(() => +(netToPay - totalValues).toFixed(2), [netToPay, totalValues]);
+
+  // ===== Handlers =====
   const addRow = () => {
     setNewValues((prev) => [
       {
@@ -97,96 +151,12 @@ export default function ValueView({
     setNewValues((prev) => {
       const clone = [...prev];
       const merged = { ...clone[idx], ...patch };
-
-      // 👇 si no hay concepto, forzamos "No Concepto"
-      if (!merged.selectedReason?.trim()) {
-        merged.selectedReason = NO_CONCEPTO;
-      }
-
+      if (!merged.selectedReason?.trim()) merged.selectedReason = NO_CONCEPTO;
       clone[idx] = merged;
       return clone;
     });
   };
-  // ======= Cálculos de interés simple para cheques =======
-  const dailyRate = useMemo(
-    () => annualInterestPct / 100 / 365,
-    [annualInterestPct]
-  );
 
-  const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
-
-  /** Días que generan interés (aplica gracia) */
-  const chargeableDays = (iso?: string) => {
-    const days = daysBetweenToday(iso);
-    return Math.max(0, days - (chequeGraceDays ?? 45));
-  };
-
-  /** Interés $ sobre el monto ORIGINAL del cheque */
-  const chequeInterest = (v: ValueItem) => {
-    if (v.method !== "cheque") return 0;
-    const base = parseFloat((v.rawAmount ?? v.amount) || "0") || 0;
-    if (!base) return 0;
-    const days = chargeableDays(v.chequeDate);
-    const pct = dailyRate * days; // proporción acumulada
-    return +(base * pct).toFixed(2);
-  };
-
-  /** Neto imputable desde monto ORIGINAL (rawAmount) */
-  const computeChequeNeto = (raw: string, iso?: string) => {
-    const base = parseFloat(raw || "0") || 0;
-    const int$ = +(base * (dailyRate * chargeableDays(iso))).toFixed(2);
-    const neto = Math.max(0, +(base - int$).toFixed(2));
-    return { neto, int$ };
-  };
-
-
-  // ======= Normalización automática del estado (clave) =======
-  // Mantiene amount (imputable) = neto para todos los cheques
-  useEffect(() => {
-    let changed = false;
-    const next = newValues.map((v) => {
-      if (v.method !== "cheque") return v;
-      const raw = v.rawAmount ?? v.amount ?? "0";
-      const { neto } = computeChequeNeto(raw, v.chequeDate);
-      const current = parseFloat(v.amount || "0") || 0;
-      if (Math.abs(current - neto) > 0.009 || v.rawAmount == null) {
-        changed = true;
-        return { ...v, rawAmount: raw, amount: neto.toFixed(2) };
-      }
-      return v;
-    });
-    if (changed) setNewValues(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newValues, dailyRate, chequeGraceDays]);
-
-  // ======= Totales =======
-  // ======= Totales =======
-const totalValues = useMemo(
-  () =>
-    newValues.reduce(
-      (acc, v) => acc + parseFloat(v.amount || "0"),
-      0
-    ),
-  [newValues]
-);
-
-
-  const recargoChequesTotal = useMemo(
-    () => newValues.reduce((acc, v) => acc + chequeInterest(v), 0),
-    [newValues, dailyRate, chequeGraceDays]
-  );
-
-  const totalDtosRecargo = useMemo(
-    () => +(docAdjustmentSigned + recargoChequesTotal).toFixed(2),
-    [docAdjustmentSigned, recargoChequesTotal]
-  );
-
-  const saldo = useMemo(
-    () => +(netToPay - totalValues).toFixed(2),
-    [netToPay, totalValues]
-  );
-
-  // ======= Handlers =======
   const handleAmountChange = (idx: number, value: string, v: ValueItem) => {
     if (v.method !== "cheque") {
       patchRow(idx, { amount: value, rawAmount: undefined });
@@ -196,13 +166,9 @@ const totalValues = useMemo(
     patchRow(idx, { rawAmount: value, amount: neto.toFixed(2) });
   };
 
-  const handleMethodChange = (
-    idx: number,
-    method: PaymentMethod,
-    v: ValueItem
-  ) => {
+  const handleMethodChange = (idx: number, method: PaymentMethod, v: ValueItem) => {
     if (method !== "cheque") {
-      patchRow(idx, { method, rawAmount: undefined }); // amount ya es imputable
+      patchRow(idx, { method, rawAmount: undefined });
       return;
     }
     const raw = v.rawAmount ?? v.amount ?? "0";
@@ -222,8 +188,7 @@ const totalValues = useMemo(
 
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
   const isOpen = (i: number) => !!openRows[i];
-  const toggleRow = (i: number) =>
-    setOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
+  const toggleRow = (i: number) => setOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
 
   return (
     <div className="space-y-3">
@@ -243,21 +208,16 @@ const totalValues = useMemo(
 
       <div className="space-y-2">
         {newValues.map((v, idx) => {
-          const showBank =
-            v.method === "transferencia" || v.method === "cheque";
+          const showBank = v.method === "transferencia" || v.method === "cheque";
           const daysTotal = daysBetweenToday(v.chequeDate);
-          const daysGrav =
-            v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
+          const daysGrav = v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
           const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
-          const shownAmountInput =
-            v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
+          const shownAmountInput = v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
 
           const hasRowError =
-            rowErrors[idx].amount ||
-            rowErrors[idx].bank ||
-            rowErrors[idx].chequeNumber;
+            rowErrors[idx].amount || rowErrors[idx].bank || rowErrors[idx].chequeNumber;
 
           return (
             <div
@@ -265,24 +225,17 @@ const totalValues = useMemo(
               className={`rounded-lg bg-zinc-800/50 p-2 md:p-3 transition-colors
           ${hasRowError ? "border border-red-500" : "border border-zinc-700"}`}
             >
-              {/* CABECERA SIEMPRE VISIBLE */}
+              {/* CABECERA */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                {/* Medio de pago (siempre visible) */}
+                {/* Medio de pago */}
                 <div className="w-full md:w-72">
                   <label className="block text-[11px] text-zinc-400 mb-1">
-                    Medio de pago
+                    <LabelWithTip label="Medio de pago" tip={EXPLAIN.medioPago} />
                   </label>
                   <select
                     value={v.method}
-                    onChange={(e) =>
-                      handleMethodChange(
-                        idx,
-                        e.target.value as PaymentMethod,
-                        v
-                      )
-                    }
-                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700
-                         bg-white dark:bg-zinc-900 text-sm px-2 py-1"
+                    onChange={(e) => handleMethodChange(idx, e.target.value as PaymentMethod, v)}
+                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-2 py-1"
                   >
                     <option value="efectivo">Efectivo</option>
                     <option value="transferencia">Transferencia</option>
@@ -290,36 +243,27 @@ const totalValues = useMemo(
                   </select>
                 </div>
 
-                {/* indicador de error / botón expandir */}
+                {/* errores / expandir / eliminar */}
                 <div className="flex items-center gap-2 md:ml-auto">
                   {hasRowError && (
-                    <span className="text-[12px] text-red-400">
-                      Faltan datos en este valor
-                    </span>
+                    <span className="text-[12px] text-red-400">Faltan datos en este valor</span>
                   )}
                   <button
                     type="button"
                     onClick={() => toggleRow(idx)}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded
-                ${
-                  isOpen(idx)
-                    ? "bg-zinc-700 text-white"
-                    : "bg-zinc-700/60 text-zinc-200"
-                }
+                ${isOpen(idx) ? "bg-zinc-700 text-white" : "bg-zinc-700/60 text-zinc-200"}
                 hover:bg-zinc-600 transition`}
                   >
                     <svg
                       viewBox="0 0 20 20"
-                      className={`w-4 h-4 transition-transform ${
-                        isOpen(idx) ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 transition-transform ${isOpen(idx) ? "rotate-180" : ""}`}
                       fill="currentColor"
                     >
                       <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
                     </svg>
                   </button>
 
-                  {/* eliminar (accesible aún colapsado) */}
                   <button
                     onClick={() => removeRow(idx)}
                     className="px-3 py-1.5 rounded bg-zinc-700 text-white hover:bg-zinc-600"
@@ -333,17 +277,18 @@ const totalValues = useMemo(
               {isOpen(idx) && (
                 <div className="mt-3 space-y-3">
                   {/* Fila principal */}
-                  <div
-                    className="
-                grid grid-cols-1
-                md:grid-cols-[minmax(10rem,16rem),1fr,minmax(14rem,22rem)]
-                gap-2 items-start
-              "
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-[minmax(10rem,16rem),1fr,minmax(14rem,22rem)] gap-2 items-start">
                     {/* Monto */}
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1">
-                        {v.method === "cheque" ? "Monto original" : "Monto"}
+                        <LabelWithTip
+                          label={v.method === "cheque" ? "Monto original" : "Monto"}
+                          tip={
+                            v.method === "cheque"
+                              ? EXPLAIN.chequeMontoOriginal
+                              : EXPLAIN.totalPagado
+                          }
+                        />
                       </label>
                       <input
                         type="number"
@@ -351,22 +296,16 @@ const totalValues = useMemo(
                         step="0.01"
                         placeholder="0.00"
                         value={shownAmountInput}
-                        onChange={(e) =>
-                          handleAmountChange(idx, e.target.value, v)
-                        }
+                        onChange={(e) => handleAmountChange(idx, e.target.value, v)}
                         className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-                    ${
-                      rowErrors[idx].amount
-                        ? "bg-zinc-700 border border-red-500"
-                        : "bg-zinc-700 border border-transparent"
-                    }`}
+                    ${rowErrors[idx].amount ? "bg-zinc-700 border border-red-500" : "bg-zinc-700 border border-transparent"}`}
                       />
                     </div>
 
                     {/* Concepto */}
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1">
-                        Concepto
+                        <LabelWithTip label="Concepto" tip={EXPLAIN.concepto} />
                       </label>
                       <textarea
                         rows={1}
@@ -374,16 +313,12 @@ const totalValues = useMemo(
                         value={v.selectedReason}
                         onChange={(e) => {
                           const val = e.target.value;
-                          patchRow(idx, {
-                            selectedReason:
-                              val.trim() === "" ? NO_CONCEPTO : val,
-                          });
+                          patchRow(idx, { selectedReason: val.trim() === "" ? NO_CONCEPTO : val });
                         }}
                         className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none resize-y"
                       />
                     </div>
 
-                    {/* (espacio reservado para acciones si quisieras algo más) */}
                     <div className="hidden md:block" />
                   </div>
 
@@ -393,21 +328,15 @@ const totalValues = useMemo(
                       {/* Banco */}
                       <div className="md:col-span-4">
                         <label className="block text-[11px] text-zinc-400 mb-1">
-                          {t("document.banco") || "Banco"}
+                          <LabelWithTip label={t("document.banco") || "Banco"} tip={EXPLAIN.banco} />
                         </label>
                         <input
                           type="text"
                           placeholder="Ej: Banco Galicia"
                           value={v.bank || ""}
-                          onChange={(e) =>
-                            patchRow(idx, { bank: e.target.value })
-                          }
+                          onChange={(e) => patchRow(idx, { bank: e.target.value })}
                           className={`w-full px-2 py-1 rounded text-white outline-none
-                      ${
-                        rowErrors[idx].bank
-                          ? "bg-zinc-700 border border-red-500"
-                          : "bg-zinc-700 border border-transparent"
-                      }`}
+                      ${rowErrors[idx].bank ? "bg-zinc-700 border border-red-500" : "bg-zinc-700 border border-transparent"}`}
                         />
                       </div>
 
@@ -416,25 +345,30 @@ const totalValues = useMemo(
                         <>
                           <div className="md:col-span-3">
                             <label className="block text-[11px] text-zinc-400 mb-1">
-                              {t("document.fechaCobro") || "Fecha de cobro"}
+                              <LabelWithTip
+                                label={t("document.fechaCobro") || "Fecha de cobro"}
+                                tip={EXPLAIN.fechaCobro}
+                              />
                             </label>
                             <input
                               type="date"
                               value={v.chequeDate || ""}
-                              onChange={(e) =>
-                                handleChequeDateChange(idx, e.target.value, v)
-                              }
+                              onChange={(e) => handleChequeDateChange(idx, e.target.value, v)}
                               className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none"
                             />
                             <div className="mt-1 text-[10px] text-zinc-500">
-                              Días totales: {daysTotal} · Gracia:{" "}
-                              {chequeGraceDays}
+                              <Tip text={`${EXPLAIN.chequeDiasTotales} • ${EXPLAIN.chequeGracia}`}>
+                                Días totales: {daysTotal} · Gracia: {chequeGraceDays ?? 45}
+                              </Tip>
                             </div>
                           </div>
 
                           <div className="md:col-span-5">
                             <label className="block text-[11px] text-zinc-400 mb-1">
-                              {t("document.numeroCheque") || "N° de cheque"}
+                              <LabelWithTip
+                                label={t("document.numeroCheque") || "N° de cheque"}
+                                tip={EXPLAIN.numeroCheque}
+                              />
                             </label>
                             <input
                               type="text"
@@ -442,17 +376,11 @@ const totalValues = useMemo(
                               value={v.chequeNumber || ""}
                               onChange={(e) =>
                                 patchRow(idx, {
-                                  chequeNumber: e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 20),
+                                  chequeNumber: e.target.value.replace(/\D/g, "").slice(0, 20),
                                 })
                               }
                               className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-                          ${
-                            rowErrors[idx].chequeNumber
-                              ? "bg-zinc-700 border border-red-500"
-                              : "bg-zinc-700 border border-transparent"
-                          }`}
+                          ${rowErrors[idx].chequeNumber ? "bg-zinc-700 border border-red-500" : "bg-zinc-700 border border-transparent"}`}
                             />
                           </div>
                         </>
@@ -468,8 +396,8 @@ const totalValues = useMemo(
                         <span className="text-white tabular-nums">
                           {currencyFmt.format(
                             v.method === "cheque"
-                              ? parseFloat(v.rawAmount || v.amount || "0") || 0
-                              : parseFloat(v.amount || "0") || 0
+                              ? toNum(v.rawAmount || v.amount)
+                              : toNum(v.amount)
                           )}
                         </span>
                       </div>
@@ -484,14 +412,10 @@ const totalValues = useMemo(
                           </div>
                           <div className="flex justify-between">
                             <span className="text-zinc-300">%</span>
-                            <span className="text-rose-400 tabular-nums">
-                              {fmtPctSigned(pctInt)}
-                            </span>
+                            <span className="text-rose-400 tabular-nums">{fmtPctSigned(pctInt)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-zinc-300">
-                              Costo financiero
-                            </span>
+                            <span className="text-zinc-300">Costo financiero</span>
                             <span className="text-rose-400 tabular-nums">
                               {currencyFmt.format(interest$)}
                             </span>
@@ -500,11 +424,9 @@ const totalValues = useMemo(
                       )}
 
                       <div className="flex justify-between sm:col-span-2">
-                        <span className="text-zinc-300 font-medium">
-                          Valor Neto
-                        </span>
+                        <span className="text-zinc-300 font-medium">Valor Neto</span>
                         <span className="text-white font-medium tabular-nums">
-                          {currencyFmt.format(parseFloat(v.amount || "0") || 0)}
+                          {currencyFmt.format(toNum(v.amount))}
                         </span>
                       </div>
                     </div>
@@ -516,140 +438,41 @@ const totalValues = useMemo(
         })}
       </div>
 
-      {/* ======= Resumen inferior (lista de ítems) ======= */}
+      {/* ===== Resumen inferior ===== */}
       {newValues.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <div className="text-sm text-zinc-300 font-semibold">
-            Resumen de valores
-          </div>
+        <div className="mt-4 space-y-1 text-sm">
+          <RowSummary
+            label={<LabelWithTip label="TOTAL PAGADO" tip={EXPLAIN.totalPagado} />}
+            value={currencyFmt.format(totalValues)}
+            bold
+          />
 
-          <div className="space-y-2">
-            {newValues.map((v, i) => {
-              const isCheque = v.method === "cheque";
-              const isTransf = v.method === "transferencia";
-              const valorOriginal = isCheque
-                ? parseFloat(v.rawAmount || v.amount || "0") || 0
-                : undefined;
-              const neto = parseFloat(v.amount || "0") || 0;
-              const daysTotal = isCheque
-                ? daysBetweenToday(v.chequeDate)
-                : undefined;
-              const daysGrav = isCheque
-                ? chargeableDays(v.chequeDate)
-                : undefined;
-              const pctInt = isCheque ? dailyRate * (daysGrav || 0) : undefined;
-              const interest$ = isCheque ? chequeInterest(v) : undefined;
+          {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
+          <RowSummary
+            label={<LabelWithTip label="DTO/REC s/FACT" tip={EXPLAIN.dtoRecFact} />}
+            value={`${docAdjustmentSigned >= 0 ? "-" : "+"}${currencyFmt.format(
+              Math.abs(docAdjustmentSigned)
+            )}`}
+          />
 
-              return (
-                <div
-                  key={`resumen-${i}`}
-                  className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-zinc-200 font-medium">
-                      {i + 1}. {labelMedio(v.method)}
-                    </div>
-                    <div className="text-sm text-white tabular-nums">
-                      {currencyFmt.format(neto)}
-                    </div>
-                  </div>
-
-                  {/* Campos por tipo */}
-                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-1 text-[13px]">
-                    {/* Efectivo */}
-                    {v.method === "efectivo" && (
-                      <>
-                        <ResumenKV k="Monto" v={currencyFmt.format(neto)} />
-                        <ResumenKV
-                          k="Concepto"
-                          v={v.selectedReason || NO_CONCEPTO}
-                        />
-                      </>
-                    )}
-
-                    {/* Transferencia */}
-                    {isTransf && (
-                      <>
-                        <ResumenKV k="Monto" v={currencyFmt.format(neto)} />
-                        <ResumenKV
-                          k="Banco"
-                          v={(v.bank || "").trim() || "—"}
-                          error={rowErrors[i].bank}
-                        />
-                        <ResumenKV k="Comprobante" v="—" muted />
-                        <ResumenKV
-                          k="Concepto"
-                          v={v.selectedReason || NO_CONCEPTO}
-                        />
-                      </>
-                    )}
-
-                    {/* Cheque */}
-                    {isCheque && (
-                      <>
-                        <ResumenKV
-                          k="Monto (original)"
-                          v={currencyFmt.format(valorOriginal || 0)}
-                        />
-                        <ResumenKV
-                          k="Banco/Suc."
-                          v={(v.bank || "").trim() || "—"}
-                          error={rowErrors[i].bank}
-                        />
-                        <ResumenKV
-                          k="N° de cheque"
-                          v={(v.chequeNumber || "").trim() || "—"}
-                          error={rowErrors[i].chequeNumber}
-                        />
-                        <ResumenKV k="Fecha cobro" v={v.chequeDate || "—"} />
-                        <ResumenKV k="Comprobante" v="—" muted />
-                        <ResumenKV
-                          k="Concepto"
-                          v={v.selectedReason || NO_CONCEPTO}
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <RowSummary
+            label={<LabelWithTip label="SALDO" tip={EXPLAIN.saldo} />}
+            value={currencyFmt.format(saldo)}
+            highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
+          />
         </div>
       )}
-      {/* Resumen inferior */}
-      <div className="mt-4 space-y-1 text-sm">
-        <RowSummary
-          label="TOTAL PAGADO"
-          value={currencyFmt.format(totalValues)}
-          bold
-        />
-        <RowSummary
-          label="REC S/CHEQUES"
-          value={currencyFmt.format(recargoChequesTotal)}
-        />
-        <RowSummary
-          label="TOTAL DTOS/RECARGO"
-          value={currencyFmt.format(totalDtosRecargo)}
-        />
-        <RowSummary
-          label="SALDO"
-          value={currencyFmt.format(saldo)}
-          highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
-        />
-      </div>
 
       {hasErrors && (
         <div className="mt-3 text-sm text-red-400">
-          {t("document.hayErroresEnValores") ||
-            "Hay errores en los valores cargados"}
+          {t("document.hayErroresEnValores") || "Hay errores en los valores cargados"}
         </div>
       )}
     </div>
   );
 }
 
-const fmtPctSigned = (p: number) =>
-  `${p >= 0 ? "+" : ""}${(p * 100).toFixed(1)}%`;
+const fmtPctSigned = (p: number) => `${p >= 0 ? "+" : ""}${(p * 100).toFixed(1)}%`;
 
 /* ================== UI helpers ================== */
 function RadioPill({
@@ -682,7 +505,7 @@ function RowSummary({
   bold,
   highlight,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   bold?: boolean;
   highlight?: "ok" | "bad" | "warn";
@@ -697,12 +520,8 @@ function RowSummary({
       : "text-white";
   return (
     <div className="flex justify-between">
-      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>
-        {label}
-      </span>
-      <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
-        {value}
-      </span>
+      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>{label}</span>
+      <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -720,7 +539,7 @@ function ResumenKV({
   muted,
   error,
 }: {
-  k: string;
+  k: React.ReactNode;
   v: string;
   strong?: boolean;
   warn?: boolean;
@@ -737,9 +556,81 @@ function ResumenKV({
   return (
     <div className="flex justify-between gap-2">
       <span className="text-zinc-400">{k}</span>
-      <span className={`tabular-nums ${vColor} ${strong ? "font-medium" : ""}`}>
-        {v}
-      </span>
+      <span className={`tabular-nums ${vColor} ${strong ? "font-medium" : ""}`}>{v}</span>
     </div>
   );
 }
+
+function InfoIcon({ className = "w-3.5 h-3.5" }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.75-9.5a.75.75 0 011.5 0v5a.75.75 0 01-1.5 0v-5zM10 6a1 1 0 100-2 1 1 0 000 2z" />
+    </svg>
+  );
+}
+
+/** Tooltip simple, accesible y sin dependencias */
+function Tip({
+  text,
+  children,
+  side = "top",
+}: {
+  text: string;
+  children: React.ReactNode;
+  side?: "top" | "bottom" | "left" | "right";
+}) {
+  const pos =
+    side === "top"
+      ? "bottom-full mb-1 left-1/2 -translate-x-1/2"
+      : side === "bottom"
+      ? "top-full mt-1 left-1/2 -translate-x-1/2"
+      : side === "left"
+      ? "right-full mr-1 top-1/2 -translate-y-1/2"
+      : "left-full ml-1 top-1/2 -translate-y-1/2";
+
+  return (
+    <span className="relative inline-flex items-center gap-1 group" role="tooltip" title={text}>
+      {children}
+      <span
+        className={`pointer-events-none absolute ${pos} z-10 max-w-[18rem] rounded-md border border-zinc-700
+        bg-zinc-900 px-2 py-1 text-xs text-zinc-200 opacity-0 shadow-lg
+        transition-opacity duration-150 group-hover:opacity-100`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/** Etiqueta con ícono + tooltip */
+function LabelWithTip({ label, tip }: { label: string; tip: string }) {
+  return (
+    <Tip text={tip}>
+      <span className="inline-flex items-center gap-1">
+        <span>{label}</span>
+        <InfoIcon className="w-3.5 h-3.5 text-zinc-400" />
+      </span>
+    </Tip>
+  );
+}
+
+/* ===== Textos de ayuda ===== */
+const EXPLAIN = {
+  totalPagado:
+    "Suma de los valores imputables cargados. Para cheques se toma el neto (monto original menos interés).",
+  dtoRecFact:
+    "Ajuste por comprobantes según días y condición de pago: descuento (signo -) o recargo (signo +).",
+  saldo:
+    "Diferencia entre el total a pagar de documentos (neto) y los valores imputados. Si es 0, el pago queda cubierto.",
+  chequeMontoOriginal: "Importe original del cheque ingresado por el usuario (antes del costo financiero).",
+  chequeDiasTotales: "Días calendario desde hoy hasta la fecha de cobro del cheque.",
+  chequeGracia: "Días de gracia durante los cuales no se cobra interés. Pasado ese umbral, los días generan interés.",
+  chequePorcentaje: "Porcentaje de interés simple acumulado: tasa diaria x días gravados.",
+  chequeCostoFinanciero: "Interés en pesos aplicado al monto original del cheque (original x porcentaje).",
+  chequeNeto: "Monto imputable del cheque: original menos costo financiero.",
+  medioPago: "Seleccioná el medio de pago. Cheque y transferencia pueden requerir banco y otros datos.",
+  banco: "Banco/Sucursal del valor. Requerido para cheque y transferencia.",
+  fechaCobro: "Fecha de cobro del cheque. Define los días totales y el interés.",
+  numeroCheque: "Número del cheque para trazabilidad.",
+  concepto: "Detalle o referencia del pago (se usa para notas/comunicaciones).",
+};

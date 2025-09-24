@@ -1056,7 +1056,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   Pagar total
                 </button>
 
-                {/* Botón para agregar valor “regular” (dto/rec sobre valores) */}
+                {/* Botón para agregar valor “regular” (dto/rec sobre valores)
                 <button
                   className="mt-1 ml-2 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
                   onClick={() => {
@@ -1087,7 +1087,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   disabled={computedDiscounts.length === 0}
                 >
                   Agregar a Valores
-                </button>
+                </button> */}
 
                 {/* Valores manuales */}
                 <ValueView
