@@ -558,6 +558,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // 3) TOTAL a pagar = base - ajuste_sobre_valores
   const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
 
+  console.log("totalToPayWithValuesAdj", totalToPayWithValuesAdj);
+  console.log("totalBase", totalBase);
+  console.log("totalAdjustmentSigned", totalAdjustmentSigned);
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
   const formattedDtoRec = `${
@@ -1090,9 +1093,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 <ValueView
                   newValues={newValues}
                   setNewValues={setNewValues}
-                  annualInterestPct={annualInterestPct} // ej: 96
-                  docAdjustmentSigned={totalAdjustmentSigned} // DTO/REC s/FACT (con signo)
-                  netToPay={totalToPayWithValuesAdj} // TOTAL A PAGAR (neto)
+                  annualInterestPct={annualInterestPct}
+                  // 👉 usar el neto que realmente mostrás en la UI
+                  netToPay={totalNetForUI}
+                  // (opcional) alinear el ajuste mostrado con el modo activo:
+                  docAdjustmentSigned={
+                    payTotalDocMode
+                      ? round2(totalBase - totalDocsFinal) // ajuste efectivo por doc
+                      : totalAdjustmentSigned // ajuste “sobre valores”
+                  }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
                 />

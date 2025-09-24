@@ -118,7 +118,7 @@ export default function ValueView({
   /** Días que generan interés (aplica gracia) */
   const chargeableDays = (iso?: string) => {
     const days = daysBetweenToday(iso);
-    return Math.max(0, days - (chequeGraceDays ?? 0));
+    return Math.max(0, days - (chequeGraceDays ?? 45));
   };
 
   /** Interés $ sobre el monto ORIGINAL del cheque */
@@ -139,8 +139,6 @@ export default function ValueView({
     return { neto, int$ };
   };
 
-  /** Valor efectivo imputable (para otros medios = amount; para cheques ya es neto) */
-  const effectiveValue = (v: ValueItem) => parseFloat(v.amount || "0") || 0;
 
   // ======= Normalización automática del estado (clave) =======
   // Mantiene amount (imputable) = neto para todos los cheques
@@ -162,10 +160,16 @@ export default function ValueView({
   }, [newValues, dailyRate, chequeGraceDays]);
 
   // ======= Totales =======
-  const totalValues = useMemo(
-    () => newValues.reduce((acc, v) => acc + effectiveValue(v), 0),
-    [newValues]
-  );
+  // ======= Totales =======
+const totalValues = useMemo(
+  () =>
+    newValues.reduce(
+      (acc, v) => acc + parseFloat(v.amount || "0"),
+      0
+    ),
+  [newValues]
+);
+
 
   const recargoChequesTotal = useMemo(
     () => newValues.reduce((acc, v) => acc + chequeInterest(v), 0),
