@@ -322,13 +322,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         gross: round2(totalBase), // base por documentos
         // 🔁 ahora el ajuste mostrado es el aplicado a VALORES
         discount: round2(totalAdjustmentSigned), // +desc / -rec aplicado a valores
-        net: round2(totalToPayWithValuesAdj), // total a pagar (base - ajuste en valores)
+        net: round2(totalNetForUI), // total a pagar (base - ajuste en valores)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
         cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         cheque_grace_days: CHEQUE_GRACE_DAYS,
         interest_annual_pct: annualInterestPct,
-        diff: round2(diff), // (net - values)
+        diff: round2(totalNetForUI - totalValues),
       };
 
       // ——— Payload final ———
@@ -443,7 +443,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
 
-    // 👇 si el checkbox está activo, imponemos 10%
     if (forceTenPct) {
       return { rate: +0.1, note: "Descuento 10% (30–37 días activado)" };
     }
@@ -457,7 +456,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const daysOver = days - 45;
     const daily = annualInterest / 365;
     const surchargeRate = +(daily * daysOver);
-    console.log("surchargeRate", surchargeRate)
+    console.log("surchargeRate", surchargeRate);
     return { rate: -surchargeRate, note: `Recargo por ${daysOver} días` };
   }
 
@@ -559,23 +558,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // 3) TOTAL a pagar = base - ajuste_sobre_valores
   const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
 
-  // 4) Diferencia final
-  const diff = round2(totalToPayWithValuesAdj - totalValues);
-
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
   const formattedDtoRec = `${
     totalAdjustmentSigned >= 0 ? "-" : "+"
   }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`; // "DTO/REC s/VAL"
-  const formattedTotalNet = currencyFmt.format(totalToPayWithValuesAdj);
   const formattedTotalValues = currencyFmt.format(totalValues);
-  const formattedDiff = currencyFmt.format(diff);
 
   const { data } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
   });
-
-  if (!isOpen) return null;
 
   const handleRowSelect = (id: string, checked: boolean) => {
     setSelectedRows((prev) =>
@@ -614,8 +606,51 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     );
   };
 
-  const anySurcharge =
-    paymentTypeUI === "cta_cte" && computedDiscounts.some((d) => d.rate < 0);
+  const totalDocsFinal = computedDiscounts.reduce(
+    (acc, d) => acc + d.finalAmount,
+    0
+  );
+
+  function computeAmountToAdd(
+    totalBase: number,
+    totalValues: number,
+    effectiveRate: number
+  ): number {
+    const denom = 1 + effectiveRate;
+    if (denom <= 0) return Math.max(0, round2(totalBase - totalValues));
+    const A = (totalBase - totalValues * denom) / denom;
+    return Math.max(0, round2(A));
+  }
+
+  // Flag para saber si estamos en “pagar total por comprobante”
+  const [payTotalDocMode, setPayTotalDocMode] = useState(false);
+
+  // Si el usuario modifica los valores, salimos del modo “pagar total”
+  useEffect(() => {
+    if (newValues.length !== 1) {
+      setPayTotalDocMode(false);
+      return;
+    }
+    const only = parseFloat(newValues[0].amount || "0");
+    if (Math.abs(only - round2(totalDocsFinal)) > 0.01)
+      setPayTotalDocMode(false);
+  }, [newValues, totalDocsFinal]);
+
+  // Neto modelo “dto sobre valores”
+  const net_by_values = round2(totalBase - totalAdjustmentSigned);
+
+  // Neto a mostrar: si es “pagar total”, usamos el final por comprobante
+  const totalNetForUI = payTotalDocMode
+    ? round2(totalDocsFinal)
+    : net_by_values;
+
+  // Diferencia coherente con el neto mostrado
+  const diff = round2(totalNetForUI - totalValues);
+
+  // Formateos para UI
+  const formattedTotalNet = currencyFmt.format(totalNetForUI);
+  const formattedDiff = currencyFmt.format(diff);
+  if (!isOpen) return null;
 
   return (
     <div
@@ -751,7 +786,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       graceDays={
                         documentsGrace?.value ? documentsGrace?.value : 45
                       }
-                      annualInterestPct={interestSetting?.value ? interestSetting.value : 96}
+                      annualInterestPct={
+                        interestSetting?.value ? interestSetting.value : 96
+                      }
                     />
                   ))}
               </div>
@@ -984,36 +1021,67 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }}
                 />
 
+                {/* Botón para PAGAR TOTAL (descuento aplicado al comprobante) */}
                 <button
-                  className="mt-1 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
+                  className="mt-1 px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
                   onClick={() => {
-                    // método sugerido según opción elegida
-                    const method: PaymentMethod = "efectivo"; // default; el usuario puede cambiar en ValueView
+                    const method: PaymentMethod = "efectivo";
+                    const amount = round2(totalDocsFinal);
 
                     const base: ValueItem = {
-                      amount: totalToPayWithValuesAdj.toFixed(2),
-                      selectedReason: "Pago a factura",
+                      amount: amount.toString(),
+                      selectedReason: "Pago total a factura",
                       method,
-                      bank: undefined,
                     };
 
-                    // si ya existe un "Pago a factura", lo reemplazamos; si no, lo agregamos
+                    setPayTotalDocMode(true); // 👈 activamos modo total por doc
+
                     setNewValues((prev) => {
                       const idx = prev.findIndex(
                         (v) => v.selectedReason === base.selectedReason
                       );
                       if (idx >= 0) {
                         const clone = [...prev];
-                        clone[idx] = { ...base };
+                        clone[idx] = base;
                         return clone;
                       }
                       return [base, ...prev];
                     });
                   }}
-                  disabled={
-                    computedDiscounts.length ===
-                    0 /* ya no dependemos de isUploading */
-                  }
+                  disabled={computedDiscounts.length === 0}
+                >
+                  Pagar total
+                </button>
+
+                {/* Botón para agregar valor “regular” (dto/rec sobre valores) */}
+                <button
+                  className="mt-1 ml-2 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
+                  onClick={() => {
+                    const method: PaymentMethod = "efectivo";
+                    const suggested = computeAmountToAdd(
+                      totalBase,
+                      totalValues,
+                      effectiveRate
+                    ); // dto sobre valores
+                    const base: ValueItem = {
+                      amount: suggested.toString(),
+                      selectedReason: "Pago a factura",
+                      method,
+                    };
+                    setPayTotalDocMode(false); // 👈 aseguramos salir de modo total
+                    setNewValues((prev) => {
+                      const idx = prev.findIndex(
+                        (v) => v.selectedReason === base.selectedReason
+                      );
+                      if (idx >= 0) {
+                        const clone = [...prev];
+                        clone[idx] = base;
+                        return clone;
+                      }
+                      return [base, ...prev];
+                    });
+                  }}
+                  disabled={computedDiscounts.length === 0}
                 >
                   Agregar a Valores
                 </button>
