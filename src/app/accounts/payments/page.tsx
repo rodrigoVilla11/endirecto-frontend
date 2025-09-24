@@ -921,7 +921,15 @@ function DetailsModal({
         </div>
 
         {/* Body (scrollable) */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 max-h-[calc(90vh-112px)]">
+        <div
+          className="
+    flex-1 overflow-y-auto
+    p-3 sm:p-4 space-y-4
+    max-h-[calc(90vh-112px)]
+    pb-24 sm:pb-28            /* ⬅️ espacio para el footer */
+    scroll-pb-24 sm:scroll-pb-28 /* ⬅️ mejora el “snap” al final */
+  "
+        >
           {/* Meta */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
             <Info
@@ -1117,8 +1125,8 @@ function DetailsModal({
 
             <div className="min-h-0 max-h-[50vh] md:max-h-80 overflow-y-auto overscroll-contain">
               <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500 sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
-                <span className="col-span-2">{t("method") || "Medio"}</span>
-                <span className="col-span-4">{t("concept") || "Concepto"}</span>
+                <span className="col-span-4">{t("method") || "Medio"}</span>
+                <span className="col-span-2">{t("concept") || "Concepto"}</span>
                 <span className="col-span-2 text-right">
                   {t("amount") || "Importe"}
                 </span>
@@ -1149,7 +1157,7 @@ function DetailsModal({
                       key={i}
                       className={`grid grid-cols-1 sm:grid-cols-12 items-center gap-x-3 gap-y-1 px-3 py-2 text-sm sm:[&>div]:min-w-0 ${zebra}`}
                     >
-                      <div className="flex sm:block justify-between sm:col-span-2">
+                      <div className="flex sm:block justify-between sm:col-span-4">
                         <span className="text-xs text-zinc-500 sm:hidden">
                           {t("method") || "Medio"}:
                         </span>
@@ -1158,7 +1166,7 @@ function DetailsModal({
                         </span>
                       </div>
 
-                      <div className="flex sm:block justify-between sm:col-span-4">
+                      <div className="flex sm:block justify-between sm:col-span-2">
                         <span className="text-xs text-zinc-500 sm:hidden">
                           {t("concept") || "Concepto"}:
                         </span>
