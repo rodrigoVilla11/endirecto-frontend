@@ -945,7 +945,7 @@
     "recargoPorcentaje": "Recargo {{percent}}%",
     "noConcepto": "Sin Concepto",
     "bancoRequerido": "Banco requerido",
-    "hayErroresEnValores": "Hay errores en los valores cargados",
+    "hayErroresEnValores": "Hay errores en los pagos cargados",
     "vto": "Vencimiento",
     "numeroCheque": "N° de cheque",
     "fechaCobro": "Fecha de cobro",
@@ -980,7 +980,7 @@
     "daysOfPayment": "Días de Pago {{number}}",
     "tabs": {
       "documents": "Comprobantes",
-      "values": "Valores",
+      "values": "Pagos",
       "comments": "Comentarios"
     },
     "send": "ENVIAR",

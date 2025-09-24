@@ -22,6 +22,7 @@ import {
   useGetDocumentsGraceDaysQuery,
 } from "@/redux/services/settingsApi";
 import { diffCalendarDays, diffFromDateToToday } from "@/lib/dateUtils";
+import { InfoIcon } from "lucide-react";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -697,15 +698,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
             {/* SUBTOTAL */}
             <InfoRow label="Importe bruto" value={formattedTotalGross} />
+            <InfoRow label="Pagos" value={formattedTotalValues} />
 
             {/* 🆕 DTO/REC con signo (descuento = -, recargo = +) */}
-            <InfoRow
-              label="DTO/REC s/FACT"
-              value={formattedDtoRec}
-              valueClassName={
-                totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
-              }
-            />
+          <InfoRow
+  label={<LabelWithTip label="DTO/REC s/FACT" tip="Primero agregá un pago." />}
+  value={formattedDtoRec}
+  valueClassName={totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"}
+/>
 
             {/* 🆕 Total a pagar (neto con desc/rec) */}
             <InfoRow
@@ -715,7 +715,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             />
 
             {/* Valores y Diferencia (igual que antes) */}
-            <InfoRow label="Valores" value={formattedTotalValues} />
             <InfoRow
               label="Diferencia"
               value={formattedDiff}
@@ -1336,5 +1335,49 @@ function ConfirmDialog({
       </div>
     </div>,
     document.body
+  );
+}
+/** Tooltip simple, accesible y sin dependencias */
+function Tip({
+  text,
+  children,
+  side = "top",
+}: {
+  text: string;
+  children: React.ReactNode;
+  side?: "top" | "bottom" | "left" | "right";
+}) {
+  const pos =
+    side === "top"
+      ? "bottom-full mb-1 left-1/2 -translate-x-1/2"
+      : side === "bottom"
+      ? "top-full mt-1 left-1/2 -translate-x-1/2"
+      : side === "left"
+      ? "right-full mr-1 top-1/2 -translate-y-1/2"
+      : "left-full ml-1 top-1/2 -translate-y-1/2";
+
+  return (
+    <span className="relative inline-flex items-center gap-1 group" role="tooltip" title={text}>
+      {children}
+      <span
+        className={`pointer-events-none absolute ${pos} z-10 max-w-[18rem] rounded-md border border-zinc-700
+        bg-zinc-900 px-2 py-1 text-xs text-zinc-200 opacity-0 shadow-lg
+        transition-opacity duration-150 group-hover:opacity-100`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/** Etiqueta con ícono + tooltip */
+function LabelWithTip({ label, tip }: { label: string; tip: string }) {
+  return (
+    <Tip text={tip}>
+      <span className="inline-flex items-center gap-1">
+        <span>{label}</span>
+        <InfoIcon className="w-3.5 h-3.5 text-zinc-400" />
+      </span>
+    </Tip>
   );
 }
