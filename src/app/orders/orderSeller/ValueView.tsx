@@ -1,8 +1,9 @@
 "use client";
 
 import { diffFromTodayToDate } from "@/lib/dateUtils";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 
 type PaymentMethod = "efectivo" | "transferencia" | "cheque";
 
@@ -17,6 +18,8 @@ export type ValueItem = {
   /** Solo cheques: fecha de cobro (YYYY-MM-DD) */
   chequeDate?: string;
   chequeNumber?: string;
+  receiptUrl?: string;
+  receiptOriginalName?: string;
 };
 
 export default function ValueView({
@@ -52,6 +55,7 @@ export default function ValueView({
   );
   const { t } = useTranslation();
   const NO_CONCEPTO = t("document.noConcepto") || "Sin Concepto";
+  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
 
   const needsBank = (m: PaymentMethod) =>
     m === "cheque" || m === "transferencia";
@@ -76,6 +80,48 @@ export default function ValueView({
 
   const toNum = (s?: string) =>
     Number.parseFloat((s ?? "").replace(",", ".")) || 0;
+
+  /** Convierte cualquier input del usuario a un número en pesos con 2 decimales.
+   *  Ej: "1234" -> 12.34 ; "1.234,5" -> 1234.50 ; "12,34" -> 12.34
+   */
+  const parseMaskedCurrencyToNumber = (raw: string): number => {
+    const digits = (raw || "").replace(/\D/g, ""); // solo dígitos
+    if (!digits) return 0;
+    const cents = digits.slice(-2).padStart(2, "0"); // siempre 2 decimales
+    const int = digits.slice(0, -2) || "0";
+    return Number(`${int}.${cents}`);
+  };
+
+  /** Formatea número a moneda AR con 2 decimales, p.ej. "$ 1.232.312,00" */
+  const formatCurrencyAR = (n: number, fmt: Intl.NumberFormat) =>
+    n === 0 ? "$ 0,00" : fmt.format(n);
+
+  /** Dado un string numérico interno (ej "1234.56") devuelve el texto formateado */
+  const formatInternalString = (
+    s: string | undefined,
+    fmt: Intl.NumberFormat
+  ) => formatCurrencyAR(Number(s || 0), fmt);
+
+  const handleAmountChangeMasked = (
+    idx: number,
+    input: string,
+    v: ValueItem
+  ) => {
+    const n = parseMaskedCurrencyToNumber(input); // número en pesos
+
+    if (v.method !== "cheque") {
+      // Guardamos internamente con punto decimal y 2 decimales
+      patchRow(idx, { amount: n.toFixed(2), rawAmount: undefined });
+      return;
+    }
+
+    // Para cheques, el input controla el "monto original" (rawAmount)
+    const { neto } = computeChequeNeto(n.toFixed(2), v.chequeDate);
+    patchRow(idx, {
+      rawAmount: n.toFixed(2),
+      amount: neto.toFixed(2),
+    });
+  };
 
   // ===== Cálculo interés simple cheques =====
   const dailyRate = useMemo(
@@ -137,7 +183,20 @@ export default function ValueView({
     [netToPay, totalValues]
   );
 
+  const isImage = (url?: string) =>
+    !!url && !url.toLowerCase().endsWith(".pdf");
+
   // ===== Handlers =====
+
+  const MAX_FILE_MB = 15;
+
+  const clearReceipt = (idx: number) => {
+    patchRow(idx, {
+      receiptUrl: undefined,
+      receiptOriginalName: undefined,
+    });
+  };
+
   const addRow = () => {
     setNewValues((prev) => [
       {
@@ -205,16 +264,17 @@ export default function ValueView({
   const toggleRow = (i: number) =>
     setOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
 
+  const [summaryOpenRows, setSummaryOpenRows] = useState<
+    Record<number, boolean>
+  >({});
+  const isSummaryOpen = (i: number) => !!summaryOpenRows[i];
+  const toggleSummary = (i: number) =>
+    setSummaryOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-white font-medium">Pagos</h4>
-        <button
-          onClick={addRow}
-          className="px-3 py-2 rounded bg-emerald-500 text-black font-medium hover:brightness-95 active:scale-95"
-        >
-          + Agregar pago
-        </button>
       </div>
 
       {newValues.length === 0 && (
@@ -310,196 +370,295 @@ export default function ValueView({
                 </div>
               </div>
 
-              {/* CONTENIDO EXPANDIBLE */}
               {isOpen(idx) && (
                 <div className="mt-3 space-y-3">
-                  {/* Fila principal */}
-                  <div className="grid grid-cols-1 md:grid-cols-[minmax(10rem,16rem),1fr,minmax(14rem,22rem)] gap-2 items-start">
-                    {/* Monto */}
+                  {/* Monto */}
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      <LabelWithTip
+                        label={
+                          v.method === "cheque" ? "Monto original" : "Monto"
+                        }
+                        tip={
+                          v.method === "cheque"
+                            ? EXPLAIN.chequeMontoOriginal
+                            : EXPLAIN.totalPagado
+                        }
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="$ 0,00"
+                      value={
+                        shownAmountInput?.trim()
+                          ? formatInternalString(shownAmountInput, currencyFmt)
+                          : ""
+                      }
+                      onChange={(e) =>
+                        handleAmountChangeMasked(idx, e.target.value, v)
+                      }
+                      className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
+          ${
+            rowErrors[idx].amount
+              ? "bg-zinc-700 border border-red-500"
+              : "bg-zinc-700 border border-transparent"
+          }`}
+                    />
+                  </div>
+
+                  {/* Solo cheques: N° de cheque */}
+                  {v.method === "cheque" && (
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1">
                         <LabelWithTip
-                          label={
-                            v.method === "cheque" ? "Monto original" : "Monto"
-                          }
-                          tip={
-                            v.method === "cheque"
-                              ? EXPLAIN.chequeMontoOriginal
-                              : EXPLAIN.totalPagado
-                          }
+                          label={t("document.numeroCheque") || "N° de cheque"}
+                          tip={EXPLAIN.numeroCheque}
                         />
                       </label>
                       <input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={shownAmountInput}
+                        type="text"
+                        inputMode="numeric"
+                        value={v.chequeNumber || ""}
                         onChange={(e) =>
-                          handleAmountChange(idx, e.target.value, v)
+                          patchRow(idx, {
+                            chequeNumber: e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 20),
+                          })
                         }
                         className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-                    ${
-                      rowErrors[idx].amount
-                        ? "bg-zinc-700 border border-red-500"
-                        : "bg-zinc-700 border border-transparent"
-                    }`}
+            ${
+              rowErrors[idx].chequeNumber
+                ? "bg-zinc-700 border border-red-500"
+                : "bg-zinc-700 border border-transparent"
+            }`}
                       />
-                    </div>
-
-                    {/* Concepto */}
-                    <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
-                        <LabelWithTip label="Concepto" tip={EXPLAIN.concepto} />
-                      </label>
-                      <textarea
-                        rows={1}
-                        placeholder="Ej: Pago factura 001-0000123"
-                        value={v.selectedReason}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          patchRow(idx, {
-                            selectedReason:
-                              val.trim() === "" ? NO_CONCEPTO : val,
-                          });
-                        }}
-                        className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none resize-y"
-                      />
-                    </div>
-
-                    <div className="hidden md:block" />
-                  </div>
-
-                  {/* Campos condicionales */}
-                  {showBank && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                      {/* Banco */}
-                      <div className="md:col-span-4">
-                        <label className="block text-[11px] text-zinc-400 mb-1">
-                          <LabelWithTip
-                            label={t("document.banco") || "Banco"}
-                            tip={EXPLAIN.banco}
-                          />
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Ej: Banco Galicia"
-                          value={v.bank || ""}
-                          onChange={(e) =>
-                            patchRow(idx, { bank: e.target.value })
-                          }
-                          className={`w-full px-2 py-1 rounded text-white outline-none
-                      ${
-                        rowErrors[idx].bank
-                          ? "bg-zinc-700 border border-red-500"
-                          : "bg-zinc-700 border border-transparent"
-                      }`}
-                        />
-                      </div>
-
-                      {/* Solo cheques: fecha + nro */}
-                      {v.method === "cheque" && (
-                        <>
-                          <div className="md:col-span-3">
-                            <label className="block text-[11px] text-zinc-400 mb-1">
-                              <LabelWithTip
-                                label={
-                                  t("document.fechaCobro") || "Fecha de cobro"
-                                }
-                                tip={EXPLAIN.fechaCobro}
-                              />
-                            </label>
-                            <input
-                              type="date"
-                              value={v.chequeDate || ""}
-                              onChange={(e) =>
-                                handleChequeDateChange(idx, e.target.value, v)
-                              }
-                              className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none"
-                            />
-                            <div className="mt-1 text-[10px] text-zinc-500">
-                              <Tip
-                                text={`${EXPLAIN.chequeDiasTotales} • ${EXPLAIN.chequeGracia}`}
-                              >
-                                Días totales: {daysTotal} · Gracia:{" "}
-                                {chequeGraceDays ?? 45}
-                              </Tip>
-                            </div>
-                          </div>
-
-                          <div className="md:col-span-5">
-                            <label className="block text-[11px] text-zinc-400 mb-1">
-                              <LabelWithTip
-                                label={
-                                  t("document.numeroCheque") || "N° de cheque"
-                                }
-                                tip={EXPLAIN.numeroCheque}
-                              />
-                            </label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={v.chequeNumber || ""}
-                              onChange={(e) =>
-                                patchRow(idx, {
-                                  chequeNumber: e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 20),
-                                })
-                              }
-                              className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-                          ${
-                            rowErrors[idx].chequeNumber
-                              ? "bg-zinc-700 border border-red-500"
-                              : "bg-zinc-700 border border-transparent"
-                          }`}
-                            />
-                          </div>
-                        </>
-                      )}
                     </div>
                   )}
 
-                  {/* Resumen por ítem */}
-                  <div className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-300">Valor</span>
-                        <span className="text-white tabular-nums">
-                          {currencyFmt.format(
-                            v.method === "cheque"
-                              ? toNum(v.rawAmount || v.amount)
-                              : toNum(v.amount)
-                          )}
-                        </span>
+                  {/* Solo cheques: Fecha de cobro */}
+                  {v.method === "cheque" && (
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">
+                        <LabelWithTip
+                          label={t("document.fechaCobro") || "Fecha de cobro"}
+                          tip={EXPLAIN.fechaCobro}
+                        />
+                      </label>
+                      <input
+                        type="date"
+                        value={v.chequeDate || ""}
+                        onChange={(e) =>
+                          handleChequeDateChange(idx, e.target.value, v)
+                        }
+                        className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none"
+                      />
+                      <div className="mt-1 text-[10px] text-zinc-500">
+                        <Tip
+                          text={`${EXPLAIN.chequeDiasTotales} • ${EXPLAIN.chequeGracia}`}
+                        >
+                          Días totales: {daysTotal} · Gracia:{" "}
+                          {chequeGraceDays ?? 45}
+                        </Tip>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Solo cheques: Valor neto (read-only) */}
+                  {v.method === "cheque" && (
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">
+                        <LabelWithTip
+                          label="Valor neto"
+                          tip="Monto que se imputa después de descontar el costo financiero (se recalcula al cambiar monto/fecha)."
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={currencyFmt.format(toNum(v.amount))}
+                        className="w-full px-2 py-1 rounded bg-zinc-800 text-white outline-none tabular-nums border border-zinc-700"
+                        title={currencyFmt.format(toNum(v.amount))}
+                      />
+                      <div className="mt-1 text-[10px] text-zinc-500">
+                        Neto = Bruto − Interés •{" "}
+                        {currencyFmt.format(toNum(v.rawAmount ?? v.amount))} −{" "}
+                        {currencyFmt.format(interest$)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Banco (si corresponde) */}
+                  {showBank && (
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1">
+                        <LabelWithTip
+                          label={t("document.banco") || "Banco"}
+                          tip={EXPLAIN.banco}
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Banco Galicia"
+                        value={v.bank || ""}
+                        onChange={(e) =>
+                          patchRow(idx, { bank: e.target.value })
+                        }
+                        className={`w-full px-2 py-1 rounded text-white outline-none
+            ${
+              rowErrors[idx].bank
+                ? "bg-zinc-700 border border-red-500"
+                : "bg-zinc-700 border border-transparent"
+            }`}
+                      />
+                    </div>
+                  )}
+
+                  {/* Comprobante (si corresponde) */}
+                  {showBank && (
+                    <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/40">
+                      <div className="flex items-center justify-between">
+                        <LabelWithTip
+                          label="Comprobante"
+                          tip="Adjuntá el comprobante de este pago (imagen o PDF). Máx. 15 MB."
+                        />
+                        <div className="text-xs text-zinc-500">
+                          {v.receiptOriginalName
+                            ? v.receiptOriginalName
+                            : "Sin adjuntar"}
+                        </div>
                       </div>
 
-                      {v.method === "cheque" && (
-                        <>
-                          <div className="flex justify-between">
-                            <span className="text-zinc-300">Días</span>
-                            <span className="text-white tabular-nums">
-                              {Number.isFinite(daysTotal) ? daysTotal : "—"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-zinc-300">%</span>
-                            <span className="text-rose-400 tabular-nums">
-                              {fmtPctSigned(pctInt)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-zinc-300">
-                              Costo financiero
-                            </span>
-                            <span className="text-rose-400 tabular-nums">
-                              {currencyFmt.format(interest$)}
-                            </span>
-                          </div>
-                        </>
-                      )}
+                      <div className="mt-2 flex flex-col sm:flex-row gap-3 sm:items-center">
+                        <label className="inline-flex w-max cursor-pointer rounded px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-sm">
+                          {v.receiptUrl
+                            ? isUploading
+                              ? "Subiendo..."
+                              : "Reemplazar"
+                            : isUploading
+                            ? "Subiendo..."
+                            : "Adjuntar"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              e.currentTarget.value = "";
+                              if (!file) return;
 
-                      <div className="flex justify-between sm:col-span-2">
+                              if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                                alert(`El archivo supera ${MAX_FILE_MB} MB.`);
+                                return;
+                              }
+                              if (
+                                !(
+                                  file.type.startsWith("image/") ||
+                                  file.type === "application/pdf"
+                                )
+                              ) {
+                                alert(
+                                  "Formato no soportado. Usá imagen o PDF."
+                                );
+                                return;
+                              }
+
+                              try {
+                                const res = await uploadImage(file).unwrap();
+                                const url =
+                                  (res as any)?.secure_url ??
+                                  (res as any)?.url ??
+                                  (res as any)?.data?.secure_url ??
+                                  (res as any)?.data?.url;
+                                if (!url)
+                                  throw new Error(
+                                    "No se recibió URL del servidor."
+                                  );
+
+                                patchRow(idx, {
+                                  receiptUrl: url,
+                                  receiptOriginalName: file.name,
+                                });
+                              } catch (err) {
+                                console.error(
+                                  "Falló la subida del comprobante:",
+                                  err
+                                );
+                                alert("No se pudo subir el comprobante.");
+                              }
+                            }}
+                          />
+                        </label>
+
+                        {v.receiptUrl && (
+                          <button
+                            type="button"
+                            onClick={() => clearReceipt(idx)}
+                            className="inline-flex w-max rounded px-3 py-1.5 border border-red-500 text-red-400 hover:bg-red-500/10 text-sm"
+                            disabled={isUploading}
+                          >
+                            Quitar
+                          </button>
+                        )}
+
+                        <div className="sm:ml-auto">
+                          {v.receiptUrl ? (
+                            <div className="flex items-center gap-3">
+                              {isImage(v.receiptUrl) ? (
+                                <img
+                                  src={v.receiptUrl}
+                                  alt={v.receiptOriginalName || "Comprobante"}
+                                  className="h-14 w-14 object-cover rounded border border-zinc-700"
+                                />
+                              ) : (
+                                <span className="text-xs px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
+                                  PDF adjunto
+                                </span>
+                              )}
+                              <a
+                                href={v.receiptUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-blue-300 underline break-all"
+                              >
+                                {v.receiptOriginalName || "Ver comprobante"}
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-zinc-400">
+                              Sin comprobante
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Concepto */}
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      <LabelWithTip label="Concepto" tip={EXPLAIN.concepto} />
+                    </label>
+                    <textarea
+                      rows={1}
+                      placeholder="Ej: Pago factura 001-0000123"
+                      value={v.selectedReason}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        patchRow(idx, {
+                          selectedReason: val.trim() === "" ? NO_CONCEPTO : val,
+                        });
+                      }}
+                      className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none resize-y"
+                    />
+                  </div>
+
+                  {/* Resumen por ítem (una fila por item, expandible) */}
+                  <div className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
+                    {/* encabezado con valor neto + toggle */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 flex justify-between text-sm">
                         <span className="text-zinc-300 font-medium">
                           Valor Neto
                         </span>
@@ -507,13 +666,82 @@ export default function ValueView({
                           {currencyFmt.format(toNum(v.amount))}
                         </span>
                       </div>
+
+                      {/* botón toggle detalle (solo tiene sentido para cheques) */}
+                      {v.method === "cheque" && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSummary(idx)}
+                          className={`inline-flex items-center gap-1 text-xs rounded px-2 py-1 border 
+          ${
+            isSummaryOpen(idx)
+              ? "border-zinc-500 text-zinc-200 bg-zinc-700"
+              : "border-zinc-700 text-zinc-300 bg-zinc-800 hover:bg-zinc-700/60"
+          }`}
+                        >
+                          {isSummaryOpen(idx) ? "Ocultar" : "Ver detalle"}
+                          <svg
+                            viewBox="0 0 20 20"
+                            className={`w-3.5 h-3.5 transition-transform ${
+                              isSummaryOpen(idx) ? "rotate-180" : ""
+                            }`}
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
+
+                    {/* detalle expandible (una fila por item) */}
+                    {v.method === "cheque" && isSummaryOpen(idx) && (
+                      <div className="mt-3 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">Valor Bruto</span>
+                          <span className="text-white tabular-nums">
+                            {currencyFmt.format(toNum(v.rawAmount || v.amount))}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">Días</span>
+                          <span className="text-white tabular-nums">
+                            {Number.isFinite(daysTotal) ? daysTotal : "—"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">%</span>
+                          <span className="text-rose-400 tabular-nums">
+                            {fmtPctSigned(pctInt)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">
+                            Costo financiero
+                          </span>
+                          <span className="text-rose-400 tabular-nums">
+                            {currencyFmt.format(interest$)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           );
         })}
+      </div>
+      <div className="flex items-center justify-end">
+        <button
+          onClick={addRow}
+          className="px-3 py-2 rounded bg-emerald-500 text-black font-medium hover:brightness-95 active:scale-95"
+        >
+          + Agregar pago
+        </button>
       </div>
 
       {/* ===== Resumen inferior ===== */}
@@ -559,29 +787,6 @@ const fmtPctSigned = (p: number) =>
   `${p >= 0 ? "+" : ""}${(p * 100).toFixed(1)}%`;
 
 /* ================== UI helpers ================== */
-function RadioPill({
-  label,
-  selected,
-  onClick,
-  className = "",
-}: {
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-10 px-3 rounded text-center text-sm leading-snug shrink-0
-        ${selected ? "bg-emerald-500 text-black" : "bg-zinc-700 text-white"}
-        ${className}`}
-    >
-      {label}
-    </button>
-  );
-}
 
 function RowSummary({
   label,
@@ -609,43 +814,6 @@ function RowSummary({
       </span>
       <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
         {value}
-      </span>
-    </div>
-  );
-}
-function labelMedio(m: PaymentMethod) {
-  if (m === "efectivo") return "EFECTIVO";
-  if (m === "transferencia") return "TRANSFERENCIA";
-  return "CHEQUE";
-}
-
-function ResumenKV({
-  k,
-  v,
-  strong,
-  warn,
-  muted,
-  error,
-}: {
-  k: React.ReactNode;
-  v: string;
-  strong?: boolean;
-  warn?: boolean;
-  muted?: boolean;
-  error?: boolean;
-}) {
-  const vColor = error
-    ? "text-red-400"
-    : warn
-    ? "text-rose-400"
-    : muted
-    ? "text-zinc-500"
-    : "text-white";
-  return (
-    <div className="flex justify-between gap-2">
-      <span className="text-zinc-400">{k}</span>
-      <span className={`tabular-nums ${vColor} ${strong ? "font-medium" : ""}`}>
-        {v}
       </span>
     </div>
   );
@@ -745,7 +913,11 @@ function Tip({
           text-left whitespace-normal break-words
           opacity-0 shadow-lg transition-opacity duration-150
           group-hover:opacity-100 group-focus-within:opacity-100
-          ${side === "left" || side === "right" ? "-translate-y-1/2" : "-translate-x-1/2"}
+          ${
+            side === "left" || side === "right"
+              ? "-translate-y-1/2"
+              : "-translate-x-1/2"
+          }
         `}
         title={text} // fallback nativo
       >
@@ -754,8 +926,6 @@ function Tip({
     </span>
   );
 }
-
-
 
 /** Etiqueta con ícono + tooltip */
 function LabelWithTip({
@@ -781,7 +951,6 @@ function LabelWithTip({
     </Tip>
   );
 }
-
 
 /* ===== Textos de ayuda ===== */
 const EXPLAIN = {

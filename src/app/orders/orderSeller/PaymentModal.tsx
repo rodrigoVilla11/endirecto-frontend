@@ -49,7 +49,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [isValuesValid, setIsValuesValid] = useState(true);
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
-
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
@@ -264,6 +263,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     { id: selectedClientId ?? "" },
     { skip: !selectedClientId }
   );
+  const canSend = isValuesValid && newValues.length > 0;
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
@@ -701,22 +701,22 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <InfoRow label="Pagos" value={formattedTotalValues} />
 
             {/* 🆕 DTO/REC con signo (descuento = -, recargo = +) */}
-          <InfoRow
-  label={<LabelWithTip label="DTO/REC s/FACT" tip="Primero agregá un pago." />}
-  value={formattedDtoRec}
-  valueClassName={totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"}
-/>
-
-            {/* 🆕 Total a pagar (neto con desc/rec) */}
             <InfoRow
-              label="TOTAL A PAGAR"
-              value={formattedTotalNet}
-              valueClassName="text-emerald-500 font-semibold"
+              label={
+                <LabelWithTip
+                  label="DTO/REC s/FACT"
+                  tip="Primero agregá un pago."
+                />
+              }
+              value={formattedDtoRec}
+              valueClassName={
+                totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
+              }
             />
 
             {/* Valores y Diferencia (igual que antes) */}
             <InfoRow
-              label="Diferencia"
+              label="Saldo"
               value={formattedDiff}
               valueClassName={
                 diff === 0
@@ -726,31 +726,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   : "text-red-500"
               }
             />
-
-            {newPayment.length > 0 &&
-              newPayment.map((item, index) => (
-                <InfoRow
-                  key={index}
-                  label={t("paymentModal.daysOfPayment", {
-                    number: item.number,
-                  })}
-                  value={
-                    <>
-                      <span
-                        className={`${
-                          item.days_until_expiration_today >
-                          item.days_until_expiration
-                            ? "text-red-500"
-                            : "text-green-500"
-                        }`}
-                      >
-                        {item.days_until_expiration}
-                      </span>{" "}
-                      ({item.days_until_expiration_today ?? "N/A"})
-                    </>
-                  }
-                />
-              ))}
           </div>
 
           {/* Tabs */}
@@ -836,105 +811,81 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 {/* Tabla de desglose */}
                 {computedDiscounts.length > 0 && (
                   <div className="space-y-3">
-                    {computedDiscounts.map((d) => (
-                      <div
-                        key={d.document_id}
-                        className="border border-zinc-700 rounded overflow-hidden"
-                        title={d.note || ""}
-                      >
-                        <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
-                          Detalle de comprobante
-                        </div>
-
-                        <div className="divide-y divide-zinc-800 text-sm text-white">
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">Factura</span>
-                            <span className="truncate min-w-0" title={d.number}>
-                              {d.number}
-                            </span>
-                          </div>
-                          {/* 
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">Días</span>
-                            <span
-                              className={`tabular-nums ${
-                                d.note ? "text-yellow-400" : ""
-                              }`}
-                            >
-                              {isNaN(d.days) ? "—" : d.days}
-                            </span>
+                    {computedDiscounts.map((d) => {
+                      const src = newPayment.find(
+                        (p) => p.document_id === d.document_id
+                      );
+                      const exp = Number(src?.days_until_expiration);
+                      const todayDays = Number(
+                        src?.days_until_expiration_today
+                      );
+                      const daysColor =
+                        Number.isFinite(exp) && Number.isFinite(todayDays)
+                          ? todayDays > exp
+                            ? "text-red-500"
+                            : "text-green-500"
+                          : "";
+                      return (
+                        <div
+                          key={d.document_id}
+                          className="border border-zinc-700 rounded overflow-hidden"
+                          title={d.note || ""}
+                        >
+                          <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
+                            Detalle de comprobante
                           </div>
 
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">Base</span>
-                            <span className="tabular-nums">
-                              {currencyFmt.format(d.base)}
-                            </span>
-                          </div>
-                          {/* Activador de descuento manual 10% (30–37 días) */}
-                          {/* {d.eligibleManual10 && (
-                            <div className="flex items-center justify-between px-3 py-2">
-                              <label className="flex items-center gap-2 text-sm">
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4"
-                                  checked={!!graceDiscount[d.document_id]}
-                                  onChange={(e) =>
-                                    setGraceDiscount((prev) => ({
-                                      ...prev,
-                                      [d.document_id]: e.target.checked,
-                                    }))
-                                  }
-                                />
-                                <span>Aplicar 10% (30–37 días)</span>
-                              </label>
-                              <span className="text-xs text-zinc-400">
-                                {graceDiscount[d.document_id]
-                                  ? "Activo"
-                                  : "Opcional"}
+                          <div className="divide-y divide-zinc-800 text-sm text-white">
+                            <div className="flex justify-between px-3 py-2">
+                              <span className="text-zinc-400">Factura</span>
+                              <span
+                                className="truncate min-w-0"
+                                title={d.number}
+                              >
+                                {d.number}
                               </span>
                             </div>
-                          )} */}
 
-                          {/* <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">%</span>
-                            <span className="tabular-nums">
-                              {`${d.rate >= 0 ? "-" : "+"}${(
-                                Math.abs(d.rate) * 100
-                              ).toFixed(1)}%`}
-                            </span>
-                          </div> */}
-                          {/* 
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">
-                              {d.rate >= 0 ? "Desc." : "Recargo"}
-                            </span>
-                            <span className="tabular-nums">
-                              {`${d.rate >= 0 ? "-" : "+"}${currencyFmt.format(
-                                Math.abs(d.signedAdjustment)
-                              )}`}
-                            </span>
-                          </div> */}
-
-                          <div className="flex justify-between px-3 py-2">
-                            <span className="text-zinc-400">Final</span>
-                            <span
-                              className={`tabular-nums ${
-                                d.note ? "text-yellow-400" : ""
-                              }`}
-                            >
-                              {currencyFmt.format(d.finalAmount)}
-                            </span>
-                          </div>
-
-                          {d.note && (
-                            <div className="px-3 py-2 text-xs text-yellow-400">
-                              {d.note}
+                            {/* Final */}
+                            <div className="flex justify-between px-3 py-2">
+                              <span className="text-zinc-400">Final</span>
+                              <span
+                                className={`tabular-nums ${
+                                  d.note ? "text-yellow-400" : ""
+                                }`}
+                              >
+                                {currencyFmt.format(d.finalAmount)}
+                              </span>
                             </div>
-                          )}
+
+                            {d.note && (
+                              <div className="flex items-center justify-between">
+                                <div className="px-3 py-2 text-xs text-yellow-400">
+                                  {d.note}
+                                </div>
+                                <span className="tabular-nums px-4">
+                                  {Number.isFinite(exp) ? (
+                                    <>
+                                      {/* Días: {" "} */}
+                                      <span className={daysColor}>{exp}</span>{" "}
+                                      <span>
+                                        (
+                                        {Number.isFinite(todayDays)
+                                          ? todayDays
+                                          : "N/A"}
+                                        )
+                                      </span>
+                                    </>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1055,39 +1006,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   Pagar total
                 </button>
 
-                {/* Botón para agregar valor “regular” (dto/rec sobre valores)
-                <button
-                  className="mt-1 ml-2 px-3 py-2 rounded bg-blue-500 text-white disabled:opacity-60"
-                  onClick={() => {
-                    const method: PaymentMethod = "efectivo";
-                    const suggested = computeAmountToAdd(
-                      totalBase,
-                      totalValues,
-                      effectiveRate
-                    ); // dto sobre valores
-                    const base: ValueItem = {
-                      amount: suggested.toString(),
-                      selectedReason: "Pago a factura",
-                      method,
-                    };
-                    setPayTotalDocMode(false); // 👈 aseguramos salir de modo total
-                    setNewValues((prev) => {
-                      const idx = prev.findIndex(
-                        (v) => v.selectedReason === base.selectedReason
-                      );
-                      if (idx >= 0) {
-                        const clone = [...prev];
-                        clone[idx] = base;
-                        return clone;
-                      }
-                      return [base, ...prev];
-                    });
-                  }}
-                  disabled={computedDiscounts.length === 0}
-                >
-                  Agregar a Valores
-                </button> */}
-
                 {/* Valores manuales */}
                 <ValueView
                   newValues={newValues}
@@ -1105,88 +1023,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
                 />
 
-                {/* Comprobantes por valor */}
-                {newValues.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="text-sm font-semibold text-white">
-                      Comprobantes
-                    </h4>
-                    <ul className="space-y-2">
-                      {newValues.map((v) => {
-                        const isImg =
-                          v.receiptUrl &&
-                          !v.receiptUrl.toLowerCase().endsWith(".pdf");
-                        return (
-                          <li
-                            key={v.selectedReason}
-                            className="rounded border border-zinc-700 p-3 flex items-center gap-3 text-white"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium truncate">
-                                {v.selectedReason}
-                              </div>
-                              <div className="text-xs text-zinc-400">
-                                {currencyFmt.format(
-                                  parseFloat(v.amount || "0")
-                                )}{" "}
-                                · {v.method.toUpperCase()}
-                              </div>
-
-                              {v.receiptUrl ? (
-                                <div className="mt-2 flex items-center gap-3">
-                                  {isImg ? (
-                                    <img
-                                      src={v.receiptUrl}
-                                      alt={
-                                        v.receiptOriginalName || "Comprobante"
-                                      }
-                                      className="h-14 w-14 object-cover rounded border border-zinc-700"
-                                    />
-                                  ) : (
-                                    <span className="text-xs px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                                      PDF adjunto
-                                    </span>
-                                  )}
-                                  <a
-                                    href={v.receiptUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-xs text-blue-300 underline break-all"
-                                  >
-                                    {v.receiptOriginalName || v.receiptUrl}
-                                  </a>
-                                </div>
-                              ) : (
-                                <div className="mt-2 text-xs text-zinc-400">
-                                  Sin comprobante
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                              <button
-                                type="button"
-                                className="px-3 py-1.5 rounded bg-zinc-700 text-white hover:bg-zinc-600"
-                                onClick={() => attachReceipt(v.selectedReason)}
-                              >
-                                {v.receiptUrl ? "Reemplazar" : "Adjuntar"}
-                              </button>
-                              {v.receiptUrl && (
-                                <button
-                                  type="button"
-                                  className="px-3 py-1.5 rounded border border-red-500 text-red-400 hover:bg-red-500/10"
-                                  onClick={() => clearReceipt(v.selectedReason)}
-                                >
-                                  Quitar
-                                </button>
-                              )}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1201,8 +1037,28 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         {/* Footer */}
         <div className="p-4 mt-auto border-t border-zinc-800">
           <button
-            onClick={() => setIsConfirmModalOpen(true)}
-            className="w-full bg-blue-500 text-white py-3 rounded-md font-medium"
+            onClick={() => {
+              if (!canSend) {
+                alert(
+                  newValues.length === 0
+                    ? "Agregá al menos un pago (valor) para confirmar."
+                    : "Completá los datos requeridos del/los valores."
+                );
+                return;
+              }
+              setIsConfirmModalOpen(true);
+            }}
+            disabled={!canSend}
+            className={`w-full bg-blue-500 text-white py-3 rounded-md font-medium ${
+              !canSend ? "opacity-60 cursor-not-allowed" : ""
+            }`}
+            title={
+              !canSend
+                ? newValues.length === 0
+                  ? "Agregá al menos un valor"
+                  : "Faltan datos válidos en los valores"
+                : undefined
+            }
           >
             {t("paymentModal.send")}
           </button>
@@ -1216,8 +1072,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           onCancel={() => setIsConfirmModalOpen(false)}
           onConfirm={handleCreatePayment}
           isLoading={isCreating || isSubmittingPayment}
-          canConfirm={isValuesValid} // 👈 NUEVO
-          invalidReason="Completá el banco para cheque/transferencia" // opcional
+          canConfirm={canSend} // 👈 ahora exige valores + validez
+          invalidReason={
+            newValues.length === 0
+              ? "Agregá al menos un pago (valor)."
+              : "Completá el banco para cheque/transferencia"
+          }
           title="Confirmar envío"
         >
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
@@ -1357,7 +1217,11 @@ function Tip({
       : "left-full ml-1 top-1/2 -translate-y-1/2";
 
   return (
-    <span className="relative inline-flex items-center gap-1 group" role="tooltip" title={text}>
+    <span
+      className="relative inline-flex items-center gap-1 group"
+      role="tooltip"
+      title={text}
+    >
       {children}
       <span
         className={`pointer-events-none absolute ${pos} z-10 max-w-[18rem] rounded-md border border-zinc-700
