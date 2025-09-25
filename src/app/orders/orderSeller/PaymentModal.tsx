@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { useCreatePaymentMutation } from "@/redux/services/paymentsApi";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/context/AuthContext";
-import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import {
   useAddNotificationToCustomerMutation,
   useGetCustomerByIdQuery,
@@ -21,7 +20,7 @@ import {
   useGetChequeGraceDaysQuery,
   useGetDocumentsGraceDaysQuery,
 } from "@/redux/services/settingsApi";
-import { diffCalendarDays, diffFromDateToToday } from "@/lib/dateUtils";
+import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
 interface PaymentModalProps {
   isOpen: boolean;
@@ -35,28 +34,22 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     "documents" | "values" | "comments"
   >("documents");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
-  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>({});
   const [isValuesValid, setIsValuesValid] = useState(true);
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
-  const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingValueRef = useRef<ValueItem | null>(null);
 
   type PaymentType = "pago_anticipado" | "cta_cte";
 
-  const { data: interestSetting, isFetching: isLoadingRate } =
-    useGetInterestRateQuery();
+  const { data: interestSetting } = useGetInterestRateQuery();
 
   useEffect(() => {
     if (typeof interestSetting?.value === "number") {
@@ -167,37 +160,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
   }, [hasSelectedDocs, paymentTypeUI]);
 
-  const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-  function toLocalMidnightUTC(d: Date) {
-    // Normaliza a medianoche *local* y lo expresa en UTC para evitar DST
-    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-
-  function parseAsLocalDate(dateStr: string): Date {
-    // Si viene 'YYYY-MM-DD', forzamos medianoche LOCAL (evita el shift de UTC)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      const [y, m, d] = dateStr.split("-").map(Number);
-      return new Date(y, m - 1, d); // local 00:00
-    }
-    // Para ISO con hora/zona, dejamos que el motor lo resuelva
-    return new Date(dateStr);
-  }
-
-  function daysFromInvoice(dateStr?: string) {
-    if (!dateStr) return NaN;
-    const inv = parseAsLocalDate(dateStr);
-    if (Number.isNaN(inv.getTime())) return NaN;
-
-    const today = new Date();
-
-    const diffDays =
-      (toLocalMidnightUTC(today) - toLocalMidnightUTC(inv)) / MS_PER_DAY;
-
-    // ya están normalizadas a medianoche → floor/round dan lo mismo
-    return Math.max(0, Math.round(diffDays));
-  }
-
   const isNoDiscountCondition = (txt?: string) => {
     const v = (txt || "").toLowerCase().trim();
     return (
@@ -255,11 +217,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (days > 45) return "cta_cte:>45d:actualizacion";
     return "cta_cte:0%";
   };
-  const {
-    data: customer,
-    isFetching,
-    isError,
-  } = useGetCustomerByIdQuery(
+  const { data: customer } = useGetCustomerByIdQuery(
     { id: selectedClientId ?? "" },
     { skip: !selectedClientId }
   );
@@ -457,39 +415,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const daysOver = days - 45;
     const daily = annualInterest / 365;
     const surchargeRate = +(daily * daysOver);
-    console.log("surchargeRate", surchargeRate);
     return { rate: -surchargeRate, note: `Recargo por ${daysOver} días` };
   }
-
-  //   const n = parseFloat((contraEntregaMonto || "").replace(",", "."));
-  //   if (!Number.isFinite(n) || n <= 0) return;
-
-  //   const concept =
-  //     contraEntregaOpt === "efectivo_general"
-  //       ? "Pago contra entrega (General 20%)"
-  //       : contraEntregaOpt === "efectivo_promos"
-  //       ? "Pago contra entrega (Promos 15%)"
-  //       : "Pago contra entrega (Cheque ≤ 30 días 13%)";
-
-  //   const method: PaymentMethod =
-  //     contraEntregaOpt === "cheque_30" ? "cheque" : "efectivo";
-
-  //   const next: ValueItem = {
-  //     amount: n.toFixed(2),
-  //     selectedReason: concept,
-  //     method,
-  //   };
-
-  //   const idx = newValues.findIndex((v) => v.selectedReason === concept);
-  //   if (idx >= 0) {
-  //     const clone = [...newValues];
-  //     clone[idx] = next;
-  //     setNewValues(clone);
-  //   } else {
-  //     setNewValues([next, ...newValues]);
-  //   }
-  //   setContraEntregaMonto("");
-  // };
 
   const computedDiscounts = newPayment.map((doc) => {
     const days = getDocDays(doc);
@@ -559,9 +486,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // 3) TOTAL a pagar = base - ajuste_sobre_valores
   const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
 
-  console.log("totalToPayWithValuesAdj", totalToPayWithValuesAdj);
-  console.log("totalBase", totalBase);
-  console.log("totalAdjustmentSigned", totalAdjustmentSigned);
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
   const formattedDtoRec = `${
@@ -593,38 +517,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     "comments",
   ];
 
-  const attachReceipt = (selectedReason: string) => {
-    const v = newValues.find((x) => x.selectedReason === selectedReason);
-    if (!v) return;
-    pendingValueRef.current = v;
-    fileInputRef.current?.click();
-  };
-
-  const clearReceipt = (selectedReason: string) => {
-    setNewValues((prev) =>
-      prev.map((v) =>
-        v.selectedReason === selectedReason
-          ? { ...v, receiptUrl: undefined, receiptOriginalName: undefined }
-          : v
-      )
-    );
-  };
-
   const totalDocsFinal = computedDiscounts.reduce(
     (acc, d) => acc + d.finalAmount,
     0
   );
-
-  function computeAmountToAdd(
-    totalBase: number,
-    totalValues: number,
-    effectiveRate: number
-  ): number {
-    const denom = 1 + effectiveRate;
-    if (denom <= 0) return Math.max(0, round2(totalBase - totalValues));
-    const A = (totalBase - totalValues * denom) / denom;
-    return Math.max(0, round2(A));
-  }
 
   // Flag para saber si estamos en “pagar total por comprobante”
   const [payTotalDocMode, setPayTotalDocMode] = useState(false);
@@ -652,7 +548,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const diff = round2(totalNetForUI - totalValues);
 
   // Formateos para UI
-  const formattedTotalNet = currencyFmt.format(totalNetForUI);
   const formattedDiff = currencyFmt.format(diff);
   if (!isOpen) return null;
 
@@ -846,6 +741,34 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                               </span>
                             </div>
 
+                            {/* 10% manual para 30–37 días */}
+                            {d.eligibleManual10 && (
+                              <label
+                                className="flex items-center justify-between px-3 py-2 text-sm border-t border-zinc-800"
+                                title="Aplica 10% si está entre 31 y 37 días, solo en Cta Cte, y sin condición que bloquee descuento."
+                              >
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="text-zinc-300">
+                                    Aplicar 10% (30–37 días)
+                                  </span>
+                                  <span className="text-[11px] text-zinc-500">
+                                    {d.manualTenApplied ? "Activo" : "Opcional"}
+                                  </span>
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 accent-emerald-600"
+                                  checked={!!graceDiscount[d.document_id]}
+                                  onChange={(e) =>
+                                    setGraceDiscount((prev) => ({
+                                      ...prev,
+                                      [d.document_id]: e.target.checked,
+                                    }))
+                                  }
+                                />
+                              </label>
+                            )}
+
                             {/* Final */}
                             <div className="flex justify-between px-3 py-2">
                               <span className="text-zinc-400">Final</span>
@@ -867,7 +790,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                                   {Number.isFinite(exp) ? (
                                     <>
                                       {/* Días: {" "} */}
-                                      <span className={daysColor}>{exp}</span>{" "}
+                                      <span className={daysColor}>
+                                        {exp}
+                                      </span>{" "}
                                       <span>
                                         (
                                         {Number.isFinite(todayDays)
@@ -888,91 +813,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     })}
                   </div>
                 )}
-
-                {/* Volcar neto con descuento a Valores */}
-                {/* Volcar neto con descuento a Valores (con comprobante opcional) */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    const base = pendingValueRef.current;
-                    // limpiar para el próximo uso
-                    pendingValueRef.current = null;
-                    e.target.value = "";
-
-                    // si por algún motivo no hay base, salimos
-                    if (!base) return;
-
-                    // si el usuario canceló el picker, agregamos igual sin comprobante
-                    if (!file) {
-                      setNewValues((prev) => {
-                        const idx = prev.findIndex(
-                          (v) => v.selectedReason === base.selectedReason
-                        );
-                        if (idx >= 0) {
-                          const clone = [...prev];
-                          clone[idx] = base;
-                          return clone;
-                        }
-                        return [base, ...prev];
-                      });
-                      return;
-                    }
-
-                    // (opcional) check de tamaño 10MB
-                    if (file.size > 10 * 1024 * 1024) {
-                      alert("El archivo supera 10MB.");
-                      return;
-                    }
-
-                    try {
-                      const res = await uploadImage(file).unwrap();
-                      const url =
-                        (res as any)?.secure_url ??
-                        (res as any)?.url ??
-                        (res as any)?.data?.secure_url ??
-                        (res as any)?.data?.url;
-
-                      const withReceipt = {
-                        ...base,
-                        receiptUrl: url, // 👈 usar receiptUrl (camelCase)
-                        receiptOriginalName: file.name,
-                      };
-
-                      setNewValues((prev) => {
-                        const idx = prev.findIndex(
-                          (v) => v.selectedReason === base.selectedReason
-                        );
-                        if (idx >= 0) {
-                          const clone = [...prev];
-                          clone[idx] = withReceipt;
-                          return clone;
-                        }
-                        return [withReceipt, ...prev];
-                      });
-                    } catch (err) {
-                      console.error(err);
-                      // fallback: agregamos sin comprobante si falló el upload
-                      setNewValues((prev) => {
-                        const idx = prev.findIndex(
-                          (v) => v.selectedReason === base.selectedReason
-                        );
-                        if (idx >= 0) {
-                          const clone = [...prev];
-                          clone[idx] = base;
-                          return clone;
-                        }
-                        return [base, ...prev];
-                      });
-                      alert(
-                        "No se pudo subir el comprobante. Se agregó el valor sin archivo."
-                      );
-                    }
-                  }}
-                />
 
                 {/* Botón para PAGAR TOTAL (descuento aplicado al comprobante) */}
                 <button
@@ -1022,7 +862,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
                 />
-
               </div>
             )}
 
