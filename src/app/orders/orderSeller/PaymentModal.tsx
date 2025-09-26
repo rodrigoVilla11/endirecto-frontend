@@ -40,7 +40,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
-  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>({});
+  const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
+    {}
+  );
   const [isValuesValid, setIsValuesValid] = useState(true);
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
@@ -536,6 +538,35 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       setPayTotalDocMode(false);
   }, [newValues, totalDocsFinal]);
 
+  // Razones estandarizadas (evita strings mágicos en varios lugares)
+  const PAY_TOTAL_REASON = "Pago total a factura";
+  const NO_REASON = "Sin Concepto";
+
+  // Si el valor generado por "Pagar total" cambia de monto,
+  // cambiamos también su concepto a "Sin Concepto" y salimos del modo.
+  useEffect(() => {
+    // buscamos el item creado por "Pagar total"
+    const idx = newValues.findIndex(
+      (v) => v.selectedReason === PAY_TOTAL_REASON
+    );
+    if (idx === -1) return;
+
+    const current = newValues[idx];
+    const amountNum = round2(parseFloat(current.amount || "0"));
+    const docsFinal = round2(totalDocsFinal);
+
+    // Si el monto ya no coincide con el total final por comprobantes,
+    // desactivamos el modo y renombramos el concepto.
+    if (Math.abs(amountNum - docsFinal) > 0.01) {
+      setPayTotalDocMode(false);
+      setNewValues((prev) => {
+        const clone = [...prev];
+        clone[idx] = { ...clone[idx], selectedReason: NO_REASON };
+        return clone;
+      });
+    }
+  }, [newValues, totalDocsFinal]);
+
   // Neto modelo “dto sobre valores”
   const net_by_values = round2(totalBase - totalAdjustmentSigned);
 
@@ -600,7 +631,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               label={
                 <LabelWithTip
                   label="DTO/REC s/FACT"
-                  tip="Primero agregá un pago."
+                  tip="Se debe agregar un pago para visualizar el descuento o recargo."
                 />
               }
               value={formattedDtoRec}
@@ -823,7 +854,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
                     const base: ValueItem = {
                       amount: amount.toString(),
-                      selectedReason: "Pago total a factura",
+                     selectedReason: PAY_TOTAL_REASON,
                       method,
                     };
 

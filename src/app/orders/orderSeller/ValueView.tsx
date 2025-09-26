@@ -198,18 +198,23 @@ export default function ValueView({
   };
 
   const addRow = () => {
-    setNewValues((prev) => [
-      {
-        amount: "",
-        rawAmount: "",
-        selectedReason: NO_CONCEPTO,
-        method: "efectivo",
-        bank: "",
-        chequeDate: "",
-        chequeNumber: "",
-      },
-      ...prev,
-    ]);
+    setNewValues((prev) => {
+      const next = [
+        ...prev,
+        {
+          amount: "",
+          rawAmount: "",
+          selectedReason: NO_CONCEPTO,
+          method: "efectivo" as PaymentMethod,
+          bank: "",
+          chequeDate: "",
+          chequeNumber: "",
+        },
+      ];
+      // abrir la nueva fila (último índice)
+      setOpenRows((o) => ({ ...o, [next.length - 1]: true }));
+      return next;
+    });
   };
 
   const removeRow = (idx: number) => {
@@ -376,9 +381,7 @@ export default function ValueView({
                   <div>
                     <label className="block text-[11px] text-zinc-400 mb-1">
                       <LabelWithTip
-                        label={
-                          v.method === "cheque" ? "Monto original" : "Monto"
-                        }
+                        label={v.method === "cheque" ? "Monto Bruto" : "Monto"}
                         tip={
                           v.method === "cheque"
                             ? EXPLAIN.chequeMontoOriginal
@@ -470,7 +473,7 @@ export default function ValueView({
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1">
                         <LabelWithTip
-                          label="Valor neto"
+                          label="Monto neto"
                           tip="Monto que se imputa después de descontar el costo financiero (se recalcula al cambiar monto/fecha)."
                         />
                       </label>
@@ -482,7 +485,7 @@ export default function ValueView({
                         title={currencyFmt.format(toNum(v.amount))}
                       />
                       <div className="mt-1 text-[10px] text-zinc-500">
-                        Neto = Bruto − Interés •{" "}
+                        Neto = Monto Bruto − Costo Financiero (%) •{" "}
                         {currencyFmt.format(toNum(v.rawAmount ?? v.amount))} −{" "}
                         {currencyFmt.format(interest$)}
                       </div>
@@ -955,27 +958,27 @@ function LabelWithTip({
 /* ===== Textos de ayuda ===== */
 const EXPLAIN = {
   totalPagado:
-    "Suma de los pagos imputables cargados. Para cheques se toma el neto (monto original menos interés).",
+    "Suma de los pagos imputables cargados. Para cheques se toma el monto neto (monto bruto menos costo financiero).",
   dtoRecFact:
     "Ajuste por comprobantes según días y condición de pago: descuento (signo -) o recargo (signo +).",
   saldo:
     "Diferencia entre el total a pagar de documentos (neto) y los pagos imputados. Si es 0, el pago queda cubierto.",
   chequeMontoOriginal:
-    "Importe original del cheque ingresado por el usuario (antes del costo financiero).",
+    "Monto Bruto del cheque ingresado por el usuario (antes del costo financiero).",
   chequeDiasTotales:
     "Días calendario desde hoy hasta la fecha de cobro del cheque.",
   chequeGracia:
-    "Días de gracia durante los cuales no se cobra interés. Pasado ese umbral, los días generan interés.",
+    "Días de gracia durante los cuales no se cobra costo financiero. Pasado ese umbral, los días generan interés.",
   chequePorcentaje:
     "Porcentaje de interés simple acumulado: tasa diaria x días gravados.",
   chequeCostoFinanciero:
-    "Interés en pesos aplicado al monto original del cheque (original x porcentaje).",
-  chequeNeto: "Monto imputable del cheque: original menos costo financiero.",
+    "Costo Financiero en pesos aplicado al monto bruto del cheque (monto bruto x porcentaje).",
+  chequeNeto: "Monto neto del cheque: monto bruto menos costo financiero.",
   medioPago:
     "Seleccioná el medio de pago. Cheque y transferencia pueden requerir banco y otros datos.",
-  banco: "Banco/Sucursal del valor. Requerido para cheque y transferencia.",
+  banco: "Banco/Sucursal del pago. Requerido para cheque y transferencia.",
   fechaCobro:
-    "Fecha de cobro del cheque. Define los días totales y el interés.",
+    "Fecha de cobro del cheque. Define los días totales y el costo financiero.",
   numeroCheque: "Número del cheque para trazabilidad.",
   concepto: "Detalle o referencia del pago (se usa para notas/comunicaciones).",
 };
