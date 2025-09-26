@@ -1347,15 +1347,6 @@ function DetailsModal({
                 value={currencyFmt.format(chequeInterestTotal)}
               />
 
-              <Info
-                label={t("totalAdj") || "TOTAL DTO/RECARGO"}
-                value={
-                  totalAdjSigned === 0
-                    ? currencyFmt.format(0)
-                    : signedMoney(totalAdjSigned, currencyFmt)
-                }
-                valueClassName={clsTotalAdj}
-              />
 
               <Info
                 label={t("net") || "Neto"}
