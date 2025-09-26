@@ -29,24 +29,7 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 const ITEMS_PER_PAGE = 15;
 function isPaymentRendido(p?: Payment): boolean {
   if (!p) return false;
-  const anyp = p as any;
-
-  // Campos típicos que pueden existir según tu backend
-  const direct =
-    anyp?.isRendered === true ||
-    anyp?.rendered === true ||
-    Boolean(anyp?.rendered_at);
-
-  const rendStatus = String(
-    anyp?.rendition?.status ?? anyp?.rendition_status ?? ""
-  ).toLowerCase();
-
-  // Estados que consideramos "rendido"
-  const statusOk = ["closed", "submitted", "approved", "rendido"].includes(
-    rendStatus
-  );
-
-  return direct || statusOk;
+  return p.rendido === true;
 }
 const PaymentsPendingPage = () => {
   const { t } = useTranslation();
@@ -226,9 +209,7 @@ const PaymentsPendingPage = () => {
 
     // 🚫 Doble chequeo
     if (!isPaymentRendido(confirmPayment)) {
-      window.alert(
-        "No se puede marcar como imputado si no está rendido."
-      );
+      window.alert("No se puede marcar como imputado si no está rendido.");
       return;
     }
 
