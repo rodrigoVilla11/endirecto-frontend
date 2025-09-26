@@ -27,7 +27,27 @@ import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
 const ITEMS_PER_PAGE = 15;
+function isPaymentRendido(p?: Payment): boolean {
+  if (!p) return false;
+  const anyp = p as any;
 
+  // Campos típicos que pueden existir según tu backend
+  const direct =
+    anyp?.isRendered === true ||
+    anyp?.rendered === true ||
+    Boolean(anyp?.rendered_at);
+
+  const rendStatus = String(
+    anyp?.rendition?.status ?? anyp?.rendition_status ?? ""
+  ).toLowerCase();
+
+  // Estados que consideramos "rendido"
+  const statusOk = ["closed", "submitted", "approved", "rendido"].includes(
+    rendStatus
+  );
+
+  return direct || statusOk;
+}
 const PaymentsPendingPage = () => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
@@ -184,6 +204,13 @@ const PaymentsPendingPage = () => {
 
   // Abrir modal de confirmación
   const openConfirm = (payment: Payment) => {
+    // 🚫 Si no está rendido, no permitimos confirmar cobro/imputación
+    if (!isPaymentRendido(payment)) {
+      // Podés reemplazar por tu sistema de toasts
+      window.alert("Este pago todavía no está rendido. Rendilo primero.");
+      return;
+    }
+
     setConfirmPayment(payment);
     setConfirmComment("");
     setConfirmOpen(true);
@@ -196,6 +223,15 @@ const PaymentsPendingPage = () => {
 
   const confirmMarkCharged = async () => {
     if (!confirmPayment) return;
+
+    // 🚫 Doble chequeo
+    if (!isPaymentRendido(confirmPayment)) {
+      window.alert(
+        "No se puede marcar como imputado si no está rendido."
+      );
+      return;
+    }
+
     try {
       setMarkingId(confirmPayment._id);
 
@@ -214,7 +250,6 @@ const PaymentsPendingPage = () => {
         console.warn("Cobrado OK, pero no se pudo setear isImputed=true:", err);
       }
 
-      // Actualización local de la lista
       setItems((prev) => prev.filter((p) => p._id !== confirmPayment._id));
       if (selected?._id === confirmPayment._id) closeDetails();
       closeConfirm();
@@ -259,6 +294,17 @@ const PaymentsPendingPage = () => {
     );
   }, [items, methodFilter]);
 
+  const currencyFmt = useMemo(
+    () =>
+      new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    []
+  );
+
   const tableData =
     filteredItems?.map((p) => {
       return {
@@ -296,10 +342,10 @@ const PaymentsPendingPage = () => {
         date: p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—",
 
         // 7) DESCUENTO (totals.discount)
-        discount: p.totals?.discount ?? 0,
+        discount: currencyFmt.format(p.totals?.discount ?? 0),
 
         // 8) TOTAL (total)
-        total: p.total ?? 0,
+        total: currencyFmt.format(p.totals.values ?? 0),
       };
     }) ?? [];
 
@@ -525,7 +571,7 @@ function ConfirmMarkModal({
         <div className="p-4 space-y-3">
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {t("confirmMarkAsChargedBody") ||
-              "¿Querés marcar este pago como cobrado? Podés agregar un comentario."}
+              "¿Querés marcar este pago como imputado? Podés agregar un comentario."}
           </p>
 
           <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
@@ -623,7 +669,7 @@ function DetailsModal({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-
+  const rendido = isPaymentRendido(payment);
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -688,8 +734,23 @@ function DetailsModal({
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
             />
+            <Info
+              label="Rendido"
+              value={
+                <span
+                  className={rendido ? "text-emerald-600" : "text-rose-600"}
+                >
+                  {rendido ? t("yes") || "Sí" : t("no") || "No"}
+                </span>
+              }
+            />
           </div>
-
+          {!rendido && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-sm">
+              Este pago aún no está rendido. Debés rendirlo antes de poder
+              marcarlo como imputado.
+            </div>
+          )}
           {/* Totales */}
           <div className="rounded border border-zinc-200 dark:border-zinc-800">
             <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
@@ -702,14 +763,14 @@ function DetailsModal({
               />
               <Info
                 label="Desc."
-                value={`-${currencyFmt.format(payment.totals?.discount ?? 0)}`}
+                value={`${currencyFmt.format(payment.totals?.discount ?? 0)}`}
               />
               <Info
                 label="Neto"
                 value={currencyFmt.format(payment.totals?.net ?? payment.total)}
               />
               <Info
-                label="Valores"
+                label="Pagos"
                 value={currencyFmt.format(payment.totals?.values ?? 0)}
               />
               <Info
@@ -781,7 +842,7 @@ function DetailsModal({
                     <span className="text-xs text-zinc-500 sm:hidden">
                       {t("discount") || "Desc."}:
                     </span>
-                    <span>-{currencyFmt.format(d.discount_amount)}</span>
+                    <span>{currencyFmt.format(d.discount_amount)}</span>
                   </div>
                   {/* Final */}
                   <div className="flex sm:block justify-between">
@@ -905,9 +966,9 @@ function DetailsModal({
                                 label="Fecha de cobro"
                                 value={fmtDate(v.cheque.collection_date)}
                               />
-                               <Info
+                              <Info
                                 label="Numero de Cheque"
-                                value={(v.cheque.chequeNumber)}
+                                value={v.cheque.chequeNumber}
                               />
                               <Info
                                 label="Monto original"
@@ -1017,10 +1078,13 @@ function DetailsModal({
               className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
                 isMarking
                   ? "bg-amber-500 cursor-wait"
-                  : "bg-emerald-600 hover:bg-emerald-700"
+                  : rendido
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-zinc-400 cursor-not-allowed"
               }`}
               onClick={onMark}
-              disabled={isMarking}
+              disabled={isMarking || !rendido} // ✅ deshabilitado si no está rendido
+              title={!rendido ? "Rendí el pago para poder marcarlo" : undefined}
             >
               {isMarking ? (
                 <span className="inline-flex items-center justify-center gap-2">

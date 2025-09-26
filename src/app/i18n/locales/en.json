@@ -971,6 +971,9 @@
     "pendingClaims": "Pending Claims",
     "notFoundCustomer": "CUSTOMER NOT FOUND"
   },
+  "surchargeCheques": "REC S/CHEQUES",
+  "gross": "Gross",
+  "totalAdj": "TOTAL DTO/RECARGO",
   "paymentModal": {
     "headerTitle": "Payment",
     "date": "Date",

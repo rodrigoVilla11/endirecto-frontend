@@ -61,7 +61,6 @@ export function DocumentsView({
     }
     const dailyRate = annualInterestPct / 100 / 365;
     const pct = dailyRate * chargeableDays; // ej: 0.01578 = 1.578%
-    console.log("pct", pct);
 
     return { pct, amount: 0, days: chargeableDays };
   };
@@ -169,6 +168,8 @@ export function DocumentsView({
   const discountAmount = round2(balance * rate);
 
   /* ===================== Selección: payload consistente ===================== */
+  // 🔎 Debug útil para verificar consistencia
+
 
   const documentDetails = {
     document_id: data?.id || "",

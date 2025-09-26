@@ -27,13 +27,14 @@ import {
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
 const ITEMS_PER_PAGE = 15;
 
 const PaymentsChargedPage = () => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
-
+  const [sellerFilter, setSellerFilter] = useState<string>(""); // vendedor
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<Payment[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -64,6 +65,8 @@ const PaymentsChargedPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRindiendo, setIsRindiendo] = useState(false);
   const [updatePayment] = useUpdatePaymentMutation();
+  const { data: sellersData, isLoading: isSellersLoading } =
+    useGetSellersQuery(null);
 
   useEffect(() => {
     setSelectedIds(new Set());
@@ -85,7 +88,10 @@ const PaymentsChargedPage = () => {
   };
 
   const toggleAll = (checked: boolean) => {
-    setSelectedIds(checked ? new Set(items.map((p) => p._id)) : new Set());
+    setSelectedIds((prev) => {
+      if (!checked) return new Set();
+      return new Set(visibleItems.map((p) => p._id)); // ⬅️ antes: items
+    });
   };
 
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -101,6 +107,7 @@ const PaymentsChargedPage = () => {
 
   const { userData } = useAuth();
   const role = userData?.role as "CUSTOMER" | "VENDEDOR" | string | undefined;
+  const isSellerRole = role === "VENDEDOR";
 
   useEffect(() => {
     const loadItems = async () => {
@@ -121,14 +128,21 @@ const PaymentsChargedPage = () => {
           endDate,
           sort: sortQuery,
           includeLookup: false,
-          // isCharged: "true",
         };
 
-        if (role === "VENDEDOR" && !selectedClientId) {
-          if (userData?.seller_id) {
+        // 1) Si sos VENDEDOR, se filtra SIEMPRE por tu seller_id y el select queda bloqueado
+        if (isSellerRole) {
+          if (userData?.seller_id)
             baseArgs.seller_id = String(userData.seller_id);
-          }
-        } else if (selectedClientId || role === "CUSTOMER") {
+        }
+
+        // 2) Si NO sos VENDEDOR, aplicá el filtro manual de vendedor (si está elegido)
+        if (!isSellerRole && sellerFilter) {
+          baseArgs.seller_id = sellerFilter;
+        }
+
+        // 3) Filtro por cliente (cuando corresponde)
+        if (role === "CUSTOMER" || selectedClientId) {
           const cid = selectedClientId || customer_id;
           if (cid) baseArgs.customer_id = String(cid);
         }
@@ -154,6 +168,7 @@ const PaymentsChargedPage = () => {
     role,
     userData?.seller_id,
     selectedClientId,
+    sellerFilter,
   ]);
 
   const currencyFmt = useMemo(
@@ -225,11 +240,54 @@ const PaymentsChargedPage = () => {
     return acc;
   };
 
+  const groupValuesByMethod = (values: any[]) => {
+    const acc: Record<
+      string,
+      { total: number; count: number; cheques: string[]; concepts: Set<string> }
+    > = {};
+    for (const v of values || []) {
+      const m = (v?.method ?? "—").toString().toLowerCase();
+      const amount = Number(v?.amount ?? 0);
+      if (!Number.isFinite(amount)) continue;
+
+      if (!acc[m])
+        acc[m] = { total: 0, count: 0, cheques: [], concepts: new Set() };
+      acc[m].total += amount;
+      acc[m].count += 1;
+
+      // cheques: recolectar números
+      if (m === "cheque") {
+        const num =
+          v?.cheque?.cheque_number ??
+          v?.cheque_number ??
+          v?.cheque?.chequeNumber ??
+          v?.chequeNumber;
+        if (num != null) acc[m].cheques.push(String(num));
+      }
+
+      // conceptos (muestra algunos)
+      if (v?.concept) acc[m].concepts.add(String(v.concept));
+    }
+    return acc;
+  };
+
+  const formatChequeList = (nums: string[]) => {
+    if (!nums.length) return "—";
+    if (nums.length === 1) return `#${nums[0]}`;
+    const first = nums
+      .slice(0, 3)
+      .map((n) => `#${n}`)
+      .join(" / ");
+    const extra = nums.length > 3 ? ` +${nums.length - 3}` : "";
+    return `${first}${extra}`;
+  };
+
   // Recibe un mapa id -> nombre (por ejemplo: { "41755": "Cliente SA" })
-  const downloadPDFFor = (rows: Payment[], customerNameById: string) => {
+  // Recibe el nombre del cliente (si estás filtrando por uno). Si no, pasá "-" o vacío.
+  const downloadPDFFor = (rows: Payment[], customerName: string) => {
     if (!rows.length) return;
 
-    // ===== Helpers para mostrar métodos =====
+    // ===== Helpers para mostrar métodos (celda resumen de la tabla principal) =====
     const formatOtherMethods = (
       values: any[],
       prettyMethod: (m: string) => string
@@ -279,6 +337,64 @@ const PaymentsChargedPage = () => {
       return parts.join(", ");
     };
 
+    // ===== Helpers NUEVOS para detalle por pago =====
+    const groupValuesByMethod = (values: any[]) => {
+      const acc: Record<
+        string,
+        {
+          total: number;
+          count: number;
+          cheques: string[];
+          concepts: Set<string>;
+        }
+      > = {};
+      for (const v of values || []) {
+        const m = (v?.method ?? "—").toString().toLowerCase();
+        const amount = Number(v?.amount ?? 0);
+        if (!Number.isFinite(amount)) continue;
+
+        if (!acc[m])
+          acc[m] = { total: 0, count: 0, cheques: [], concepts: new Set() };
+        acc[m].total += amount;
+        acc[m].count += 1;
+
+        // Cheques
+        if (m === "cheque") {
+          const num =
+            v?.cheque?.cheque_number ??
+            v?.cheque_number ??
+            v?.cheque?.chequeNumber ??
+            v?.chequeNumber;
+          if (num != null) acc[m].cheques.push(String(num));
+        }
+
+        // Conceptos
+        if (v?.concept) acc[m].concepts.add(String(v.concept));
+      }
+      return acc;
+    };
+
+    const formatChequeList = (nums: string[]) => {
+      if (!nums.length) return "—";
+      if (nums.length === 1) return `#${nums[0]}`;
+      const first = nums
+        .slice(0, 3)
+        .map((n) => `#${n}`)
+        .join(" / ");
+      const extra = nums.length > 3 ? ` +${nums.length - 3}` : "";
+      return `${first}${extra}`;
+    };
+
+    // Usa el prettyMethod que ya tenés definido en el componente (efectivo/transferencia/cheque).
+    // Si preferís aislarlo acá, descomentá esta versión local:
+    // const prettyMethodLocal = (m?: string) => {
+    //   const k = (m ?? "").toLowerCase();
+    //   if (k === "efectivo") return "Efectivo";
+    //   if (k === "transferencia") return "Transferencia";
+    //   if (k === "cheque") return "Cheque";
+    //   return (m || "—").toUpperCase();
+    // };
+
     // ===== PDF base =====
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -323,18 +439,16 @@ const PaymentsChargedPage = () => {
 
     autoTable(doc, {
       startY: 72,
-      tableWidth: wAvail, // <- para no exceder
-      head: [["Fecha", "Cliente", "Docs", "Métodos", "Neto", "Valores", "Dif"]],
+      tableWidth: wAvail,
+      head: [["Fecha", "Cliente", "Docs", "Métodos", "Neto", "Pagos", "Dif"]],
       body: rows.map((p) => {
         const fecha = p.date
           ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
           : "—";
-
         const customerId = p.customer?.id ?? "";
-        const cliente = [customerId || "—", customerNameById]
+        const cliente = [customerId || "—", customerName]
           .filter(Boolean)
           .join(" · ");
-
         const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
 
         const methods =
@@ -354,7 +468,7 @@ const PaymentsChargedPage = () => {
       styles: {
         fontSize: 9,
         cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
-        overflow: "linebreak", // <- wrap de texto
+        overflow: "linebreak",
       },
       bodyStyles: { valign: "top" },
       headStyles: { fillColor: [2, 132, 199], textColor: 255 },
@@ -406,7 +520,7 @@ const PaymentsChargedPage = () => {
       ? (doc as any).lastAutoTable.finalY + 24
       : 120;
 
-    const totalsMap = buildMethodTotals(rows);
+    const totalsMap = buildMethodTotals(rows); // <-- ya lo tenés definido arriba en tu archivo
     const totalsEntries = Object.entries(totalsMap).sort(
       (a, b) => b[1].total - a[1].total
     );
@@ -425,7 +539,7 @@ const PaymentsChargedPage = () => {
     };
 
     autoTable(doc, {
-      startY: yStart, // <- IMPORTANTE: no volver a 72
+      startY: yStart,
       tableWidth: wAvail,
       head: [["Método", "Cant. valores", "Total", "% del total"]],
       body: totalsEntries.map(([m, o]) => [
@@ -452,6 +566,195 @@ const PaymentsChargedPage = () => {
         3: { cellWidth: cw2.pct, halign: "right" },
       },
       margin,
+    });
+
+    // ===== Detalle por pago y método =====
+    const yStartDetails = (doc as any).lastAutoTable?.finalY
+      ? (doc as any).lastAutoTable.finalY + 32
+      : 140;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Detalle por pago y método", margin.left, yStartDetails - 10);
+
+    let cursorY = yStartDetails;
+
+    rows.forEach((p, idx) => {
+      // Salto de página si falta espacio
+      if (cursorY > pageH - 160) {
+        (doc as any).addPage();
+        cursorY = 72;
+      }
+
+      // Título de bloque
+      const fecha = p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—";
+      const customerId = p.customer?.id ?? "";
+      const clienteLine = [customerId || "—", customerName]
+        .filter(Boolean)
+        .join(" · ");
+      const docsLine =
+        (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(
+        `Pago ${idx + 1} — ${fecha} — ${clienteLine}`,
+        margin.left,
+        cursorY
+      );
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Docs: ${docsLine}`, margin.left, cursorY + 14);
+
+      // ===== Construir filas: métodos no-cheque agrupados + cheques individualizados =====
+      const valuesArr = Array.isArray(p.values) ? p.values : [];
+      type Row = [string, string, string, string, string];
+      const rowsTable: Row[] = [];
+
+      // 1) Métodos NO-cheque (agrupados)
+      const nonChequeGrouped: Record<
+        string,
+        { count: number; total: number; concepts: Set<string> }
+      > = {};
+      for (const v of valuesArr) {
+        const m = String(v?.method ?? "").toLowerCase();
+        if (!m || m === "cheque") continue;
+        const amount = Number(v?.amount ?? 0);
+        if (!Number.isFinite(amount)) continue;
+        if (!nonChequeGrouped[m])
+          nonChequeGrouped[m] = { count: 0, total: 0, concepts: new Set() };
+        nonChequeGrouped[m].count += 1;
+        nonChequeGrouped[m].total += amount;
+        if (v?.concept) nonChequeGrouped[m].concepts.add(String(v.concept));
+      }
+
+      // Orden fijo para no-cheque
+      const nonChequeOrder = ["efectivo", "transferencia"];
+      Object.entries(nonChequeGrouped)
+        .sort((a, b) => {
+          const ai = nonChequeOrder.indexOf(a[0]);
+          const bi = nonChequeOrder.indexOf(b[0]);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        })
+        .forEach(([m, o]) => {
+          rowsTable.push([
+            prettyMethod(m), // Método
+            String(o.count), // Cant.
+            currencyFmt.format(o.total), // Total
+            "—", // Cheques
+            Array.from(o.concepts).slice(0, 3).join(" · ") || "—", // Conceptos
+          ]);
+        });
+
+      // 2) Cheques (cada uno en su propia fila)
+      const chequeRows = valuesArr
+        .filter((v) => String(v?.method ?? "").toLowerCase() === "cheque")
+        .map((v): Row => {
+          const num = v?.cheque?.cheque_number ?? "s/n";
+          // Monto: usar neto del cheque si existe; si no, amount
+          const amount = Number(v?.cheque?.net_amount ?? v?.amount ?? 0);
+
+          return [
+            prettyMethod("cheque"), // Método
+            "1", // Cant.
+            currencyFmt.format(amount), // Total (por cheque)
+            `#${String(num)}`, // Cheques
+            v?.concept ? String(v.concept) : "—", // Conceptos
+          ];
+        });
+
+      // Ordenar cheques por monto descendente (opcional)
+      chequeRows.sort((a, b) => {
+        // a[2] y b[2] están formateados; re-tomamos el número del objeto original si querés.
+        // Por simplicidad, mantenemos el orden original.
+        return 0;
+      });
+
+      // Juntar todas las filas
+      rowsTable.push(...chequeRows);
+
+      // Subtotal del bloque
+      const subtotal = rowsTable.reduce((s, r) => {
+        // r[2] es un string formateado; volvemos a calcular desde los datos:
+        // Para no parsear, recomputamos directo de values:
+        return s;
+      }, 0);
+
+      // Recalcular subtotal de forma precisa (desde datos):
+      const subtotalPrecise =
+        Object.values(nonChequeGrouped).reduce((s, o) => s + o.total, 0) +
+        valuesArr
+          .filter((v) => String(v?.method ?? "").toLowerCase() === "cheque")
+          .reduce(
+            (s, v) => s + Number(v?.cheque?.net_amount ?? v?.amount ?? 0),
+            0
+          );
+
+      autoTable(doc, {
+        startY: cursorY + 24,
+        tableWidth: wAvail,
+        head: [["Método", "Total", "Cheques", "Conceptos"]],
+        body: rowsTable.map((row) => [
+          row[0], // Método
+          row[1], // Total
+          row[2], // Cheques
+          row[3], // Conceptos
+        ]),
+        foot: [
+          [
+            {
+              content: "SUBTOTAL",
+              colSpan: 1,
+              styles: { fontStyle: "bold", halign: "right" },
+            },
+            {
+              content: currencyFmt.format(subtotalPrecise),
+              styles: { fontStyle: "bold", halign: "right" },
+            },
+            { content: "", styles: { fontStyle: "bold" } },
+            { content: "", styles: { fontStyle: "bold" } },
+          ],
+        ],
+        theme: "striped",
+        styles: { fontSize: 9, cellPadding: 5 },
+        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        columnStyles: {
+          0: { cellWidth: wAvail * 0.25 }, // Método
+          1: { cellWidth: wAvail * 0.2, halign: "right" }, // Total
+          2: { cellWidth: wAvail * 0.25 }, // Cheques
+          3: { cellWidth: wAvail * 0.3 }, // Conceptos
+        },
+        margin,
+      });
+
+      const yAfter = (doc as any).lastAutoTable.finalY + 8;
+
+      // Mini resumen Neto / Valores / Saldo del pago
+      const net = Number(p.totals?.net ?? p.total ?? 0);
+      const values = Number(
+        p.totals?.values ??
+          (p.values ?? []).reduce(
+            (s: number, v: any) => s + Number(v?.amount ?? 0),
+            0
+          )
+      );
+      const saldo = Number((net - values).toFixed(2));
+
+      const line = (label: string, val: number) =>
+        `${label}: ${currencyFmt.format(val)}`;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(
+        `${line("Neto", net)}   ·   ${line("Pagos", values)}   ·   ${line(
+          "Saldo",
+          saldo
+        )}`,
+        margin.left,
+        yAfter + 12
+      );
+
+      cursorY = yAfter + 28;
     });
 
     doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
@@ -579,7 +882,8 @@ const PaymentsChargedPage = () => {
         select: (
           <input
             type="checkbox"
-            aria-label="Seleccionar pago"
+            aria-label={`Seleccionar pago ${p._id}`}
+            aria-checked={selectedIds.has(p._id)}
             checked={selectedIds.has(p._id)}
             onChange={(e) => toggleOne(p._id, e.target.checked)}
           />
@@ -615,26 +919,28 @@ const PaymentsChargedPage = () => {
             <ImputedPill imputed={p.rendido} />
           </span>
         ),
-        total: p.total ?? 0,
+        total: currencyFmt.format(p.totals?.values ?? 0),
         notes: p.comments ?? "",
       };
     }) ?? [];
 
   const allSelected =
-    items.length > 0 && items.every((p) => selectedIds.has(p._id));
+    visibleItems.length > 0 &&
+    visibleItems.every((p) => selectedIds.has(p._id));
+
   const someSelected =
-    !allSelected && items.some((p) => selectedIds.has(p._id));
+    !allSelected && visibleItems.some((p) => selectedIds.has(p._id));
+
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const tableHeader = [
     {
       component: (
         <input
+          ref={selectAllRef}
           type="checkbox"
           aria-label="Seleccionar todos"
           checked={allSelected}
-          ref={(el) => {
-            if (el) el.indeterminate = someSelected;
-          }}
           onChange={(e) => toggleAll(e.target.checked)}
         />
       ),
@@ -652,7 +958,40 @@ const PaymentsChargedPage = () => {
     { name: t("notes"), key: "notes" },
   ];
 
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
   // ===================== Header (filtros/acciones) =====================
+  const sellerOptions = React.useMemo(() => {
+    const raw = (sellersData ?? sellersData ?? []) as any[];
+    return raw
+      .map((s) => {
+        const id = String(s?.id ?? s?._id ?? s?.seller_id ?? "");
+        const name =
+          s?.name ??
+          s?.fullName ??
+          ([s?.first_name, s?.last_name].filter(Boolean).join(" ") ||
+            s?.username ||
+            s?.email ||
+            id);
+        return id ? { id, name } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; name: string }>;
+  }, [sellersData]);
+
+  useEffect(() => {
+    if (isSellerRole) {
+      // no usamos sellerFilter manual en este caso
+      setSellerFilter("");
+    }
+  }, [isSellerRole]);
+
+  useEffect(() => {
+    // al cambiar de cliente, limpiamos el filtro manual de vendedor (si no sos VENDEDOR)
+    if (!isSellerRole) setSellerFilter("");
+  }, [selectedClientId, isSellerRole]);
 
   const headerBody = {
     buttons: [],
@@ -670,6 +1009,7 @@ const PaymentsChargedPage = () => {
             placeholderText={t("dateFrom")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
+            isClearable
           />
         ),
       },
@@ -686,6 +1026,7 @@ const PaymentsChargedPage = () => {
             placeholderText={t("dateTo")}
             dateFormat="yyyy-MM-dd"
             className="border border-gray-300 rounded p-2"
+            isClearable
           />
         ),
       },
@@ -703,6 +1044,35 @@ const PaymentsChargedPage = () => {
               {t("transfer") || "Transferencia"}
             </option>
             <option value="cheque">{t("cheque") || "Cheque"}</option>
+          </select>
+        ),
+      },
+      {
+        content: (
+          <select
+            value={
+              isSellerRole ? String(userData?.seller_id ?? "") : sellerFilter
+            }
+            onChange={(e) => {
+              // si está bloqueado por rol, no hacemos nada
+              if (isSellerRole) return;
+              setSellerFilter(e.target.value);
+              setPage(1);
+              setItems([]);
+              setHasMore(true);
+            }}
+            disabled={isSellersLoading || isSellerRole} // ⬅️ bloqueado para VENDEDOR
+            className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
+            title={t("seller") || "Vendedor"}
+          >
+            <option value="">
+              {t("allSellers") || "Todos los vendedores"}
+            </option>
+            {sellerOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
           </select>
         ),
       },
@@ -750,6 +1120,7 @@ const PaymentsChargedPage = () => {
           totals={methodTotals}
           grandTotal={grandTotal}
           format={(n) => currencyFmt.format(n)}
+          onSelectMethod={(m) => setMethodFilter(m as any)}
         />
 
         <Table

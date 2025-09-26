@@ -112,8 +112,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [submittedPayment, setSubmittedPayment] = useState(false);
 
-  const CHEQUE_GRACE_DAYS = 45; // misma gracia que en tu planilla
-
   function daysBetweenToday(iso?: string) {
     if (!iso) return 0;
     const d = new Date(iso);
@@ -131,7 +129,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   function computeChequeMeta(v: ValueItem) {
     const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0; // monto ORIGINAL
     const days_total = daysBetweenToday(v.chequeDate);
-    const days_charged = Math.max(0, days_total - CHEQUE_GRACE_DAYS);
+    const days_charged = Math.max(
+      0,
+      days_total - (checkGrace?.value ? checkGrace?.value : 45)
+    );
     const daily = annualInterestPct / 100 / 365;
     const interest_pct = daily * days_charged; // proporción (0.1427 = 14.27%)
     const interest_amount = +(raw * interest_pct).toFixed(2);
@@ -266,7 +267,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           cheque: {
             collection_date: v.chequeDate || null,
             days_total: m.days_total,
-            grace_days: CHEQUE_GRACE_DAYS,
+            grace_days: checkGrace?.value,
             days_charged: m.days_charged,
             annual_interest_pct: annualInterestPct, // ej 96
             daily_rate: round4(m.daily), // 0.0026…
@@ -287,7 +288,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
         cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
-        cheque_grace_days: CHEQUE_GRACE_DAYS,
+        cheque_grace_days: checkGrace?.value,
         interest_annual_pct: annualInterestPct,
         diff: round2(totalNetForUI - totalValues),
       };
@@ -459,33 +460,41 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       manualTenApplied: forceTen, // 👈 para payload/regla
     };
   });
-  // ===== TOTALES (ajuste % aplicado sobre VALORES) =====
+  // ===== TOTALES (ajuste aplicado sobre VALORES prorrateado por documento) =====
 
-  // total base de documentos (ya lo tenías)
+  // total base de documentos
   const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
 
-  // total de valores ingresados (ya lo tenías)
+  // total de valores ingresados
   const totalValues = newValues.reduce(
     (total, v) => total + parseFloat(v.amount || "0"),
     0
   );
 
-  // 1) tasa efectiva desde documentos
-  //    - si hay 1 doc: usa su tasa
-  //    - si hay varios: promedio ponderado por base (d.base / totalBase)
-  const effectiveRate =
-    totalBase > 0 && computedDiscounts.length > 0
-      ? computedDiscounts.reduce(
-          (acc, d) => acc + d.rate * (d.base / totalBase),
-          0
-        )
-      : 0;
+  // 🔑 Nueva versión: reparte cada valor proporcionalmente entre documentos
+  function computeAdjustmentOnValuesFull(values: ValueItem[], docs: any[]) {
+    const totalValues = values.reduce(
+      (a, v) => a + parseFloat(v.amount || "0"),
+      0
+    );
+    if (totalValues <= 0 || docs.length === 0) return 0;
 
-  // 2) AJUSTE TOTAL aplicado sobre VALORES (este es el que querés)
-  const totalAdjustmentSigned = round2(totalValues * effectiveRate);
-  // Nota de signo: rate + => descuento (ajuste +), rate - => recargo (ajuste -)
+    let totalAdj = 0;
 
-  // 3) TOTAL a pagar = base - ajuste_sobre_valores
+    for (const d of docs) {
+      // aplica la tasa de CADA documento sobre el total de pagos
+      totalAdj += totalValues * d.rate;
+    }
+
+    return round2(totalAdj);
+  }
+
+  // 2) AJUSTE TOTAL aplicado sobre VALORES
+  const totalAdjustmentSigned = computeAdjustmentOnValuesFull(
+    newValues,
+    computedDiscounts
+  );
+
   const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
 
   // (UI)
@@ -854,7 +863,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
                     const base: ValueItem = {
                       amount: amount.toString(),
-                     selectedReason: PAY_TOTAL_REASON,
+                      selectedReason: PAY_TOTAL_REASON,
                       method,
                     };
 
