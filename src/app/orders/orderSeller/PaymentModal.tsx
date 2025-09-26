@@ -240,10 +240,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       let valuesRawTotal = 0; // suma de montos originales (cheque usa raw)
       let chequeInterestTotal = 0; // suma de intereses calculados en cheques
 
+      // dentro de handleCreatePayment, donde armás valuesPayload:
       const valuesPayload = newValues.map((v) => {
-        const amountNet = round2(parseFloat(v.amount || "0")); // lo que ya venís imputando
+        const amountNet = round2(parseFloat(v.amount || "0"));
 
         const common = {
+          // 👇 OJO: para cheques vamos a sobre-escribir amount más abajo
           amount: amountNet,
           concept: v.selectedReason,
           method: v.method,
@@ -257,23 +259,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           return common;
         }
 
+        // 👉 CHEQUE: el amount del payload debe ser el neto calculado
         const m = computeChequeMeta(v);
         chequeInterestTotal += m.interest_amount;
         valuesRawTotal += m.raw;
 
         return {
           ...common,
-          raw_amount: round2(m.raw), // monto original del cheque
+          amount: round2(m.net_amount), // ⬅️ clave: forzamos que amount = net_amount
+          raw_amount: round2(m.raw),
           cheque: {
             collection_date: v.chequeDate || null,
             days_total: m.days_total,
             grace_days: checkGrace?.value,
             days_charged: m.days_charged,
-            annual_interest_pct: annualInterestPct, // ej 96
-            daily_rate: round4(m.daily), // 0.0026…
-            interest_pct: round4(m.interest_pct), // proporción acumulada (0.1427…)
+            annual_interest_pct: annualInterestPct,
+            daily_rate: round4(m.daily),
+            interest_pct: round4(m.interest_pct),
             interest_amount: round2(m.interest_amount),
-            net_amount: round2(m.net_amount), // debería coincidir con 'amount'
+            net_amount: round2(m.net_amount), // coincide con amount
             cheque_number: v.chequeNumber || undefined,
           },
         };

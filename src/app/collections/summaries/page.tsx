@@ -636,7 +636,6 @@ type DetailsModalProps = {
   isMarking: boolean;
   t: (k: string) => string;
 };
-
 function DetailsModal({
   payment,
   onClose,
@@ -644,35 +643,92 @@ function DetailsModal({
   isMarking,
   t,
 }: DetailsModalProps) {
+  // ===== formateadores =====
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: payment.currency || "ARS",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+  // ===== helpers de formato (mismo criterio que ValueView / Pagos) =====
+  const signedPctFromRate = (rate?: number) => {
+    const r = Number(rate ?? 0);
+    const s = r >= 0 ? "-" : "+"; // rate >= 0 => DESCUENTO
+    return `${s}${(Math.abs(r) * 100).toFixed(1)}%`;
+  };
+  const signedMoney = (n: number, fmt: Intl.NumberFormat) => {
+    const s = n >= 0 ? "-" : "+"; // positivo=descuento, negativo=recargo
+    return `${s}${fmt.format(Math.abs(n))}`;
+  };
+  const labelForRate = (rate?: number) =>
+    Number(rate ?? 0) >= 0 ? t("discount") || "Desc." : t("surcharge") || "Recargo";
+
+  const methodWithChequeLabel = (v: any) => {
+    const m = String(v?.method || "").toUpperCase();
+    if (m !== "CHEQUE") return m;
+    const num =
+      v?.cheque?.cheque_number ??
+      v?.cheque_number ??
+      v?.cheque?.chequeNumber ??
+      v?.chequeNumber;
+    return num ? `${m} #${num}` : m;
+  };
+
+  // ===== lógica de rendición =====
   const rendido = isPaymentRendido(payment);
+
+  // ===== totales con fallbacks (alineado al modal de PAGOS) =====
+  const gross = Number(payment.totals?.gross ?? 0);
+
+  // ajustes s/facturas (+desc / -recargo)
+  const docsAdjSigned = Number(payment.totals?.discount ?? 0);
+
+  // recargo cheques (>=0) – fallback suma de values.cheque.interest_amount
+  const chequeInterestTotal =
+    payment.totals?.cheque_interest ??
+    (payment.values ?? []).reduce(
+      (s: number, v: any) => s + Number(v?.cheque?.interest_amount ?? 0),
+      0
+    );
+
+  const totalAdjSigned = docsAdjSigned + chequeInterestTotal;
+
+  const net = Number(payment.totals?.net ?? payment.total ?? 0);
+
+  const valuesTotal =
+    payment.totals?.values ??
+    (payment.values ?? []).reduce(
+      (s: number, v: any) => s + Number(v?.amount ?? 0),
+      0
+    );
+
+  const diff =
+    payment.totals?.diff ?? Number((net - valuesTotal).toFixed(2)); // saldo fallback
+
+  // clases de color iguales al primer modal
+  const clsDocsAdj = docsAdjSigned >= 0 ? "text-emerald-600" : "text-red-600";
+  const clsTotalAdj = totalAdjSigned >= 0 ? "text-emerald-600" : "text-red-600";
+  const clsDiff =
+    diff === 0 ? "text-emerald-600" : diff > 0 ? "text-amber-600" : "text-red-600";
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="
           w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-3xl
           bg-white rounded-none sm:rounded-xl shadow-xl
-          overflow-hidden
-          flex flex-col
+          overflow-hidden flex flex-col
         "
       >
         {/* Header (sticky) */}
         <div
           className="
-          sticky top-0 z-10
-          flex items-center justify-between px-4 py-3
-          border-b border-zinc-200 dark:border-zinc-800
-          bg-white
-        "
+            sticky top-0 z-10
+            flex items-center justify-between px-4 py-3
+            border-b border-zinc-200 bg-white
+          "
         >
           <div className="flex flex-col min-w-0">
             <h4 className="text-base sm:text-lg font-semibold truncate">
@@ -681,36 +737,36 @@ function DetailsModal({
             <span className="text-xs text-zinc-500 truncate">
               {t("number")}: {payment.documents?.[0]?.number ?? "—"} ·{" "}
               {t("date")}:{" "}
-              {payment.date
-                ? format(new Date(payment.date), "dd/MM/yyyy HH:mm")
-                : "N/A"}
+              {payment.date ? format(new Date(payment.date), "dd/MM/yyyy HH:mm") : "N/A"}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="p-2 rounded hover:bg-zinc-100"
             title={t("close") || "Cerrar"}
           >
             <FaTimes />
           </button>
         </div>
 
-        {/* Body scrollable */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 max-h-[calc(90vh-112px)]">
+        {/* Body (scrollable) */}
+        <div
+          className="
+            flex-1 overflow-y-auto
+            p-3 sm:p-4 space-y-4
+            max-h=[calc(90vh-112px)]
+            pb-24 sm:pb-28
+            scroll-pb-24 sm:scroll-pb-28
+          "
+        >
           {/* Meta */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
             <Info
               label={t("customer") || "Cliente"}
               value={<CustomerIdAndName id={payment.customer?.id} />}
             />
-            <Info
-              label={t("status")}
-              value={<StatusPill status={payment.status} />}
-            />
-            <Info
-              label={t("type") || "Tipo"}
-              value={<TypePill type={payment.type} />}
-            />
+            <Info label={t("status")} value={<StatusPill status={payment.status} />} />
+            <Info label={t("type") || "Tipo"} value={<TypePill type={payment.type} />} />
             <Info
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
@@ -718,298 +774,291 @@ function DetailsModal({
             <Info
               label="Rendido"
               value={
-                <span
-                  className={rendido ? "text-emerald-600" : "text-rose-600"}
-                >
+                <span className={rendido ? "text-emerald-600" : "text-rose-600"}>
                   {rendido ? t("yes") || "Sí" : t("no") || "No"}
                 </span>
               }
             />
           </div>
+
           {!rendido && (
             <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-sm">
-              Este pago aún no está rendido. Debés rendirlo antes de poder
-              marcarlo como imputado.
+              Este pago aún no está rendido. Debés rendirlo antes de poder marcarlo como
+              imputado.
             </div>
           )}
-          {/* Totales */}
-          <div className="rounded border border-zinc-200 dark:border-zinc-800">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+
+          {/* Totales con signos y desgloses (idéntico estilo al de Pagos) */}
+          <div className="rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
               {t("totals") || "Totales"}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 text-sm">
+
+            <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 p-3 text-sm">
+              <Info label={t("gross") || "Bruto"} value={currencyFmt.format(gross)} />
+
               <Info
-                label="Bruto"
-                value={currencyFmt.format(payment.totals?.gross ?? 0)}
-              />
-              <Info
-                label="Desc."
-                value={`${currencyFmt.format(payment.totals?.discount ?? 0)}`}
-              />
-              <Info
-                label="Neto"
-                value={currencyFmt.format(payment.totals?.net ?? payment.total)}
-              />
-              <Info
-                label="Pagos"
-                value={currencyFmt.format(payment.totals?.values ?? 0)}
-              />
-              <Info
-                label="Dif."
-                valueClassName={
-                  (payment.totals?.diff ?? 0) === 0
-                    ? "text-emerald-600"
-                    : (payment.totals?.diff ?? 0) > 0
-                    ? "text-amber-600"
-                    : "text-red-600"
+                label="DTO/REC s/FACT"
+                value={
+                  docsAdjSigned === 0
+                    ? currencyFmt.format(0)
+                    : signedMoney(docsAdjSigned, currencyFmt)
                 }
-                value={currencyFmt.format(payment.totals?.diff ?? 0)}
+                valueClassName={clsDocsAdj}
+              />
+
+              <Info
+                label={t("surchargeCheques") || "REC S/CHEQUES"}
+                value={currencyFmt.format(chequeInterestTotal)}
+              />
+
+           
+
+              <Info label={t("neto") || "Neto"} value={currencyFmt.format(net)} />
+              <Info label={t("values") || "Valores"} value={currencyFmt.format(valuesTotal)} />
+              <Info
+                label={t("balance") || "Saldo"}
+                value={currencyFmt.format(diff)}
+                valueClassName={clsDiff}
               />
             </div>
           </div>
 
-          {/* Documentos */}
-          <div className="rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 dark:border-zinc-800">
+          {/* Documentos (scrolleable con header sticky) */}
+          <div className="rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
               {t("documents") || "Documentos"}
             </div>
 
-            {/* Header solo desktop */}
-            <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500">
-              <span>{t("number")}</span>
-              <span>{t("days") || "Días"}</span>
-              <span>{t("base") || "Base"}</span>
-              <span>%</span>
-              <span>{t("discount") || "Desc."}</span>
-              <span>{t("final") || "Final"}</span>
-            </div>
+            <div className="min-h-0 max-h-[50vh] md:max-h-80 overflow-y-auto overscroll-contain">
+              <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500 sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
+                <span>{t("number")}</span>
+                <span>{t("days") || "Días"}</span>
+                <span>{t("base") || "Base"}</span>
+                <span>±%</span>
+                <span>{t("adjustment") || "Ajuste"}</span>
+                <span>{t("final") || "Final"}</span>
+              </div>
 
-            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {(payment.documents || []).map((d) => (
-                <div
-                  key={d.document_id}
-                  className="grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm"
-                >
-                  {/* Número */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">
-                      {t("number")}:
-                    </span>
-                    <span className="truncate">{d.number}</span>
+              <div className="divide-y divide-zinc-200">
+                {(payment.documents || []).length === 0 && (
+                  <div className="px-3 py-4 text-sm text-zinc-500">
+                    {t("noDocuments") || "Sin documentos"}
                   </div>
-                  {/* Días */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">
-                      {t("days") || "Días"}:
-                    </span>
-                    <span className={d.note ? "text-amber-600" : ""}>
-                      {d.days_used ?? "—"}
-                    </span>
-                  </div>
-                  {/* Base */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">
-                      {t("base") || "Base"}:
-                    </span>
-                    <span>{currencyFmt.format(d.base)}</span>
-                  </div>
-                  {/* % */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">%</span>
-                    <span>{(d.discount_rate * 100).toFixed(0)}%</span>
-                  </div>
-                  {/* Desc */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">
-                      {t("discount") || "Desc."}:
-                    </span>
-                    <span>{currencyFmt.format(d.discount_amount)}</span>
-                  </div>
-                  {/* Final */}
-                  <div className="flex sm:block justify-between">
-                    <span className="text-xs text-zinc-500 sm:hidden">
-                      {t("final") || "Final"}:
-                    </span>
-                    <span className={d.note ? "text-amber-600" : ""}>
-                      {currencyFmt.format(d.final_amount)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                )}
+
+                {(payment.documents || []).map((d, idx) => {
+                  const rate = Number(d.discount_rate ?? 0); // +desc / -recargo
+                  const adjSigned = Number(d.discount_amount ?? 0);
+                  const pctSigned = signedPctFromRate(rate);
+                  const labelAdj = labelForRate(rate);
+                  const rowBg = idx % 2 ? "bg-zinc-50/60" : "";
+
+                  return (
+                    <div
+                      key={d.document_id || `${d.number}-${idx}`}
+                      className={`grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm ${rowBg}`}
+                      title={d.note || d.rule_applied || ""}
+                    >
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("number")}:
+                        </span>
+                        <span className="block truncate" title={d.number}>
+                          {d.number}
+                        </span>
+                      </div>
+
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("days") || "Días"}:
+                        </span>
+                        <span className={`sm:text-right tabular-nums ${d.note ? "text-amber-600" : ""}`}>
+                          {d.days_used ?? "—"}
+                        </span>
+                      </div>
+
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("base") || "Base"}:
+                        </span>
+                        <span className="sm:text-right tabular-nums">
+                          {currencyFmt.format(d.base)}
+                        </span>
+                      </div>
+
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">±%:</span>
+                        <span className="sm:text-right tabular-nums">{pctSigned}</span>
+                      </div>
+
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">{labelAdj}:</span>
+                        <span className={`sm:text-right tabular-nums ${rate >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          {signedMoney(adjSigned, currencyFmt)}
+                        </span>
+                      </div>
+
+                      <div className="flex sm:block justify-between min-w-0">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("final") || "Final"}:
+                        </span>
+                        <span className={`sm:text-right tabular-nums ${d.note ? "text-amber-600" : ""}`}>
+                          {currencyFmt.format(d.final_amount)}
+                        </span>
+                      </div>
+
+                      {(d.note || d.rule_applied) && (
+                        <div className="sm:col-span-6 text-xs text-amber-600 mt-1">
+                          {d.note || d.rule_applied}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Valores */}
-          <div className="rounded border border-zinc-200 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
+          {/* Valores (scrolleable con header sticky) */}
+          <div className="rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
               {t("values") || "Valores"}
             </div>
 
-            <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500">
-              <span className="col-span-2">{t("method") || "Medio"}</span>
-              <span className="col-span-4">{t("concept") || "Concepto"}</span>
-              <span className="col-span-2 text-right">
-                {t("amount") || "Importe"}
-              </span>
-              <span className="col-span-2">{t("bank") || "Banco"}</span>
-              <span className="col-span-2">
-                {t("receipt") || "Comprobante"}
-              </span>
-            </div>
+            <div className="min-h-0 max-h-[50vh] md:max-h-80 overflow-y-auto overscroll-contain">
+              <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500 sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
+                <span className="col-span-4">{t("method") || "Medio"}</span>
+                <span className="col-span-2">{t("concept") || "Concepto"}</span>
+                <span className="col-span-2 text-right">{t("amount") || "Importe"}</span>
+                <span className="col-span-2">{t("bank") || "Banco"}</span>
+                <span className="col-span-2">{t("receipt") || "Comprobante"}</span>
+              </div>
 
-            <div className="divide-y divide-zinc-200">
-              {(payment.values || []).map((v: any, i: number) => {
-                // helpers locales
-                const fmtDate = (d?: any) =>
-                  d ? format(new Date(d.$date ?? d), "dd/MM/yyyy") : "—";
-                const pct = (n?: number) =>
-                  Number.isFinite(n as number)
-                    ? `${((n as number) * 100).toFixed(2)}%`
-                    : "—";
+              <div className="divide-y divide-zinc-200">
+                {(payment.values || []).length === 0 && (
+                  <div className="px-3 py-4 text-sm text-zinc-500">{t("noValues") || "Sin valores"}</div>
+                )}
 
-                return (
-                  <div
-                    key={i}
-                    className="
-            grid grid-cols-1 sm:grid-cols-12 items-center
-            gap-x-3 gap-y-1 px-3 py-2 text-sm
-            sm:[&>div]:min-w-0
-          "
-                  >
-                    <div className="flex sm:block justify-between sm:col-span-2">
-                      <span className="text-xs text-zinc-500 sm:hidden">
-                        {t("method") || "Medio"}:
-                      </span>
-                      <span className="uppercase truncate">{v.method}</span>
-                    </div>
+                {(payment.values || []).map((v: any, i: number) => {
+                  const fmtDate = (d?: any) =>
+                    d ? format(new Date(d.$date ?? d), "dd/MM/yyyy") : "—";
+                  const pct = (n?: number) =>
+                    Number.isFinite(n as number) ? `${((n as number) * 100).toFixed(2)}%` : "—";
+                  const zebra = i % 2 ? "bg-zinc-50/60" : "";
 
-                    <div className="flex sm:block justify-between sm:col-span-4">
-                      <span className="text-xs text-zinc-500 sm:hidden">
-                        {t("concept") || "Concepto"}:
-                      </span>
-                      <Tooltip content={v.concept}>
-                        <span className="truncate block">
-                          {v.concept || "—"}
+                  return (
+                    <div
+                      key={i}
+                      className={`grid grid-cols-1 sm:grid-cols-12 items-center gap-x-3 gap-y-1 px-3 py-2 text-sm sm:[&>div]:min-w-0 ${zebra}`}
+                    >
+                      <div className="flex sm:block justify-between sm:col-span-4">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("method") || "Medio"}:
                         </span>
-                      </Tooltip>
-                    </div>
+                        <span className="uppercase truncate">{methodWithChequeLabel(v)}</span>
+                      </div>
 
-                    <div className="flex sm:block justify-between sm:col-span-2">
-                      <span className="text-xs text-zinc-500 sm:hidden">
-                        {t("amount") || "Importe"}:
-                      </span>
-                      <span className="tabular-nums whitespace-nowrap sm:text-right sm:block">
-                        {currencyFmt.format(Number(v.amount ?? 0))}
-                      </span>
-                    </div>
+                      <div className="flex sm:block justify-between sm:col-span-2">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("concept") || "Concepto"}:
+                        </span>
+                        <Tooltip content={v.concept}>
+                          <span className="truncate block">{v.concept || "—"}</span>
+                        </Tooltip>
+                      </div>
 
-                    <div className="flex sm:block justify-between sm:col-span-2">
-                      <span className="text-xs text-zinc-500 sm:hidden">
-                        {t("bank") || "Banco"}:
-                      </span>
-                      <Tooltip content={v.bank || "—"}>
-                        <span className="truncate">{v.bank || "—"}</span>
-                      </Tooltip>
-                    </div>
+                      <div className="flex sm:block justify-between sm:col-span-2">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("amount") || "Importe"}:
+                        </span>
+                        <span className="tabular-nums whitespace-nowrap sm:text-right sm:block">
+                          {currencyFmt.format(Number(v.amount ?? 0))}
+                        </span>
+                      </div>
 
-                    <div className="flex sm:block justify-between sm:col-span-2">
-                      <span className="text-xs text-zinc-500 sm:hidden">
-                        {t("receipt") || "Comprobante"}:
-                      </span>
-                      <span className="truncate">
-                        {v.receipt_url ? (
-                          <Tooltip
-                            content={v.receipt_original_name || v.receipt_url}
-                            side="bottom"
-                          >
-                            <a
-                              href={v.receipt_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-blue-600 hover:underline break-all inline-block max-w-full"
-                            >
-                              {t("view") || "Ver"}
-                            </a>
-                          </Tooltip>
-                        ) : (
-                          "—"
-                        )}
-                      </span>
-                    </div>
+                      <div className="flex sm:block justify-between sm:col-span-2">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("bank") || "Banco"}:
+                        </span>
+                        <Tooltip content={v.bank || "—"}>
+                          <span className="truncate">{v.bank || "—"}</span>
+                        </Tooltip>
+                      </div>
 
-                    {/* 📌 Detalle extra cuando es CHEQUE */}
-                    {String(v.method).toLowerCase() === "cheque" &&
-                      v.cheque && (
+                      <div className="flex sm:block justify-between sm:col-span-2">
+                        <span className="text-xs text-zinc-500 sm:hidden">
+                          {t("receipt") || "Comprobante"}:
+                        </span>
+                        <span className="truncate">
+                          {v.receipt_url ? (
+                            <Tooltip content={v.receipt_original_name || v.receipt_url} side="bottom">
+                              <a
+                                href={v.receipt_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-600 hover:underline break-all inline-block max-w-full"
+                              >
+                                {t("view") || "Ver"}
+                              </a>
+                            </Tooltip>
+                          ) : (
+                            "—"
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Detalle de CHEQUE */}
+                      {String(v.method).toLowerCase() === "cheque" && v.cheque && (
                         <div className="sm:col-span-12 mt-2">
                           <div className="rounded-md border border-zinc-200 bg-zinc-50/50 p-3">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                              <Info label={t("collectionDate") || "Fecha de cobro"} value={fmtDate(v.cheque.collection_date)} />
                               <Info
-                                label="Fecha de cobro"
-                                value={fmtDate(v.cheque.collection_date)}
+                                label={t("chequeNumber") || "Número de cheque"}
+                                value={
+                                  v?.cheque?.cheque_number ??
+                                  v?.cheque_number ??
+                                  v?.cheque?.chequeNumber ??
+                                  v?.chequeNumber ??
+                                  "—"
+                                }
                               />
                               <Info
-                                label="Numero de Cheque"
-                                value={v.cheque.chequeNumber}
+                                label={t("rawAmount") || "Monto original"}
+                                value={currencyFmt.format(Number(v.raw_amount ?? v.amount ?? 0))}
                               />
                               <Info
-                                label="Monto original"
-                                value={currencyFmt.format(
-                                  Number(v.raw_amount ?? v.amount ?? 0)
-                                )}
-                              />
-                              <Info
-                                label="Neto (imputable)"
-                                value={currencyFmt.format(
-                                  Number(v.cheque.net_amount ?? v.amount ?? 0)
-                                )}
+                                label={t("netAmount") || "Neto (imputable)"}
+                                value={currencyFmt.format(Number(v.cheque.net_amount ?? v.amount ?? 0))}
                               />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                              <Info label={t("interestPct") || "Interés (%)"} value={pct(v.cheque.interest_pct)} />
                               <Info
-                                label="Interés (%)"
-                                value={pct(v.cheque.interest_pct)}
+                                label={t("interestAmount") || "Interés ($)"}
+                                value={currencyFmt.format(Number(v.cheque.interest_amount ?? 0))}
                               />
                               <Info
-                                label="Interés ($)"
-                                value={currencyFmt.format(
-                                  Number(v.cheque.interest_amount ?? 0)
-                                )}
-                              />
-                              <Info
-                                label="Tasa diaria"
+                                label={t("dailyRate") || "Tasa diaria"}
                                 value={
                                   Number.isFinite(Number(v.cheque.daily_rate))
-                                    ? `${(
-                                        Number(v.cheque.daily_rate) * 100
-                                      ).toFixed(3)}%`
+                                    ? `${(Number(v.cheque.daily_rate) * 100).toFixed(3)}%`
                                     : "—"
                                 }
                               />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2">
+                              <Info label={t("daysTotal") || "Días totales"} value={String(v.cheque.days_total ?? "—")} />
+                              <Info label={t("grace") || "Gracia"} value={String(v.cheque.grace_days ?? "—")} />
+                              <Info label={t("daysCharged") || "Gravados"} value={String(v.cheque.days_charged ?? "—")} />
                               <Info
-                                label="Días totales"
-                                value={String(v.cheque.days_total ?? "—")}
-                              />
-                              <Info
-                                label="Gracia"
-                                value={String(v.cheque.grace_days ?? "—")}
-                              />
-                              <Info
-                                label="Gravados"
-                                value={String(v.cheque.days_charged ?? "—")}
-                              />
-                              <Info
-                                label="Tasa anual"
+                                label={t("annualRate") || "Tasa anual"}
                                 value={
-                                  Number.isFinite(
-                                    Number(v.cheque.annual_interest_pct)
-                                  )
-                                    ? `${Number(
-                                        v.cheque.annual_interest_pct
-                                      ).toFixed(2)}%`
+                                  Number.isFinite(Number(v.cheque.annual_interest_pct))
+                                    ? `${Number(v.cheque.annual_interest_pct).toFixed(2)}%`
                                     : "—"
                                 }
                               />
@@ -1017,17 +1066,18 @@ function DetailsModal({
                           </div>
                         </div>
                       )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Comentarios */}
           {payment.comments ? (
-            <div className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm">
+            <div className="rounded-xl border border-zinc-200 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
-              <div className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
+              <div className="text-zinc-700 whitespace-pre-wrap break-words">
                 {payment.comments}
               </div>
             </div>
@@ -1037,19 +1087,16 @@ function DetailsModal({
         {/* Footer (sticky) */}
         <div
           className="
-          sticky bottom-0 z-10
-          flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2
-          px-4 py-3 border-t border-zinc-200 dark:border-zinc-800
-          bg-white
-        "
+            sticky bottom-0 z-10
+            flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2
+            px-4 py-3 border-t border-zinc-200 bg-white
+          "
         >
-          <div className="text-[10px] sm:text-xs text-zinc-500">
-            ID: {payment._id} ·
-          </div>
+          <div className="text-[10px] sm:text-xs text-zinc-500">ID: {payment._id}</div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
-              className="w-full sm:w-auto px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="w-full sm:w-auto px-3 py-2 rounded border border-zinc-300 hover:bg-zinc-100"
               onClick={onClose}
             >
               {t("close") || "Cerrar"}
@@ -1064,7 +1111,7 @@ function DetailsModal({
                   : "bg-zinc-400 cursor-not-allowed"
               }`}
               onClick={onMark}
-              disabled={isMarking || !rendido} // ✅ deshabilitado si no está rendido
+              disabled={isMarking || !rendido}
               title={!rendido ? "Rendí el pago para poder marcarlo" : undefined}
             >
               {isMarking ? (
@@ -1084,6 +1131,7 @@ function DetailsModal({
     </div>
   );
 }
+
 
 function Info({
   label,
