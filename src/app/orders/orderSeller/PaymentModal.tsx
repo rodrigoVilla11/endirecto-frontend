@@ -637,7 +637,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
             {/* SUBTOTAL */}
             <InfoRow label="Importe bruto" value={formattedTotalGross} />
-            <InfoRow label="Pagos" value={formattedTotalValues} />
 
             {/* 🆕 DTO/REC con signo (descuento = -, recargo = +) */}
             <InfoRow
@@ -652,6 +651,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
               }
             />
+            <InfoRow label="Pagos" value={formattedTotalValues} />
 
             {/* Valores y Diferencia (igual que antes) */}
             <InfoRow
