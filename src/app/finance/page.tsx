@@ -159,7 +159,7 @@ const Page = () => {
         </section>
 
          <section className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm">
-         <PlanCalculator />
+         <PlanCalculator annualInterestPct={interestSetting?.value || 96}/>
         </section>
       </div>
     </PrivateRoute>
