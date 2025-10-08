@@ -173,7 +173,6 @@ export default function ValueView({
   });
   
   if (changed) {
-    console.log("🔄 ValueView: Normalizando cheques sin rawAmount");
     setNewValues(next);
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps

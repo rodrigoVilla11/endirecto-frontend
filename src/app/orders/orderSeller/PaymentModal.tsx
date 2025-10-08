@@ -544,8 +544,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     (acc, d) => acc + d.finalAmount,
     0
   );
-
-  console.log({totalDocsFinal, totalFinal})
   // Flag para saber si estamos en “pagar total por comprobante”
   const [payTotalDocMode, setPayTotalDocMode] = useState(false);
 
@@ -618,25 +616,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     totalAdjustmentSigned >= 0 ? "-" : "+"
   }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
 
-
-  useEffect(() => {
-  if (newValues.length > 0) {
-    const sumNets = newValues.reduce((a, v) => a + parseFloat(v.amount || "0"), 0);
-    console.log("💰 DEBUG:", {
-      totalFinal,
-      totalDocsFinal,
-      totalValues,
-      sumNets,
-      diff: totalFinal - sumNets,
-      cheques: newValues.map(v => ({
-        method: v.method,
-        amount: v.amount,
-        rawAmount: v.rawAmount,
-        date: v.chequeDate
-      }))
-    });
-  }
-}, [newValues, totalFinal]);
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -937,7 +916,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     const diff = Math.abs(targetPV - sumNets);
                     
                     if (diff > 0.01) {
-                      console.warn(`⚠️ Diferencia de centavos detectada: ${diff.toFixed(2)}`);
+                     
                       // Ajuste de emergencia en el último cheque
                       const last = cheques[cheques.length - 1];
                       const correction = targetPV - sumNets;
@@ -958,21 +937,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     setNewValues(cheques);
                     setActiveTab("values");
                     setShowRefi(false);
-
-                    // ✅ MENSAJE DE CONFIRMACIÓN
-                    const total = cheques.reduce(
-                      (a, c) => a + parseFloat(c.amount),
-                      0
-                    );
-                    setTimeout(() => {
-                      alert(
-                        `✅ Plan generado:\n\n` +
-                        `${n} cheques\n` +
-                        `Total neto: ${currencyFmt.format(total)}\n` +
-                        `Objetivo: ${currencyFmt.format(targetPV)}\n` +
-                        `Diferencia: ${currencyFmt.format(Math.abs(total - targetPV))}`
-                      );
-                    }, 100);
                   }}
                 />
               </div>

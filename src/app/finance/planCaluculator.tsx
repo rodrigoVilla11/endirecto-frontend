@@ -52,7 +52,6 @@ function computeEqualNetCheques(params: {
   const cheques = [];
   let accumulatedCents = 0;
 
-  console.log("🎯 Target en centavos:", targetCents);
 
   for (let i = 0; i < n; i++) {
     const iso = chequeDatesISO[i];
@@ -65,11 +64,9 @@ function computeEqualNetCheques(params: {
     if (i === n - 1) {
       // ✅ ÚLTIMO CHEQUE: asignar el residuo EXACTO
       netCents = targetCents - accumulatedCents;
-      console.log(`✅ Cheque ${i + 1} (ÚLTIMO): ${fromCents(netCents)} (ajustado para cerrar)`);
     } else {
       // Cheques intermedios: división entera en centavos
       netCents = Math.floor(targetCents / n);
-      console.log(`📌 Cheque ${i + 1}: ${fromCents(netCents)} (base)`);
     }
 
     const net = fromCents(netCents);
@@ -91,10 +88,6 @@ function computeEqualNetCheques(params: {
   const sumNets = cheques.reduce((a, c) => a + c.net, 0);
   const diff = Math.abs(targetNet - sumNets);
   
-  console.log("💰 Suma de netos:", sumNets);
-  console.log("🎯 Target:", targetNet);
-  console.log("📊 Diferencia:", diff);
-
   if (diff > 0.005) {
     console.error("❌ ERROR: Diferencia mayor a medio centavo");
   }
@@ -130,7 +123,6 @@ export default function PlanCalculator({
   useEffect(() => {
     if (typeof initialTotal === "number" && isFinite(initialTotal) && initialTotal > 0) {
       setTotal(initialTotal.toFixed(2));
-      console.log("📥 PlanCalculator recibió initialTotal:", initialTotal);
     }
   }, [initialTotal]);
 
@@ -342,15 +334,7 @@ export default function PlanCalculator({
           }`}
           onClick={() => {
             if (!onProposeCheques || schedule.length === 0 || PV <= 0) return;
-            
-            console.log("📤 Enviando plan al padre:", {
-              schedule: schedule.map((it, idx) => ({
-                k: idx + 1,
-                dateISO: it.dateISO,
-                amount: it.net,
-              })),
-              presentValue: PV,
-            });
+         
             
             onProposeCheques({
               schedule: schedule.map((it, idx) => ({
