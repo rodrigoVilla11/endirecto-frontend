@@ -225,62 +225,6 @@ const PaymentsChargedPage = () => {
     return (m || "—").toUpperCase();
   };
 
-  // totales por método para una lista arbitraria (para PDF)
-  const buildMethodTotals = (rows: Payment[]) => {
-    const acc: Record<string, { total: number; count: number }> = {};
-    for (const p of rows) {
-      for (const v of (p.values ?? []) as any[]) {
-        const m = (v?.method ?? "—").toString().toLowerCase();
-        const amount = Number(v?.amount ?? 0);
-        if (!acc[m]) acc[m] = { total: 0, count: 0 };
-        acc[m].total += amount;
-        acc[m].count += 1;
-      }
-    }
-    return acc;
-  };
-
-  const groupValuesByMethod = (values: any[]) => {
-    const acc: Record<
-      string,
-      { total: number; count: number; cheques: string[]; concepts: Set<string> }
-    > = {};
-    for (const v of values || []) {
-      const m = (v?.method ?? "—").toString().toLowerCase();
-      const amount = Number(v?.amount ?? 0);
-      if (!Number.isFinite(amount)) continue;
-
-      if (!acc[m])
-        acc[m] = { total: 0, count: 0, cheques: [], concepts: new Set() };
-      acc[m].total += amount;
-      acc[m].count += 1;
-
-      // cheques: recolectar números
-      if (m === "cheque") {
-        const num =
-          v?.cheque?.cheque_number ??
-          v?.cheque_number ??
-          v?.cheque?.chequeNumber ??
-          v?.chequeNumber;
-        if (num != null) acc[m].cheques.push(String(num));
-      }
-
-      // conceptos (muestra algunos)
-      if (v?.concept) acc[m].concepts.add(String(v.concept));
-    }
-    return acc;
-  };
-
-  const formatChequeList = (nums: string[]) => {
-    if (!nums.length) return "—";
-    if (nums.length === 1) return `#${nums[0]}`;
-    const first = nums
-      .slice(0, 3)
-      .map((n) => `#${n}`)
-      .join(" / ");
-    const extra = nums.length > 3 ? ` +${nums.length - 3}` : "";
-    return `${first}${extra}`;
-  };
 
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
 const downloadPDFFor = (rows: Payment[], customerName: string) => {

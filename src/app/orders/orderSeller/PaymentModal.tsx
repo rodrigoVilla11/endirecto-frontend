@@ -22,6 +22,8 @@ import {
 } from "@/redux/services/settingsApi";
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
+import PlanCalculator from "@/app/finance/planCaluculator";
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +39,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const { selectedClientId } = useClient();
   const [comments, setComments] = useState("");
+  const [totalFinal, setTotalFinal] = useState(0);
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
@@ -46,8 +49,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [isValuesValid, setIsValuesValid] = useState(true);
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingValueRef = useRef<ValueItem | null>(null);
+  const [showRefi, setShowRefi] = useState(false);
 
   type PaymentType = "pago_anticipado" | "cta_cte";
 
@@ -595,6 +597,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const formattedDiff = currencyFmt.format(diff);
   if (!isOpen) return null;
 
+  // --- Métricas para las 4 filas nuevas ---
+  const sumRate = computedDiscounts.reduce(
+    (a, d) => a + (Number.isFinite(d.rate) ? d.rate : 0),
+    0
+  );
+  // días por encima de 45 (solo cuentan como "agravados")
+  const totalDaysOver45 = computedDiscounts.reduce((a, d) => {
+    const dd = Number.isFinite(d.days) ? d.days : 0;
+    return a + Math.max(0, dd - 45);
+  }, 0);
+
+  // % efectivo (la suma de tasas que estás aplicando sobre *valores*)
+  const pctEffective = sumRate * 100;
+
+  // Desc/Rec financiero en pesos (con signo visual)
+  const formattedFinAdjMoney = `${
+    totalAdjustmentSigned >= 0 ? "-" : "+"
+  }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
+
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -636,22 +657,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             />
 
             {/* SUBTOTAL */}
-            <InfoRow label="Importe bruto" value={formattedTotalGross} />
-            <InfoRow label="Pagos" value={formattedTotalValues} />
+            <InfoRow label="Total facturas" value={formattedTotalGross} />
+            {/* <InfoRow label="Pagos" value={formattedTotalValues} /> */}
 
-            {/* 🆕 DTO/REC con signo (descuento = -, recargo = +) */}
+            {/* 3) Desc/Rec financiero ($ en pesos con signo) */}
             <InfoRow
               label={
                 <LabelWithTip
-                  label="DTO/REC s/FACT"
-                  tip="Se debe agregar un pago para visualizar el descuento o recargo."
+                  label="Desc/Rec financiero"
+                  tip="Resultado del esquema de tasas aplicado según días y reglas. El % se calcula sobre los pagos cargados."
                 />
               }
-              value={formattedDtoRec}
+              value={formattedFinAdjMoney}
               valueClassName={
                 totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
               }
             />
+            
+            <InfoRow label="Total facturas" value= {currencyFmt.format(totalFinal)} />
 
             {/* Valores y Diferencia (igual que antes) */}
             <InfoRow
@@ -705,6 +728,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       annualInterestPct={
                         interestSetting?.value ? interestSetting.value : 96
                       }
+                      setFinalAmount={setTotalFinal}
                     />
                   ))}
               </div>
@@ -747,117 +771,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </button>
                 </div>
 
-                {/* Tabla de desglose */}
-                {computedDiscounts.length > 0 && (
-                  <div className="space-y-3">
-                    {computedDiscounts.map((d) => {
-                      const src = newPayment.find(
-                        (p) => p.document_id === d.document_id
-                      );
-                      const exp = Number(src?.days_until_expiration);
-                      const todayDays = Number(
-                        src?.days_until_expiration_today
-                      );
-                      const daysColor =
-                        Number.isFinite(exp) && Number.isFinite(todayDays)
-                          ? todayDays > exp
-                            ? "text-red-500"
-                            : "text-green-500"
-                          : "";
-                      return (
-                        <div
-                          key={d.document_id}
-                          className="border border-zinc-700 rounded overflow-hidden"
-                          title={d.note || ""}
-                        >
-                          <div className="px-3 py-2 text-xs text-zinc-400 border-b border-zinc-700">
-                            Detalle de comprobante
-                          </div>
-
-                          <div className="divide-y divide-zinc-800 text-sm text-white">
-                            <div className="flex justify-between px-3 py-2">
-                              <span className="text-zinc-400">Factura</span>
-                              <span
-                                className="truncate min-w-0"
-                                title={d.number}
-                              >
-                                {d.number}
-                              </span>
-                            </div>
-
-                            {/* 10% manual para 30–37 días */}
-                            {d.eligibleManual10 && (
-                              <label
-                                className="flex items-center justify-between px-3 py-2 text-sm border-t border-zinc-800"
-                                title="Aplica 10% si está entre 31 y 37 días, solo en Cta Cte, y sin condición que bloquee descuento."
-                              >
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="text-zinc-300">
-                                    Aplicar 10% (30–37 días)
-                                  </span>
-                                  <span className="text-[11px] text-zinc-500">
-                                    {d.manualTenApplied ? "Activo" : "Opcional"}
-                                  </span>
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4 accent-emerald-600"
-                                  checked={!!graceDiscount[d.document_id]}
-                                  onChange={(e) =>
-                                    setGraceDiscount((prev) => ({
-                                      ...prev,
-                                      [d.document_id]: e.target.checked,
-                                    }))
-                                  }
-                                />
-                              </label>
-                            )}
-
-                            {/* Final */}
-                            <div className="flex justify-between px-3 py-2">
-                              <span className="text-zinc-400">Final</span>
-                              <span
-                                className={`tabular-nums ${
-                                  d.note ? "text-yellow-400" : ""
-                                }`}
-                              >
-                                {currencyFmt.format(d.finalAmount)}
-                              </span>
-                            </div>
-
-                            {d.note && (
-                              <div className="flex items-center justify-between">
-                                <div className="px-3 py-2 text-xs text-yellow-400">
-                                  {d.note}
-                                </div>
-                                <span className="tabular-nums px-4">
-                                  {Number.isFinite(exp) ? (
-                                    <>
-                                      {/* Días: {" "} */}
-                                      <span className={daysColor}>
-                                        {exp}
-                                      </span>{" "}
-                                      <span>
-                                        (
-                                        {Number.isFinite(todayDays)
-                                          ? todayDays
-                                          : "N/A"}
-                                        )
-                                      </span>
-                                    </>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
                 {/* Botón para PAGAR TOTAL (descuento aplicado al comprobante) */}
                 <button
                   className="mt-1 px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
@@ -889,6 +802,45 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 >
                   Pagar total
                 </button>
+                <button
+                  className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
+                  onClick={() => setShowRefi((s) => !s)}
+                  disabled={computedDiscounts.length === 0}
+                  title="Armar plan en 30/60/90 con cheques iguales"
+                >
+                  {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
+                </button>
+                {showRefi && (
+                  <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50">
+                    <PlanCalculator
+                      title="Refinanciación 30/60/90"
+                      graceDays={checkGrace?.value ?? 0}
+                      initialTotal={totalNetForUI} // 👈 PV = neto que estás mostrando
+                      onProposeCheques={({ chequeValue, schedule }) => {
+                        // Construye n cheques con fechas/montos del plan:
+                        const cheques = schedule.map((it) => ({
+                          method: "cheque" as const,
+                          selectedReason: "Refinanciación",
+                          // Para coherencia con tu computeChequeMeta, seteo ambos:
+                          rawAmount: String(chequeValue),
+                          amount: String(chequeValue), // (neto lo va a recalcular computeChequeMeta)
+                          chequeDate: it.dateISO, // ISO YYYY-MM-DD
+                          bank: undefined,
+                          receiptUrl: undefined,
+                          receiptOriginalName: undefined,
+                          chequeNumber: undefined,
+                        }));
+
+                        // Mezclo con valores existentes (si querés reemplazar, podés no usar spread):
+                        setNewValues((prev) => [...cheques, ...prev]);
+
+                        // Cambio de tab y cierro panel
+                        setActiveTab("values");
+                        setShowRefi(false);
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Valores manuales */}
                 <ValueView

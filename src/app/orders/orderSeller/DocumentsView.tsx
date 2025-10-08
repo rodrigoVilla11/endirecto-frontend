@@ -20,6 +20,7 @@ export interface ExpandableTableProps {
   paymentType: "pago_anticipado" | "cta_cte";
   graceDays: number;
   annualInterestPct: number;
+  setFinalAmount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export function DocumentsView({
@@ -31,6 +32,7 @@ export function DocumentsView({
   paymentType,
   graceDays,
   annualInterestPct,
+  setFinalAmount
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -196,15 +198,24 @@ export function DocumentsView({
   };
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
-    if (checked) {
-      setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
-    } else {
-      setNewPayment?.((prev: any[]) =>
-        prev.filter((doc) => doc.document_id !== id)
-      );
-    }
-    onRowSelect?.(id, checked);
-  };
+  // 1) Actualiza lista de pagos seleccionados (como ya hacías)
+  if (checked) {
+    setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
+  } else {
+    setNewPayment?.((prev: any[]) => prev.filter((doc) => doc.document_id !== id));
+  }
+
+  // 2) Avisa al padre si querés mantener el array de IDs
+  onRowSelect?.(id, checked);
+
+  // 3) Actualiza el total acumulado con el finalAmount de ESTA factura
+  setFinalAmount((prevTotal) => {
+    const delta = checked ? finalAmount : -finalAmount;
+    // redondeo a 2 decimales para evitar ruido de coma flotante
+    return Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100;
+  });
+};
+
 
   /* ===================== Render ===================== */
 

@@ -761,7 +761,7 @@ export default function ValueView({
           {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
           <RowSummary
             label={
-              <LabelWithTip label="DTO/REC s/FACT" tip={EXPLAIN.dtoRecFact} />
+              <LabelWithTip label="DTO/REC FINACIERO" tip={EXPLAIN.dtoRecFact} />
             }
             value={`${docAdjustmentSigned >= 0 ? "-" : "+"}${currencyFmt.format(
               Math.abs(docAdjustmentSigned)

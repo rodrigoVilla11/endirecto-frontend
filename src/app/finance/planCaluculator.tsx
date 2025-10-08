@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useGetInterestRateQuery } from "@/redux/services/settingsApi";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
 
@@ -17,14 +17,14 @@ function addDaysLocal(dateISO: string, days: number) {
   return toYMD(d1);
 }
 
-/* ===== Matemática (igual a ChequeCalculator) ===== */
+/* ===== Matemática ===== */
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const dailyRateFromAnnual = (annualInterestPct: number) =>
   (annualInterestPct / 100) / 365;
 
 function getChequeDays(chequeISO?: string, graceDays?: number) {
   const daysTotal = diffFromTodayToDate(chequeISO) || 0;
-  const g = Number.isFinite(graceDays as any) ? (graceDays as number) : 0; // fallback 0 = sin gracia
+  const g = Number.isFinite(graceDays as any) ? (graceDays as number) : 0;
   const daysCharged = Math.max(0, daysTotal - g);
   return { daysTotal, daysCharged, graceUsed: g };
 }
@@ -64,7 +64,7 @@ function buildScheduleWithRates(params: {
     const days = 30 * k;
     const dateISO = addDaysLocal(startISO, days);
     const { daysTotal, daysCharged, graceUsed } = getChequeDays(dateISO, graceDays);
-    const periodPct = iDaily * daysCharged * 100; // % simple del período
+    const periodPct = iDaily * daysCharged * 100;
     items.push({ k, days, dateISO, daysTotal, daysCharged, graceUsed, amount: chequeValue, periodPct });
   }
   return items;
@@ -73,18 +73,36 @@ function buildScheduleWithRates(params: {
 /* ====== UI ====== */
 export default function PlanCalculator({
   title = "Cálculo de pagos a plazo (30/60/90)",
-  graceDays, // 👈 viene del padre
+  graceDays,
+  initialTotal,                 // 👈 NUEVO
+  onProposeCheques,            // 👈 NUEVO
 }: {
   title?: string;
   graceDays?: number;
+  initialTotal?: number;
+  onProposeCheques?: (plan: {
+    chequeValue: number;
+    schedule: Array<{ k: number; dateISO: string; amount: number }>;
+    months: number;
+    presentValue: number;
+    annualInterestPct: number;
+    graceDays?: number;
+  }) => void;
 }) {
   const { data: interestSetting } = useGetInterestRateQuery();
   const annualInterestPct =
     typeof interestSetting?.value === "number" ? interestSetting.value : 96;
 
-  const [months, setMonths] = useState<number>(3); // 1..3
+  const [months, setMonths] = useState<number>(3);
   const [startISO, setStartISO] = useState<string>(() => toYMD(new Date()));
   const [total, setTotal] = useState<string>("");
+
+  // Prefill del total que viene del padre
+  useEffect(() => {
+    if (typeof initialTotal === "number" && isFinite(initialTotal)) {
+      setTotal(String(round2(initialTotal)));
+    }
+  }, [initialTotal]);
 
   const fmt = useMemo(
     () =>
@@ -110,7 +128,7 @@ export default function PlanCalculator({
         presentValue: PV,
         chequeDatesISO: chequeDates,
         annualInterestPct,
-        graceDays, // 👈 usa lo que venga del padre (o 0 si undefined)
+        graceDays,
       }),
     [PV, chequeDates, annualInterestPct, graceDays]
   );
@@ -122,21 +140,20 @@ export default function PlanCalculator({
         n: months,
         chequeValue,
         annualInterestPct,
-        graceDays, // 👈 idem
+        graceDays,
       }),
     [startISO, months, chequeValue, annualInterestPct, graceDays]
   );
 
   const totalNominal = round2(chequeValue * (schedule.length || 0));
-  const graceUsedDisplay =
-    Number.isFinite(graceDays as any) ? (graceDays as number) : 0;
+  const graceUsedDisplay = Number.isFinite(graceDays as any) ? (graceDays as number) : 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-gray-900 font-semibold">{title}</h4>
-        <div className="text-xs text-white">
-          Máximo 3 meses · cuotas iguales · Tasa anual:{" "}
+        <h4 className="text-white font-semibold">{title}</h4>
+        <div className="text-xs text-white/80">
+          Máx. 3 meses · cuotas iguales · Tasa anual:{" "}
           <span className="font-semibold">{annualInterestPct}%</span> · Gracia:{" "}
           <span className="font-semibold">{graceUsedDisplay}</span> días
         </div>
@@ -144,17 +161,17 @@ export default function PlanCalculator({
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-white mb-1">Fecha inicio</label>
+          <label className="block text-xs text-white/80 mb-1">Fecha inicio</label>
           <input
             type="date"
             value={startISO}
             onChange={(e) => setStartISO(e.target.value)}
-            className="w-full h-10 px-3 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-emerald-400"
+            className="w-full h-10 px-3 rounded-md bg-zinc-900 text-white border border-zinc-700 focus:ring-2 focus:ring-emerald-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-white mb-1">Importe total (PV)</label>
+          <label className="block text-xs text-white/80 mb-1">Importe total (PV)</label>
           <input
             type="number"
             inputMode="decimal"
@@ -162,16 +179,16 @@ export default function PlanCalculator({
             placeholder="0.00"
             value={total}
             onChange={(e) => setTotal(e.target.value)}
-            className="w-full h-10 px-3 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-emerald-400"
+            className="w-full h-10 px-3 rounded-md bg-zinc-900 text-white border border-zinc-700 focus:ring-2 focus:ring-emerald-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-white mb-1">Meses (1–3)</label>
+          <label className="block text-xs text-white/80 mb-1">Meses (1–3)</label>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
-            className="w-full h-10 px-3 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-emerald-400"
+            className="w-full h-10 px-3 rounded-md bg-zinc-900 text-white border border-zinc-700 focus:ring-2 focus:ring-emerald-400"
           >
             <option value={1}>1</option>
             <option value={2}>2</option>
@@ -179,10 +196,9 @@ export default function PlanCalculator({
           </select>
         </div>
 
-        {/* Tasa mensual informativa (simple ≈ 30 días) */}
         <div>
-          <label className="block text-xs text-white mb-1">TASA MENSUAL</label>
-          <div className="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-700 flex items-center border border-gray-300">
+          <label className="block text-xs text-white/80 mb-1">TASA MENSUAL</label>
+          <div className="w-full h-10 px-3 rounded-md bg-zinc-800 text-white flex items-center border border-zinc-700">
             {(dailyRateFromAnnual(annualInterestPct) * 30 * 100).toFixed(2)}%
           </div>
         </div>
@@ -195,12 +211,10 @@ export default function PlanCalculator({
         <Metric label="TASA ANUAL" value={`${annualInterestPct.toFixed(2)}%`} />
       </div>
 
-      <div className="rounded border border-zinc-200 overflow-hidden">
-        <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200">
-          Cronograma
-        </div>
+      <div className="rounded border border-zinc-800 overflow-hidden">
+        <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-800 text-white">Cronograma</div>
 
-        <div className="hidden md:grid grid-cols-5 px-3 py-2 text-xs text-white">
+        <div className="hidden md:grid grid-cols-5 px-3 py-2 text-xs text-white/80">
           <span>Cheque</span>
           <span>Días totales</span>
           <span>Días gravados</span>
@@ -208,25 +222,54 @@ export default function PlanCalculator({
           <span>Fecha</span>
         </div>
 
-        <div className="divide-y divide-zinc-200">
+        <div className="divide-y divide-zinc-800">
           {schedule.map((it) => (
-            <div
-              key={it.k}
-              className="grid grid-cols-1 md:grid-cols-5 px-3 py-2 text-sm"
-            >
-              <div className="font-medium">{fmt.format(it.amount)}</div>
-              <div className="text-white">{it.daysTotal}</div>
-              <div className="text-white">{it.daysCharged}</div>
-              <div className="text-white">{it.periodPct.toFixed(2)}%</div>
-              <div className="text-white">{it.dateISO}</div>
+            <div key={it.k} className="grid grid-cols-1 md:grid-cols-5 px-3 py-2 text-sm">
+              <div className="font-medium text-white">{fmt.format(it.amount)}</div>
+              <div className="text-white/90">{it.daysTotal}</div>
+              <div className="text-white/90">{it.daysCharged}</div>
+              <div className="text-white/90">{it.periodPct.toFixed(2)}%</div>
+              <div className="text-white/90">{it.dateISO}</div>
             </div>
           ))}
           {schedule.length === 0 && (
-            <div className="px-3 py-3 text-sm text-zinc-500">
+            <div className="px-3 py-3 text-sm text-zinc-400">
               Configure los datos para ver el plan.
             </div>
           )}
         </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          className="px-3 py-2 rounded border border-zinc-700 text-white hover:bg-zinc-800"
+          onClick={() => {
+            // Reset rápido al total inicial
+            if (typeof initialTotal === "number") setTotal(String(round2(initialTotal)));
+          }}
+        >
+          Restablecer PV
+        </button>
+        <button
+          type="button"
+          className="px-3 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+          onClick={() => {
+            if (!onProposeCheques) return;
+            onProposeCheques({
+              chequeValue,
+              schedule: schedule.map(({ k, dateISO, amount }) => ({ k, dateISO, amount })),
+              months,
+              presentValue: PV,
+              annualInterestPct,
+              graceDays,
+            });
+          }}
+          disabled={chequeValue <= 0 || schedule.length === 0}
+          title={chequeValue > 0 ? "Insertar cheques con estos valores/fechas" : "Complete los datos"}
+        >
+          Usar este plan (agregar cheques)
+        </button>
       </div>
     </div>
   );
@@ -234,9 +277,9 @@ export default function PlanCalculator({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-center shadow-sm">
-      <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="text-gray-900 tabular-nums mt-0.5">{value}</div>
+    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-3 text-center shadow-sm">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-400">{label}</div>
+      <div className="text-white tabular-nums mt-0.5">{value}</div>
     </div>
   );
 }
