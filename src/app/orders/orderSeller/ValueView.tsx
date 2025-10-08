@@ -1,3 +1,4 @@
+//VALUEVIEW.tsx
 "use client";
 
 import { diffFromTodayToDate } from "@/lib/dateUtils";
@@ -156,21 +157,27 @@ export default function ValueView({
 
   // ===== Normalización: en cheques, amount = neto =====
   useEffect(() => {
-    let changed = false;
-    const next = newValues.map((v) => {
-      if (v.method !== "cheque") return v;
-      const raw = v.rawAmount ?? v.amount ?? "0";
-      const { neto } = computeChequeNeto(raw, v.chequeDate);
-      const current = toNum(v.amount);
-      if (Math.abs(current - neto) > 0.009 || v.rawAmount == null) {
-        changed = true;
-        return { ...v, rawAmount: raw, amount: neto.toFixed(2) };
-      }
-      return v;
-    });
-    if (changed) setNewValues(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newValues, dailyRate, chequeGraceDays]);
+  let changed = false;
+  const next = newValues.map((v) => {
+    if (v.method !== "cheque") return v;
+    
+    // ✅ SOLO normalizar si rawAmount está undefined
+    if (v.rawAmount == null || v.rawAmount === "") {
+      const raw = v.amount ?? "0";
+      changed = true;
+      return { ...v, rawAmount: raw, amount: v.amount };
+    }
+    
+    // ⚠️ Si ya tiene rawAmount, NO recalcular (respeta valores de refinanciación)
+    return v;
+  });
+  
+  if (changed) {
+    console.log("🔄 ValueView: Normalizando cheques sin rawAmount");
+    setNewValues(next);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [newValues]);
 
   // ===== Totales =====
   const totalValues = useMemo(
@@ -747,34 +754,77 @@ export default function ValueView({
         </button>
       </div>
 
-      {/* ===== Resumen inferior ===== */}
-      {newValues.length > 0 && (
-        <div className="mt-4 space-y-1 text-sm">
-          <RowSummary
-            label={
-              <LabelWithTip label="TOTAL PAGADO" tip={EXPLAIN.totalPagado} />
-            }
-            value={currencyFmt.format(totalValues)}
-            bold
+     {newValues.length > 0 && (
+  <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
+    <div className="space-y-2 text-sm">
+      {/* 1. Objetivo (documentos seleccionados con ajustes) */}
+      <RowSummary
+        label={
+          <LabelWithTip 
+            label="Objetivo (documentos)" 
+            tip="Total a pagar según documentos seleccionados, ya con descuentos/recargos aplicados."
           />
+        }
+        value={currencyFmt.format(netToPay)}
+        bold
+      />
 
-          {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
-          <RowSummary
-            label={
-              <LabelWithTip label="DTO/REC FINACIERO" tip={EXPLAIN.dtoRecFact} />
-            }
-            value={`${docAdjustmentSigned >= 0 ? "-" : "+"}${currencyFmt.format(
-              Math.abs(docAdjustmentSigned)
-            )}`}
+      {/* 2. Total pagado (suma de valores netos) */}
+      <RowSummary
+        label={
+          <LabelWithTip 
+            label="Total pagado" 
+            tip="Suma de los pagos cargados. Para cheques se usa el monto neto (bruto menos costo financiero)."
           />
+        }
+        value={currencyFmt.format(totalValues)}
+      />
 
-          <RowSummary
-            label={<LabelWithTip label="SALDO" tip={EXPLAIN.saldo} />}
-            value={currencyFmt.format(saldo)}
-            highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
+      {/* 3. Divisor visual */}
+      <div className="border-t border-zinc-700 my-2" />
+
+      {/* 4. Diferencia (debe ser 0 para cerrar perfecto) */}
+      <RowSummary
+        label={
+          <LabelWithTip 
+            label="Diferencia" 
+            tip="Objetivo menos total pagado. Debe ser $0 para que el pago cierre exacto."
           />
+        }
+        value={currencyFmt.format(saldo)}
+        bold
+        highlight={
+          Math.abs(saldo) < 0.01 
+            ? "ok"      // verde: cierra perfecto
+            : saldo > 0 
+            ? "warn"    // amarillo: falta cubrir
+            : "bad"     // rojo: exceso
+        }
+      />
+
+      {/* 5. Mensaje contextual */}
+      {Math.abs(saldo) >= 0.01 && (
+        <div className={`text-xs mt-2 px-2 py-1 rounded ${
+          saldo > 0 
+            ? "bg-amber-500/10 text-amber-300 border border-amber-500/30"
+            : "bg-red-500/10 text-red-300 border border-red-500/30"
+        }`}>
+          {saldo > 0 
+            ? `⚠️ Falta cubrir ${currencyFmt.format(saldo)}`
+            : `❌ Exceso de ${currencyFmt.format(Math.abs(saldo))}`
+          }
         </div>
       )}
+
+      {Math.abs(saldo) < 0.01 && (
+        <div className="text-xs mt-2 px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+          ✅ Pago completo
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
 
       {hasErrors && (
         <div className="mt-3 text-sm text-red-400">

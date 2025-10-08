@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useGetInterestRateQuery } from "@/redux/services/settingsApi";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
 
 /* ===== Helpers de fecha ===== */
@@ -18,9 +17,12 @@ function addDaysLocal(dateISO: string, days: number) {
 }
 
 /* ===== Matemática ===== */
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-const dailyRateFromAnnual = (annualInterestPct: number) =>
-  (annualInterestPct / 100) / 365;
+const dailyRateFromAnnual = (annualInterestPct: number) => {
+  const normalized = typeof annualInterestPct === 'number' && isFinite(annualInterestPct) 
+    ? annualInterestPct 
+    : 96;
+  return normalized / 100 / 365;
+};
 
 function getChequeDays(chequeISO?: string, graceDays?: number) {
   const daysTotal = diffFromTodayToDate(chequeISO) || 0;
@@ -29,59 +31,90 @@ function getChequeDays(chequeISO?: string, graceDays?: number) {
   return { daysTotal, daysCharged, graceUsed: g };
 }
 
-function computeEqualChequeAmountFromISOs(params: {
-  presentValue: number;
+// ✅ FUNCIÓN CORREGIDA: genera cheques cuyo NETO sume exacto el objetivo
+function computeEqualNetCheques(params: {
+  targetNet: number; // el monto NETO total que deben sumar los cheques
   chequeDatesISO: string[];
   annualInterestPct: number;
   graceDays?: number;
 }) {
-  const { presentValue: PV, chequeDatesISO, annualInterestPct, graceDays } = params;
-  if (PV <= 0 || chequeDatesISO.length === 0) return 0;
+  const { targetNet, chequeDatesISO, annualInterestPct, graceDays } = params;
+  if (targetNet <= 0 || chequeDatesISO.length === 0) return [];
 
-  const iDaily = dailyRateFromAnnual(annualInterestPct);
-  let sumInvDf = 0;
-  for (const iso of chequeDatesISO) {
-    const { daysCharged } = getChequeDays(iso, graceDays);
-    const df = 1 + iDaily * daysCharged; // interés simple
-    sumInvDf += 1 / df;
+  const n = chequeDatesISO.length;
+  const daily = dailyRateFromAnnual(annualInterestPct);
+
+  // ✅ Trabajar en CENTAVOS para evitar errores de redondeo
+  const toCents = (num: number) => Math.round(num * 100);
+  const fromCents = (cents: number) => cents / 100;
+
+  const targetCents = toCents(targetNet);
+  const cheques = [];
+  let accumulatedCents = 0;
+
+  console.log("🎯 Target en centavos:", targetCents);
+
+  for (let i = 0; i < n; i++) {
+    const iso = chequeDatesISO[i];
+    const { daysTotal, daysCharged } = getChequeDays(iso, graceDays);
+    const interestPct = daily * daysCharged;
+    const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+
+    let netCents: number;
+
+    if (i === n - 1) {
+      // ✅ ÚLTIMO CHEQUE: asignar el residuo EXACTO
+      netCents = targetCents - accumulatedCents;
+      console.log(`✅ Cheque ${i + 1} (ÚLTIMO): ${fromCents(netCents)} (ajustado para cerrar)`);
+    } else {
+      // Cheques intermedios: división entera en centavos
+      netCents = Math.floor(targetCents / n);
+      console.log(`📌 Cheque ${i + 1}: ${fromCents(netCents)} (base)`);
+    }
+
+    const net = fromCents(netCents);
+    const raw = net / safeDen; // bruto necesario para obtener ese neto
+    
+    accumulatedCents += netCents;
+
+    cheques.push({
+      dateISO: iso,
+      daysTotal,
+      daysCharged,
+      net: parseFloat(net.toFixed(2)),
+      raw: parseFloat(raw.toFixed(2)),
+      periodPct: interestPct * 100,
+    });
   }
-  if (sumInvDf === 0) return 0;
-  return round2(PV / sumInvDf);
-}
 
-function buildScheduleWithRates(params: {
-  startISO: string;
-  n: number;
-  chequeValue: number;
-  annualInterestPct: number;
-  graceDays?: number;
-}) {
-  const { startISO, n, chequeValue, annualInterestPct, graceDays } = params;
-  const iDaily = dailyRateFromAnnual(annualInterestPct);
+  // ✅ Verificación final
+  const sumNets = cheques.reduce((a, c) => a + c.net, 0);
+  const diff = Math.abs(targetNet - sumNets);
+  
+  console.log("💰 Suma de netos:", sumNets);
+  console.log("🎯 Target:", targetNet);
+  console.log("📊 Diferencia:", diff);
 
-  const items = [];
-  for (let k = 1; k <= n; k++) {
-    const days = 30 * k;
-    const dateISO = addDaysLocal(startISO, days);
-    const { daysTotal, daysCharged, graceUsed } = getChequeDays(dateISO, graceDays);
-    const periodPct = iDaily * daysCharged * 100;
-    items.push({ k, days, dateISO, daysTotal, daysCharged, graceUsed, amount: chequeValue, periodPct });
+  if (diff > 0.005) {
+    console.error("❌ ERROR: Diferencia mayor a medio centavo");
   }
-  return items;
+
+  return cheques;
 }
 
 /* ====== UI ====== */
 export default function PlanCalculator({
   title = "Cálculo de pagos a plazo (30/60/90)",
   graceDays,
-  initialTotal,                 // 👈 NUEVO
-  onProposeCheques,            // 👈 NUEVO
+  initialTotal,
+  onProposeCheques,
+  annualInterestPct,
 }: {
   title?: string;
   graceDays?: number;
   initialTotal?: number;
+  annualInterestPct: number;
   onProposeCheques?: (plan: {
-    chequeValue: number;
     schedule: Array<{ k: number; dateISO: string; amount: number }>;
     months: number;
     presentValue: number;
@@ -89,18 +122,15 @@ export default function PlanCalculator({
     graceDays?: number;
   }) => void;
 }) {
-  const { data: interestSetting } = useGetInterestRateQuery();
-  const annualInterestPct =
-    typeof interestSetting?.value === "number" ? interestSetting.value : 96;
-
   const [months, setMonths] = useState<number>(3);
   const [startISO, setStartISO] = useState<string>(() => toYMD(new Date()));
   const [total, setTotal] = useState<string>("");
 
-  // Prefill del total que viene del padre
+  // ✅ Prefill del total cuando viene del padre
   useEffect(() => {
-    if (typeof initialTotal === "number" && isFinite(initialTotal)) {
-      setTotal(String(round2(initialTotal)));
+    if (typeof initialTotal === "number" && isFinite(initialTotal) && initialTotal > 0) {
+      setTotal(initialTotal.toFixed(2));
+      console.log("📥 PlanCalculator recibió initialTotal:", initialTotal);
     }
   }, [initialTotal]);
 
@@ -118,14 +148,18 @@ export default function PlanCalculator({
   const PV = parseFloat(total || "0") || 0;
 
   const chequeDates = useMemo(
-    () => Array.from({ length: months }, (_, i) => addDaysLocal(startISO, 30 * (i + 1))),
+    () =>
+      Array.from({ length: months }, (_, i) =>
+        addDaysLocal(startISO, 30 * (i + 1))
+      ),
     [startISO, months]
   );
 
-  const chequeValue = useMemo(
+  // ✅ Usar computeEqualNetCheques corregida
+  const schedule = useMemo(
     () =>
-      computeEqualChequeAmountFromISOs({
-        presentValue: PV,
+      computeEqualNetCheques({
+        targetNet: PV,
         chequeDatesISO: chequeDates,
         annualInterestPct,
         graceDays,
@@ -133,20 +167,11 @@ export default function PlanCalculator({
     [PV, chequeDates, annualInterestPct, graceDays]
   );
 
-  const schedule = useMemo(
-    () =>
-      buildScheduleWithRates({
-        startISO,
-        n: months,
-        chequeValue,
-        annualInterestPct,
-        graceDays,
-      }),
-    [startISO, months, chequeValue, annualInterestPct, graceDays]
-  );
-
-  const totalNominal = round2(chequeValue * (schedule.length || 0));
-  const graceUsedDisplay = Number.isFinite(graceDays as any) ? (graceDays as number) : 0;
+  const totalNominal = schedule.reduce((sum, it) => sum + it.raw, 0);
+  const totalNet = schedule.reduce((sum, it) => sum + it.net, 0);
+  const graceUsedDisplay = Number.isFinite(graceDays as any)
+    ? (graceDays as number)
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -161,7 +186,9 @@ export default function PlanCalculator({
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-white/80 mb-1">Fecha inicio</label>
+          <label className="block text-xs text-white/80 mb-1">
+            Fecha inicio
+          </label>
           <input
             type="date"
             value={startISO}
@@ -171,7 +198,9 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white/80 mb-1">Importe total (PV)</label>
+          <label className="block text-xs text-white/80 mb-1">
+            Importe total (NETO)
+          </label>
           <input
             type="number"
             inputMode="decimal"
@@ -184,7 +213,9 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white/80 mb-1">Meses (1–3)</label>
+          <label className="block text-xs text-white/80 mb-1">
+            Meses (1–3)
+          </label>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
@@ -197,89 +228,179 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white/80 mb-1">TASA MENSUAL</label>
+          <label className="block text-xs text-white/80 mb-1">
+            TASA MENSUAL
+          </label>
           <div className="w-full h-10 px-3 rounded-md bg-zinc-800 text-white flex items-center border border-zinc-700">
             {(dailyRateFromAnnual(annualInterestPct) * 30 * 100).toFixed(2)}%
           </div>
         </div>
       </div>
 
+      {/* ✅ MÉTRICAS MEJORADAS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Metric label="CUOTA / CHEQUE" value={fmt.format(chequeValue || 0)} />
-        <Metric label="CANT. CHEQUES" value={String(schedule.length)} />
-        <Metric label="TOTAL NOMINAL" value={fmt.format(totalNominal)} />
-        <Metric label="TASA ANUAL" value={`${annualInterestPct.toFixed(2)}%`} />
+        <Metric 
+          label="CHEQUES" 
+          value={String(schedule.length)}
+          highlight
+        />
+        <Metric 
+          label="NETO TOTAL" 
+          value={fmt.format(totalNet)}
+          highlight={Math.abs(totalNet - PV) < 0.01}
+        />
+        <Metric 
+          label="BRUTO TOTAL" 
+          value={fmt.format(totalNominal)} 
+        />
+        <Metric 
+          label="INTERÉS" 
+          value={fmt.format(totalNominal - totalNet)} 
+        />
       </div>
 
+      {/* ✅ CRONOGRAMA MEJORADO */}
       <div className="rounded border border-zinc-800 overflow-hidden">
-        <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-800 text-white">Cronograma</div>
+        <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-800 text-white bg-zinc-800/50">
+          Cronograma de cheques
+        </div>
 
-        <div className="hidden md:grid grid-cols-5 px-3 py-2 text-xs text-white/80">
-          <span>Cheque</span>
-          <span>Días totales</span>
-          <span>Días gravados</span>
-          <span>% período</span>
+        <div className="hidden md:grid grid-cols-6 px-3 py-2 text-xs text-white/60 bg-zinc-800/30">
+          <span>#</span>
           <span>Fecha</span>
+          <span>Días total</span>
+          <span>Días gravados</span>
+          <span className="text-right">Neto</span>
+          <span className="text-right">Bruto</span>
         </div>
 
         <div className="divide-y divide-zinc-800">
-          {schedule.map((it) => (
-            <div key={it.k} className="grid grid-cols-1 md:grid-cols-5 px-3 py-2 text-sm">
-              <div className="font-medium text-white">{fmt.format(it.amount)}</div>
-              <div className="text-white/90">{it.daysTotal}</div>
-              <div className="text-white/90">{it.daysCharged}</div>
-              <div className="text-white/90">{it.periodPct.toFixed(2)}%</div>
+          {schedule.map((it, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 md:grid-cols-6 px-3 py-2 text-sm hover:bg-zinc-800/30 transition-colors"
+            >
+              <div className="font-medium text-white">
+                #{idx + 1}
+              </div>
               <div className="text-white/90">{it.dateISO}</div>
+              <div className="text-white/90">{it.daysTotal}</div>
+              <div className="text-white/90">
+                {it.daysCharged} <span className="text-xs text-white/60">({it.periodPct.toFixed(2)}%)</span>
+              </div>
+              <div className="text-right text-emerald-400 font-semibold">
+                {fmt.format(it.net)}
+              </div>
+              <div className="text-right text-white/90">
+                {fmt.format(it.raw)}
+              </div>
             </div>
           ))}
           {schedule.length === 0 && (
-            <div className="px-3 py-3 text-sm text-zinc-400">
+            <div className="px-3 py-3 text-sm text-zinc-400 text-center">
               Configure los datos para ver el plan.
             </div>
           )}
         </div>
       </div>
 
+      {/* ✅ VERIFICACIÓN DE DIFERENCIA */}
+      {schedule.length > 0 && Math.abs(totalNet - PV) >= 0.01 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div className="text-sm text-amber-200">
+              <strong>Atención:</strong> Diferencia de {fmt.format(Math.abs(totalNet - PV))} detectada.
+              Verificá los cálculos.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ ACCIONES */}
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
-          className="px-3 py-2 rounded border border-zinc-700 text-white hover:bg-zinc-800"
+          className="px-3 py-2 rounded border border-zinc-700 text-white hover:bg-zinc-800 transition-colors"
           onClick={() => {
-            // Reset rápido al total inicial
-            if (typeof initialTotal === "number") setTotal(String(round2(initialTotal)));
+            if (typeof initialTotal === "number" && initialTotal > 0) {
+              setTotal(initialTotal.toFixed(2));
+            } else {
+              setTotal("");
+            }
           }}
         >
-          Restablecer PV
+          Restablecer
         </button>
+        
         <button
           type="button"
-          className="px-3 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+          className={`px-4 py-2 rounded font-medium transition-colors ${
+            schedule.length > 0 && PV > 0
+              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+              : "bg-zinc-700 text-zinc-400 cursor-not-allowed"
+          }`}
           onClick={() => {
-            if (!onProposeCheques) return;
+            if (!onProposeCheques || schedule.length === 0 || PV <= 0) return;
+            
+            console.log("📤 Enviando plan al padre:", {
+              schedule: schedule.map((it, idx) => ({
+                k: idx + 1,
+                dateISO: it.dateISO,
+                amount: it.net,
+              })),
+              presentValue: PV,
+            });
+            
             onProposeCheques({
-              chequeValue,
-              schedule: schedule.map(({ k, dateISO, amount }) => ({ k, dateISO, amount })),
+              schedule: schedule.map((it, idx) => ({
+                k: idx + 1,
+                dateISO: it.dateISO,
+                amount: it.net, // ✅ neto imputable
+              })),
               months,
               presentValue: PV,
               annualInterestPct,
               graceDays,
             });
           }}
-          disabled={chequeValue <= 0 || schedule.length === 0}
-          title={chequeValue > 0 ? "Insertar cheques con estos valores/fechas" : "Complete los datos"}
+          disabled={schedule.length === 0 || PV <= 0}
+          title={
+            PV > 0
+              ? "Insertar estos cheques en el pago"
+              : "Complete el importe total"
+          }
         >
-          Usar este plan (agregar cheques)
+          Usar este plan ({schedule.length} cheques)
         </button>
       </div>
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ 
+  label, 
+  value, 
+  highlight = false 
+}: { 
+  label: string; 
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-3 text-center shadow-sm">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-400">{label}</div>
-      <div className="text-white tabular-nums mt-0.5">{value}</div>
+    <div className={`rounded-md border p-3 text-center shadow-sm transition-colors ${
+      highlight 
+        ? "border-emerald-500/50 bg-emerald-500/10" 
+        : "border-zinc-800 bg-zinc-900"
+    }`}>
+      <div className="text-[11px] uppercase tracking-wide text-zinc-400">
+        {label}
+      </div>
+      <div className={`tabular-nums mt-0.5 font-semibold ${
+        highlight ? "text-emerald-400" : "text-white"
+      }`}>
+        {value}
+      </div>
     </div>
   );
 }

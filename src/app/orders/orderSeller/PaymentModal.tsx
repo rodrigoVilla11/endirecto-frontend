@@ -1,3 +1,4 @@
+//PAYMENTMODAL.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -28,6 +29,17 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// arriba del archivo:
+function normalizeAnnualPct(x: number) {
+  // Si viene como fracción diaria (0 < x < 1), convierto a % anual
+  if (x > 0 && x < 1) return x * 365 * 100;
+  return x; // ya es % anual
+}
+const dailyRateFromAnnual = (annualInterestPct: number) => {
+  const annualPct = normalizeAnnualPct(annualInterestPct); // % anual
+  return annualPct / 100 / 365; // fracción diaria
+};
 
 export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { t } = useTranslation();
@@ -131,11 +143,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   function computeChequeMeta(v: ValueItem) {
     const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0; // monto ORIGINAL
     const days_total = daysBetweenToday(v.chequeDate);
-    const days_charged = Math.max(
-      0,
-      days_total - (checkGrace?.value ? checkGrace?.value : 45)
-    );
-    const daily = annualInterestPct / 100 / 365;
+    const days_charged = Math.max(0, days_total - (checkGrace?.value ?? 45));
+    const daily = dailyRateFromAnnual(annualInterestPct);
     const interest_pct = daily * days_charged; // proporción (0.1427 = 14.27%)
     const interest_amount = +(raw * interest_pct).toFixed(2);
     const net_amount = +(raw - interest_amount).toFixed(2); // lo que se imputa
@@ -185,9 +194,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
   const { userData } = useAuth();
 
-  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-  const round4 = (n: number) =>
-    Math.round((n + Number.EPSILON) * 10000) / 10000;
+  // const   = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  // const round4 = (n: number) =>
+  //   Math.round((n + Number.EPSILON) * 10000) / 10000;
 
   // TODO: reemplazá por tu fuente real (AuthContext / Redux / NextAuth)
   const getCurrentUserId = () => {
@@ -236,18 +245,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     if (!selectedClientId) return alert("Falta customer.id.");
     if (newValues.length === 0) return alert("Agregá al menos un valor.");
-
+    if (computedDiscounts.length > 0) {
+      const diff = totalFinal - totalValues;
+      if (Math.abs(diff) > 0.5) {
+        const msg =
+          diff > 0
+            ? `Falta cubrir ${currencyFmt.format(diff)}. ¿Continuar?`
+            : `Hay ${currencyFmt.format(-diff)} de más. ¿Continuar?`;
+        if (!confirm(msg)) return;
+      }
+    }
     setIsSubmittingPayment(true);
     try {
-      let valuesRawTotal = 0; // suma de montos originales (cheque usa raw)
-      let chequeInterestTotal = 0; // suma de intereses calculados en cheques
+      let valuesRawTotal = 0;
+      let chequeInterestTotal = 0;
 
-      // dentro de handleCreatePayment, donde armás valuesPayload:
       const valuesPayload = newValues.map((v) => {
-        const amountNet = round2(parseFloat(v.amount || "0"));
-
+        const amountNet = parseFloat(v.amount || "0");
         const common = {
-          // 👇 OJO: para cheques vamos a sobre-escribir amount más abajo
           amount: amountNet,
           concept: v.selectedReason,
           method: v.method,
@@ -261,45 +276,43 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           return common;
         }
 
-        // 👉 CHEQUE: el amount del payload debe ser el neto calculado
         const m = computeChequeMeta(v);
         chequeInterestTotal += m.interest_amount;
         valuesRawTotal += m.raw;
 
         return {
           ...common,
-          amount: round2(m.net_amount), // ⬅️ clave: forzamos que amount = net_amount
-          raw_amount: round2(m.raw),
+          amount: m.net_amount,
+          raw_amount: m.raw,
           cheque: {
             collection_date: v.chequeDate || null,
             days_total: m.days_total,
             grace_days: checkGrace?.value,
             days_charged: m.days_charged,
             annual_interest_pct: annualInterestPct,
-            daily_rate: round4(m.daily),
-            interest_pct: round4(m.interest_pct),
-            interest_amount: round2(m.interest_amount),
-            net_amount: round2(m.net_amount), // coincide con amount
+            daily_rate: m.daily,
+            interest_pct: m.interest_pct,
+            interest_amount: m.interest_amount,
+            net_amount: m.net_amount,
             cheque_number: v.chequeNumber || undefined,
           },
         };
       });
 
-      // ——— Totales generales (incluyendo extras de valores) ———
+      // ✅ TOTALS con campo adicional
       const totals = {
-        gross: round2(totalBase), // base por documentos
-        // 🔁 ahora el ajuste mostrado es el aplicado a VALORES
-        discount: round2(totalAdjustmentSigned), // +desc / -rec aplicado a valores
-        net: round2(totalNetForUI), // total a pagar (base - ajuste en valores)
-        values: round2(totalValues), // suma de valores imputables (cheque ya neto)
-        values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
-        cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
+        gross: totalBase,
+        discount: totalAdjustmentSigned,
+        net: totalNetForUI,
+        values: totalValues,
+        values_raw: valuesRawTotal,
+        cheque_interest: chequeInterestTotal,
         cheque_grace_days: checkGrace?.value,
-        interest_annual_pct: annualInterestPct,
-        diff: round2(totalNetForUI - totalValues),
+        interest_annual_pct: normalizeAnnualPct(annualInterestPct),
+        diff: totalNetForUI - totalValues,
+        docs_with_adjustments: totalFinal, // ✅ NUEVO
       };
 
-      // ——— Payload final ———
       const payload = {
         status: "pending",
         type: paymentTypeUI,
@@ -311,29 +324,26 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         user: { id: String(userId) },
         seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
-
         totals,
-        total: round4(totalToPayWithValuesAdj),
-
+        total: totalNetForUI,
         documents: computedDiscounts.map((d) => ({
           document_id: d.document_id,
           number: d.number,
           days_used: isNaN(d.days) ? undefined : d.days,
-          // 👇 pasa el flag manual para que quede rastreado
           rule_applied: buildRuleApplied(
             d.days,
             d.noDiscountBlocked,
             d.manualTenApplied
           ),
-          base: round2(d.base),
-          discount_rate: round4(d.rate),
-          discount_amount: round2(d.signedAdjustment),
-          final_amount: round2(d.finalAmount),
+          base: d.base,
+          discount_rate: d.rate,
+          discount_amount: d.signedAdjustment,
+          final_amount: d.finalAmount,
           note: d.note || undefined,
         })),
-
         values: valuesPayload,
       } as any;
+
       const created = await createPayment(payload).unwrap();
 
       const valuesSummary = (created.values ?? [])
@@ -350,49 +360,46 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           title: "PAGO REGISTRADO",
           type: "PAGO",
           description: `${valuesSummary} | Neto: ${currencyFmt.format(
-            created?.totals?.net ?? totalToPayWithValuesAdj
+            created?.totals?.net ?? totalNetForUI // ✅ usar totalNetForUI
           )}`,
           link: "/payments",
           schedule_from: new Date(),
           schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       }).unwrap();
-      try {
-        const now = new Date();
-        const in7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+      // Notificación a usuario
+      try {
         await addNotificationToUserById({
-          id: "67a60be545b75a39f99a485b", // _id del user
+          id: "67a60be545b75a39f99a485b",
           notification: {
             title: "Pago registrado",
-            type: "PAGO", // si tu backend aún no soporta 'PAGO', usar "NOVEDAD"
+            type: "PAGO",
             description: `Cliente ${selectedClientId} - ${
               customer?.name
-            }  — Neto ${currencyFmt.format(totalToPayWithValuesAdj)}`,
+            } — Neto ${currencyFmt.format(totalNetForUI)}`,
             link: "/payments",
-            schedule_from: now,
-            schedule_to: in7d,
+            schedule_from: new Date(),
+            schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             customer_id: String(selectedClientId),
           },
         }).unwrap();
       } catch (err) {
-        console.warn(
-          "Pago creado, pero falló la notificación al usuario:",
-          err
-        );
+        console.warn("Notificación al usuario falló:", err);
       }
+
+      // ✅ RESETEAR ESTADO
       setIsConfirmModalOpen(false);
       setSubmittedPayment(true);
       setNewValues([]);
       setNewPayment([]);
       setSelectedRows([]);
       setComments("");
+      setTotalFinal(0); // ✅ NUEVO
       onClose();
     } catch (e) {
       console.error("CreatePayment error:", e);
-      alert(
-        "No se pudo crear el pago. Revisá enums/minúsculas y los IDs anidados."
-      );
+      alert("No se pudo crear el pago. Revisá la consola.");
     } finally {
       setIsSubmittingPayment(false);
     }
@@ -483,16 +490,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       (a, v) => a + parseFloat(v.amount || "0"),
       0
     );
-    if (totalValues <= 0 || docs.length === 0) return 0;
+    const totalBase = docs.reduce((a: number, d: any) => a + (d.base || 0), 0);
+    if (totalValues <= 0 || docs.length === 0 || totalBase <= 0) return 0;
 
     let totalAdj = 0;
-
     for (const d of docs) {
-      // aplica la tasa de CADA documento sobre el total de pagos
-      totalAdj += totalValues * d.rate;
+      const weight = d.base / totalBase; // participación del doc
+      totalAdj += totalValues * d.rate * weight;
     }
-
-    return round2(totalAdj);
+    return +totalAdj.toFixed(2);
   }
 
   // 2) AJUSTE TOTAL aplicado sobre VALORES
@@ -501,7 +507,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     computedDiscounts
   );
 
-  const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
+  const totalToPayWithValuesAdj = totalBase - totalAdjustmentSigned;
 
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
@@ -539,18 +545,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     0
   );
 
+  console.log({totalDocsFinal, totalFinal})
   // Flag para saber si estamos en “pagar total por comprobante”
   const [payTotalDocMode, setPayTotalDocMode] = useState(false);
 
   // Si el usuario modifica los valores, salimos del modo “pagar total”
   useEffect(() => {
-    if (newValues.length !== 1) {
+    const hasPayTotal = newValues.some(
+      (v) => v.selectedReason === PAY_TOTAL_REASON
+    );
+    const hasRefi = newValues.some(
+      (v) => v.selectedReason === "Refinanciación"
+    );
+
+    if (hasRefi) {
+      // En refinanciación SIEMPRE queremos cerrar por “total por comprobante”
+      setPayTotalDocMode(true);
+      return;
+    }
+
+    if (!hasPayTotal) {
+      // No hay “Pagar total” ni refinanciación → salimos del modo
       setPayTotalDocMode(false);
       return;
     }
-    const only = parseFloat(newValues[0].amount || "0");
-    if (Math.abs(only - round2(totalDocsFinal)) > 0.01)
-      setPayTotalDocMode(false);
+
+    // Hay “Pagar total”: mantené el modo solo si el único valor calza el total
+    const only = newValues.find((v) => v.selectedReason === PAY_TOTAL_REASON);
+    const amt = parseFloat(only?.amount || "0");
+    const docs = totalDocsFinal;
+
+    setPayTotalDocMode(newValues.length === 1 && Math.abs(amt - docs) <= 0.01);
   }, [newValues, totalDocsFinal]);
 
   // Razones estandarizadas (evita strings mágicos en varios lugares)
@@ -567,8 +592,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (idx === -1) return;
 
     const current = newValues[idx];
-    const amountNum = round2(parseFloat(current.amount || "0"));
-    const docsFinal = round2(totalDocsFinal);
+    const amountNum = parseFloat(current.amount || "0");
+    const docsFinal = totalDocsFinal;
 
     // Si el monto ya no coincide con el total final por comprobantes,
     // desactivamos el modo y renombramos el concepto.
@@ -583,39 +608,35 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }, [newValues, totalDocsFinal]);
 
   // Neto modelo “dto sobre valores”
-  const net_by_values = round2(totalBase - totalAdjustmentSigned);
+  const net_by_values = totalBase - totalAdjustmentSigned;
 
   // Neto a mostrar: si es “pagar total”, usamos el final por comprobante
-  const totalNetForUI = payTotalDocMode
-    ? round2(totalDocsFinal)
-    : net_by_values;
-
-  // Diferencia coherente con el neto mostrado
-  const diff = round2(totalNetForUI - totalValues);
-
-  // Formateos para UI
-  const formattedDiff = currencyFmt.format(diff);
-  if (!isOpen) return null;
-
-  // --- Métricas para las 4 filas nuevas ---
-  const sumRate = computedDiscounts.reduce(
-    (a, d) => a + (Number.isFinite(d.rate) ? d.rate : 0),
-    0
-  );
-  // días por encima de 45 (solo cuentan como "agravados")
-  const totalDaysOver45 = computedDiscounts.reduce((a, d) => {
-    const dd = Number.isFinite(d.days) ? d.days : 0;
-    return a + Math.max(0, dd - 45);
-  }, 0);
-
-  // % efectivo (la suma de tasas que estás aplicando sobre *valores*)
-  const pctEffective = sumRate * 100;
+  const totalNetForUI = payTotalDocMode ? totalDocsFinal : net_by_values;
 
   // Desc/Rec financiero en pesos (con signo visual)
   const formattedFinAdjMoney = `${
     totalAdjustmentSigned >= 0 ? "-" : "+"
   }${currencyFmt.format(Math.abs(totalAdjustmentSigned))}`;
 
+
+  useEffect(() => {
+  if (newValues.length > 0) {
+    const sumNets = newValues.reduce((a, v) => a + parseFloat(v.amount || "0"), 0);
+    console.log("💰 DEBUG:", {
+      totalFinal,
+      totalDocsFinal,
+      totalValues,
+      sumNets,
+      diff: totalFinal - sumNets,
+      cheques: newValues.map(v => ({
+        method: v.method,
+        amount: v.amount,
+        rawAmount: v.rawAmount,
+        date: v.chequeDate
+      }))
+    });
+  }
+}, [newValues, totalFinal]);
   return (
     <div
       className="fixed inset-0 bg-black/90 z-50"
@@ -673,11 +694,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
               }
             />
-            
-            <InfoRow label="Total a pagar a la fecha" value= {currencyFmt.format(totalFinal)} />
+
+            <InfoRow
+              label="Total a pagar a la fecha"
+              value={currencyFmt.format(totalFinal)}
+            />
 
             {/* Valores y Diferencia (igual que antes) */}
-            <InfoRow
+            {/* <InfoRow
               label="Saldo"
               value={formattedDiff}
               valueClassName={
@@ -687,7 +711,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   ? "text-amber-400"
                   : "text-red-500"
               }
-            />
+            /> */}
           </div>
 
           {/* Tabs */}
@@ -771,21 +795,19 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </button>
                 </div>
 
-                {/* Botón para PAGAR TOTAL (descuento aplicado al comprobante) */}
+                {/* Botón PAGAR TOTAL */}
                 <button
                   className="mt-1 px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
                   onClick={() => {
-                    const method: PaymentMethod = "efectivo";
-                    const amount = round2(totalDocsFinal);
+                    const amount = totalFinal; // ✅ usar el total correcto
 
                     const base: ValueItem = {
                       amount: amount.toString(),
                       selectedReason: PAY_TOTAL_REASON,
-                      method,
+                      method: "efectivo",
                     };
 
-                    setPayTotalDocMode(true); // 👈 activamos modo total por doc
-
+                    setPayTotalDocMode(true);
                     setNewValues((prev) => {
                       const idx = prev.findIndex(
                         (v) => v.selectedReason === base.selectedReason
@@ -798,49 +820,163 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       return [base, ...prev];
                     });
                   }}
-                  disabled={computedDiscounts.length === 0}
+                  disabled={totalFinal <= 0}
+                  title={
+                    totalFinal <= 0
+                      ? "Seleccioná documentos primero"
+                      : `Pagar ${currencyFmt.format(totalFinal)}`
+                  }
                 >
-                  Pagar total
+                  Pagar total ({currencyFmt.format(totalFinal)})
                 </button>
-                <button
-                  className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
-                  onClick={() => setShowRefi((s) => !s)}
-                  disabled={computedDiscounts.length === 0}
-                  title="Armar plan en 30/60/90 con cheques iguales"
-                >
-                  {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
-                </button>
-                {showRefi && (
-                  <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50">
-                    <PlanCalculator
-                      title="Refinanciación 30/60/90"
-                      graceDays={checkGrace?.value ?? 0}
-                      initialTotal={totalNetForUI} // 👈 PV = neto que estás mostrando
-                      onProposeCheques={({ chequeValue, schedule }) => {
-                        // Construye n cheques con fechas/montos del plan:
-                        const cheques = schedule.map((it) => ({
-                          method: "cheque" as const,
-                          selectedReason: "Refinanciación",
-                          // Para coherencia con tu computeChequeMeta, seteo ambos:
-                          rawAmount: String(chequeValue),
-                          amount: String(chequeValue), // (neto lo va a recalcular computeChequeMeta)
-                          chequeDate: it.dateISO, // ISO YYYY-MM-DD
-                          bank: undefined,
-                          receiptUrl: undefined,
-                          receiptOriginalName: undefined,
-                          chequeNumber: undefined,
-                        }));
+                {/* ✅ BOTÓN REFINANCIAR CORREGIDO */}
+                  <button
+              className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60 hover:bg-red-700"
+              onClick={() => {
+                setShowRefi((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    // Al abrir: limpiar valores previos y preparar para refinanciación
+                    setNewValues([]);
+                    setPayTotalDocMode(false); // dejar que el plan calcule
+                    setActiveTab("values");
+                  }
+                  return next;
+                });
+              }}
+              disabled={totalFinal <= 0}
+              title={
+                totalFinal <= 0
+                  ? "Seleccioná documentos primero"
+                  : "Armar plan 30/60/90 con cheques"
+              }
+            >
+              {showRefi ? "Cerrar refinanciación" : `Refinanciar (${currencyFmt.format(totalFinal)})`}
+            </button>
 
-                        // Mezclo con valores existentes (si querés reemplazar, podés no usar spread):
-                        setNewValues((prev) => [...cheques, ...prev]);
+            {/* ✅ PANEL DE REFINANCIACIÓN */}
+            {showRefi && (
+              <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50">
+                <PlanCalculator
+                  title="Refinanciación 30/60/90"
+                  graceDays={checkGrace?.value ?? 45}
+                  annualInterestPct={annualInterestPct}
+                  initialTotal={totalFinal} // ✅ pasar el total correcto
+                  onProposeCheques={({ schedule }) => {
+                    // ✅ OBJETIVO NETO: totalDocsWithAdjustments
+                    const targetPV = totalFinal;
+                    const n = schedule.length;
 
-                        // Cambio de tab y cierro panel
-                        setActiveTab("values");
-                        setShowRefi(false);
-                      }}
-                    />
-                  </div>
-                )}
+                    if (n === 0 || targetPV <= 0) {
+                      alert("No se puede refinanciar sin documentos seleccionados");
+                      return;
+                    }
+
+                    // Parámetros para calcular cheques
+                    const daily = dailyRateFromAnnual(annualInterestPct);
+                    const grace = checkGrace?.value ?? 45;
+
+                    // Helper para días desde hoy
+                    function daysBetween(iso?: string) {
+                      if (!iso) return 0;
+                      const d = new Date(iso);
+                      const today = new Date();
+                      const start = new Date(
+                        today.getFullYear(),
+                        today.getMonth(),
+                        today.getDate()
+                      ).getTime();
+                      const end = new Date(
+                        d.getFullYear(),
+                        d.getMonth(),
+                        d.getDate()
+                      ).getTime();
+                      const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                      return Math.max(diff, 0);
+                    }
+
+                    // ✅ REPARTO EQUITATIVO con ajuste en el último
+                    const cheques: ValueItem[] = [];
+                    let accumulatedNet = 0;
+
+                    schedule.forEach((it, idx) => {
+                      const daysTotal = daysBetween(it.dateISO);
+                      const daysCharged = Math.max(0, daysTotal - grace);
+                      const interestPct = daily * daysCharged;
+                      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+
+                      let netAmount: number;
+
+                      if (idx === n - 1) {
+                        // ✅ ÚLTIMO CHEQUE: ajustar para cerrar EXACTO
+                        netAmount = targetPV - accumulatedNet;
+                      } else {
+                        // Cheques intermedios: reparto equitativo
+                        netAmount = targetPV / n;
+                      }
+
+                      // Calcular bruto (raw) desde el neto
+                      const rawAmount = netAmount / safeDen;
+
+                      accumulatedNet += netAmount;
+
+                      cheques.push({
+                        method: "cheque",
+                        selectedReason: "Refinanciación",
+                        amount: netAmount.toFixed(2), // ✅ neto imputable
+                        rawAmount: rawAmount.toFixed(2), // ✅ bruto ingresado
+                        chequeDate: it.dateISO,
+                      });
+                    });
+
+                    // ✅ VERIFICACIÓN FINAL (debug)
+                    const sumNets = cheques.reduce(
+                      (a, c) => a + parseFloat(c.amount),
+                      0
+                    );
+                    const diff = Math.abs(targetPV - sumNets);
+                    
+                    if (diff > 0.01) {
+                      console.warn(`⚠️ Diferencia de centavos detectada: ${diff.toFixed(2)}`);
+                      // Ajuste de emergencia en el último cheque
+                      const last = cheques[cheques.length - 1];
+                      const correction = targetPV - sumNets;
+                      const newNet = parseFloat(last.amount) + correction;
+                      
+                      // Recalcular bruto con el neto corregido
+                      const daysTotal = daysBetween(last.chequeDate);
+                      const daysCharged = Math.max(0, daysTotal - grace);
+                      const interestPct = daily * daysCharged;
+                      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+                      const newRaw = newNet / safeDen;
+                      
+                      last.amount = newNet.toFixed(2);
+                      last.rawAmount = newRaw.toFixed(2);
+                    }
+
+                    // ✅ APLICAR CHEQUES
+                    setNewValues(cheques);
+                    setActiveTab("values");
+                    setShowRefi(false);
+
+                    // ✅ MENSAJE DE CONFIRMACIÓN
+                    const total = cheques.reduce(
+                      (a, c) => a + parseFloat(c.amount),
+                      0
+                    );
+                    setTimeout(() => {
+                      alert(
+                        `✅ Plan generado:\n\n` +
+                        `${n} cheques\n` +
+                        `Total neto: ${currencyFmt.format(total)}\n` +
+                        `Objetivo: ${currencyFmt.format(targetPV)}\n` +
+                        `Diferencia: ${currencyFmt.format(Math.abs(total - targetPV))}`
+                      );
+                    }, 100);
+                  }}
+                />
+              </div>
+            )}
 
                 {/* Valores manuales */}
                 <ValueView
@@ -848,15 +984,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   setNewValues={setNewValues}
                   annualInterestPct={annualInterestPct}
                   // 👉 usar el neto que realmente mostrás en la UI
-                  netToPay={totalNetForUI}
+                  netToPay={totalFinal}
                   // (opcional) alinear el ajuste mostrado con el modo activo:
                   docAdjustmentSigned={
                     payTotalDocMode
-                      ? round2(totalBase - totalDocsFinal) // ajuste efectivo por doc
+                      ? totalBase - totalDocsFinal // ajuste efectivo por doc
                       : totalAdjustmentSigned // ajuste “sobre valores”
                   }
                   onValidityChange={setIsValuesValid}
-                  chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
+                  chequeGraceDays={checkGrace?.value ?? 45}
                 />
               </div>
             )}
