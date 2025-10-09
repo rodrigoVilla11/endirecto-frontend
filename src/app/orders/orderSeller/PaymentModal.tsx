@@ -138,33 +138,32 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
 
   function computeChequeMeta(v: ValueItem) {
-  const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0;
-  const days_total = daysBetweenToday(v.chequeDate);
+    const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0;
+    const days_total = daysBetweenToday(v.chequeDate);
 
-  // Usa 1 sola fuente de gracia en todos lados
-  const grace = (checkGrace?.value ?? 45);
+    // Usa 1 sola fuente de gracia en todos lados
+    const grace = checkGrace?.value ?? 45;
 
-  const days_charged = Math.max(0, days_total - grace);
+    const days_charged = Math.max(0, days_total - grace);
 
-  // Normalizá SIEMPRE la anual (admite 0.96 o 96)
-  const annualNorm = normalizeAnnualPct(annualInterestPct); // % anual
-  const daily = annualNorm / 100 / 365;
+    // Normalizá SIEMPRE la anual (admite 0.96 o 96)
+    const annualNorm = normalizeAnnualPct(annualInterestPct); // % anual
+    const daily = annualNorm / 100 / 365;
 
-  const interest_pct = daily * days_charged;
-  const interest_amount = round2(raw * interest_pct);
-  const net_amount = round2(raw - interest_amount);
+    const interest_pct = daily * days_charged;
+    const interest_amount = round2(raw * interest_pct);
+    const net_amount = round2(raw - interest_amount);
 
-  return {
-    raw,
-    days_total,
-    days_charged,
-    daily,
-    interest_pct,
-    interest_amount,
-    net_amount,
-  };
-}
-
+    return {
+      raw,
+      days_total,
+      days_charged,
+      daily,
+      interest_pct,
+      interest_amount,
+      net_amount,
+    };
+  }
 
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -531,7 +530,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
- 
 
   const { data } = useGetCustomerInformationByCustomerIdQuery({
     id: selectedClientId ?? undefined,
@@ -608,8 +606,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // Neto modelo “dto sobre valores”
   const net_by_values = round2(totalBase - totalAdjustmentSigned);
 
+  // Ajuste calculado por REGLA DE CADA COMPROBANTE (siempre visible)
+  const docAdjustmentSigned = round2(totalBase - totalDocsFinal);
+
+  // ¿Hay pago parcial? (valores > 0 y distinto del total por comprobantes)
+  const hasPartialPayment =
+    totalValues > 0 && Math.abs(totalValues - round2(totalDocsFinal)) > 0.01;
+
   // Neto a mostrar: si es “pagar total”, usamos el final por comprobante
-  const totalNetForUI = round2(totalDocsFinal)
+  const totalNetForUI = round2(totalDocsFinal);
 
   // Diferencia coherente con el neto mostrado
   const diff = round2(totalNetForUI - totalValues);
@@ -669,16 +674,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               label={
                 <LabelWithTip
                   label="Desc/Rec financiero"
-                  tip="Resultado del esquema de tasas aplicado según días y reglas. El % se calcula sobre los pagos cargados."
+                  tip="Arriba: ajuste por COMPROBANTES (reglas por días). Abajo (si hay pago parcial): ajuste aplicado SOBRE EL PAGO cargado."
                 />
               }
               value={
-                payTotalDocMode
-                  ? currencyFmt.format(round2(totalBase - totalDocsFinal)) // ajuste efectivo por doc
-                  : currencyFmt.format(totalAdjustmentSigned) // ajuste “sobre valores”
-              }
-              valueClassName={
-                totalAdjustmentSigned >= 0 ? "text-emerald-400" : "text-red-400"
+                <div className="text-right">
+                  {/* SIEMPRE: ajuste por comprobantes */}
+                  { !hasPartialPayment && (
+                    <div
+                      className={
+                        docAdjustmentSigned >= 0
+                          ? "text-emerald-400"
+                          : "text-red-400"
+                      }
+                    >
+                      {currencyFmt.format(docAdjustmentSigned)}
+                    </div>
+                  )}
+
+                  {/* SOLO si hay pago parcial y NO está el modo 'Pagar total' */}
+                  {!payTotalDocMode && hasPartialPayment && (
+                    <div
+                      className={
+                        (totalAdjustmentSigned ?? 0) >= 0
+                          ? "text-emerald-400"
+                          : "text-red-400"
+                      }
+                    >
+                      {currencyFmt.format(totalAdjustmentSigned)}
+                    </div>
+                  )}
+                </div>
               }
             />
 
