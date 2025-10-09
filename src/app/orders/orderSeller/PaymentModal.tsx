@@ -608,10 +608,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // Ajuste calculado por REGLA DE CADA COMPROBANTE (siempre visible)
   const docAdjustmentSigned = round2(totalBase - totalDocsFinal);
-
-  // ¿Hay pago parcial? (valores > 0 y distinto del total por comprobantes)
   const hasPartialPayment =
     totalValues > 0 && Math.abs(totalValues - round2(totalDocsFinal)) > 0.01;
+
+  const showSobrePago = !payTotalDocMode && hasPartialPayment;
 
   // Neto a mostrar: si es “pagar total”, usamos el final por comprobante
   const totalNetForUI = round2(totalDocsFinal);
@@ -674,13 +674,28 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               label={
                 <LabelWithTip
                   label="Desc/Rec financiero"
-                  tip="Arriba: ajuste por COMPROBANTES (reglas por días). Abajo (si hay pago parcial): ajuste aplicado SOBRE EL PAGO cargado."
+                  tip={
+                    showSobrePago
+                      ? "Ajuste aplicado SOBRE EL PAGO cargado (prorrateado)."
+                      : "Ajuste por COMPROBANTES según reglas por días."
+                  }
                 />
               }
               value={
                 <div className="text-right">
-                  {/* SIEMPRE: ajuste por comprobantes */}
-                  { !hasPartialPayment && (
+                  {showSobrePago ? (
+                    // SOLO "sobre pago"
+                    <div
+                      className={
+                        (totalAdjustmentSigned ?? 0) >= 0
+                          ? "text-emerald-400"
+                          : "text-red-400"
+                      }
+                    >
+                     {currencyFmt.format(totalAdjustmentSigned)}
+                    </div>
+                  ) : (
+                    // SOLO "por comprobantes"
                     <div
                       className={
                         docAdjustmentSigned >= 0
@@ -689,19 +704,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       }
                     >
                       {currencyFmt.format(docAdjustmentSigned)}
-                    </div>
-                  )}
-
-                  {/* SOLO si hay pago parcial y NO está el modo 'Pagar total' */}
-                  {!payTotalDocMode && hasPartialPayment && (
-                    <div
-                      className={
-                        (totalAdjustmentSigned ?? 0) >= 0
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                      }
-                    >
-                      {currencyFmt.format(totalAdjustmentSigned)}
                     </div>
                   )}
                 </div>
