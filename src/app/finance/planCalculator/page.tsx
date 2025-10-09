@@ -36,7 +36,7 @@ export default function PlanCalculatorPage() {
         </div>
 
         <section className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 shadow-sm">
-          <PlanCalculator title="Cálculo de pagos a plazo" graceDays={grace} />
+          <PlanCalculator title="Cálculo de pagos a plazo" graceDays={grace} annualInterestPct={interestSetting?.value || 96}/>
         </section>
       </div>
     </PrivateRoute>

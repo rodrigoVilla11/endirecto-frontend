@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
 
 /** Redondeo helper */
-const round2 = (n: number) => Math.round(n * 100) / 100;
+// const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Cálculo base: neto y recargo para UN cheque */
 export function computeChequeNeto(params: {
@@ -28,8 +28,8 @@ export function computeChequeNeto(params: {
   const pct = dailyRate * daysChargeable;
 
   // recargo = base * pct, neto = base - recargo (no negativo)
-  const recargo = round2(rawAmount * pct);
-  const neto = Math.max(0, round2(rawAmount - recargo));
+  const recargo = rawAmount * pct;
+  const neto = Math.max(0, rawAmount - recargo);
 
   return {
     daysTotal,

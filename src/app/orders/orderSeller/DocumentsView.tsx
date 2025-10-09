@@ -1,3 +1,4 @@
+//DOCUMENTSVIEW.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,7 +33,7 @@ export function DocumentsView({
   paymentType,
   graceDays,
   annualInterestPct,
-  setFinalAmount
+  setFinalAmount,
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -51,7 +52,7 @@ export function DocumentsView({
 
   /* ===================== Helpers ===================== */
 
-  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  // const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   // ======= Recargo por vencido =======
 
@@ -151,14 +152,14 @@ export function DocumentsView({
   const hasSurcharge = !isDesc && surcharge.pct > 0;
 
   const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
-  const adjAmount = round2(
+  const adjAmount = 
     balance * Math.abs(isDesc ? rate : hasSurcharge ? surcharge.pct : 0)
-  );
+  ;
 
   const finalAmount = isDesc
-    ? round2(balance - adjAmount)
+    ? balance - adjAmount
     : hasSurcharge
-    ? round2(balance + adjAmount)
+    ? balance + adjAmount
     : balance;
 
   const bannerNote = isDesc
@@ -167,11 +168,10 @@ export function DocumentsView({
     ? `Recargo por ${surcharge.days} días`
     : note || null;
 
-  const discountAmount = round2(balance * rate);
+  const discountAmount = balance * rate;
 
   /* ===================== Selección: payload consistente ===================== */
   // 🔎 Debug útil para verificar consistencia
-
 
   const documentDetails = {
     document_id: data?.id || "",
@@ -198,24 +198,25 @@ export function DocumentsView({
   };
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
-  // 1) Actualiza lista de pagos seleccionados (como ya hacías)
-  if (checked) {
-    setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
-  } else {
-    setNewPayment?.((prev: any[]) => prev.filter((doc) => doc.document_id !== id));
-  }
+    // 1) Actualiza lista de pagos seleccionados (como ya hacías)
+    if (checked) {
+      setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
+    } else {
+      setNewPayment?.((prev: any[]) =>
+        prev.filter((doc) => doc.document_id !== id)
+      );
+    }
 
-  // 2) Avisa al padre si querés mantener el array de IDs
-  onRowSelect?.(id, checked);
+    // 2) Avisa al padre si querés mantener el array de IDs
+    onRowSelect?.(id, checked);
 
-  // 3) Actualiza el total acumulado con el finalAmount de ESTA factura
-  setFinalAmount((prevTotal) => {
-    const delta = checked ? finalAmount : -finalAmount;
-    // redondeo a 2 decimales para evitar ruido de coma flotante
-    return Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100;
-  });
-};
-
+    // 3) Actualiza el total acumulado con el finalAmount de ESTA factura
+    setFinalAmount((prevTotal) => {
+      const delta = checked ? finalAmount : -finalAmount;
+      // redondeo a 2 decimales para evitar ruido de coma flotante
+      return Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100;
+    });
+  };
 
   /* ===================== Render ===================== */
 
