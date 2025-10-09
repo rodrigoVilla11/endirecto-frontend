@@ -124,10 +124,19 @@ export default function ValueView({
   };
 
   // ===== Cálculo interés simple cheques =====
-  const dailyRate = useMemo(
-    () => annualInterestPct / 100 / 365,
-    [annualInterestPct]
-  );
+
+  function normalizeAnnualPct(x: number) {
+    // Si viene como fracción diaria (0 < x < 1), convierto a % anual
+    if (x > 0 && x < 1) return x * 365 * 100;
+    return x; // ya es % anual
+  }
+
+  const dailyRateFromAnnual = (annualInterestPct: number) => {
+    const annualPct = normalizeAnnualPct(annualInterestPct); // % anual
+    return annualPct / 100 / 365; // fracción diaria
+  };
+  const dailyRate = dailyRateFromAnnual(annualInterestPct);
+
   const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
 
   /** Días gravados (aplica gracia; default 45) */
@@ -155,22 +164,23 @@ export default function ValueView({
   };
 
   // ===== Normalización: en cheques, amount = neto =====
+  // Congelar recálculo sólo a cambios de parámetros financieros
   useEffect(() => {
-    let changed = false;
-    const next = newValues.map((v) => {
-      if (v.method !== "cheque") return v;
-      const raw = v.rawAmount ?? v.amount ?? "0";
-      const { neto } = computeChequeNeto(raw, v.chequeDate);
-      const current = toNum(v.amount);
-      if (Math.abs(current - neto) > 0.009 || v.rawAmount == null) {
-        changed = true;
-        return { ...v, rawAmount: raw, amount: neto.toFixed(2) };
-      }
-      return v;
-    });
-    if (changed) setNewValues(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newValues, dailyRate, chequeGraceDays]);
+    setNewValues((prev) =>
+      prev.map((v) => {
+        if (v.method !== "cheque") return v;
+        // si no tengo rawAmount, NO piso el amount proveniente del padre
+        if (v.rawAmount == null) return v;
+
+        const { neto } = computeChequeNeto(v.rawAmount, v.chequeDate);
+        const current = toNum(v.amount);
+        return Math.abs(current - neto) > 0.009
+          ? { ...v, amount: neto.toFixed(2) }
+          : v;
+      })
+    );
+    // 👇 quitá newValues de las deps
+  }, [dailyRate, chequeGraceDays]);
 
   // ===== Totales =====
   const totalValues = useMemo(
@@ -761,7 +771,10 @@ export default function ValueView({
           {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
           <RowSummary
             label={
-              <LabelWithTip label="DTO/REC FINACIERO" tip={EXPLAIN.dtoRecFact} />
+              <LabelWithTip
+                label="DTO/REC FINACIERO"
+                tip={EXPLAIN.dtoRecFact}
+              />
             }
             value={`${docAdjustmentSigned >= 0 ? "-" : "+"}${currencyFmt.format(
               Math.abs(docAdjustmentSigned)
