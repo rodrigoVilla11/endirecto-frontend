@@ -164,23 +164,23 @@ export default function ValueView({
   };
 
   // ===== Normalización: en cheques, amount = neto =====
-  // Congelar recálculo sólo a cambios de parámetros financieros
-  useEffect(() => {
-    setNewValues((prev) =>
-      prev.map((v) => {
-        if (v.method !== "cheque") return v;
-        // si no tengo rawAmount, NO piso el amount proveniente del padre
-        if (v.rawAmount == null) return v;
+  // // Congelar recálculo sólo a cambios de parámetros financieros
+  // useEffect(() => {
+  //   setNewValues((prev) =>
+  //     prev.map((v) => {
+  //       if (v.method !== "cheque") return v;
+  //       // si no tengo rawAmount, NO piso el amount proveniente del padre
+  //       if (v.rawAmount == null) return v;
 
-        const { neto } = computeChequeNeto(v.rawAmount, v.chequeDate);
-        const current = toNum(v.amount);
-        return Math.abs(current - neto) > 0.009
-          ? { ...v, amount: neto.toFixed(2) }
-          : v;
-      })
-    );
-    // 👇 quitá newValues de las deps
-  }, [dailyRate, chequeGraceDays]);
+  //       const { neto } = computeChequeNeto(v.rawAmount, v.chequeDate);
+  //       const current = toNum(v.amount);
+  //       return Math.abs(current - neto) > 0.009
+  //         ? { ...v, amount: neto.toFixed(2) }
+  //         : v;
+  //     })
+  //   );
+  //   // 👇 quitá newValues de las deps
+  // }, [dailyRate, chequeGraceDays]);
 
   // ===== Totales =====
   const totalValues = useMemo(
