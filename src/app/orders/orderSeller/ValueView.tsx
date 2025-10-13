@@ -182,6 +182,35 @@ export default function ValueView({
   //   // 👇 quitá newValues de las deps
   // }, [dailyRate, chequeGraceDays]);
 
+  const [isEditing, setIsEditing] = useState<Record<number, boolean>>({});
+  const [draftText, setDraftText] = useState<Record<number, string>>({});
+
+  const toEditable = (s?: string) => {
+    // Convierte "1234.50" a "1.234,50" amigable para AR, o deja vacío si es 0
+    const n = parseMaskedCurrencyToNumber(s ?? "");
+    if (!n) return "";
+    // Usamos coma para decimales al editar
+    return n.toFixed(2).replace(".", ",");
+  };
+
+  const startEdit = (i: number, v: ValueItem) => {
+    const current = v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
+    setDraftText((d) => ({ ...d, [i]: toEditable(current) }));
+    setIsEditing((e) => ({ ...e, [i]: true }));
+  };
+
+  const endEdit = (i: number, v: ValueItem) => {
+    const txt = draftText[i] ?? "";
+    // Reutilizamos tu lógica: parsea y recalcula neto/cheque
+    handleAmountChangeMasked(i, txt, v);
+    setIsEditing((e) => ({ ...e, [i]: false }));
+    setDraftText((d) => {
+      const c = { ...d };
+      delete c[i];
+      return c;
+    });
+  };
+
   // ===== Totales =====
   const totalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + toNum(v.amount), 0),
@@ -458,13 +487,19 @@ export default function ValueView({
                       inputMode="decimal"
                       placeholder="$ 0,00"
                       value={
-                        shownAmountInput?.trim()
+                        isEditing[idx]
+                          ? draftText[idx] ?? ""
+                          : shownAmountInput?.trim()
                           ? formatInternalString(shownAmountInput, currencyFmt)
                           : ""
                       }
-                      onChange={(e) =>
-                        handleAmountChangeMasked(idx, e.target.value, v)
-                      }
+                      onFocus={() => startEdit(idx, v)}
+                      onBlur={() => endEdit(idx, v)}
+                      onChange={(e) => {
+                        // No formateamos aquí: sólo limpiamos caracteres raros y guardamos lo que escribe el usuario
+                        const raw = e.target.value.replace(/[^\d.,]/g, "");
+                        setDraftText((d) => ({ ...d, [idx]: raw }));
+                      }}
                       className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
           ${
             rowErrors[idx].amount
