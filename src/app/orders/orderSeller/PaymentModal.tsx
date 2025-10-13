@@ -623,7 +623,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const formattedDiff = currencyFmt.format(diff);
   if (!isOpen) return null;
 
-  console.log("Values cheques", newValues);
+  // arriba del return (en PaymentModal)
+  // helper arriba del return
+  function formatAdjText(signed: number) {
+    const isDiscount = signed >= 0; // + => descuento | - => recargo
+    const sign = isDiscount ? "−" : "+"; // mostrar - si es descuento, + si es recargo
+    const cls = isDiscount ? "text-emerald-400" : "text-red-400";
+    const abs = Math.abs(signed);
+    return { text: `${sign}${currencyFmt.format(abs)}`, cls };
+  }
 
   return (
     <div
@@ -683,29 +691,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
               value={
                 <div className="text-right">
-                  {showSobrePago ? (
-                    // SOLO "sobre pago"
-                    <div
-                      className={
-                        (totalAdjustmentSigned ?? 0) >= 0
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                      }
-                    >
-                     {currencyFmt.format(totalAdjustmentSigned)}
-                    </div>
-                  ) : (
-                    // SOLO "por comprobantes"
-                    <div
-                      className={
-                        docAdjustmentSigned >= 0
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                      }
-                    >
-                      {currencyFmt.format(docAdjustmentSigned)}
-                    </div>
-                  )}
+                  {(() => {
+                    const signed = showSobrePago
+                      ? totalAdjustmentSigned ?? 0
+                      : docAdjustmentSigned;
+                    const { text, cls } = formatAdjText(signed);
+                    return <div className={cls}>{text}</div>;
+                  })()}
                 </div>
               }
             />
