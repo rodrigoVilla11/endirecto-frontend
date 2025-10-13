@@ -286,6 +286,60 @@ export default function ValueView({
   const toggleSummary = (i: number) =>
     setSummaryOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));
 
+  // --- helper para redondear a 2 decimales sin drift
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
+  // Evitar aplicar el ajuste dos veces con el mismo saldo
+  const autoFixAppliedRef = useRef(false);
+
+  useEffect(() => {
+    const abs = Math.abs(saldo);
+
+    // reset de la traba si el saldo es grande (no aplicable) o ya quedó en cero
+    if (abs >= 1 || saldo === 0) {
+      autoFixAppliedRef.current = false;
+      return;
+    }
+
+    // aplicar solo si hay diferencia menor a $1 y aún no lo hicimos
+    if (
+      abs > 0 &&
+      abs < 1 &&
+      !autoFixAppliedRef.current &&
+      newValues.length > 0
+    ) {
+      autoFixAppliedRef.current = true;
+
+      const delta = round2(saldo); // si es >0 falta imputar; si es <0 sobra
+
+      setNewValues((prev) => {
+        const clone = [...prev];
+        const i = clone.length - 1;
+        const v = clone[i];
+
+        // nuevo neto del ítem (clamp a 0 para no dejar montos negativos)
+        const newAmount = Math.max(0, round2((Number(v.amount) || 0) + delta));
+
+        // anotamos el concepto para rastrear el ajuste
+        const concept = (v.selectedReason || NO_CONCEPTO).includes(
+          "(ajuste redondeo)"
+        )
+          ? v.selectedReason
+          : `${v.selectedReason || NO_CONCEPTO} (ajuste redondeo)`;
+
+        // En cheques: ajustamos el neto imputable (amount).
+        // (No tocamos rawAmount; el cambio es < $1 y el costo financiero no varía en la práctica)
+        clone[i] = {
+          ...v,
+          amount: newAmount.toFixed(2),
+          selectedReason: concept,
+        };
+
+        return clone;
+      });
+    }
+  }, [saldo, newValues.length, setNewValues]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
