@@ -334,7 +334,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   /** Construye el texto multilinea de la notificación */
   function buildPaymentNotificationText(opts: {
     date: Date;
-    id: string; 
+    id: string;
     customerCode?: string | number;
     customerName?: string;
     sellerName?: string;
@@ -533,7 +533,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const id = created._id || "—";
       const customerCode = customer?.id ?? selectedClientId;
       const customerName = customer?.name ?? "";
-      const sellerName =  customer?.seller_id; // ajustá al nombre real del vendedor si lo tenés
+      const sellerName = customer?.seller_id; // ajustá al nombre real del vendedor si lo tenés
       const userName = userData?.username || "";
 
       // DOCUMENTOS: usamos tus totales ya calculados en la UI
@@ -803,30 +803,33 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const PAY_TOTAL_REASON = "Pago total a factura";
   const NO_REASON = "Sin Concepto";
 
+  const EPS = 0.01;
+
+  function isPayTotalItem(v: ValueItem) {
+    return v.selectedReason === PAY_TOTAL_REASON && v.method === "efectivo";
+  }
   // Si el valor generado por "Pagar total" cambia de monto,
   // cambiamos también su concepto a "Sin Concepto" y salimos del modo.
-  useEffect(() => {
-    // buscamos el item creado por "Pagar total"
-    const idx = newValues.findIndex(
-      (v) => v.selectedReason === PAY_TOTAL_REASON
-    );
-    if (idx === -1) return;
+  // Si cambia el monto del item de "Pagar total", renombrá el concepto
+useEffect(() => {
+  // debe existir EXACTAMENTE un valor y debe ser el de "pagar total"
+  if (newValues.length !== 1) {
+    setPayTotalDocMode(false);
+    return;
+  }
 
-    const current = newValues[idx];
-    const amountNum = round2(parseFloat(current.amount || "0"));
-    const docsFinal = round2(totalDocsFinal);
+  const v = newValues[0];
+  if (!isPayTotalItem(v)) {
+    setPayTotalDocMode(false);
+    return;
+  }
 
-    // Si el monto ya no coincide con el total final por comprobantes,
-    // desactivamos el modo y renombramos el concepto.
-    if (Math.abs(amountNum - docsFinal) > 0.01) {
-      setPayTotalDocMode(false);
-      setNewValues((prev) => {
-        const clone = [...prev];
-        clone[idx] = { ...clone[idx], selectedReason: NO_REASON };
-        return clone;
-      });
-    }
-  }, [newValues, totalDocsFinal]);
+  const amt = round2(parseFloat(v.amount || "0"));
+  const docsFinal = round2(totalDocsFinal);
+
+  // si el monto coincide (dentro de la tolerancia), activamos el modo
+  setPayTotalDocMode(Math.abs(amt - docsFinal) <= EPS);
+}, [newValues, totalDocsFinal]);
 
   // Neto modelo “dto sobre valores”
   const net_by_values = round2(totalBase - totalAdjustmentSigned);
