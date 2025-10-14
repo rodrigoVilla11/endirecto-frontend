@@ -805,7 +805,7 @@ const PaymentsChargedPage = () => {
     { name: t("date"), key: "date" },
     { name: t("documents"), key: "documents" },
     { name: t("imputed"), key: "imputed" },
-    { name: t("rendido"), key: "rendido" },
+    { name: t("rendido"), key: "rendido", important: true },
     { name: t("total"), key: "total", important: true },
     { name: t("notes"), key: "notes" },
   ];

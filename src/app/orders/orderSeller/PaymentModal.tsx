@@ -334,6 +334,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   /** Construye el texto multilinea de la notificación */
   function buildPaymentNotificationText(opts: {
     date: Date;
+    id: string; 
     customerCode?: string | number;
     customerName?: string;
     sellerName?: string;
@@ -353,6 +354,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }) {
     const {
       date,
+      id,
       customerCode,
       customerName,
       sellerName,
@@ -395,6 +397,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     return [
       `Fecha: ${fecha}`,
+      `ID Pago: ${id}`,
       `Cliente: ${cliente}`,
       `Vendedor: ${vendedor}`,
       `Usuario: ${usuario}`,
@@ -527,6 +530,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       // ===== Datos para armar el texto =====
       const now = new Date();
 
+      const id = created._id || "—";
       const customerCode = customer?.id ?? selectedClientId;
       const customerName = customer?.name ?? "";
       const sellerName =  customer?.seller_id; // ajustá al nombre real del vendedor si lo tenés
@@ -570,6 +574,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       // Texto final multilínea
       const longDescription = buildPaymentNotificationText({
         date: now,
+        id,
         customerCode,
         customerName,
         sellerName,
@@ -587,7 +592,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
-          title: `PAGO REGISTRADO `,
+          title: `PAGO REGISTRADO`,
           type: "PAGO",
           description: longDescription,
           link: "/payments",
@@ -606,7 +611,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       await addNotificationToUserById({
         id: "67a60be545b75a39f99a485b",
         notification: {
-          title: "Pago registrado",
+          title: "PAGO REGISTRADO",
           type: "PAGO",
           description: `${shortHeader}\n\n${longDescription}`,
           link: "/payments",

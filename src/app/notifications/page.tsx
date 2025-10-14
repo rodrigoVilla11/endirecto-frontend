@@ -57,9 +57,7 @@ const Page = () => {
   // Filtramos las notificaciones que tienen send === true
   useEffect(() => {
     if (notifications.length > 0) {
-      setLocalNotifications(
-        notifications.filter((n: any) => n.send === true)
-      );
+      setLocalNotifications(notifications.filter((n: any) => n.send === true));
     }
   }, [JSON.stringify(notifications)]);
 
@@ -68,21 +66,26 @@ const Page = () => {
   }, 100);
 
   // Filtrado por búsqueda en título o descripción
-  const filteredNotifications = localNotifications.filter((notification: any) => {
-    if (!searchQuery) return true;
-    const lowerSearch = searchQuery.toLowerCase();
-    return (
-      notification.title.toLowerCase().includes(lowerSearch) ||
-      notification.description.toLowerCase().includes(lowerSearch)
-    );
-  });
+  const filteredNotifications = localNotifications.filter(
+    (notification: any) => {
+      if (!searchQuery) return true;
+      const lowerSearch = searchQuery.toLowerCase();
+      return (
+        notification.title.toLowerCase().includes(lowerSearch) ||
+        notification.description.toLowerCase().includes(lowerSearch)
+      );
+    }
+  );
 
   // Ordenamos las notificaciones:
   // Si no hay sortQuery, las ordenamos por schedule_from descendente
   const sortedNotifications = useMemo(() => {
     if (!sortQuery) {
       return [...filteredNotifications].sort((a, b) => {
-        return new Date(b.schedule_from).getTime() - new Date(a.schedule_from).getTime();
+        return (
+          new Date(b.schedule_from).getTime() -
+          new Date(a.schedule_from).getTime()
+        );
       });
     }
     const [field, direction] = sortQuery.split(":");
@@ -97,7 +100,8 @@ const Page = () => {
   const { data: articleData } = useGetAllArticlesQuery(null);
 
   const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
-  const [markNotificationCustomerAsRead] = useMarkNotificationAsReadCustomerMutation();
+  const [markNotificationCustomerAsRead] =
+    useMarkNotificationAsReadCustomerMutation();
 
   // Función para marcar la notificación como leída y actualizar el estado
   const handleMarkAsRead = async (notification: any) => {
@@ -129,7 +133,9 @@ const Page = () => {
   // Maneja el clic en el botón de notificación, evitando llamadas duplicadas
   const handleNotificationClick = async (
     notification: any,
-    event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>
+    event:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.TouchEvent<HTMLButtonElement>
   ) => {
     event.stopPropagation();
     await handleMarkAsRead(notification);
@@ -162,7 +168,11 @@ const Page = () => {
     ),
     type: notification.type,
     title: notification.title,
-    description: notification.description,
+    description: (
+      <p className="text-gray-600 text-xs whitespace-pre-line leading-relaxed break-words line-clamp-5">
+        {notification.description}
+      </p>
+    ),
     read: (
       <button
         onClick={(e) => handleNotificationClick(notification, e)}
