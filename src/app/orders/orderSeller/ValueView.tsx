@@ -72,6 +72,19 @@ export default function ValueView({
     const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
     return { bank: bankErr, chequeNumber: chequeNumErr, amount: amountErr };
   });
+  const [digitsByRow, setDigitsByRow] = useState<Record<number, string>>({});
+  // Solo dígitos
+  const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");
+
+  const formatDigitsAsCurrencyAR = (digits: string) => {
+    if (!digits) return ""; // << vacío hasta que escribís
+    const cents = digits.slice(-2).padStart(2, "0");
+    let int = digits.slice(0, -2) || "0";
+    int = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `${int},${cents}`;
+  };
+
+  const numberToDigitsStr = (n: number) => String(Math.round((n || 0) * 100));
 
   const hasErrors = rowErrors.some((e) => e.bank || e.chequeNumber || e.amount);
   useEffect(() => {
@@ -195,22 +208,49 @@ export default function ValueView({
 
   const startEdit = (i: number, v: ValueItem) => {
     const current = v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
-    setDraftText((d) => ({ ...d, [i]: toEditable(current) }));
+    const n = parseMaskedCurrencyToNumber(current ?? "");
+    const digits = n === 0 ? "" : numberToDigitsStr(n);
+    setDigitsByRow((d) => ({ ...d, [i]: digits }));
+    setDraftText((d) => ({ ...d, [i]: formatDigitsAsCurrencyAR(digits) }));
     setIsEditing((e) => ({ ...e, [i]: true }));
   };
 
   const endEdit = (i: number, v: ValueItem) => {
-    const txt = draftText[i] ?? "";
-    // Reutilizamos tu lógica: parsea y recalcula neto/cheque
-    handleAmountChangeMasked(i, txt, v);
+    const masked = draftText[i] ?? "";
+    handleAmountChangeMasked(i, masked, v);
     setIsEditing((e) => ({ ...e, [i]: false }));
     setDraftText((d) => {
       const c = { ...d };
       delete c[i];
       return c;
     });
+    setDigitsByRow((d) => {
+      const c = { ...d };
+      delete c[i];
+      return c;
+    });
   };
 
+  const applyMaskedEdit = (
+    rowIndex: number,
+    nextDigits: string,
+    v: ValueItem,
+    inputEl?: HTMLInputElement | null
+  ) => {
+    const masked = formatDigitsAsCurrencyAR(nextDigits);
+    setDigitsByRow((m) => ({ ...m, [rowIndex]: nextDigits }));
+    setDraftText((d) => ({ ...d, [rowIndex]: masked }));
+    handleAmountChangeMasked(rowIndex, masked, v);
+
+    // Forzar caret al final
+    if (inputEl) {
+      requestAnimationFrame(() => {
+        const len = masked.length;
+        inputEl.setSelectionRange(len, len);
+      });
+    }
+  };
+  const inputRef = useRef<HTMLInputElement | null>(null);
   // ===== Totales =====
   const totalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + toNum(v.amount), 0),
@@ -482,9 +522,11 @@ export default function ValueView({
                         }
                       />
                     </label>
+
                     <input
+                      ref={inputRef}
                       type="text"
-                      inputMode="decimal"
+                      inputMode="numeric"
                       placeholder="$ 0,00"
                       value={
                         isEditing[idx]
@@ -493,19 +535,86 @@ export default function ValueView({
                           ? formatInternalString(shownAmountInput, currencyFmt)
                           : ""
                       }
-                      onFocus={() => startEdit(idx, v)}
-                      onBlur={() => endEdit(idx, v)}
-                      onChange={(e) => {
-                        // No formateamos aquí: sólo limpiamos caracteres raros y guardamos lo que escribe el usuario
-                        const raw = e.target.value.replace(/[^\d.,]/g, "");
-                        setDraftText((d) => ({ ...d, [idx]: raw }));
+                      onFocus={() => {
+                        startEdit(idx, v);
+                        // Llevar cursor al final del texto enmascarado
+                        requestAnimationFrame(() => {
+                          const masked = formatDigitsAsCurrencyAR(
+                            digitsByRow[idx] || ""
+                          );
+                          const el = inputRef.current;
+                          if (el) {
+                            const len = masked.length;
+                            el.setSelectionRange(len, len);
+                          }
+                        });
                       }}
+                      onKeyDown={(e) => {
+                        const el = inputRef.current;
+                        const key = e.key;
+
+                        // Mientras edito, manejo todo yo
+                        if (!isEditing[idx]) return;
+
+                        if (key === "Enter") {
+                          e.preventDefault();
+                          el?.blur();
+                          return;
+                        }
+                        if (key === "Escape") {
+                          e.preventDefault();
+                          // cancelar edición
+                          setIsEditing((E) => ({ ...E, [idx]: false }));
+                          setDraftText((d) => {
+                            const c = { ...d };
+                            delete c[idx];
+                            return c;
+                          });
+                          setDigitsByRow((d) => {
+                            const c = { ...d };
+                            delete c[idx];
+                            return c;
+                          });
+                          return;
+                        }
+
+                        // Backspace: borro el último dígito
+                        if (key === "Backspace") {
+                          e.preventDefault();
+                          const prev = digitsByRow[idx] ?? "";
+                          const next = prev.slice(0, -1);
+                          applyMaskedEdit(idx, next, v, el);
+                          return;
+                        }
+
+                        // Aceptar solo dígitos
+                        if (/^\d$/.test(key)) {
+                          e.preventDefault();
+                          const prev = digitsByRow[idx] ?? "";
+                          const next = prev + key;
+                          applyMaskedEdit(idx, next, v, el);
+                          return;
+                        }
+
+                        // Bloqueo todo lo demás (., , , flechas siguen funcionando)
+                        if (
+                          key.length === 1 && // caracteres imprimibles
+                          !/^\d$/.test(key)
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={() => {
+                        // No dejamos que el navegador cambie el texto por su cuenta;
+                        // todo lo manejamos en onKeyDown + applyMaskedEdit.
+                      }}
+                      onBlur={() => endEdit(idx, v)}
                       className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-          ${
-            rowErrors[idx].amount
-              ? "bg-zinc-700 border border-red-500"
-              : "bg-zinc-700 border border-transparent"
-          }`}
+    ${
+      rowErrors[idx].amount
+        ? "bg-zinc-700 border border-red-500"
+        : "bg-zinc-700 border border-transparent"
+    }`}
                     />
                   </div>
 

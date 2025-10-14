@@ -31,6 +31,18 @@ import { useGetSellersQuery } from "@/redux/services/sellersApi";
 
 const ITEMS_PER_PAGE = 15;
 
+const stopRowOpen = (e: React.SyntheticEvent) => {
+  e.stopPropagation();
+  if (e.nativeEvent?.stopImmediatePropagation)
+    e.nativeEvent.stopImmediatePropagation();
+};
+
+const stopProps = {
+  onClick: stopRowOpen,
+  onMouseDown: stopRowOpen,
+  onPointerDown: stopRowOpen,
+};
+
 const PaymentsChargedPage = () => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
@@ -67,7 +79,7 @@ const PaymentsChargedPage = () => {
   const [updatePayment] = useUpdatePaymentMutation();
   const { data: sellersData, isLoading: isSellersLoading } =
     useGetSellersQuery(null);
-
+  const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">("");
   useEffect(() => {
     setSelectedIds(new Set());
   }, [
@@ -76,6 +88,7 @@ const PaymentsChargedPage = () => {
     selectedClientId,
     searchParams.startDate,
     searchParams.endDate,
+    rendidoFilter,
   ]);
 
   const toggleOne = (id: string, checked: boolean) => {
@@ -184,11 +197,21 @@ const PaymentsChargedPage = () => {
 
   // ================== VISIBLE (aplica filtro por método) ==================
   const visibleItems = useMemo(() => {
-    if (!methodFilter) return items;
-    return items.filter((p) =>
-      (p.values ?? []).some((v: any) => v?.method === methodFilter)
-    );
-  }, [items, methodFilter]);
+    let arr = items;
+
+    if (methodFilter) {
+      arr = arr.filter((p) =>
+        (p.values ?? []).some((v: any) => v?.method === methodFilter)
+      );
+    }
+
+    if (rendidoFilter) {
+      const flag = rendidoFilter === "true";
+      arr = arr.filter((p) => (p as any).rendido === flag);
+    }
+
+    return arr;
+  }, [items, methodFilter, rendidoFilter]);
 
   // ================== EFECTIVOS (si hay selección, intersección con visible) ==================
   const effectiveItems = useMemo(
@@ -225,369 +248,368 @@ const PaymentsChargedPage = () => {
     return (m || "—").toUpperCase();
   };
 
-
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
-  const downloadPDFFor = (rows: Payment[], customerName: string) => {
-    if (!rows.length) return;
+ const downloadPDFFor = (rows: Payment[], fallbackCustomerName?: string) => {
+  if (!rows.length) return;
 
-    // ===== Helpers “N°” y métodos en celda =====
-    const formatOtherMethods = (
-      values: any[],
-      prettyMethod: (m: string) => string
-    ) => {
-      const set = new Set<string>();
-      for (const v of values || []) {
-        const m = String(v?.method || "").toLowerCase();
-        if (m && m !== "cheque") set.add(prettyMethod(m));
+  // ---------- helpers ----------
+  const nameFor = (p: Payment) => {
+    const id = p.customer?.id ?? "";
+    const byPayment = (p as any)?.customer?.name as string | undefined;
+    const byCaller =
+      fallbackCustomerName && fallbackCustomerName !== "-"
+        ? fallbackCustomerName
+        : undefined;
+    return byPayment ?? byCaller ?? (id ? `Cliente ${id}` : "—");
+  };
+
+  const prettyMethod = (m?: string) => {
+    const k = (m ?? "").toLowerCase();
+    if (k === "efectivo") return "Efectivo";
+    if (k === "transferencia") return "Transferencia";
+    if (k === "cheque") return "Cheque";
+    return (m || "—").toUpperCase();
+  };
+
+  const currencyFmt = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const valueGross = (v: any) =>
+    Number(v?.raw_amount ?? v?.rawAmount ?? v?.amount ?? 0);
+
+  const formatOtherMethods = (values: any[], pm: (m: string) => string) => {
+    const set = new Set<string>();
+    for (const v of values || []) {
+      const m = String(v?.method || "").toLowerCase();
+      if (m && m !== "cheque") set.add(pm(m));
+    }
+    return Array.from(set);
+  };
+
+  const formatMethodsCell = (values: any[], pm: (m: string) => string) => {
+    const chequeNums: string[] = [];
+    for (const v of values || []) {
+      if (String(v?.method || "").toLowerCase() === "cheque") {
+        const num =
+          v?.cheque?.cheque_number ??
+          v?.cheque_number ??
+          v?.cheque?.chequeNumber ??
+          v?.chequeNumber ??
+          "s/n";
+        chequeNums.push(String(num));
       }
-      return Array.from(set);
-    };
-
-    const formatMethodsCell = (
-      values: any[],
-      prettyMethod: (m: string) => string
-    ) => {
-      const chequeNums: string[] = [];
-      for (const v of values || []) {
-        if (String(v?.method || "").toLowerCase() === "cheque") {
-          const num =
-            v?.cheque?.cheque_number ??
-            v?.cheque_number ??
-            v?.cheque?.chequeNumber ??
-            v?.chequeNumber ??
-            "s/n";
-          chequeNums.push(String(num));
-        }
+    }
+    const parts: string[] = [];
+    if (chequeNums.length > 0) {
+      const label = pm("cheque");
+      if (chequeNums.length === 1) {
+        parts.push(`${label} N° ${chequeNums[0]}`);
+      } else {
+        const firstThree = chequeNums
+          .slice(0, 3)
+          .map((n) => `N° ${n}`)
+          .join(" / ");
+        const extra = chequeNums.length > 3 ? ` +${chequeNums.length - 3}` : "";
+        parts.push(`${label} ${firstThree}${extra}`);
       }
-      const parts: string[] = [];
-      if (chequeNums.length > 0) {
-        const label = prettyMethod("cheque");
-        if (chequeNums.length === 1) {
-          parts.push(`${label} N° ${chequeNums[0]}`);
-        } else {
-          const firstThree = chequeNums
-            .slice(0, 3)
-            .map((n) => `N° ${n}`)
-            .join(" / ");
-          const extra =
-            chequeNums.length > 3 ? ` +${chequeNums.length - 3}` : "";
-          parts.push(`${label} ${firstThree}${extra}`);
-        }
+    }
+    const others = formatOtherMethods(values, pm);
+    parts.push(...others);
+    return parts.join(", ");
+  };
+
+  const buildMethodTotalsGross = (payments: Payment[]) => {
+    const acc: Record<string, { total: number; count: number }> = {};
+    for (const p of payments) {
+      for (const v of (p.values ?? []) as any[]) {
+        const m = (v?.method ?? "—").toString().toLowerCase();
+        const amount = valueGross(v);
+        if (!Number.isFinite(amount)) continue;
+        if (!acc[m]) acc[m] = { total: 0, count: 0 };
+        acc[m].total += amount;
+        acc[m].count += 1;
       }
-      const others = formatOtherMethods(values, prettyMethod);
-      parts.push(...others);
-      return parts.join(", ");
-    };
+    }
+    return acc;
+  };
 
-    // ===== Sumas usando BRUTO =====
-    // Monto bruto por valor: prioriza raw_amount, luego amount
-    const valueGross = (v: any) =>
-      Number(v?.raw_amount ?? v?.rawAmount ?? v?.amount ?? 0);
+  // ---------- PDF base ----------
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = { left: 40, right: 40 };
+  const wAvail = pageW - margin.left - margin.right;
 
-    // Totales por método (BRUTO) para una lista arbitraria (para sección final)
-    const buildMethodTotalsGross = (payments: Payment[]) => {
-      const acc: Record<string, { total: number; count: number }> = {};
-      for (const p of payments) {
-        for (const v of (p.values ?? []) as any[]) {
-          const m = (v?.method ?? "—").toString().toLowerCase();
-          const amount = valueGross(v);
-          if (!Number.isFinite(amount)) continue;
-          if (!acc[m]) acc[m] = { total: 0, count: 0 };
-          acc[m].total += amount;
-          acc[m].count += 1;
-        }
-      }
-      return acc;
-    };
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Rendición de pagos", margin.left, 40);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  const now = new Date();
+  doc.text(
+    `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+    margin.left,
+    58
+  );
 
-    const formatChequeList = (nums: string[]) => {
-      if (!nums.length) return "—";
-      if (nums.length === 1) return `N° ${nums[0]}`;
-      const first = nums
-        .slice(0, 3)
-        .map((n) => `N° ${n}`)
-        .join(" / ");
-      const extra = nums.length > 3 ? ` +${nums.length - 3}` : "";
-      return `${first}${extra}`;
-    };
+  // Totales (BRUTO cobrado por valores)
+  const sumValuesGross = rows.reduce(
+    (s, p) =>
+      s + (p.values ?? []).reduce((x: number, v: any) => x + valueGross(v), 0),
+    0
+  );
 
-    // ===== PDF base =====
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = { left: 40, right: 40 };
-    const wAvail = pageW - margin.left - margin.right;
+  // Anchos (5 columnas)
+  const cw = {
+    fecha: wAvail * 0.16,
+    cliente: wAvail * 0.18,
+    docs: wAvail * 0.26,
+    metodos: wAvail * 0.24,
+    cobrado: wAvail * 0.16,
+  };
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("Rendición de pagos", margin.left, 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const now = new Date();
-    doc.text(
-      `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-      margin.left,
-      58
-    );
-
-    // Totales (usando BRUTO)
-    const sumGross = rows.reduce((s, p) => s + Number(p.totals?.gross ?? 0), 0);
-    const sumValuesGross = rows.reduce(
-      (s, p) =>
-        s +
-        (p.values ?? []).reduce((x: number, v: any) => x + valueGross(v), 0),
-      0
-    );
-    const sumDiffGross = sumGross - sumValuesGross;
-
-    // Reparto de anchos (encabezado principal)
-    const cw = {
-      fecha: wAvail * 0.14,
-      cliente: wAvail * 0.14,
-      docs: wAvail * 0.2,
-      metodos: wAvail * 0.22,
-      bruto: wAvail * 0.14,
-      cobrado: wAvail * 0.16,
-    };
-
-    // ===== Tabla principal (usa BRUTO) =====
-    autoTable(doc, {
-      startY: 72,
-      tableWidth: wAvail,
-      head: [
-        ["Fecha", "Cliente", "Docs", "Métodos", "Bruto", "Cobrado (bruto)"],
-      ],
-      body: rows.map((p) => {
-        const fecha = p.date
-          ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
-          : "—";
-        const customerId = p.customer?.id ?? "";
-        const cliente = [customerId || "—", customerName]
-          .filter(Boolean)
-          .join(" · ");
-        const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
-
-        const methods =
-          p.values && p.values.length
-            ? formatMethodsCell(p.values, prettyMethod)
-            : "—";
-
-        const bruto = currencyFmt.format(Number(p.totals?.gross ?? 0));
-        const cobradoBruto = currencyFmt.format(
-          (p.values ?? []).reduce((s: number, v: any) => s + valueGross(v), 0)
-        );
-
-        return [fecha, cliente, docs, methods, bruto, cobradoBruto];
-      }),
-      theme: "striped",
-      styles: {
-        fontSize: 9,
-        cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
-        overflow: "linebreak",
-      },
-      bodyStyles: { valign: "top" },
-      headStyles: { fillColor: [2, 132, 199], textColor: 255 },
-      columnStyles: {
-        0: { cellWidth: cw.fecha },
-        1: { cellWidth: cw.cliente },
-        2: { cellWidth: cw.docs },
-        3: { cellWidth: cw.metodos },
-        4: { cellWidth: cw.bruto, halign: "right" },
-        5: { cellWidth: cw.cobrado, halign: "right" },
-      },
-      margin,
-      foot: [
-        [
-          {
-            content: "Totales",
-            colSpan: 4,
-            styles: { halign: "right", fontStyle: "bold" },
-          },
-          {
-            content: currencyFmt.format(sumGross),
-            styles: { halign: "right", fontStyle: "bold" },
-          },
-          {
-            content: currencyFmt.format(sumValuesGross),
-            styles: { halign: "right", fontStyle: "bold" },
-          },
-        ],
-      ],
-      didDrawPage: () => {
-        const { pageNumber } = doc.getCurrentPageInfo();
-        doc.setFontSize(9);
-        doc.text(
-          `Página ${pageNumber} / ${doc.getNumberOfPages()}`,
-          pageW - margin.right,
-          pageH - 20,
-          { align: "right" }
-        );
-      },
-    });
-
-    // ===== Detalle por pago y método (cada valor es una fila) =====
-    const yStartDetails = (doc as any).lastAutoTable?.finalY
-      ? (doc as any).lastAutoTable.finalY + 32
-      : 140;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Detalle por pago y método", margin.left, yStartDetails - 10);
-
-    let cursorY = yStartDetails;
-
-    rows.forEach((p, idx) => {
-      if (cursorY > pageH - 160) {
-        (doc as any).addPage();
-        cursorY = 72;
-      }
-
+  // ---------- Tabla principal (sin "Bruto") ----------
+  autoTable(doc, {
+    startY: 72,
+    tableWidth: wAvail,
+    head: [["Fecha", "Cliente", "Docs", "Métodos", "Cobrado (bruto)"]],
+    body: rows.map((p) => {
       const fecha = p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—";
       const customerId = p.customer?.id ?? "";
-      const clienteLine = [customerId || "—", customerName]
-        .filter(Boolean)
-        .join(" · ");
-      const docsLine =
-        (p.documents ?? []).map((d) => d.number).join(", ") || "—";
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text(
-        `Pago ${idx + 1} — ${fecha} — ${clienteLine}`,
-        margin.left,
-        cursorY
+      const cliente = [customerId || "—", nameFor(p)].filter(Boolean).join(" · ");
+      const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+      const methods =
+        p.values && p.values.length ? formatMethodsCell(p.values, prettyMethod) : "—";
+      const cobradoBruto = currencyFmt.format(
+        (p.values ?? []).reduce((s: number, v: any) => s + valueGross(v), 0)
       );
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text(`Docs: ${docsLine}`, margin.left, cursorY + 14);
-
-      // Filas: MÉTODO / MONTO BRUTO / N° CHEQUE
-      type Row = [string, string, string];
-      const rowsTable: Row[] = [];
-
-      const valuesArr = Array.isArray(p.values) ? p.values : [];
-      valuesArr.forEach((v: any) => {
-        const m = String(v?.method ?? "").toLowerCase();
-        const metodo = prettyMethod(m);
-        const bruto = currencyFmt.format(valueGross(v));
-
-        // N° cheque solo si method = cheque
-        let num = "—";
-        if (m === "cheque") {
-          const n =
-            v?.cheque?.cheque_number ??
-            v?.cheque_number ??
-            v?.cheque?.chequeNumber ??
-            v?.chequeNumber;
-          num = n != null ? `N° ${String(n)}` : "—";
-        }
-
-        rowsTable.push([metodo, bruto, num]);
-      });
-
-      autoTable(doc, {
-        startY: cursorY + 24,
-        tableWidth: wAvail,
-        head: [["Método", "Monto bruto", "N° Cheque"]],
-        body: rowsTable,
-        theme: "striped",
-        styles: { fontSize: 9, cellPadding: 5 },
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-        columnStyles: {
-          0: { cellWidth: wAvail * 0.35 }, // Método
-          1: { cellWidth: wAvail * 0.35, halign: "right" }, // Monto bruto
-          2: { cellWidth: wAvail * 0.3 }, // N° Cheque
+      return [fecha, cliente, docs, methods, cobradoBruto];
+    }),
+    theme: "striped",
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
+      overflow: "linebreak",
+    },
+    bodyStyles: { valign: "top" },
+    headStyles: { fillColor: [2, 132, 199], textColor: 255 },
+    columnStyles: {
+      0: { cellWidth: cw.fecha },
+      1: { cellWidth: cw.cliente },
+      2: { cellWidth: cw.docs },
+      3: { cellWidth: cw.metodos },
+      4: { cellWidth: cw.cobrado, halign: "right" },
+    },
+    margin,
+    foot: [
+      [
+        {
+          content: "Totales",
+          colSpan: 4,
+          styles: { halign: "right", fontStyle: "bold" },
         },
-        margin,
-      });
-
-      const yAfter = (doc as any).lastAutoTable.finalY + 8;
-
-      // Mini resumen Bruto / Cobrado (bruto) / Diferencia (bruto)
-      const brutoPago = Number(p.totals?.gross ?? 0);
-      const cobradoPago = valuesArr.reduce(
-        (s: number, v: any) => s + valueGross(v),
-        0
-      );
-      const saldo = Number((brutoPago - cobradoPago).toFixed(2));
-
-      const line = (label: string, val: number) =>
-        `${label}: ${currencyFmt.format(val)}`;
-
-      doc.setFont("helvetica", "normal");
+        {
+          content: currencyFmt.format(sumValuesGross),
+          styles: { halign: "right", fontStyle: "bold" },
+        },
+      ],
+    ],
+    didDrawPage: () => {
+      const { pageNumber } = (doc as any).getCurrentPageInfo?.() ?? {
+        pageNumber: doc.getNumberOfPages(),
+      };
       doc.setFontSize(9);
       doc.text(
-        `${line("Bruto", brutoPago)}   ·   ${line(
-          "Cobrado (bruto)",
-          cobradoPago
-        )}   ·   ${line("Dif. (bruto)", saldo)}`,
-        margin.left,
-        yAfter + 12
+        `Página ${pageNumber} / ${doc.getNumberOfPages()}`,
+        pageW - margin.right,
+        pageH - 20,
+        { align: "right" }
       );
+    },
+  });
 
-      cursorY = yAfter + 28;
-    });
+  // ---------- Detalle por pago y método (recuadro correcto) ----------
+  const yStartDetails = (doc as any).lastAutoTable?.finalY
+    ? (doc as any).lastAutoTable.finalY + 50
+    : 140;
 
-    // ===== Totales por método (AL FINAL, usando BRUTO) =====
-    const yStartTotals = (doc as any).lastAutoTable?.finalY
-      ? (doc as any).lastAutoTable.finalY + 64 // más separación vertical
-      : 180;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Detalle por pago y método", margin.left, yStartDetails - 30);
 
-    if (yStartTotals > pageH - 180) {
+  let cursorY = yStartDetails;
+
+  rows.forEach((p, idx) => {
+    // salto de página si no entra el bloque
+    if (cursorY > pageH - 200) {
       (doc as any).addPage();
+      cursorY = 72;
     }
 
-    const totalsMap = buildMethodTotalsGross(rows);
-    const totalsEntries = Object.entries(totalsMap).sort(
-      (a, b) => b[1].total - a[1].total
-    );
-    const grand = totalsEntries.reduce((s, [, o]) => s + o.total, 0);
-    const grandCount = totalsEntries.reduce((s, [, o]) => s + o.count, 0);
+    // aire entre bloques
+    if (idx > 0) cursorY += 12;
 
+    // --- Comienzo del bloque
+    const blockTop = cursorY; // parte superior del contenido
+    const fecha = p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—";
+    const customerId = p.customer?.id ?? "";
+    const clienteLine = [customerId || "—", nameFor(p)]
+      .filter(Boolean)
+      .join(" · ");
+    const docsLine =
+      (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+
+    // título + meta
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Totales por método (bruto)", margin.left, yStartTotals - 8);
+    doc.setFontSize(10);
+    doc.text(`Pago ${idx + 1} — ${fecha}`, margin.left, cursorY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Cliente: ${clienteLine}`, margin.left, cursorY + 12);
+    doc.text(`Docs: ${docsLine}`, margin.left, cursorY + 24);
 
-    const cw2 = {
-      metodo: wAvail * 0.5,
-      cant: wAvail * 0.14,
-      total: wAvail * 0.22,
-      pct: wAvail * 0.14,
-    };
+    // tabla interna
+    type RowT = [string, string, string];
+    const rowsTable: RowT[] = [];
+    const valuesArr = Array.isArray(p.values) ? p.values : [];
+
+    valuesArr.forEach((v: any) => {
+      const m = String(v?.method ?? "").toLowerCase();
+      const metodo = prettyMethod(m);
+      const bruto = currencyFmt.format(valueGross(v));
+      let num = "—";
+      if (m === "cheque") {
+        const n =
+          v?.cheque?.cheque_number ??
+          v?.cheque_number ??
+          v?.cheque?.chequeNumber ??
+          v?.chequeNumber;
+        num = n != null ? `N° ${String(n)}` : "—";
+      }
+      rowsTable.push([metodo, bruto, num]);
+    });
 
     autoTable(doc, {
-      startY: yStartTotals + 8,
+      startY: cursorY + 36,
       tableWidth: wAvail,
-      head: [["Método", "Cant. valores", "Total bruto", "% del total"]],
-      body: totalsEntries.map(([m, o]) => [
-        prettyMethod(m),
-        String(o.count),
-        currencyFmt.format(o.total),
-        `${((o.total / (grand || 1)) * 100).toFixed(1)}%`,
-      ]),
-      foot: [
-        [
-          { content: "TOTAL", styles: { fontStyle: "bold" } },
-          { content: String(grandCount), styles: { fontStyle: "bold" } },
-          { content: currencyFmt.format(grand), styles: { fontStyle: "bold" } },
-          { content: "100%", styles: { fontStyle: "bold" } },
-        ],
-      ],
+      head: [["Método", "Monto bruto", "N° Cheque"]],
+      body: rowsTable,
       theme: "grid",
       styles: { fontSize: 9, cellPadding: 5 },
-      headStyles: { fillColor: [34, 197, 94], textColor: 0 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
       columnStyles: {
-        0: { cellWidth: cw2.metodo },
-        1: { cellWidth: cw2.cant, halign: "right" },
-        2: { cellWidth: cw2.total, halign: "right" },
-        3: { cellWidth: cw2.pct, halign: "right" },
+        0: { cellWidth: wAvail * 0.35 },
+        1: { cellWidth: wAvail * 0.35, halign: "right" },
+        2: { cellWidth: wAvail * 0.3 },
       },
       margin,
     });
 
-    // ===== Guardar =====
-    doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    const yAfterTable = (doc as any).lastAutoTable.finalY;
+
+    // mini resumen
+    const brutoPago = Number(p.totals?.gross ?? 0);
+    const cobradoPago = valuesArr.reduce(
+      (s: number, v: any) => s + valueGross(v),
+      0
+    );
+    const saldo = Number((brutoPago - cobradoPago).toFixed(2));
+    const line = (label: string, val: number) =>
+      `${label}: ${currencyFmt.format(val)}`;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(
+      `${line("Bruto", brutoPago)}   ·   ${line(
+        "Cobrado (bruto)",
+        cobradoPago
+      )}   ·   ${line("Dif. (bruto)", saldo)}`,
+      margin.left,
+      yAfterTable + 12
+    );
+
+    const blockBottom = yAfterTable + 20; // fin del bloque (después del resumen)
+
+    // --- Recuadro (dibujado una sola vez, SIN provisional)
+    const pad = 16; // padding externo del rectángulo
+    const boxLeft = margin.left - 4;
+    const boxWidth = wAvail + 8;
+    const boxTop = blockTop - pad;
+    const boxHeight = blockBottom - boxTop;
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(boxLeft, boxTop, boxWidth, boxHeight, 4, 4);
+
+    // siguiente bloque
+    cursorY = blockBottom + 16; // más espacio para separar
+  });
+
+  // ---------- Totales por método (bruto) ----------
+  const yStartTotals = (doc as any).lastAutoTable?.finalY
+    ? (doc as any).lastAutoTable.finalY + 64
+    : 180;
+
+  if (yStartTotals > pageH - 180) {
+    (doc as any).addPage();
+  }
+
+  const totalsMap = buildMethodTotalsGross(rows);
+  const totalsEntries = Object.entries(totalsMap).sort(
+    (a, b) => b[1].total - a[1].total
+  );
+  const grand = totalsEntries.reduce((s, [, o]) => s + o.total, 0);
+  const grandCount = totalsEntries.reduce((s, [, o]) => s + o.count, 0);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Totales por método (bruto)", margin.left, yStartTotals - 8);
+
+  const cw2 = {
+    metodo: wAvail * 0.5,
+    cant: wAvail * 0.14,
+    total: wAvail * 0.22,
+    pct: wAvail * 0.14,
   };
+
+  autoTable(doc, {
+    startY: yStartTotals + 8,
+    tableWidth: wAvail,
+    head: [["Método", "Cant. valores", "Total bruto", "% del total"]],
+    body: totalsEntries.map(([m, o]) => [
+      prettyMethod(m),
+      String(o.count),
+      currencyFmt.format(o.total),
+      `${((o.total / (grand || 1)) * 100).toFixed(1)}%`,
+    ]),
+    foot: [
+      [
+        { content: "TOTAL", styles: { fontStyle: "bold" } },
+        { content: String(grandCount), styles: { fontStyle: "bold" } },
+        { content: currencyFmt.format(grand), styles: { fontStyle: "bold" } },
+        { content: "100%", styles: { fontStyle: "bold" } },
+      ],
+    ],
+    theme: "grid",
+    styles: { fontSize: 9, cellPadding: 5 },
+    headStyles: { fillColor: [34, 197, 94], textColor: 0 },
+    columnStyles: {
+      0: { cellWidth: cw2.metodo },
+      1: { cellWidth: cw2.cant, halign: "right" },
+      2: { cellWidth: cw2.total, halign: "right" },
+      3: { cellWidth: cw2.pct, halign: "right" },
+    },
+    margin,
+  });
+
+  // ---------- Guardar ----------
+  doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+};
+
+
 
   const { data: customer } = useGetCustomerByIdQuery(
     { id: selectedClientId ?? "" },
@@ -710,6 +732,7 @@ const PaymentsChargedPage = () => {
         key: p._id,
         select: (
           <input
+            {...stopProps}
             type="checkbox"
             aria-label={`Seleccionar pago ${p._id}`}
             aria-checked={selectedIds.has(p._id)}
@@ -902,6 +925,22 @@ const PaymentsChargedPage = () => {
                 {s.name}
               </option>
             ))}
+          </select>
+        ),
+      },
+      {
+        content: (
+          <select
+            value={rendidoFilter}
+            onChange={(e) =>
+              setRendidoFilter(e.target.value as "" | "true" | "false")
+            }
+            className="border border-gray-300 rounded p-2 text-sm min-w-[160px]"
+            title="Estado de rendición"
+          >
+            <option value="">Todos</option>
+            <option value="true">Rendidos</option>
+            <option value="false">No Rendidos</option>
           </select>
         ),
       },

@@ -681,7 +681,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <InfoRow
               label={
                 <LabelWithTip
-                  label="Desc/Rec financiero"
+                  label="Desc/Costo financiero"
                   tip={
                     showSobrePago
                       ? "Ajuste aplicado SOBRE EL PAGO cargado (prorrateado)."

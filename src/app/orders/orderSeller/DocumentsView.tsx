@@ -165,7 +165,7 @@ export function DocumentsView({
   const bannerNote = isDesc
     ? null
     : hasSurcharge
-    ? `Recargo por ${surcharge.days} días`
+    ? `Costo Financiero por ${surcharge.days} días`
     : note || null;
 
   const discountAmount = balance * rate;
