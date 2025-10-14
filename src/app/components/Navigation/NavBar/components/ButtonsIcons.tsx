@@ -264,7 +264,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                   <p className="font-semibold text-gray-800 mb-2 text-xs">
                                     {notification.title}
                                   </p>
-                                  <p className="text-gray-600 text-xs">
+                                  <p className="text-gray-600 text-xs whitespace-pre-line leading-relaxed break-words line-clamp-5">
                                     {notification.description}
                                   </p>
                                 </motion.li>
@@ -345,7 +345,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                 <p className="font-semibold text-gray-800 mb-2 text-xs">
                                   {notification.title}
                                 </p>
-                                <p className="text-gray-600 text-xs">
+                                <p className="text-gray-600 text-xs whitespace-pre-line leading-relaxed break-words line-clamp-5">
                                   {notification.description}
                                 </p>
                               </motion.li>

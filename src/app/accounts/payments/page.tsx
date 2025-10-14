@@ -1711,11 +1711,15 @@ function ImputedPill({ imputed }: { imputed?: boolean }) {
   const labelYes = t("yes") || "Sí";
   const labelNo = t("no") || "No";
   const label = imputed ? labelYes : labelNo;
+
+  // ✅ Colores: verde si está rendido (true), rojo si no (false)
   const cls = imputed
-    ? "bg-indigo-100 text-indigo-800"
-    : "bg-zinc-100 text-zinc-800";
+    ? "bg-emerald-100 text-emerald-800"
+    : "bg-rose-100 text-rose-800";
+
   const base =
-    "px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1";
+    "px-4 py-2 rounded-full text-xs font-medium inline-flex items-center gap-1";
+
   return <span className={`${base} ${cls}`}>{label}</span>;
 }
 

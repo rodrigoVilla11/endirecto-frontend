@@ -970,7 +970,7 @@ export default function ValueView({
           <RowSummary
             label={
               <LabelWithTip
-                label="DTO/REC FINACIERO"
+                label="DTO/COSTO FINACIERO"
                 tip={EXPLAIN.dtoRecFact}
               />
             }

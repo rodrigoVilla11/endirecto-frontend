@@ -243,6 +243,179 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   );
   const canSend = isValuesValid && newValues.length > 0;
 
+  const fmtARS = (n: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+    }).format(n);
+
+  const absPct = (x: number) => `${(Math.abs(x) * 100).toFixed(1)}%`;
+
+  /** Promedio ponderado de días por DOCUMENTO (pesa por base de cada doc) */
+  function weightedDaysByDocs(docs: Array<{ base: number; days: number }>) {
+    let w = 0,
+      sum = 0;
+    for (const d of docs) {
+      const b = Number(d.base) || 0;
+      const days = Number.isFinite(d.days) ? Number(d.days) : 0;
+      w += b * Math.max(0, days);
+      sum += b;
+    }
+    return sum > 0 ? Math.round(w / sum) : 0;
+  }
+
+  /** Promedio ponderado de días por VALORES (cheques pesan por neto imputable; otros métodos = 0 días) */
+  function weightedDaysByValues(
+    values: Array<{ method: string; amount: string; chequeDate?: string }>,
+    graceDays: number
+  ) {
+    // helper local
+    const daysBetweenToday = (iso?: string) => {
+      if (!iso) return 0;
+      const d = new Date(iso);
+      const today = new Date();
+      const start = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+      ).getTime();
+      const end = new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate()
+      ).getTime();
+      const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      return Math.max(diff, 0);
+    };
+
+    let w = 0,
+      sum = 0;
+    for (const v of values) {
+      const net = parseFloat(v.amount || "0") || 0;
+      const daysTotal =
+        v.method === "cheque" ? daysBetweenToday(v.chequeDate) : 0;
+      const charged = Math.max(0, daysTotal - (graceDays ?? 0));
+      w += net * charged;
+      sum += net;
+    }
+    return sum > 0 ? Math.round(w / sum) : 0;
+  }
+
+  /** Lista legible de la composición del pago (con fechas para cheques) */
+  function prettyValuesBreakdown(
+    values: Array<{ method: string; amount: string; chequeDate?: string }>
+  ) {
+    const lines: string[] = [];
+    for (const v of values) {
+      const amt = fmtARS(Number(v.amount || 0));
+      if (v.method === "cheque") {
+        // DD/MM/YY
+        const d = v.chequeDate ? new Date(v.chequeDate) : null;
+        const dd = d
+          ? d.toLocaleDateString("es-AR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+            })
+          : "—";
+        lines.push(`Cheque ${dd}: ${amt}`);
+      } else if (v.method === "efectivo") {
+        lines.push(`Efectivo: ${amt}`);
+      } else if (v.method === "transferencia") {
+        lines.push(`Transferencia: ${amt}`);
+      } else {
+        lines.push(`${v.method || "Otro"}: ${amt}`);
+      }
+    }
+    return lines.length ? lines.join("\n") : "—";
+  }
+
+  /** Construye el texto multilinea de la notificación */
+  function buildPaymentNotificationText(opts: {
+    date: Date;
+    customerCode?: string | number;
+    customerName?: string;
+    sellerName?: string;
+    userName?: string;
+
+    // DOCUMENTOS
+    docsBase: number; // suma de saldos a pagar (base)
+    docsFinal: number; // suma final tras reglas por doc (lo que *corresponde* pagar)
+    docsDaysAvg: number; // promedio ponderado de días por doc
+
+    // VALORES (pagos cargados)
+    valuesTotal: number; // suma de pagos cargados (neto)
+    valuesAdjAmount: number; // ajuste aplicado SOBRE VALORES (tu totalAdjustmentSigned)
+    valuesDaysAvg: number; // promedio ponderado de días de valores (cheques con gracia)
+
+    valuesBreakdown: string; // “Efectivo: $X\nCheque 25/01/26: $Y”
+  }) {
+    const {
+      date,
+      customerCode,
+      customerName,
+      sellerName,
+      userName,
+      docsBase,
+      docsFinal,
+      docsDaysAvg,
+      valuesTotal,
+      valuesAdjAmount,
+      valuesDaysAvg,
+      valuesBreakdown,
+    } = opts;
+
+    // EFECTIVO % por documentos (comparando final vs base)
+    const docsAdjAmount = docsFinal - docsBase; // +recargo / -descuento
+    const docsAdjRate = docsBase > 0 ? docsAdjAmount / docsBase : 0;
+
+    // % efectivo del bloque “composición del pago”
+    const valuesBaseForPct = valuesTotal !== 0 ? valuesTotal : 1; // evita /0
+    const valuesAdjRate = valuesAdjAmount / valuesBaseForPct;
+
+    const fecha = date.toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
+    const cliente = `${(customerCode ?? "—").toString().padStart(5, "0")} - ${
+      customerName || "—"
+    }`;
+    const vendedor = sellerName || "—";
+    const usuario = userName || "—";
+
+    const docsBaseText = fmtARS(docsBase);
+    const docsAdjText = fmtARS(Math.abs(docsAdjAmount));
+    const docsFinalText = fmtARS(docsFinal);
+
+    const valuesTotalText = fmtARS(valuesTotal);
+    const valuesAdjText = fmtARS(Math.abs(valuesAdjAmount));
+    const saldoText = fmtARS(docsFinal - valuesTotal);
+
+    return [
+      `Fecha: ${fecha}`,
+      `Cliente: ${cliente}`,
+      `Vendedor: ${vendedor}`,
+      `Usuario: ${usuario}`,
+      ``,
+      `Documentos: ${docsBaseText}`,
+      `Costo Financiero: ${docsDaysAvg} días - ${absPct(docsAdjRate)}`,
+      `Costo Financiero: ${docsAdjText}`,
+      `-----------------------------------`,
+      `TOTAL A PAGAR: ${docsFinalText}`,
+      ``,
+      `Composición del pago:`,
+      valuesBreakdown,
+      `--------------------------------`,
+      `Total Pagado: ${valuesTotalText}`,
+      `Costo Financiero: ${valuesDaysAvg} días - ${absPct(valuesAdjRate)}`,
+      `Costo Financiero: ${valuesAdjText}`,
+      `--------------------------------`,
+      `SALDO ${saldoText}`,
+    ].join("\n");
+  }
+
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
 
@@ -351,51 +524,98 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       } as any;
       const created = await createPayment(payload).unwrap();
 
-      const valuesSummary = (created.values ?? [])
-        .map((v: any) => {
-          const concept = (v?.concept || v?.method || "—").toString();
-          const amount = Number(v?.amount ?? 0);
-          return `${concept}: ${currencyFmt.format(amount)}`;
-        })
-        .join(" • ");
+      // ===== Datos para armar el texto =====
+      const now = new Date();
 
+      const customerCode = customer?.id ?? selectedClientId;
+      const customerName = customer?.name ?? "";
+      const sellerName =  customer?.seller_id; // ajustá al nombre real del vendedor si lo tenés
+      const userName = userData?.username || "";
+
+      // DOCUMENTOS: usamos tus totales ya calculados en la UI
+      const docsBase = round2(totalBase);
+      const docsFinal = round2(totalDocsFinal);
+
+      // Promedio ponderado de días por doc (pesa cada base de doc)
+      const docsDaysAvg = weightedDaysByDocs(
+        (computedDiscounts || []).map((d) => ({ base: d.base, days: d.days }))
+      );
+
+      // VALORES
+      const valuesTotal = round2(totalValues);
+
+      // Ajuste aplicado SOBRE VALORES (el que prorrateás): puede ser + (descuento) o - (recargo)
+      const valuesAdjAmount = round2(totalAdjustmentSigned);
+
+      // Promedio ponderado de días por valores (cheques con gracia; otros = 0)
+      const grace = checkGrace?.value ?? 45;
+      const valuesDaysAvg = weightedDaysByValues(
+        (newValues || []).map((v) => ({
+          method: v.method,
+          amount: v.amount,
+          chequeDate: v.chequeDate,
+        })),
+        grace
+      );
+
+      // Composición legible
+      const valuesBreakdown = prettyValuesBreakdown(
+        (newValues || []).map((v) => ({
+          method: v.method,
+          amount: v.amount,
+          chequeDate: v.chequeDate,
+        }))
+      );
+
+      // Texto final multilínea
+      const longDescription = buildPaymentNotificationText({
+        date: now,
+        customerCode,
+        customerName,
+        sellerName,
+        userName,
+        docsBase,
+        docsFinal,
+        docsDaysAvg,
+        valuesTotal,
+        valuesAdjAmount,
+        valuesDaysAvg,
+        valuesBreakdown,
+      });
+
+      // ===== Notificación al cliente =====
       await addNotificationToCustomer({
         customerId: String(selectedClientId),
         notification: {
-          title: "PAGO REGISTRADO",
+          title: `PAGO REGISTRADO `,
           type: "PAGO",
-          description: `${valuesSummary} | Neto: ${currencyFmt.format(
-            created?.totals?.net ?? totalToPayWithValuesAdj
-          )}`,
+          description: longDescription,
           link: "/payments",
-          schedule_from: new Date(),
-          schedule_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          schedule_from: now,
+          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
         },
       }).unwrap();
-      try {
-        const now = new Date();
-        const in7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-        await addNotificationToUserById({
-          id: "67a60be545b75a39f99a485b", // _id del user
-          notification: {
-            title: "Pago registrado",
-            type: "PAGO", // si tu backend aún no soporta 'PAGO', usar "NOVEDAD"
-            description: `Cliente ${selectedClientId} - ${
-              customer?.name
-            }  — Neto ${currencyFmt.format(totalToPayWithValuesAdj)}`,
-            link: "/payments",
-            schedule_from: now,
-            schedule_to: in7d,
-            customer_id: String(selectedClientId),
-          },
-        }).unwrap();
-      } catch (err) {
-        console.warn(
-          "Pago creado, pero falló la notificación al usuario:",
-          err
-        );
-      }
+      // ===== Notificación al usuario (resumen corto + adjunto el bloque completo abajo) =====
+      const shortHeader = `Cliente ${customerCode} - ${customerName}\nNeto ${fmtARS(
+        docsFinal
+      )} • Pagado ${fmtARS(valuesTotal)} • Saldo ${fmtARS(
+        docsFinal - valuesTotal
+      )}`;
+
+      await addNotificationToUserById({
+        id: "67a60be545b75a39f99a485b",
+        notification: {
+          title: "Pago registrado",
+          type: "PAGO",
+          description: `${shortHeader}\n\n${longDescription}`,
+          link: "/payments",
+          schedule_from: now,
+          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          customer_id: String(selectedClientId),
+        },
+      }).unwrap();
+
       setIsConfirmModalOpen(false);
       setSubmittedPayment(true);
       setNewValues([]);
