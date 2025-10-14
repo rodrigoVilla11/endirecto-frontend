@@ -613,7 +613,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         notification: {
           title: "PAGO REGISTRADO",
           type: "PAGO",
-          description: `${shortHeader}\n\n${longDescription}`,
+          description: `${longDescription}`,
           link: "/payments",
           schedule_from: now,
           schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
