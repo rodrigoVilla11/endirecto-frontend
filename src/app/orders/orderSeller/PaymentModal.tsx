@@ -368,13 +368,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       valuesBreakdown,
     } = opts;
 
-    // EFECTIVO % por documentos (comparando final vs base)
-    const docsAdjAmount = docsFinal - docsBase; // +recargo / -descuento
-    const docsAdjRate = docsBase > 0 ? docsAdjAmount / docsBase : 0;
-
     // % efectivo del bloque “composición del pago”
     const valuesBaseForPct = valuesTotal !== 0 ? valuesTotal : 1; // evita /0
-    const valuesAdjRate = valuesAdjAmount / valuesBaseForPct;
+    const docsAdjAmount = docsFinal - docsBase; // (ya lo tenés arriba)
+    const docsAdjRate = docsBase > 0 ? docsAdjAmount / docsBase : 0;
+    const valuesAdjRate = docsAdjRate;
 
     const fecha = date.toLocaleDateString("es-AR", {
       day: "2-digit",
@@ -403,8 +401,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       `Usuario: ${usuario}`,
       ``,
       `Documentos: ${docsBaseText}`,
-      `Costo Financiero: ${docsDaysAvg} días - ${absPct(docsAdjRate)}`,
-      `Costo Financiero: ${docsAdjText}`,
+      `Desc/Costo financiero: ${docsDaysAvg} días - ${absPct(docsAdjRate)}`,
+      `Desc/Costo financiero: ${docsAdjText}`,
       `-----------------------------------`,
       `TOTAL A PAGAR: ${docsFinalText}`,
       ``,
@@ -412,8 +410,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       valuesBreakdown,
       `--------------------------------`,
       `Total Pagado: ${valuesTotalText}`,
-      `Costo Financiero: ${valuesDaysAvg} días - ${absPct(valuesAdjRate)}`,
-      `Costo Financiero: ${valuesAdjText}`,
+      `Desc/Costo financiero: ${valuesDaysAvg} días - ${absPct(valuesAdjRate)}`,
+      `Desc/Costo financiero: ${valuesAdjText}`,
       `--------------------------------`,
       `SALDO ${saldoText}`,
     ].join("\n");
@@ -719,31 +717,29 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 🔑 Nueva versión: reparte cada valor proporcionalmente entre documentos
   function computeAdjustmentOnValuesFull(values: ValueItem[], docs: any[]) {
-    const valuesTotal = values.reduce(
-      (a, v) => a + parseFloat(v.amount || "0"),
-      0
-    );
-    if (valuesTotal <= 0 || docs.length === 0) return 0;
+  const valuesTotal = values.reduce((a, v) => a + parseFloat(v.amount || "0"), 0);
+  if (valuesTotal <= 0 || docs.length === 0) return 0;
 
-    const totalBaseDocs = docs.reduce(
-      (a: number, d: any) => a + (d.base || 0),
-      0
-    );
-    if (totalBaseDocs <= 0) return 0;
+  // Ajuste por documentos (suma base * rate, con +descto / -recargo)
+  const docAdjustment = docs.reduce(
+    (a: number, d: any) => a + (d.base || 0) * (d.rate || 0),
+    0
+  );
 
-    // Ajuste de referencia por documento (como en "pagar total"):
-    // sum(base * rate). Esto captura las tasas diferentes por doc.
-    const docAdjustment = docs.reduce(
-      (a: number, d: any) => a + (d.base || 0) * (d.rate || 0),
-      0
-    );
+  // TOTAL FINAL por documentos = Σ (base - base*rate)
+  const docsFinalTotal = docs.reduce(
+    (a: number, d: any) => a + ((d.base || 0) - (d.base || 0) * (d.rate || 0)),
+    0
+  );
+  if (docsFinalTotal <= 0) return 0;
 
-    // Si el usuario paga menos o más que el total de facturas,
-    // escalamos proporcionalmente por el ratio de valores sobre base.
-    const scale = valuesTotal / totalBaseDocs;
+  // 🔑 Escalá contra el TOTAL FINAL (no contra la base)
+  const scale = valuesTotal / docsFinalTotal;
 
-    return round2(docAdjustment * scale);
-  }
+  // Si se paga TODO, scale=1 → valuesAdj = docAdjustment (match exacto)
+  return Math.round(docAdjustment * scale * 100) / 100; // round2
+}
+
 
   // 2) AJUSTE TOTAL aplicado sobre VALORES
   const totalAdjustmentSigned = computeAdjustmentOnValuesFull(
@@ -811,25 +807,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // Si el valor generado por "Pagar total" cambia de monto,
   // cambiamos también su concepto a "Sin Concepto" y salimos del modo.
   // Si cambia el monto del item de "Pagar total", renombrá el concepto
-useEffect(() => {
-  // debe existir EXACTAMENTE un valor y debe ser el de "pagar total"
-  if (newValues.length !== 1) {
-    setPayTotalDocMode(false);
-    return;
-  }
+  useEffect(() => {
+    // debe existir EXACTAMENTE un valor y debe ser el de "pagar total"
+    if (newValues.length !== 1) {
+      setPayTotalDocMode(false);
+      return;
+    }
 
-  const v = newValues[0];
-  if (!isPayTotalItem(v)) {
-    setPayTotalDocMode(false);
-    return;
-  }
+    const v = newValues[0];
+    if (!isPayTotalItem(v)) {
+      setPayTotalDocMode(false);
+      return;
+    }
 
-  const amt = round2(parseFloat(v.amount || "0"));
-  const docsFinal = round2(totalDocsFinal);
+    const amt = round2(parseFloat(v.amount || "0"));
+    const docsFinal = round2(totalDocsFinal);
 
-  // si el monto coincide (dentro de la tolerancia), activamos el modo
-  setPayTotalDocMode(Math.abs(amt - docsFinal) <= EPS);
-}, [newValues, totalDocsFinal]);
+    // si el monto coincide (dentro de la tolerancia), activamos el modo
+    setPayTotalDocMode(Math.abs(amt - docsFinal) <= EPS);
+  }, [newValues, totalDocsFinal]);
 
   // Neto modelo “dto sobre valores”
   const net_by_values = round2(totalBase - totalAdjustmentSigned);
