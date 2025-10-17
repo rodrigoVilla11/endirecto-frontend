@@ -256,6 +256,25 @@ export default function ValueView({
     () => newValues.reduce((acc, v) => acc + toNum(v.amount), 0),
     [newValues]
   );
+  const nominalOf = (v: ValueItem) => {
+    if (v.method === "cheque") {
+      const raw = (v.raw_amount ?? "").trim();
+      return raw !== "" ? toNum(raw) : toNum(v.amount);
+    }
+    return toNum(v.amount);
+  };
+  console.log("nominal test:", newValues.map(v => ({
+  m: v.method,
+  raw: v.raw_amount,
+  amt: v.amount,
+  nominal: nominalOf(v)
+})));
+
+  // Total NOMINAL solo para mostrar (cheques por raw_amount)
+  const totalNominalValues = useMemo(
+    () => newValues.reduce((acc, v) => acc + nominalOf(v), 0),
+    [newValues]
+  );
 
   const saldo = useMemo(
     () => +(netToPay - totalValues).toFixed(2),
@@ -282,7 +301,7 @@ export default function ValueView({
         ...prev,
         {
           amount: "",
-          rawAmount: "",
+          raw_amount: "",
           selectedReason: NO_CONCEPTO,
           method: "efectivo" as PaymentMethod,
           bank: "",
@@ -340,7 +359,11 @@ export default function ValueView({
     }
     const raw = v.raw_amount ?? v.amount ?? "0";
     const { neto } = computeChequeNeto(raw, iso);
-    patchRow(idx, { chequeDate: iso, raw_amount: raw, amount: neto.toFixed(2) });
+    patchRow(idx, {
+      chequeDate: iso,
+      raw_amount: raw,
+      amount: neto.toFixed(2),
+    });
   };
 
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
@@ -911,7 +934,9 @@ export default function ValueView({
                         <div className="flex justify-between">
                           <span className="text-zinc-300">Valor Bruto</span>
                           <span className="text-white tabular-nums">
-                            {currencyFmt.format(toNum(v.raw_amount || v.amount))}
+                            {currencyFmt.format(
+                              toNum(v.raw_amount || v.amount)
+                            )}
                           </span>
                         </div>
 
@@ -960,10 +985,12 @@ export default function ValueView({
         <div className="mt-4 space-y-1 text-sm">
           <RowSummary
             label={
-              <LabelWithTip label="TOTAL PAGADO" tip={EXPLAIN.totalPagado} />
+              <LabelWithTip
+                label="TOTAL PAGADO (NOMINAL)"
+                tip="Suma de importes originales: para cheques se toma el monto bruto, para otros métodos el monto ingresado."
+              />
             }
-            value={currencyFmt.format(totalValues)}
-            bold
+            value={currencyFmt.format(totalNominalValues)}
           />
 
           {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
