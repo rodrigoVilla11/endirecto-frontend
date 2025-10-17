@@ -104,7 +104,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     /** Monto imputable (para cheque = neto) */
     amount: string;
     /** Solo cheques: monto original ingresado */
-    rawAmount?: string;
+    raw_amount?: string;
     /** Solo cheques: fecha de cobro */
     chequeDate?: string;
 
@@ -138,7 +138,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
 
   function computeChequeMeta(v: ValueItem) {
-    const raw = parseFloat(v.rawAmount ?? v.amount ?? "0") || 0;
+    const raw = parseFloat(v.raw_amount ?? v.amount ?? "0") || 0;
     const days_total = daysBetweenToday(v.chequeDate);
 
     // Usa 1 sola fuente de gracia en todos lados
@@ -303,14 +303,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
 
   /** Lista legible de la composición del pago (con fechas para cheques) */
+  /** Lista legible de la composición del pago (con fechas para cheques)
+   * - Cheques: "Cheque dd/mm/yy — Nominal: $X • Actual: $Y"
+   * - Otros:   "Efectivo/Transferencia: $X"
+   */
   function prettyValuesBreakdown(
-    values: Array<{ method: string; amount: string; chequeDate?: string }>
+    values: Array<{
+      method: string;
+      amount: string;
+      chequeDate?: string;
+      raw_amount?: string;
+    }>
   ) {
     const lines: string[] = [];
     for (const v of values) {
-      const amt = fmtARS(Number(v.amount || 0));
+      const net = fmtARS(Number(v.amount || 0)); // Actual (NETO imputable)
       if (v.method === "cheque") {
-        // DD/MM/YY
+        const nominal = fmtARS(Number(v.raw_amount || v.amount || 0)); // Nominal (BRUTO)
         const d = v.chequeDate ? new Date(v.chequeDate) : null;
         const dd = d
           ? d.toLocaleDateString("es-AR", {
@@ -319,101 +328,180 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               year: "2-digit",
             })
           : "—";
-        lines.push(`Cheque ${dd}: ${amt}`);
+        lines.push(`Cheque ${dd} — Nominal: ${nominal} • Actual: ${net}`);
       } else if (v.method === "efectivo") {
-        lines.push(`Efectivo: ${amt}`);
+        lines.push(`Efectivo: ${net}`);
       } else if (v.method === "transferencia") {
-        lines.push(`Transferencia: ${amt}`);
+        lines.push(`Transferencia: ${net}`);
       } else {
-        lines.push(`${v.method || "Otro"}: ${amt}`);
+        lines.push(`${v.method || "Otro"}: ${net}`);
       }
     }
     return lines.length ? lines.join("\n") : "—";
   }
+  const fmtMoney2 = (n: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.round((n + Number.EPSILON) * 100) / 100);
 
+  const fmtPct1 = (f: number) => `${(Math.abs(f) * 100).toFixed(1)}%`;
+  const ddmmyy = (d: Date) =>
+    d.toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
   /** Construye el texto multilinea de la notificación */
   function buildPaymentNotificationText(opts: {
     date: Date;
     id: string;
     customerCode?: string | number;
     customerName?: string;
-    sellerName?: string;
+    sellerIdOrName?: string | number; // 👈 mostramos "Vendedor: ... tal cual"
     userName?: string;
 
     // DOCUMENTOS
-    docsBase: number; // suma de saldos a pagar (base)
-    docsFinal: number; // suma final tras reglas por doc (lo que *corresponde* pagar)
+    docsBase: number; // suma de saldos base
+    docsFinal: number; // total final por reglas de documentos
     docsDaysAvg: number; // promedio ponderado de días por doc
-
-    // VALORES (pagos cargados)
-    valuesTotal: number; // suma de pagos cargados (neto)
-    valuesAdjAmount: number; // ajuste aplicado SOBRE VALORES (tu totalAdjustmentSigned)
-    valuesDaysAvg: number; // promedio ponderado de días de valores (cheques con gracia)
-
-    valuesBreakdown: string; // “Efectivo: $X\nCheque 25/01/26: $Y”
+    docsAdjAmount: number; // = docsFinal - docsBase (positivo = descuento, negativo = recargo)
+    // ojo: en tu código actual tenés docAdjustmentSigned = totalBase - totalDocsFinal.
+    // Para este layout usamos docsAdjAmount = docsFinal - docsBase (mismo signo que el texto).
+    // VALORES (para composición)
+    values: Array<{
+      method: string; // "efectivo" | "transferencia" | "cheque"
+      amount: string; // neto (para cheques = net_amount)
+      chequeDate?: string;
+      raw_amount?: string; // solo cheques (nominal)
+      chequeNumber?: string;
+       selectedReason?: string; 
+    }>;
+    // Parámetros para cálculos de valores
+    docsAdjRate: number; // = docsAdjAmount / docsBase  (p.ej. 0.101)
+    annualInterestPct: number; // p.ej. 96 o 0.96 (ya normalizamos)
+    chequeGraceDays: number; // p.ej. 45
+    valuesTotal: number; // suma de valores netos imputables
   }) {
     const {
       date,
       id,
       customerCode,
       customerName,
-      sellerName,
+      sellerIdOrName,
       userName,
       docsBase,
       docsFinal,
       docsDaysAvg,
-      valuesTotal,
-      valuesAdjAmount,
-      valuesDaysAvg,
-      valuesBreakdown,
+      docsAdjAmount,
+      values,
+      docsAdjRate,
+      annualInterestPct,
+      chequeGraceDays,
+      valuesTotal
     } = opts;
 
-    // % efectivo del bloque “composición del pago”
-    const valuesBaseForPct = valuesTotal !== 0 ? valuesTotal : 1; // evita /0
-    const docsAdjAmount = docsFinal - docsBase; // (ya lo tenés arriba)
-    const docsAdjRate = docsBase > 0 ? docsAdjAmount / docsBase : 0;
-    const valuesAdjRate = docsAdjRate;
+    // ---- Totales por tipo de valor ----
+    let totalPagado = 0; // suma de efectivo + transf + cheques RAW
+    let totalDescCostEfectyTrans = 0; // desc/costo financiero aplicado a efectivo/transferencia
+    let totalCostoCheques = 0; // intereses de cheques
 
-    const fecha = date.toLocaleDateString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    });
+    // Bloques de "COMPOSICION DEL PAGO"
+    const lines: string[] = [];
+
+    for (const v of values) {
+      const method = (v.method || "").toLowerCase();
+
+      if (method === "cheque") {
+        // Para cheques: mostrar NOMINAL (raw) y su costo financiero propio
+        const meta = computeChequeMeta({
+          method: "cheque",
+          selectedReason: v.selectedReason || "",
+          amount: v.amount || "0",
+          raw_amount: v.raw_amount ?? v.amount,
+          chequeDate: v.chequeDate,
+          bank: undefined,
+        });
+
+        const raw = meta.raw; // nominal
+        totalPagado += raw;
+        totalCostoCheques += meta.interest_amount;
+
+        const d = v.chequeDate ? new Date(v.chequeDate) : undefined;
+        const when = d ? ddmmyy(d) : "—";
+
+        lines.push(`Cheque ${when}: ${fmtMoney2(raw)}`);
+        lines.push(
+          `Costo Financiero: ${meta.days_charged} días - ${fmtPct1(
+            meta.interest_pct
+          )}`
+        );
+        lines.push(`Costo Financiero: ${fmtMoney2(meta.interest_amount)}`);
+        lines.push(`--------------------------------`);
+      } else {
+        // Efectivo / Transferencia: aplica la tasa de documentos
+        const amt = parseFloat(v.amount || "0") || 0;
+        totalPagado += amt;
+
+        const descCost =
+          Math.round((amt * docsAdjRate + Number.EPSILON) * 100) / 100;
+        totalDescCostEfectyTrans += descCost;
+
+        const label =
+          method === "efectivo"
+            ? "Efectivo"
+            : method === "transferencia"
+            ? "Transferencia"
+            : "Otro";
+        lines.push(`${label}: ${fmtMoney2(amt)}`);
+        lines.push(
+          `Desc/Cost F: ${docsDaysAvg} días - ${fmtPct1(docsAdjRate)}`
+        );
+        lines.push(`Desc/Cost F: ${fmtMoney2(descCost)}`);
+        lines.push(`--------------------------------`);
+      }
+    }
+
+    const totalDescCost = totalDescCostEfectyTrans + totalCostoCheques;
+    const netoAplicar =
+      Math.round((totalPagado - totalDescCost + Number.EPSILON) * 100) / 100;
+    const saldo = fmtARS(docsFinal - valuesTotal);
+
+    // Firmas de cabecera
+    const fecha = ddmmyy(date);
     const cliente = `${(customerCode ?? "—").toString().padStart(5, "0")} - ${
       customerName || "—"
     }`;
-    const vendedor = sellerName || "—";
-    const usuario = userName || "—";
 
-    const docsBaseText = fmtARS(docsBase);
-    const docsAdjText = fmtARS(Math.abs(docsAdjAmount));
-    const docsFinalText = fmtARS(docsFinal);
+    // El porcentaje de documentos se muestra como positivo (ejemplo 10.1%)
+    const docsPctTxt = fmtPct1(docsAdjRate);
 
-    const valuesTotalText = fmtARS(valuesTotal);
-    const valuesAdjText = fmtARS(Math.abs(valuesAdjAmount));
-    const saldoText = fmtARS(docsFinal - valuesTotal);
-
+    // ¡listo!
     return [
       `Fecha: ${fecha}`,
       `ID Pago: ${id}`,
       `Cliente: ${cliente}`,
-      `Vendedor: ${vendedor}`,
-      `Usuario: ${usuario}`,
+      `Vendedor: ${sellerIdOrName ?? "—"}`,
+      `Usuario: ${userName || "—"}`,
       ``,
-      `Documentos: ${docsBaseText}`,
-      `Desc/Costo financiero: ${docsDaysAvg} días - ${absPct(docsAdjRate)}`,
-      `Desc/Costo financiero: ${docsAdjText}`,
+      `Documentos: ${fmtMoney2(docsBase)}`,
+      `Costo Financiero: ${docsDaysAvg} días - ${docsPctTxt}`,
+      `Costo Financiero: ${fmtMoney2(Math.abs(docsAdjAmount))}`,
       `-----------------------------------`,
-      `TOTAL A PAGAR: ${docsFinalText}`,
+      `TOTAL A PAGAR (efect/transf): ${fmtMoney2(docsFinal)}`,
       ``,
-      `Composición del pago:`,
-      valuesBreakdown,
+      ``,
+      `COMPOSICION DEL PAGO:`,
+      ...lines,
+      `Total Pagado: ${fmtMoney2(totalPagado)}`,
+      `Dec/Cost F: ${fmtMoney2(totalDescCostEfectyTrans)}`,
+      `Cost F. Cheques: ${fmtMoney2(totalCostoCheques)}`,
+      `Total Desc/Cost F: ${fmtMoney2(totalDescCost)}`,
       `--------------------------------`,
-      `Total Pagado: ${valuesTotalText}`,
-      `Desc/Costo financiero: ${valuesDaysAvg} días - ${absPct(valuesAdjRate)}`,
-      `Desc/Costo financiero: ${valuesAdjText}`,
-      `--------------------------------`,
-      `SALDO ${saldoText}`,
+      `Neto a aplicar Factura: ${fmtMoney2(netoAplicar)}`,
+      `SALDO ${saldo}`,
     ].join("\n");
   }
 
@@ -545,6 +633,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       // VALORES
       const valuesTotal = round2(totalValues);
+      const valuesTotalNominal = round2(valuesRawTotal);
 
       // Ajuste aplicado SOBRE VALORES (el que prorrateás): puede ser + (descuento) o - (recargo)
       const valuesAdjAmount = round2(totalAdjustmentSigned);
@@ -566,24 +655,41 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           method: v.method,
           amount: v.amount,
           chequeDate: v.chequeDate,
+          raw_amount: v.raw_amount,
         }))
       );
 
-      // Texto final multilínea
+      const docsAdjAmount = round2(docsFinal - docsBase); // 👈 ojo: final - base
+      const docsAdjRate = docsBase !== 0 ? docsAdjAmount / docsBase : 0;
+
+      const sellerDisplay = customer?.seller_id ?? userData?.seller_id ?? "—";
+
+      // Armamos el texto EXACTO
       const longDescription = buildPaymentNotificationText({
         date: now,
         id,
         customerCode,
         customerName,
-        sellerName,
-        userName,
+        sellerIdOrName: sellerDisplay,
+        userName: userData?.username || "",
+
         docsBase,
         docsFinal,
         docsDaysAvg,
+        docsAdjAmount,
+
+        values: (newValues || []).map((v) => ({
+          method: v.method,
+          amount: v.amount,
+          chequeDate: v.chequeDate,
+          raw_amount: v.raw_amount, // importante para “Cheque ...: $ raw”
+          chequeNumber: v.chequeNumber,
+        })),
+
+        docsAdjRate,
+        annualInterestPct: annualInterestPct,
+        chequeGraceDays: checkGrace?.value ?? 45,
         valuesTotal,
-        valuesAdjAmount,
-        valuesDaysAvg,
-        valuesBreakdown,
       });
 
       // ===== Notificación al cliente =====
@@ -717,29 +823,32 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 🔑 Nueva versión: reparte cada valor proporcionalmente entre documentos
   function computeAdjustmentOnValuesFull(values: ValueItem[], docs: any[]) {
-  const valuesTotal = values.reduce((a, v) => a + parseFloat(v.amount || "0"), 0);
-  if (valuesTotal <= 0 || docs.length === 0) return 0;
+    const valuesTotal = values.reduce(
+      (a, v) => a + parseFloat(v.amount || "0"),
+      0
+    );
+    if (valuesTotal <= 0 || docs.length === 0) return 0;
 
-  // Ajuste por documentos (suma base * rate, con +descto / -recargo)
-  const docAdjustment = docs.reduce(
-    (a: number, d: any) => a + (d.base || 0) * (d.rate || 0),
-    0
-  );
+    // Ajuste por documentos (suma base * rate, con +descto / -recargo)
+    const docAdjustment = docs.reduce(
+      (a: number, d: any) => a + (d.base || 0) * (d.rate || 0),
+      0
+    );
 
-  // TOTAL FINAL por documentos = Σ (base - base*rate)
-  const docsFinalTotal = docs.reduce(
-    (a: number, d: any) => a + ((d.base || 0) - (d.base || 0) * (d.rate || 0)),
-    0
-  );
-  if (docsFinalTotal <= 0) return 0;
+    // TOTAL FINAL por documentos = Σ (base - base*rate)
+    const docsFinalTotal = docs.reduce(
+      (a: number, d: any) =>
+        a + ((d.base || 0) - (d.base || 0) * (d.rate || 0)),
+      0
+    );
+    if (docsFinalTotal <= 0) return 0;
 
-  // 🔑 Escalá contra el TOTAL FINAL (no contra la base)
-  const scale = valuesTotal / docsFinalTotal;
+    // 🔑 Escalá contra el TOTAL FINAL (no contra la base)
+    const scale = valuesTotal / docsFinalTotal;
 
-  // Si se paga TODO, scale=1 → valuesAdj = docAdjustment (match exacto)
-  return Math.round(docAdjustment * scale * 100) / 100; // round2
-}
-
+    // Si se paga TODO, scale=1 → valuesAdj = docAdjustment (match exacto)
+    return Math.round(docAdjustment * scale * 100) / 100; // round2
+  }
 
   // 2) AJUSTE TOTAL aplicado sobre VALORES
   const totalAdjustmentSigned = computeAdjustmentOnValuesFull(
@@ -769,6 +878,40 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     year: "numeric",
   });
 
+  function dateISOPlusDays(days: number) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function buildPresetSchedule(count: 1 | 2 | 3) {
+    if (count === 1)
+      return [{ label: "30 días", dateISO: dateISOPlusDays(30) }];
+    if (count === 2)
+      return [
+        { label: "30 días", dateISO: dateISOPlusDays(30) },
+        { label: "60 días", dateISO: dateISOPlusDays(60) },
+      ];
+    return [
+      { label: "30 días", dateISO: dateISOPlusDays(30) },
+      { label: "60 días", dateISO: dateISOPlusDays(60) },
+      { label: "90 días", dateISO: dateISOPlusDays(90) },
+    ];
+  }
+
+  function mergeRefiCheques(cheques: ValueItem[]) {
+    setNewValues((prev) => {
+      const keep = prev.filter(
+        (v) => !(v.method === "cheque" && v.selectedReason === "Refinanciación")
+      );
+      return [...keep, ...cheques];
+    });
+    setActiveTab("values");
+    setShowRefi(false);
+  }
   // 👇 reordenamos tabs: Valores, Comprobantes, Comentarios
   const tabsOrder: Array<"values" | "documents" | "comments"> = [
     "documents",
@@ -842,6 +985,85 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // Diferencia coherente con el neto mostrado
   const diff = round2(totalNetForUI - totalValues);
+
+  const remainingToRefi = Math.max(0, diff); // saldo restante (neto mostrado - valores cargados)
+  function proposeChequesPreset(daysList: number[]) {
+    const targetPV = remainingToRefi; // saldo restante
+    if (computedDiscounts.length === 0) {
+      alert("No se puede refinanciar sin documentos seleccionados.");
+      return;
+    }
+    if (targetPV <= 0) {
+      alert("No hay saldo pendiente para refinanciar.");
+      return;
+    }
+
+    const grace = checkGrace?.value ?? 45;
+    const daily = dailyRateFromAnnual(annualInterestPct);
+
+    // helper: fecha YYYY-MM-DD a partir de hoy + d días
+    function isoInDays(d: number) {
+      const base = new Date();
+      const dt = new Date(
+        base.getFullYear(),
+        base.getMonth(),
+        base.getDate() + d
+      );
+      return dt.toISOString().slice(0, 10);
+    }
+
+    const n = daysList.length;
+    const cheques: ValueItem[] = [];
+    let accNet = 0;
+
+    daysList.forEach((d, idx) => {
+      const daysTotal = d;
+      const daysCharged = Math.max(0, daysTotal - grace);
+      const interestPct = daily * daysCharged;
+
+      // seguridad por si 1 - i <= 0
+      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+
+      let net: number;
+      if (idx === n - 1) {
+        // último: ajusta para cerrar exacto
+        net = targetPV - accNet;
+      } else {
+        net = targetPV / n;
+      }
+
+      const raw = net / safeDen;
+      accNet += net;
+
+      cheques.push({
+        method: "cheque",
+        selectedReason: "Refinanciación",
+        amount: round2(net).toFixed(2), // NETO imputable
+        raw_amount: round2(raw).toFixed(2), // NOMINAL (bruto)
+        chequeDate: isoInDays(d), // 30/60/90
+      });
+    });
+
+    // Corrección de redondeo (si hiciera falta)
+    const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
+    const delta = round2(targetPV - sumNet);
+    if (Math.abs(delta) > 0.01) {
+      const last = cheques[cheques.length - 1];
+      const newNet = round2(parseFloat(last.amount) + delta);
+
+      // recalcular raw del último
+      const dLast = daysList[daysList.length - 1];
+      const daysCharged = Math.max(0, dLast - grace);
+      const interestPct = daily * daysCharged;
+      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+      const newRaw = round2(newNet / safeDen);
+
+      last.amount = newNet.toFixed(2);
+      last.raw_amount = newRaw.toFixed(2);
+    }
+
+    mergeRefiCheques(cheques);
+  }
 
   // Formateos para UI
   const formattedDiff = currencyFmt.format(diff);
@@ -1065,116 +1287,40 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 >
                   {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
                 </button>
+
                 {showRefi && (
-                  <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50">
-                    <PlanCalculator
-                      title="Refinanciación 30/60/90"
-                      graceDays={checkGrace?.value ?? 45}
-                      annualInterestPct={annualInterestPct}
-                      initialTotal={totalFinal} // ✅ pasar el total correcto
-                      onProposeCheques={({ schedule }) => {
-                        // ✅ OBJETIVO NETO: totalDocsWithAdjustments
-                        const targetPV = totalFinal;
-                        const n = schedule.length;
+                  <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50 space-y-3">
+                    <div className="text-sm text-zinc-300">
+                      Saldo a refinanciar:{" "}
+                      <b>{currencyFmt.format(remainingToRefi)}</b>
+                    </div>
 
-                        if (n === 0 || targetPV <= 0) {
-                          alert(
-                            "No se puede refinanciar sin documentos seleccionados"
-                          );
-                          return;
-                        }
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() => proposeChequesPreset([30])}
+                      >
+                        1 cheque (30 días)
+                      </button>
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() => proposeChequesPreset([30, 60])}
+                      >
+                        2 cheques (30/60)
+                      </button>
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() => proposeChequesPreset([30, 60, 90])}
+                      >
+                        3 cheques (30/60/90)
+                      </button>
+                    </div>
 
-                        // Parámetros para calcular cheques
-                        const daily = dailyRateFromAnnual(annualInterestPct);
-                        const grace = checkGrace?.value ?? 45;
-
-                        // Helper para días desde hoy
-                        function daysBetween(iso?: string) {
-                          if (!iso) return 0;
-                          const d = new Date(iso);
-                          const today = new Date();
-                          const start = new Date(
-                            today.getFullYear(),
-                            today.getMonth(),
-                            today.getDate()
-                          ).getTime();
-                          const end = new Date(
-                            d.getFullYear(),
-                            d.getMonth(),
-                            d.getDate()
-                          ).getTime();
-                          const diff = Math.ceil(
-                            (end - start) / (1000 * 60 * 60 * 24)
-                          );
-                          return Math.max(diff, 0);
-                        }
-
-                        // ✅ REPARTO EQUITATIVO con ajuste en el último
-                        const cheques: ValueItem[] = [];
-                        let accumulatedNet = 0;
-
-                        schedule.forEach((it, idx) => {
-                          const daysTotal = daysBetween(it.dateISO);
-                          const daysCharged = Math.max(0, daysTotal - grace);
-                          const interestPct = daily * daysCharged;
-                          const safeDen =
-                            1 - interestPct <= 0 ? 1 : 1 - interestPct;
-
-                          let netAmount: number;
-
-                          if (idx === n - 1) {
-                            // ✅ ÚLTIMO CHEQUE: ajustar para cerrar EXACTO
-                            netAmount = targetPV - accumulatedNet;
-                          } else {
-                            // Cheques intermedios: reparto equitativo
-                            netAmount = targetPV / n;
-                          }
-
-                          // Calcular bruto (raw) desde el neto
-                          const rawAmount = netAmount / safeDen;
-
-                          accumulatedNet += netAmount;
-
-                          cheques.push({
-                            method: "cheque",
-                            selectedReason: "Refinanciación",
-                            amount: netAmount.toFixed(2), // ✅ neto imputable
-                            rawAmount: rawAmount.toFixed(2), // ✅ bruto ingresado
-                            chequeDate: it.dateISO,
-                          });
-                        });
-
-                        // ✅ VERIFICACIÓN FINAL (debug)
-                        const sumNets = cheques.reduce(
-                          (a, c) => a + parseFloat(c.amount),
-                          0
-                        );
-                        const diff = Math.abs(targetPV - sumNets);
-
-                        if (diff > 0.01) {
-                          // Ajuste de emergencia en el último cheque
-                          const last = cheques[cheques.length - 1];
-                          const correction = targetPV - sumNets;
-                          const newNet = parseFloat(last.amount) + correction;
-
-                          // Recalcular bruto con el neto corregido
-                          const daysTotal = daysBetween(last.chequeDate);
-                          const daysCharged = Math.max(0, daysTotal - grace);
-                          const interestPct = daily * daysCharged;
-                          const safeDen =
-                            1 - interestPct <= 0 ? 1 : 1 - interestPct;
-                          const newRaw = newNet / safeDen;
-
-                          last.amount = newNet.toFixed(2);
-                          last.rawAmount = newRaw.toFixed(2);
-                        }
-                        console.log("Cheques propuestos PLAN:", cheques);
-                        // ✅ APLICAR CHEQUES
-                        setNewValues(cheques);
-                        setActiveTab("values");
-                        setShowRefi(false);
-                      }}
-                    />
+                    <p className="text-xs text-zinc-400">
+                      Cada cheque se calcula para que el <i>neto imputable</i>{" "}
+                      total coincida con el saldo a refinanciar. Se respeta la
+                      tasa anual y los días de gracia configurados.
+                    </p>
                   </div>
                 )}
 

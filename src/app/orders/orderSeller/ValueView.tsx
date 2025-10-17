@@ -11,7 +11,7 @@ export type ValueItem = {
   /** Monto imputable. Para cheques, es el NETO (original - interés). */
   amount: string;
   /** Solo cheques: monto original ingresado por el usuario. */
-  rawAmount?: string;
+  raw_amount?: string;
   selectedReason: string;
   method: PaymentMethod;
   bank?: string;
@@ -67,7 +67,7 @@ export default function ValueView({
       v.method === "cheque" && !(v.chequeNumber || "").trim();
     // Monto requerido (> 0). En cheque se valida el ORIGINAL (rawAmount)
     const amountStr =
-      v.method === "cheque" ? v.rawAmount ?? v.amount ?? "" : v.amount ?? "";
+      v.method === "cheque" ? v.raw_amount ?? v.amount ?? "" : v.amount ?? "";
     const amountNum = parseFloat((amountStr || "").replace(",", "."));
     const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
     return { bank: bankErr, chequeNumber: chequeNumErr, amount: amountErr };
@@ -124,14 +124,14 @@ export default function ValueView({
 
     if (v.method !== "cheque") {
       // Guardamos internamente con punto decimal y 2 decimales
-      patchRow(idx, { amount: n.toFixed(2), rawAmount: undefined });
+      patchRow(idx, { amount: n.toFixed(2), raw_amount: undefined });
       return;
     }
 
     // Para cheques, el input controla el "monto original" (rawAmount)
     const { neto } = computeChequeNeto(n.toFixed(2), v.chequeDate);
     patchRow(idx, {
-      rawAmount: n.toFixed(2),
+      raw_amount: n.toFixed(2),
       amount: neto.toFixed(2),
     });
   };
@@ -162,7 +162,7 @@ export default function ValueView({
   /** Interés $ sobre monto ORIGINAL del cheque */
   const chequeInterest = (v: ValueItem) => {
     if (v.method !== "cheque") return 0;
-    const base = toNum(v.rawAmount ?? v.amount);
+    const base = toNum(v.raw_amount ?? v.amount);
     if (!base) return 0;
     const pct = dailyRate * chargeableDays(v.chequeDate);
     return +(base * pct).toFixed(2);
@@ -207,7 +207,7 @@ export default function ValueView({
   };
 
   const startEdit = (i: number, v: ValueItem) => {
-    const current = v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
+    const current = v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
     const n = parseMaskedCurrencyToNumber(current ?? "");
     const digits = n === 0 ? "" : numberToDigitsStr(n);
     setDigitsByRow((d) => ({ ...d, [i]: digits }));
@@ -312,11 +312,11 @@ export default function ValueView({
 
   const handleAmountChange = (idx: number, value: string, v: ValueItem) => {
     if (v.method !== "cheque") {
-      patchRow(idx, { amount: value, rawAmount: undefined });
+      patchRow(idx, { amount: value, raw_amount: undefined });
       return;
     }
     const { neto } = computeChequeNeto(value, v.chequeDate);
-    patchRow(idx, { rawAmount: value, amount: neto.toFixed(2) });
+    patchRow(idx, { raw_amount: value, amount: neto.toFixed(2) });
   };
 
   const handleMethodChange = (
@@ -325,12 +325,12 @@ export default function ValueView({
     v: ValueItem
   ) => {
     if (method !== "cheque") {
-      patchRow(idx, { method, rawAmount: undefined });
+      patchRow(idx, { method, raw_amount: undefined });
       return;
     }
-    const raw = v.rawAmount ?? v.amount ?? "0";
+    const raw = v.raw_amount ?? v.amount ?? "0";
     const { neto } = computeChequeNeto(raw, v.chequeDate);
-    patchRow(idx, { method, rawAmount: raw, amount: neto.toFixed(2) });
+    patchRow(idx, { method, raw_amount: raw, amount: neto.toFixed(2) });
   };
 
   const handleChequeDateChange = (idx: number, iso: string, v: ValueItem) => {
@@ -338,9 +338,9 @@ export default function ValueView({
       patchRow(idx, { chequeDate: iso });
       return;
     }
-    const raw = v.rawAmount ?? v.amount ?? "0";
+    const raw = v.raw_amount ?? v.amount ?? "0";
     const { neto } = computeChequeNeto(raw, iso);
-    patchRow(idx, { chequeDate: iso, rawAmount: raw, amount: neto.toFixed(2) });
+    patchRow(idx, { chequeDate: iso, raw_amount: raw, amount: neto.toFixed(2) });
   };
 
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
@@ -430,7 +430,7 @@ export default function ValueView({
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
           const shownAmountInput =
-            v.method === "cheque" ? v.rawAmount ?? v.amount : v.amount;
+            v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
 
           const hasRowError =
             rowErrors[idx].amount ||
@@ -694,7 +694,7 @@ export default function ValueView({
                       />
                       <div className="mt-1 text-[10px] text-zinc-500">
                         Neto = Monto Bruto − Costo Financiero (%) •{" "}
-                        {currencyFmt.format(toNum(v.rawAmount ?? v.amount))} −{" "}
+                        {currencyFmt.format(toNum(v.raw_amount ?? v.amount))} −{" "}
                         {currencyFmt.format(interest$)}
                       </div>
                     </div>
@@ -911,7 +911,7 @@ export default function ValueView({
                         <div className="flex justify-between">
                           <span className="text-zinc-300">Valor Bruto</span>
                           <span className="text-white tabular-nums">
-                            {currencyFmt.format(toNum(v.rawAmount || v.amount))}
+                            {currencyFmt.format(toNum(v.raw_amount || v.amount))}
                           </span>
                         </div>
 
