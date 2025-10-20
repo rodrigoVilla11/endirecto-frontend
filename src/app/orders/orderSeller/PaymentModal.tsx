@@ -880,31 +880,33 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 🔑 Nueva versión: reparte cada valor proporcionalmente entre documentos
   function computeAdjustmentOnValuesFull(values: ValueItem[], docs: any[]) {
+    // total pagado (neto imputable)
     const valuesTotal = values.reduce(
       (a, v) => a + parseFloat(v.amount || "0"),
       0
     );
     if (valuesTotal <= 0 || docs.length === 0) return 0;
 
-    // Ajuste por documentos (suma base * rate, con +descto / -recargo)
+    // Ajuste por documentos (sobre BASE): Σ base * rate  (+desc / -rec)
     const docAdjustment = docs.reduce(
       (a: number, d: any) => a + (d.base || 0) * (d.rate || 0),
       0
     );
 
-    // TOTAL FINAL por documentos = Σ (base - base*rate)
-    const docsFinalTotal = docs.reduce(
-      (a: number, d: any) =>
-        a + ((d.base || 0) - (d.base || 0) * (d.rate || 0)),
+    // Base total de documentos
+    const docsBaseTotal = docs.reduce(
+      (a: number, d: any) => a + (d.base || 0),
       0
     );
-    if (docsFinalTotal <= 0) return 0;
+    if (docsBaseTotal <= 0) return 0;
 
-    // 🔑 Escalá contra el TOTAL FINAL (no contra la base)
-    const scale = valuesTotal / docsFinalTotal;
+    // 🔑 Tasa global “sobre base” (ej: 0.10 si es 10%)
+    const globalRateOnBase = docAdjustment / docsBaseTotal;
 
-    // Si se paga TODO, scale=1 → valuesAdj = docAdjustment (match exacto)
-    return Math.round(docAdjustment * scale * 100) / 100; // round2
+    // ✅ Descuento/recargo aplicado sobre lo pagado (no sobre el final)
+    //    Con 10% y pago 200.000 => 200.000 * 0.10 = 20.000
+    const valuesAdj = Math.round(valuesTotal * globalRateOnBase * 100) / 100;
+    return valuesAdj;
   }
 
   // 2) AJUSTE TOTAL aplicado sobre VALORES
@@ -1370,6 +1372,29 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         onClick={() => proposeChequesPreset([30, 60, 90])}
                       >
                         3 cheques (30/60/90)
+                      </button>
+
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() => proposeChequesPreset([30, 60, 90, 120])}
+                      >
+                        4 cheques (30/60/90/120)
+                      </button>
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() =>
+                          proposeChequesPreset([30, 60, 90, 120, 150])
+                        }
+                      >
+                        5 cheques (30/60/90/120/150)
+                      </button>
+                      <button
+                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        onClick={() =>
+                          proposeChequesPreset([30, 60, 90, 120, 150, 180])
+                        }
+                      >
+                        6 cheques (30/60/90/120/150/180)
                       </button>
                     </div>
 
