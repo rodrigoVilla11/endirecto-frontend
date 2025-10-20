@@ -1039,7 +1039,6 @@ function CustomerSellerCell({ customerId }: { customerId?: string }) {
 
 /* ===================== Modal de Detalles ===================== */
 
-
 type DetailsModalProps = {
   payment: any;
   onClose: () => void;
@@ -1061,63 +1060,6 @@ function DetailsModal({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-
-  // ===== helpers de formato (mismo criterio que ValueView) =====
-  const signedPctFromRate = (rate?: number) => {
-    const r = Number(rate ?? 0);
-    const s = r >= 0 ? "-" : "+"; // rate >= 0 => DESCUENTO
-    return `${s}${(Math.abs(r) * 100).toFixed(1)}%`;
-  };
-  const signedMoney = (n: number, fmt: Intl.NumberFormat) => {
-    const s = n >= 0 ? "-" : "+"; // positivo=descuento, negativo=recargo
-    return `${s}${fmt.format(Math.abs(n))}`;
-  };
-  const labelForRate = (rate?: number) =>
-    Number(rate ?? 0) >= 0
-      ? t("discount") || "Desc."
-      : t("surcharge") || "Recargo";
-
-  const methodWithChequeLabel = (v: any) => {
-    const m = String(v?.method || "").toUpperCase();
-    if (m !== "CHEQUE") return m;
-    const num =
-      v?.cheque?.cheque_number ??
-      v?.cheque_number ??
-      v?.cheque?.chequeNumber ??
-      v?.chequeNumber;
-    return num ? `${m} #${num}` : m;
-  };
-
-  // ===== totales con fallback (por si alguna API no trae todo) =====
-  const gross = Number(payment.totals?.gross ?? 0); // Bruto (base doc)
-  const docsAdjSigned = Number(payment.totals?.discount ?? 0); // +desc / -rec s/facturas
-  const chequeInterestTotal =
-    payment.totals?.cheque_interest ??
-    (payment.values ?? []).reduce(
-      (s: number, v: any) => s + Number(v?.cheque?.interest_amount ?? 0),
-      0
-    );
-
-  const totalAdjSigned = docsAdjSigned + chequeInterestTotal;
-
-  const net = Number(payment.totals?.net ?? payment.total ?? 0);
-  const valuesTotal =
-    payment.totals?.values ??
-    (payment.values ?? []).reduce(
-      (s: number, v: any) => s + Number(v?.amount ?? 0),
-      0
-    );
-
-  const diff = payment.totals?.diff ?? Number((net - valuesTotal).toFixed(2)); // saldo fallback
-
-  const clsDocsAdj = docsAdjSigned >= 0 ? "text-emerald-600" : "text-red-600";
-  const clsTotalAdj = totalAdjSigned >= 0 ? "text-emerald-600" : "text-red-600";
-  const clsDiff =
-    diff === 0
-      ? "text-emerald-600"
-      : diff > 0
-      ? "text-amber-600"
-      : "text-red-600";
 
   return (
     <div
@@ -1177,8 +1119,14 @@ function DetailsModal({
               label={t("customer") || "Cliente"}
               value={<CustomerIdAndName id={payment.customer?.id} />}
             />
-            <Info label={t("status")} value={<StatusPill status={payment.status} />} />
-            <Info label={t("type") || "Tipo"} value={<TypePill type={payment.type} />} />
+            <Info
+              label={t("status")}
+              value={<StatusPill status={payment.status} />}
+            />
+            <Info
+              label={t("type") || "Tipo"}
+              value={<TypePill type={payment.type} />}
+            />
             <Info
               label={t("charged") || "Cobrado"}
               value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
@@ -1188,96 +1136,213 @@ function DetailsModal({
           {/* Resumen simple (estilo notificación) */}
           <div className="rounded-xl border border-zinc-200 overflow-hidden">
             <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
-              {t("simpleSummary") || "Resumen simple"}
+              {"Resumen simple"}
             </div>
 
             {(() => {
-              // ===== helpers =====
               const fmt = (n: number) => currencyFmt.format(Number(n || 0));
               const asNum = (n: any) => Number(n ?? 0);
+              const round2 = (n: number) =>
+                Math.round((n + Number.EPSILON) * 100) / 100;
 
-              // Docs y values
               const docs = payment.documents ?? [];
               const values = payment.values ?? [];
 
-              // Promedios para encabezado
+              // Días promedio para mostrar (puede ser ponderado si querés)
               const daysAvg =
                 docs.length > 0
                   ? Math.round(
-                      docs.reduce((s: number, d: any) => s + asNum(d.days_used), 0) /
-                        docs.length
+                      docs.reduce(
+                        (s: number, d: any) => s + asNum(d.days_used),
+                        0
+                      ) / docs.length
                     )
                   : 0;
 
-              const rateAvg =
+              // Recalcular base/final a partir de documentos para el signo correcto
+              const docsBase =
                 docs.length > 0
-                  ? docs.reduce((s: number, d: any) => s + asNum(d.discount_rate), 0) /
-                    docs.length
-                  : 0;
-              const rateAvgTxt =
-                (rateAvg >= 0 ? "-" : "+") + (Math.abs(rateAvg) * 100).toFixed(1) + "%";
+                  ? docs.reduce((s: number, d: any) => s + asNum(d.base), 0)
+                  : asNum(payment.totals?.gross ?? 0);
 
-              // Ajuste s/facturas (positivo=desc, negativo=rec)
-              const docsAdjAmount = docsAdjSigned;
-              const docsAdjPctTxt = rateAvgTxt;
+              const docsFinal =
+                docs.length > 0
+                  ? docs.reduce(
+                      (s: number, d: any) => s + asNum(d.final_amount),
+                      0
+                    )
+                  : asNum(payment.totals?.net ?? payment.total ?? 0);
 
-              // “Documentos” (base) y “TOTAL A PAGAR” (neto)
-              const docsBase = gross; // Bruto
-              const docsFinal = net;  // Neto
+              // Ajuste s/facturas con signo consistente: + => recargo, - => descuento
+              const docsAdjAmount = round2(docsFinal - docsBase);
 
-              // Desglose de “Composición del pago” (lista simple)
-              const valueLine = (v: any) => {
+              // % efectiva desde la relación final/base (coherente con el total)
+              const docsAdjRate = docsBase !== 0 ? docsAdjAmount / docsBase : 0;
+              const docsAdjPctTxt =
+                (docsAdjRate >= 0 ? "+" : "-") +
+                (Math.abs(docsAdjRate) * 100).toFixed(1) +
+                "%";
+
+              // Interés total de cheques
+              const chequeInterestTotal =
+                payment.totals?.cheque_interest ??
+                (values ?? []).reduce(
+                  (s: number, v: any) => s + asNum(v?.cheque?.interest_amount),
+                  0
+                );
+
+              // ===== Base de prorrateo (efec/transf = amount, cheques = NOMINAL)
+              const baseForProratePerItem = values.map((v: any) => {
                 const method = String(v?.method || "").toLowerCase();
-                if (method !== "cheque") {
-                  const pretty =
-                    method === "efectivo"
-                      ? (t("cash") || "Efectivo")
-                      : method === "transferencia"
-                      ? (t("transfer") || "Transferencia")
-                      : (v?.method || "").toString();
-                  return `${pretty}: ${fmt(asNum(v.amount))}`;
+                const isCheque = method === "cheque";
+                const base = isCheque
+                  ? asNum(v.raw_amount ?? v.amount) // nominal
+                  : asNum(v.amount); // actual
+                return { v, isCheque, base };
+              });
+
+              const paidBaseForDocAdj = baseForProratePerItem.reduce(
+                (s: number, x: any) => s + x.base,
+                0
+              );
+
+              // Si paga parcial, aplicamos proporcional del ajuste
+              const payRatio =
+                docsFinal > 0 ? Math.min(1, paidBaseForDocAdj / docsFinal) : 0;
+              const docAdjTotalApplied = round2(docsAdjAmount * payRatio);
+
+              // Distribución proporcional del docAdj entre ítems (con corrección de redondeo)
+              const compositionLines: string[] = [];
+              let totalPagado = 0; // suma de bases (efec/transf + cheques NOMINAL)
+              let totalCostoCheques = 0; // interés propio de cheques
+              let sumDocAdjAssigned = 0;
+
+              const dateDDMMYY = (input: any) => {
+                const raw = input?.$date ?? input ?? null;
+                if (!raw) return "—";
+                try {
+                  return format(new Date(raw), "dd/MM/yy");
+                } catch {
+                  return "—";
                 }
-                // Cheque: Nominal (raw_amount) vs Actual (net_amount)
-                const when =
-                  v?.cheque?.collection_date || v?.chequeDate || v?.collection_date;
-                const dateTxt = when
-                  ? format(new Date((when as any)?.$date ?? when), "dd/MM/yy")
-                  : "—";
-                const nominal = asNum(v.raw_amount ?? v.amount);
-                const actual = asNum(v?.cheque?.net_amount ?? v.amount);
-                return `Cheque ${dateTxt} — Nominal: ${fmt(nominal)} • Actual: ${fmt(
-                  actual
-                )}`;
               };
 
-              // Totales “pagado” (usa nominal para cheques)
-              const totalPagado = values.reduce((s: number, v: any) => {
-                const isCheque = String(v?.method || "").toLowerCase() === "cheque";
-                return s + (isCheque ? asNum(v.raw_amount ?? v.amount) : asNum(v.amount));
-              }, 0);
+              const totalBase = paidBaseForDocAdj || 1; // evitar div/0
+              baseForProratePerItem.forEach((x: any, idx: number) => {
+                const { v, isCheque, base } = x;
+                const share = base / totalBase;
 
-              const totalCostoCheques = asNum(chequeInterestTotal);
-              const totalDescCostEfectyTrans = asNum(docsAdjSigned);
-              const totalDescCost = totalDescCostEfectyTrans + totalCostoCheques;
+                // Evitar errores de redondeo
+                const isLast = idx === baseForProratePerItem.length - 1;
+                let docAdjForItem = round2(docAdjTotalApplied * share);
+                if (isLast) {
+                  const delta = round2(
+                    docAdjTotalApplied - (sumDocAdjAssigned + docAdjForItem)
+                  );
+                  docAdjForItem = round2(docAdjForItem + delta);
+                }
+                sumDocAdjAssigned = round2(sumDocAdjAssigned + docAdjForItem);
 
-              // Neto a aplicar visual (tu criterio actual muestra “Bruto”)
-              const netoAplicar = docsBase;
+                totalPagado += base;
 
-              // Saldo
-              const saldoTxt = fmt(asNum(diff));
+                // Líneas por método
+                if (!isCheque) {
+                  const label =
+                    String(v?.method || "").toLowerCase() === "efectivo"
+                      ? t("cash") || "Efectivo"
+                      : String(v?.method || "").toLowerCase() ===
+                        "transferencia"
+                      ? t("transfer") || "Transferencia"
+                      : (v?.method || "").toString();
 
+                  compositionLines.push(`${label}: ${fmt(base)}`);
+                  compositionLines.push(
+                    `Desc/Cost F: ${daysAvg} días - ${docsAdjPctTxt}`
+                  );
+                  // Mostrar con signo real: recargo positivo, descuento negativo
+                  compositionLines.push(`Desc/Cost F: ${fmt(docAdjForItem)}`);
+                  compositionLines.push(`--------------------------------`);
+                  return;
+                }
+
+                // Cheque: además del docAdj proporcional, sumar su costo propio
+                const when =
+                  v?.cheque?.collection_date ||
+                  v?.chequeDate ||
+                  v?.collection_date;
+                const dateTxt = dateDDMMYY(when);
+
+                // Interés propio del cheque (si no viene montos, aproximamos con tasa*días)
+                const daysCharged =
+                  asNum(v?.cheque?.days_charged) >= 0
+                    ? asNum(v?.cheque?.days_charged)
+                    : 0;
+                const interestPct =
+                  typeof v?.cheque?.interest_pct === "number"
+                    ? asNum(v.cheque.interest_pct)
+                    : (asNum(v?.cheque?.daily_rate) || 0) * daysCharged;
+                const interestAmt =
+                  typeof v?.cheque?.interest_amount === "number"
+                    ? asNum(v.cheque.interest_amount)
+                    : round2(base * interestPct);
+
+                totalCostoCheques += interestAmt;
+
+                compositionLines.push(`Cheque ${dateTxt}: ${fmt(base)}`);
+                compositionLines.push(
+                  `Desc/Cost F: ${daysAvg} días - ${docsAdjPctTxt}`
+                );
+                compositionLines.push(`Desc/Cost F: ${fmt(docAdjForItem)}`);
+                compositionLines.push(
+                  `Costo Financiero: ${daysCharged} días - ${(
+                    Math.abs(interestPct) * 100
+                  ).toFixed(1)}%`
+                );
+                compositionLines.push(`Costo Financiero: ${fmt(interestAmt)}`);
+                compositionLines.push(`--------------------------------`);
+              });
+
+              // ===== Totales coherentes
+              const totalDescCost = round2(
+                docAdjTotalApplied + totalCostoCheques // suma algebraica (recargo suma, descuento resta)
+              );
+
+              // “Neto a aplicar Factura” (UI: mostramos el Bruto)
+
+              // Valores actuales para saldo (efec/transf amount + cheque neto en amount)
+              const valuesTotalActual =
+                payment.totals?.values ??
+                (payment.values ?? []).reduce(
+                  (s: number, v: any) => s + asNum(v?.amount),
+                  0
+                );
+              const netoAplicar = round2(
+                valuesTotalActual - docAdjTotalApplied
+              );
+
+              const saldo =
+                typeof payment.totals?.diff === "number"
+                  ? payment.totals!.diff
+                  : round2(docsFinal - valuesTotalActual);
+
+              // Header
               const fecha = payment.date
                 ? format(new Date(payment.date), "dd/MM/yy")
                 : "—";
               const id = payment._id || "—";
               const cliente = payment.customer?.id
-                ? `${payment.customer.id} - ${payment.customer?.name ?? ""}`.trim()
+                ? `${payment.customer.id} - ${(
+                    payment.customer?.name ?? ""
+                  ).trim()}`
                 : payment.customer?.name ?? "—";
               const sellerIdOrName =
-                payment.seller?.name ?? payment.seller?.id ?? payment.seller_id ?? "—";
+                payment.seller?.name ??
+                payment.seller?.id ??
+                payment.seller_id ??
+                "—";
               const userName = payment.user?.name ?? payment.user_name ?? "—";
 
-              const lines: string[] = [
+              const headerLines: string[] = [
                 `Fecha: ${fecha}`,
                 `ID Pago: ${id}`,
                 `Cliente: ${cliente}`,
@@ -1286,21 +1351,39 @@ function DetailsModal({
                 ``,
                 `Documentos: ${fmt(docsBase)}`,
                 `Desc/Costo Financiero: ${daysAvg} días - ${docsAdjPctTxt}`,
+                // En encabezado mostramos sin signo (como tu maqueta)
                 `Desc/Costo Financiero: ${fmt(Math.abs(docsAdjAmount))}`,
                 `-----------------------------------`,
                 `TOTAL A PAGAR (efect/transf): ${fmt(docsFinal)}`,
                 ``,
                 ``,
                 `COMPOSICION DEL PAGO:`,
-                ...values.map(valueLine),
+              ];
+
+              const footerLines: string[] = [
                 `--------------------------------`,
-                `Total Pagado: ${fmt(totalPagado)}`,
-                `Desc/Cost F: ${fmt(totalDescCostEfectyTrans)}`,
+                `Total Pagado: ${fmt(
+                  baseForProratePerItem.reduce(
+                    (s: number, x: any) => s + x.base,
+                    0
+                  )
+                )}`,
+                // Mostrar con signo: recargo positivo, descuento negativo
+                `Desc/Cost F: ${fmt(docAdjTotalApplied)}`,
                 `Cost F. Cheques: ${fmt(totalCostoCheques)}`,
                 `Total Desc/Cost F: ${fmt(totalDescCost)}`,
                 `--------------------------------`,
-                `Neto a aplicar Factura: ${fmt(netoAplicar)}`,
-                `SALDO ${saldoTxt}`,
+                `Neto a aplicar Factura: ${fmt( baseForProratePerItem.reduce(
+                    (s: number, x: any) => s + x.base,
+                    0
+                  ) - totalDescCost)}`,
+                `SALDO ${fmt(saldo)}`,
+              ];
+
+              const lines = [
+                ...headerLines,
+                ...compositionLines,
+                ...footerLines,
               ];
 
               const copy = async () => {
@@ -1323,330 +1406,11 @@ function DetailsModal({
                     </button>
                   </div>
                   <pre className="font-mono text-[11px] sm:text-xs leading-5 whitespace-pre-wrap bg-white rounded-lg p-3 border border-zinc-100">
-{lines.join("\n")}
+                    {lines.join("\n")}
                   </pre>
                 </div>
               );
             })()}
-          </div>
-
-          {/* Totales con signos y desgloses (como ValueView) */}
-          <div className="rounded-xl border border-zinc-200 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
-              {t("totals") || "Totales"}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 p-3 text-sm">
-              <Info label={t("gross") || "Bruto"} value={currencyFmt.format(gross)} />
-
-              <Info
-                label="DTO/COST. F s/FACT"
-                value={
-                  docsAdjSigned === 0 ? currencyFmt.format(0) : signedMoney(docsAdjSigned, currencyFmt)
-                }
-                valueClassName={clsDocsAdj}
-              />
-
-              <Info
-                label={t("surchargeCheques") || "REC S/CHEQUES"}
-                value={currencyFmt.format(chequeInterestTotal)}
-              />
-
-              <Info label={t("net") || "Neto"} value={currencyFmt.format(net)} />
-              <Info label={t("values") || "Valores"} value={currencyFmt.format(valuesTotal)} />
-
-              <Info
-                label={t("Cost. F TOTAL") || "Cost. F TOTAL"}
-                value={currencyFmt.format(docsAdjSigned - chequeInterestTotal)}
-              />
-
-              <Info
-                label={t("balance") || "Saldo"}
-                value={currencyFmt.format(diff)}
-                valueClassName={clsDiff}
-              />
-            </div>
-          </div>
-
-          {/* Documentos (scroll con header sticky) */}
-          <div className="rounded-xl border border-zinc-200 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
-              {t("documents") || "Documentos"}
-            </div>
-
-            <div className="min-h-0 max-h-[50vh] md:max-h-80 overflow-y-auto overscroll-contain">
-              <div className="hidden sm:grid [grid-template-columns:minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)] px-3 py-2 text-xs text-zinc-500 sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
-                <span>{t("number")}</span>
-                <span>{t("days") || "Días"}</span>
-                <span>{t("base") || "Base"}</span>
-                <span>±%</span>
-                <span>{t("adjustment") || "Ajuste"}</span>
-                <span>{t("final") || "Final"}</span>
-              </div>
-
-              <div className="divide-y divide-zinc-200">
-                {(payment.documents || []).length === 0 && (
-                  <div className="px-3 py-4 text-sm text-zinc-500">
-                    {t("noDocuments") || "Sin documentos"}
-                  </div>
-                )}
-
-                {(payment.documents || []).map((d: any, idx: number) => {
-                  const rate = Number(d.discount_rate ?? 0); // +desc / -recargo
-                  const adjSigned = Number(d.discount_amount ?? 0);
-                  const pctSigned = signedPctFromRate(rate);
-                  const labelAdj = labelForRate(rate);
-                  const rowBg = idx % 2 ? "bg-zinc-50/60" : "";
-
-                  return (
-                    <div
-                      key={d.document_id || `${d.number}-${idx}`}
-                      className={`grid grid-cols-1 sm:[grid-template-columns:minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2 text-sm ${rowBg}`}
-                      title={d.note || d.rule_applied || ""}
-                    >
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("number")}:
-                        </span>
-                        <span className="block truncate" title={d.number}>
-                          {d.number}
-                        </span>
-                      </div>
-
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("days") || "Días"}:
-                        </span>
-                        <span
-                          className={`sm:text-right tabular-nums ${
-                            d.note ? "text-amber-600" : ""
-                          }`}
-                        >
-                          {d.days_used ?? "—"}
-                        </span>
-                      </div>
-
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("base") || "Base"}:
-                        </span>
-                        <span className="sm:text-right tabular-nums">
-                          {currencyFmt.format(d.base)}
-                        </span>
-                      </div>
-
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">±%:</span>
-                        <span className="sm:text-right tabular-nums">{pctSigned}</span>
-                      </div>
-
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">{labelAdj}:</span>
-                        <span
-                          className={`sm:text-right tabular-nums ${
-                            rate >= 0 ? "text-emerald-600" : "text-red-600"
-                          }`}
-                        >
-                          {signedMoney(adjSigned, currencyFmt)}
-                        </span>
-                      </div>
-
-                      <div className="flex sm:block justify-between min-w-0">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("final") || "Final"}:
-                        </span>
-                        <span
-                          className={`sm:text-right tabular-nums ${
-                            d.note ? "text-amber-600" : ""
-                          }`}
-                        >
-                          {currencyFmt.format(d.final_amount)}
-                        </span>
-                      </div>
-
-                      {(d.note || d.rule_applied) && (
-                        <div className="sm:col-span-6 text-xs text-amber-600 mt-1">
-                          {d.note || d.rule_applied}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Valores (scroll con header sticky) */}
-          <div className="rounded-xl border border-zinc-200 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
-              {t("values") || "Valores"}
-            </div>
-
-            <div className="min-h-0 max-h-[50vh] md:max-h-80 overflow-y-auto overscroll-contain">
-              <div className="hidden sm:grid grid-cols-12 gap-x-3 px-3 py-2 text-xs text-zinc-500 sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
-                <span className="col-span-4">{t("method") || "Medio"}</span>
-                <span className="col-span-2">{t("concept") || "Concepto"}</span>
-                <span className="col-span-2 text-right">{t("amount") || "Importe"}</span>
-                <span className="col-span-2">{t("bank") || "Banco"}</span>
-                <span className="col-span-2">{t("receipt") || "Comprobante"}</span>
-              </div>
-
-              <div className="divide-y divide-zinc-200">
-                {(payment.values || []).length === 0 && (
-                  <div className="px-3 py-4 text-sm text-zinc-500">
-                    {t("noValues") || "Sin valores"}
-                  </div>
-                )}
-
-                {(payment.values || []).map((v: any, i: number) => {
-                  const fmtDate = (d?: any) =>
-                    d ? format(new Date(d.$date ?? d), "dd/MM/yyyy") : "—";
-                  const pct = (n?: number) =>
-                    Number.isFinite(n as number) ? `${((n as number) * 100).toFixed(2)}%` : "—";
-                  const zebra = i % 2 ? "bg-zinc-50/60" : "";
-
-                  return (
-                    <div
-                      key={i}
-                      className={`grid grid-cols-1 sm:grid-cols-12 items-center gap-x-3 gap-y-1 px-3 py-2 text-sm sm:[&>div]:min-w-0 ${zebra}`}
-                    >
-                      <div className="flex sm:block justify-between sm:col-span-4">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("method") || "Medio"}:
-                        </span>
-                        <span className="uppercase truncate">{methodWithChequeLabel(v)}</span>
-                      </div>
-
-                      <div className="flex sm:block justify-between sm:col-span-2">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("concept") || "Concepto"}:
-                        </span>
-                        <Tooltip content={v.concept}>
-                          <span className="truncate block">{v.concept || "—"}</span>
-                        </Tooltip>
-                      </div>
-
-                      <div className="flex sm:block justify-between sm:col-span-2">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("amount") || "Importe"}:
-                        </span>
-                        <span className="tabular-nums whitespace-nowrap sm:text-right sm:block">
-                          {currencyFmt.format(Number(v.amount ?? 0))}
-                        </span>
-                      </div>
-
-                      <div className="flex sm:block justify-between sm:col-span-2">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("bank") || "Banco"}:
-                        </span>
-                        <Tooltip content={v.bank || "—"}>
-                          <span className="truncate">{v.bank || "—"}</span>
-                        </Tooltip>
-                      </div>
-
-                      <div className="flex sm:block justify-between sm:col-span-2">
-                        <span className="text-xs text-zinc-500 sm:hidden">
-                          {t("receipt") || "Comprobante"}:
-                        </span>
-                        <span className="truncate">
-                          {v.receipt_url ? (
-                            <Tooltip content={v.receipt_original_name || v.receipt_url} side="bottom">
-                              <a
-                                href={v.receipt_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-blue-600 hover:underline break-all inline-block max-w-full"
-                              >
-                                {t("view") || "Ver"}
-                              </a>
-                            </Tooltip>
-                          ) : (
-                            "—"
-                          )}
-                        </span>
-                      </div>
-
-                      {/* Detalle de CHEQUE */}
-                      {String(v.method).toLowerCase() === "cheque" && v.cheque && (
-                        <div className="sm:col-span-12 mt-2">
-                          <div className="rounded-md border border-zinc-200 bg-zinc-50/50 p-3">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                              <Info
-                                label={t("collectionDate") || "Fecha de cobro"}
-                                value={fmtDate(v.cheque.collection_date)}
-                              />
-                              <Info
-                                label={t("chequeNumber") || "Número de cheque"}
-                                value={
-                                  v?.cheque?.cheque_number ??
-                                  v?.cheque_number ??
-                                  v?.cheque?.chequeNumber ??
-                                  v?.chequeNumber ??
-                                  "—"
-                                }
-                              />
-                              <Info
-                                label={t("rawAmount") || "Monto original"}
-                                value={currencyFmt.format(Number(v.raw_amount ?? v.amount ?? 0))}
-                              />
-                              <Info
-                                label={t("netAmount") || "Neto (imputable)"}
-                                value={currencyFmt.format(
-                                  Number(v.cheque.net_amount ?? v.amount ?? 0)
-                                )}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                              <Info
-                                label={t("interestPct") || "Interés (%)"}
-                                value={pct(v.cheque.interest_pct)}
-                              />
-                              <Info
-                                label={t("interestAmount") || "Interés ($)"}
-                                value={currencyFmt.format(
-                                  Number(v.cheque.interest_amount ?? 0)
-                                )}
-                              />
-                              <Info
-                                label={t("dailyRate") || "Tasa diaria"}
-                                value={
-                                  Number.isFinite(Number(v.cheque.daily_rate))
-                                    ? `${(Number(v.cheque.daily_rate) * 100).toFixed(3)}%`
-                                    : "—"
-                                }
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2">
-                              <Info
-                                label={t("daysTotal") || "Días totales"}
-                                value={String(v.cheque.days_total ?? "—")}
-                              />
-                              <Info
-                                label={t("grace") || "Gracia"}
-                                value={String(v.cheque.grace_days ?? "—")}
-                              />
-                              <Info
-                                label={t("daysCharged") || "Gravados"}
-                                value={String(v.cheque.days_charged ?? "—")}
-                              />
-                              <Info
-                                label={t("annualRate") || "Tasa anual"}
-                                value={
-                                  Number.isFinite(Number(v.cheque.annual_interest_pct))
-                                    ? `${Number(v.cheque.annual_interest_pct).toFixed(2)}%`
-                                    : "—"
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           {/* Comentarios */}
@@ -1668,7 +1432,9 @@ function DetailsModal({
             px-4 py-3 border-t border-zinc-200 bg-white
           "
         >
-          <div className="text-[10px] sm:text-xs text-zinc-500">ID: {payment._id}</div>
+          <div className="text-[10px] sm:text-xs text-zinc-500">
+            ID: {payment._id}
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
@@ -1680,11 +1446,16 @@ function DetailsModal({
 
             <button
               className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
-                isToggling ? "bg-amber-500 cursor-wait" : "bg-rose-600 hover:bg-rose-700"
+                isToggling
+                  ? "bg-amber-500 cursor-wait"
+                  : "bg-rose-600 hover:bg-rose-700"
               }`}
               onClick={onUnmark}
               disabled={isToggling}
-              title={t("areYouSureUnmarkCharged") || "¿Desmarcar este pago como cobrado?"}
+              title={
+                t("areYouSureUnmarkCharged") ||
+                "¿Desmarcar este pago como cobrado?"
+              }
             >
               {isToggling ? (
                 <span className="inline-flex items-center justify-center gap-2">
@@ -1703,7 +1474,6 @@ function DetailsModal({
     </div>
   );
 }
-
 
 function Info({
   label,
