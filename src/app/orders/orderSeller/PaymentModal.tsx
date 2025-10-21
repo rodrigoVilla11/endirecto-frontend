@@ -923,9 +923,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     // 🔑 Tasa global “sobre base” (ej: 0.10 si es 10%)
     const globalRateOnBase = docAdjustment / docsBaseTotal;
 
-    // ✅ Descuento/recargo aplicado sobre lo pagado (no sobre el final)
-    //    Con 10% y pago 200.000 => 200.000 * 0.10 = 20.000
-    const valuesAdj = Math.round(valuesTotal * globalRateOnBase * 100) / 100;
+    // ✅ Invertimos el signo del ajuste
+    const valuesAdj = Math.round(valuesTotal * globalRateOnBase * -100) / 100;
+
     return valuesAdj;
   }
 

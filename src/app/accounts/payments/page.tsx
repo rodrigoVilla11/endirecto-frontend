@@ -1337,7 +1337,22 @@ function DetailsModal({
                   footerLines.push(`Desc/Cost F: ${fmt(discountAmt)}`);
                 if (typeof chequeInterest === "number")
                   footerLines.push(`Cost F. Cheques: ${fmt(chequeInterest)}`);
-                // “Neto a aplicar Factura”: mostramos el campo disponible más cercano al concepto (gross).
+                if (
+                  typeof discountAmt === "number" ||
+                  typeof chequeInterest === "number"
+                ) {
+                  const totalDescCostF =
+                    (typeof discountAmt === "number" ? discountAmt : 0) +
+                    (typeof chequeInterest === "number" ? chequeInterest : 0);
+
+                  // Para el total mostramos el signo natural de la suma (sin invertir)
+                  const totalShown =
+                    totalDescCostF >= 0
+                      ? fmt(totalDescCostF)
+                      : `-${fmt(Math.abs(totalDescCostF))}`;
+
+                  footerLines.push(`Total Desc/Cost F: ${totalShown}`);
+                }
                 if (typeof gross === "number")
                   footerLines.push(`Neto a aplicar Factura: ${fmt(gross)}`);
                 if (typeof saldoDiff === "number")
