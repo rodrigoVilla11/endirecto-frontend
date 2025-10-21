@@ -27,7 +27,14 @@ import {
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
-import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import {
+  useGetSellerByIdQuery,
+  useGetSellersQuery,
+} from "@/redux/services/sellersApi";
+import {
+  useGetUserByIdQuery,
+  useGetUsersQuery,
+} from "@/redux/services/usersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -53,6 +60,7 @@ const PaymentsChargedPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState<string>("");
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
 
   const [methodFilter, setMethodFilter] = useState<
     "" | "efectivo" | "transferencia" | "cheque"
@@ -1056,11 +1064,12 @@ function DetailsModal({
 }: DetailsModalProps) {
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: payment.currency || "ARS",
+    currency: payment?.currency || "ARS",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
+  const userQuery = useGetUserByIdQuery({ id: payment?.user.id || "" });
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -1087,10 +1096,13 @@ function DetailsModal({
               {t("paymentDetail") || "Detalle de pago"}
             </h4>
             <span className="text-xs text-zinc-500 truncate">
-              {t("number")}: {payment.documents?.[0]?.number ?? "—"} ·{" "}
+              {t("number")}: {payment?.documents?.[0]?.number ?? "—"} ·{" "}
               {t("date")}:{" "}
-              {payment.date
-                ? format(new Date(payment.date), "dd/MM/yyyy HH:mm")
+              {payment?.date
+                ? format(
+                    new Date((payment.date as any)?.$date ?? payment.date),
+                    "dd/MM/yyyy HH:mm"
+                  )
                 : "N/A"}
             </span>
           </div>
@@ -1114,23 +1126,25 @@ function DetailsModal({
           "
         >
           {/* Meta */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
             <Info
               label={t("customer") || "Cliente"}
-              value={<CustomerIdAndName id={payment.customer?.id} />}
+              value={<CustomerIdAndName id={payment?.customer?.id} />}
             />
             <Info
               label={t("status")}
-              value={<StatusPill status={payment.status} />}
+              value={<StatusPill status={payment?.status} />}
             />
             <Info
               label={t("type") || "Tipo"}
-              value={<TypePill type={payment.type} />}
+              value={<TypePill type={payment?.type} />}
             />
             <Info
               label={t("charged") || "Cobrado"}
-              value={payment.isCharged ? t("yes") || "Sí" : t("no") || "No"}
+              value={payment?.isCharged ? t("yes") || "Sí" : t("no") || "No"}
             />
+            {/* NUEVO: Usuario */}
+            <Info label={t("user") || "Usuario"} value={userQuery.data?.username ?? ""} />
           </div>
 
           {/* Resumen simple (estilo notificación) */}
@@ -1143,12 +1157,11 @@ function DetailsModal({
               const fmt = (n: any) =>
                 currencyFmt.format(Number(typeof n === "number" ? n : n ?? 0));
 
-              // Helpers para leer campos tal cual vienen (sin calcular)
               const getDocMain = () =>
-                payment.documents?.length ? payment.documents[0] : undefined;
+                payment?.documents?.length ? payment.documents[0] : undefined;
               const d0 = getDocMain();
 
-              const fecha = payment.date
+              const fecha = payment?.date
                 ? (() => {
                     try {
                       return format(
@@ -1165,12 +1178,12 @@ function DetailsModal({
                 (payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—";
 
               const cliente = (() => {
-                const id = payment.customer?.id;
+                const id = payment?.customer?.id;
                 const name = (payment as any)?.customer?.name;
-                if (id && name) return `${id} - ${name}`; // ambos vienen
-                if (id) return `${id}`; // solo ID
-                if (name) return `${name}`; // solo nombre
-                return "—"; // ninguno
+                if (id && name) return `${id} - ${name}`;
+                if (id) return `${id}`;
+                if (name) return `${name}`;
+                return "—";
               })();
 
               const seller =
@@ -1179,35 +1192,27 @@ function DetailsModal({
                 (payment as any)?.seller_id ??
                 "—";
 
-              const userName =
-                (payment as any)?.user?.name ??
-                (payment as any)?.user_name ??
-                "—";
+              const gross = payment?.totals?.gross;
+              const discountAmt = payment?.totals?.discount;
+              const net = payment?.totals?.net;
+              const valuesActual = payment?.totals?.values;
+              const valuesNominal = (payment?.totals as any)?.values_raw;
+              const chequeInterest = (payment?.totals as any)?.cheque_interest;
+              const saldoDiff = (payment?.totals as any)?.diff;
 
-              // Totales leídos del JSON (no se calcula nada)
-              const gross = payment.totals?.gross; // Documentos (base)
-              const discountAmt = payment.totals?.discount; // Desc/Cost F (monto)
-              const net = payment.totals?.net; // TOTAL A PAGAR (efect/transf)
-              const valuesActual = payment.totals?.values; // Total pagado (actual)
-              const valuesNominal = (payment.totals as any)?.values_raw; // Total pagado (nominal), si viene
-              const chequeInterest = (payment.totals as any)?.cheque_interest; // costo de cheques
-              const saldoDiff = (payment.totals as any)?.diff; // saldo (si viene)
-
-              // Datos del documento principal (si existen)
               const daysUsed = (d0 as any)?.days_used;
-              const discountRate = (d0 as any)?.discount_rate; // p.ej. -0.0969
+              const discountRate = (d0 as any)?.discount_rate;
               const discountRateTxt =
                 typeof discountRate === "number"
                   ? `${(discountRate * 100).toFixed(2)}%`
                   : undefined;
 
-              // Construcción de líneas (solo mostrando lo que existe)
               const headerLines: string[] = [];
               headerLines.push(`Fecha: ${fecha}`);
               headerLines.push(`ID Pago: ${idPago}`);
               headerLines.push(`Cliente: ${cliente}`);
               headerLines.push(`Vendedor: ${seller}`);
-              headerLines.push(`Usuario: ${userName}`);
+              headerLines.push(`Usuario: ${userQuery.data?.username ?? ""}`);
               headerLines.push(``);
 
               if (typeof gross === "number")
@@ -1228,19 +1233,14 @@ function DetailsModal({
               }
 
               const compositionLines: string[] = [];
-              if (Array.isArray(payment.values) && payment.values.length > 0) {
+              if (Array.isArray(payment?.values) && payment.values.length > 0) {
                 compositionLines.push(``);
                 compositionLines.push(`COMPOSICION DEL PAGO:`);
                 payment.values.forEach((v: any) => {
                   const method = String(v?.method || "").toLowerCase();
                   if (method === "cheque") {
-                    // Cheque: mostramos nominal (raw_amount) y actual (amount)
-                    // y, si viene, sus datos de interés tal cual están
                     const whenRaw =
-                      v?.cheque?.collection_date?.$date ??
-                      v?.chequeDate ??
-                      v?.collection_date?.$date ??
-                      v?.collection_date;
+                      v?.cheque?.collection_date
                     const dateTxt = whenRaw
                       ? (() => {
                           try {
@@ -1262,14 +1262,11 @@ function DetailsModal({
                       typeof nominal === "number" ||
                       typeof actual === "number"
                     ) {
-                      const left = [`Cheque ${dateTxt} —`];
                       const parts: string[] = [];
                       if (typeof nominal === "number")
                         parts.push(`Nominal: ${fmt(nominal)}`);
-                      if (typeof actual === "number")
-                        parts.push(`Actual: ${fmt(actual)}`);
                       compositionLines.push(
-                        `${left.join(" ")} ${parts.join(" • ")}`.trim()
+                        `Cheque ${dateTxt} — ${parts.join(" • ")}`
                       );
                     } else {
                       compositionLines.push(`Cheque ${dateTxt}`);
@@ -1296,7 +1293,6 @@ function DetailsModal({
 
                     compositionLines.push(`--------------------------------`);
                   } else {
-                    // Efectivo / Transferencia (mostrar solo lo que venga)
                     const label =
                       method === "efectivo"
                         ? "Efectivo"
@@ -1307,7 +1303,6 @@ function DetailsModal({
                       compositionLines.push(`${label}: ${fmt(v.amount)}`);
                       compositionLines.push(`--------------------------------`);
                     } else {
-                      // si no hay amount, mostramos solo el label (y no línea separadora)
                       compositionLines.push(`${label}`);
                     }
                   }
@@ -1316,7 +1311,6 @@ function DetailsModal({
 
               const footerLines: string[] = [];
               if (
-                typeof valuesActual === "number" ||
                 typeof valuesNominal === "number" ||
                 typeof discountAmt === "number" ||
                 typeof chequeInterest === "number" ||
@@ -1324,10 +1318,7 @@ function DetailsModal({
                 typeof saldoDiff === "number"
               ) {
                 footerLines.push(`--------------------------------`);
-                if (typeof valuesActual === "number")
-                  footerLines.push(
-                    `Total Pagado (Actual): ${fmt(valuesActual)}`
-                  );
+               
                 if (typeof valuesNominal === "number")
                   footerLines.push(
                     `Total Pagado (Nominal): ${fmt(valuesNominal)}`
@@ -1343,13 +1334,10 @@ function DetailsModal({
                   const totalDescCostF =
                     (typeof discountAmt === "number" ? discountAmt : 0) +
                     (typeof chequeInterest === "number" ? chequeInterest : 0);
-
-                  // Para el total mostramos el signo natural de la suma (sin invertir)
                   const totalShown =
                     totalDescCostF >= 0
                       ? fmt(totalDescCostF)
                       : `-${fmt(Math.abs(totalDescCostF))}`;
-
                   footerLines.push(`Total Desc/Cost F: ${totalShown}`);
                 }
                 if (typeof gross === "number")
@@ -1392,7 +1380,7 @@ function DetailsModal({
           </div>
 
           {/* Comentarios */}
-          {payment.comments ? (
+          {payment?.comments ? (
             <div className="rounded-xl border border-zinc-200 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
               <div className="text-zinc-700 whitespace-pre-wrap break-words">
@@ -1411,7 +1399,7 @@ function DetailsModal({
           "
         >
           <div className="text-[10px] sm:text-xs text-zinc-500">
-            ID: {payment._id}
+            ID: {(payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—"}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1452,7 +1440,6 @@ function DetailsModal({
     </div>
   );
 }
-
 function Info({
   label,
   value,
