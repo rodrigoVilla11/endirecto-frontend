@@ -520,21 +520,38 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       lines.push(`--------------------------------`);
     });
 
-    // ===== Totales (exactamente como tu layout)
-    const totalPagado = round2(totalBaseShown); // suma de bases (cheques nominal)
-    const totalDescCost = round2(docAdjAppliedTotal + totalCostoCheques);
-    const netoAplicarFactura = round2(totalPagado - totalDescCost);
-
-    // Saldo: por tu patrón, lo calculamos aparte desde docsFinal y lo neto que entra a facturas (actual)
-    const saldoNum = round2(docsFinal - totalNetActual);
-    const saldo = fmtARS(saldoNum);
-
     // ===== Header
     const fecha = ddmmyy(date);
     const cliente = `${(customerCode ?? "—").toString().padStart(5, "0")} - ${
       customerName || ""
     }`.trim();
+    // ===== Totales (exactamente como tu layout, con ajuste de redondeo)
+    const totalPagado = round2(totalBaseShown); // suma de bases (cheques NOMINAL, otros = neto)
+    const totalDescCost = round2(docAdjAppliedTotal + totalCostoCheques);
 
+    // Neto inicial (antes del ajuste): Total Pagado - Total Desc/Cost F
+    const netoInicial = round2(totalPagado - totalDescCost);
+
+    // Queremos: Neto == Documentos (docsBase)
+    const deltaToMatch = round2(docsBase - netoInicial);
+
+    // Si hay diferencia por centavos, la absorbemos como "Ajuste por redondeo"
+    // Nota: sumar al total de desc/costo hace que TP - (TDC + ajuste) == docsBase
+    const needsAdjust = Math.abs(deltaToMatch) >= 0.01;
+    const ajusteRedondeo = needsAdjust ? -deltaToMatch : 0;
+
+    // Totales finales con ajuste aplicado
+    const totalDescCostFinal = round2(totalDescCost + ajusteRedondeo);
+    const netoFinal = round2(totalPagado - totalDescCostFinal); // == docsBase
+
+    // SALDO: partimos del saldo coherente por valores netos y lo ajustamos
+    // Saldo inicial = docsFinal - (suma neta que entra a factura)
+    const saldoInicial = round2(docsFinal - totalNetActual);
+
+    // Si sube el neto aplicado, baja el saldo (y viceversa)
+    const saldoFinal = round2(saldoInicial - (netoFinal - netoInicial));
+
+    // ===== Render del texto (idéntico a tu layout)
     return [
       `Fecha: ${fecha}`,
       `ID Pago: ${id}`,
@@ -555,10 +572,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       `Total Pagado: ${fmtMoney2(totalPagado)}`,
       `Desc/Cost F: ${fmtMoney2(docAdjAppliedTotal)}`,
       `Cost F. Cheques: ${fmtMoney2(totalCostoCheques)}`,
-      `Total Desc/Cost F: ${fmtMoney2(totalDescCost)}`,
+      ...(needsAdjust
+        ? [`Ajuste por redondeo: ${fmtMoney2(ajusteRedondeo)}`]
+        : []),
+      `Total Desc/Cost F: ${fmtMoney2(totalDescCostFinal)}`,
       `--------------------------------`,
-      `Neto a aplicar Factura: ${fmtMoney2(netoAplicarFactura)}`,
-      `SALDO ${saldo}`,
+      `Neto a aplicar Factura: ${fmtMoney2(netoFinal)}`, // ahora igual a "Documentos"
+      `SALDO ${fmtARS(saldoFinal)}`,
     ].join("\n");
   }
 

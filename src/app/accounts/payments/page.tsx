@@ -1226,8 +1226,11 @@ function DetailsModal({
                   return "—";
                 }
               };
-
-              const totalBase = paidBaseForDocAdj || 1; // evitar div/0
+              // Bases (nominal para cheques + actual para otros) ya calculadas antes
+              const totalBase = baseForProratePerItem.reduce(
+                (s: number, x: any) => s + x.base,
+                0
+              );
               baseForProratePerItem.forEach((x: any, idx: number) => {
                 const { v, isCheque, base } = x;
                 const share = base / totalBase;
@@ -1302,11 +1305,6 @@ function DetailsModal({
                 compositionLines.push(`--------------------------------`);
               });
 
-              // ===== Totales coherentes
-              const totalDescCost = round2(
-                docAdjTotalApplied + totalCostoCheques // suma algebraica (recargo suma, descuento resta)
-              );
-
               // “Neto a aplicar Factura” (UI: mostramos el Bruto)
 
               // Valores actuales para saldo (efec/transf amount + cheque neto en amount)
@@ -1316,14 +1314,34 @@ function DetailsModal({
                   (s: number, v: any) => s + asNum(v?.amount),
                   0
                 );
-              const netoAplicar = round2(
-                valuesTotalActual - docAdjTotalApplied
+
+              // ===== Totales coherentes
+              const totalDescCost = round2(
+                docAdjTotalApplied + totalCostoCheques // suma algebraica (recargo suma, descuento resta)
               );
 
-              const saldo =
-                typeof payment.totals?.diff === "number"
+              // Neto inicial según fórmula oficial (Total Pagado - Total Desc/Cost F)
+              const netoInicial = round2(totalBase - totalDescCost);
+
+              // Diferencia para igualar: queremos que Neto == Documentos (docsBase)
+              const deltaToMatch = round2(docsBase - netoInicial);
+
+              // Si hay diferencia (p. ej., por redondeo), aplicamos un "ajuste de redondeo"
+              // Este ajuste se suma a "Total Desc/Cost F" para que TP - (TDC + ajuste) == docsBase
+              const needsAdjust = Math.abs(deltaToMatch) >= 0.01; // umbral 1 centavo
+              const ajusteRedondeo = needsAdjust ? -deltaToMatch : 0;
+
+              // Totales finales con ajuste aplicado
+              const totalDescCostFinal = round2(totalDescCost + ajusteRedondeo);
+              const netoFinal = round2(totalBase - totalDescCostFinal); // debe igualar docsBase
+
+              // SALDO ajustado: si sube el "Neto a aplicar", baja el saldo (y viceversa)
+              const saldoAjustado = round2(
+                (typeof payment.totals?.diff === "number"
                   ? payment.totals!.diff
-                  : round2(docsFinal - valuesTotalActual);
+                  : round2(docsFinal - valuesTotalActual)) -
+                  (netoFinal - netoInicial)
+              );
 
               // Header
               const fecha = payment.date
@@ -1341,7 +1359,7 @@ function DetailsModal({
                 payment.seller_id ??
                 "—";
               const userName = payment.user?.name ?? payment.user_name ?? "—";
-
+              // Header ...
               const headerLines: string[] = [
                 `Fecha: ${fecha}`,
                 `ID Pago: ${id}`,
@@ -1360,24 +1378,19 @@ function DetailsModal({
                 `COMPOSICION DEL PAGO:`,
               ];
 
+              // Footer (con ajuste si corresponde)
               const footerLines: string[] = [
                 `--------------------------------`,
-                `Total Pagado: ${fmt(
-                  baseForProratePerItem.reduce(
-                    (s: number, x: any) => s + x.base,
-                    0
-                  )
-                )}`,
-                // Mostrar con signo: recargo positivo, descuento negativo
+                `Total Pagado: ${fmt(totalBase)}`,
                 `Desc/Cost F: ${fmt(docAdjTotalApplied)}`,
                 `Cost F. Cheques: ${fmt(totalCostoCheques)}`,
-                `Total Desc/Cost F: ${fmt(totalDescCost)}`,
+                ...(needsAdjust
+                  ? [`Ajuste por redondeo: ${fmt(ajusteRedondeo)}`]
+                  : []),
+                `Total Desc/Cost F: ${fmt(totalDescCostFinal)}`,
                 `--------------------------------`,
-                `Neto a aplicar Factura: ${fmt( baseForProratePerItem.reduce(
-                    (s: number, x: any) => s + x.base,
-                    0
-                  ) - totalDescCost)}`,
-                `SALDO ${fmt(saldo)}`,
+                `Neto a aplicar Factura: ${fmt(netoFinal)}`, // ahora igual a "Documentos"
+                `SALDO ${fmt(saldoAjustado)}`,
               ];
 
               const lines = [
