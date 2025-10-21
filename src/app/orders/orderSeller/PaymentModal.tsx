@@ -374,7 +374,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       (typeof payment?._id === "string" ? payment._id : "—");
 
     const customerId = payment?.customer?.id;
-    const customerName = payment?.customer?.name;
+
+    const { data: customerName } = useGetCustomerByIdQuery(
+      { id: payment?.customer?.id ?? "" },
+      { skip: !payment?.customer?.id }
+    );
     const cliente =
       customerId && customerName
         ? `${customerId} - ${customerName}`
@@ -383,12 +387,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const vendedor =
       payment?.seller?.name ?? payment?.seller?.id ?? payment?.seller_id ?? "—";
 
-
     // Totales (tal cual vienen)
     const gross = payment?.totals?.gross; // “Documentos”
     const discountAmt = payment?.totals?.discount; // Desc/Cost F (monto con signo real)
     const net = payment?.totals?.net ?? payment?.total; // TOTAL A PAGAR (efect/transf)
-    const valuesActual = payment?.totals?.values; // Total Pagado (Actual)
     const valuesNominal = payment?.totals?.values_raw; // Total Pagado (Nominal), si viene
     const chequeInterest = payment?.totals?.cheque_interest; // Cost F. Cheques
     const saldoDiff = payment?.totals?.diff; // SALDO, si viene
@@ -435,8 +437,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       for (const v of payment.values) {
         const method = String(v?.method || "").toLowerCase();
         if (method === "cheque") {
-          const when =
-            v?.cheque?.collection_date
+          const when = v?.cheque?.collection_date;
 
           const dateTxt = ddmmyy(asDate(when));
 
@@ -654,7 +655,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
         },
       }).unwrap();
-
 
       await addNotificationToUserById({
         id: "67a60be545b75a39f99a485b",

@@ -1047,9 +1047,6 @@ function CustomerSellerCell({ customerId }: { customerId?: string }) {
 
 /* ===================== Modal de Detalles ===================== */
 
-
-
-
 type DetailsModalProps = {
   payment: any;
   onClose: () => void;
@@ -1098,12 +1095,16 @@ function DetailsModal({
     }
   })();
 
-  const idPago =
-    (payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—";
+  const idPago = (payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—";
+
+  const { data: customer } = useGetCustomerByIdQuery(
+    { id: payment?.customer?.id ?? "" },
+    { skip: !payment?.customer?.id }
+  );
 
   const clienteLabel = (() => {
     const id = payment?.customer?.id ?? (payment as any)?.customer_id;
-    const name = (payment as any)?.customer?.name;
+    const name = customer?.name;
     if (id && name) return `${id} - ${name}`;
     if (id) return `${id}`;
     if (name) return `${name}`;
@@ -1134,7 +1135,9 @@ function DetailsModal({
 
   const hasCheques =
     Array.isArray(payment?.values) &&
-    payment.values.some((v: any) => String(v?.method).toLowerCase() === "cheque");
+    payment.values.some(
+      (v: any) => String(v?.method).toLowerCase() === "cheque"
+    );
 
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {
@@ -1148,7 +1151,9 @@ function DetailsModal({
 
     if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
     if (typeof daysUsed === "number" && discountRateTxt) {
-      lines.push(`Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`);
+      lines.push(
+        `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
+      );
     }
     if (typeof discountAmt === "number") {
       lines.push(`Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmt))}`);
@@ -1301,40 +1306,47 @@ function DetailsModal({
           </button>
         </div>
 
-        {/* Body */}
         <div
           className="
-            flex-1 overflow-y-auto
-            p-3 sm:p-4 space-y-4
-            max-h-[calc(90vh-112px)]
-            pb-24 sm:pb-28
-            scroll-pb-24 sm:scroll-pb-28
-          "
+    flex-1 overflow-y-auto
+    p-3 sm:p-4 space-y-4
+    max-h-[calc(90vh-112px)]
+    pb-4 sm:pb-6
+    scroll-pb-24 sm:scroll-pb-28
+  "
         >
-          {/* Meta */}
-          <section className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
+          {/* HEADER INFO */}
+          <section className="space-y-2">
+            {/* Cliente ancho (hero) */}
             <InfoItem
+              variant="hero"
               label={t("customer") || "Cliente"}
               value={clienteLabel}
             />
-            <InfoItem
-              label={t("status") || "Estado"}
-              value={<Pill text={payment?.status ?? "—"} />}
-            />
-            <InfoItem
-              label={t("type") || "Tipo"}
-              value={<Pill text={payment?.type ?? "—"} tone="blue" />}
-            />
-            <InfoItem
-              label={t("charged") || "Cobrado"}
-              value={
-                <Pill
-                  text={payment?.isCharged ? (t("yes") || "Sí") : (t("no") || "No")}
-                  tone={payment?.isCharged ? "green" : "zinc"}
-                />
-              }
-            />
-            <InfoItem label={t("user") || "Usuario"} value={username} />
+
+            {/* 4 chips en fila */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+              <InfoItem
+                label={t("status") || "Estado"}
+                value={<StatusPill status={payment?.status ?? "—"} />}
+              />
+              <InfoItem
+                label={t("type") || "Tipo"}
+                value={<TypePill type={payment?.type ?? "—"} />}
+              />
+              <InfoItem
+                label={t("charged") || "Cargado"}
+                value={
+                  <Pill
+                    text={
+                      payment?.isCharged ? t("yes") || "Sí" : t("no") || "No"
+                    }
+                    tone={payment?.isCharged ? "green" : "zinc"}
+                  />
+                }
+              />
+              <InfoItem label={t("user") || "Usuario"} value={username} />
+            </div>
           </section>
 
           {/* Resumen visual */}
@@ -1354,7 +1366,11 @@ function DetailsModal({
                 )}
                 <AmountRow
                   label="Desc/Costo F (monto)"
-                  value={typeof discountAmt === "number" ? Math.abs(discountAmt) : undefined}
+                  value={
+                    typeof discountAmt === "number"
+                      ? Math.abs(discountAmt)
+                      : undefined
+                  }
                   fmt={fmtMoney}
                 />
                 <Divider />
@@ -1370,7 +1386,8 @@ function DetailsModal({
             <Card title="Valores">
               <div className="space-y-2">
                 <div className="max-h-48 overflow-auto pr-1">
-                  {Array.isArray(payment?.values) && payment.values.length > 0 ? (
+                  {Array.isArray(payment?.values) &&
+                  payment.values.length > 0 ? (
                     <ul className="space-y-2">
                       {payment.values.map((v: any, idx: number) => {
                         const method = String(v?.method || "").toLowerCase();
@@ -1403,7 +1420,8 @@ function DetailsModal({
                             >
                               <div className="flex items-center justify-between">
                                 <div className="text-sm font-medium">
-                                  Cheque <span className="text-zinc-500">{dTxt}</span>
+                                  Cheque{" "}
+                                  <span className="text-zinc-500">{dTxt}</span>
                                 </div>
                                 <Pill text="Cheque" tone="amber" />
                               </div>
@@ -1419,12 +1437,15 @@ function DetailsModal({
                                 {/* Mostrar costo financiero de cheques solo si hay cheques */}
                                 {hasCheques && (
                                   <>
-                                    {(typeof daysCharged === "number" || interestPct) && (
+                                    {(typeof daysCharged === "number" ||
+                                      interestPct) && (
                                       <div className="flex items-center justify-between">
                                         <span>Costo Financiero (días / %)</span>
                                         <span className="font-medium">
                                           {(daysCharged ?? "—") +
-                                            (interestPct ? ` · ${interestPct}` : "")}
+                                            (interestPct
+                                              ? ` · ${interestPct}`
+                                              : "")}
                                         </span>
                                       </div>
                                     )}
@@ -1620,21 +1641,39 @@ function DetailsModal({
 }
 
 /* ───────────── Subcomponentes internos (sin libs externas) ───────────── */
-
 function InfoItem({
   label,
   value,
+  variant = "chip",
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
+  variant?: "hero" | "chip";
 }) {
+  const isString =
+    typeof value === "string" || typeof value === "number" || value == null;
+  const titleText = isString && value != null ? String(value) : undefined;
+
+  const base =
+    "border bg-white shadow-sm rounded-2xl " +
+    (variant === "hero"
+      ? "px-4 py-3"
+      : "px-3 py-2 sm:px-4 sm:py-3 border-zinc-200/70");
+
   return (
-    <div className="rounded-xl border border-zinc-200 p-3 bg-white">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+    <div className={base}>
+      <div className="text-[10px] sm:text-[11px] uppercase tracking-wide text-zinc-500/80">
         {label}
       </div>
-      <div className="mt-1 text-sm font-medium text-zinc-800 truncate">
-        {value ?? "—"}
+      <div
+        className={
+          variant === "hero"
+            ? "mt-1 text-[15px] sm:text-base font-semibold text-zinc-900 truncate"
+            : "mt-1 text-sm sm:text-[15px] font-medium text-zinc-900 truncate"
+        }
+        title={titleText}
+      >
+        {isString ? value ?? "—" : value}
       </div>
     </div>
   );
@@ -1711,27 +1750,10 @@ function AmountRow({
   return (
     <Row>
       <span className="text-xs text-zinc-500">{label}</span>
-      <span className={`${base}`}>{typeof value === "number" ? fmt(value) : "—"}</span>
-    </Row>
-  );
-}
-
-function Info({
-  label,
-  value,
-  valueClassName = "",
-}: {
-  label: string;
-  value: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wider text-zinc-500">
-        {label}
+      <span className={`${base}`}>
+        {typeof value === "number" ? fmt(value) : "—"}
       </span>
-      <span className={`text-sm ${valueClassName}`}>{value}</span>
-    </div>
+    </Row>
   );
 }
 
