@@ -250,8 +250,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       minimumFractionDigits: 0,
     }).format(n);
 
-  const absPct = (x: number) => `${(Math.abs(x) * 100).toFixed(1)}%`;
-
   /** Promedio ponderado de días por DOCUMENTO (pesa por base de cada doc) */
   function weightedDaysByDocs(docs: Array<{ base: number; days: number }>) {
     let w = 0,
@@ -339,22 +337,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
     return lines.length ? lines.join("\n") : "—";
   }
-  const fmtMoney2 = (n: number) =>
-    new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Math.round((n + Number.EPSILON) * 100) / 100);
-
-  const fmtPct1 = (f: number) => `${(Math.abs(f) * 100).toFixed(1)}%`;
-  const ddmmyy = (d: Date) =>
-    d.toLocaleDateString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    });
-  /** Construye el texto multilinea de la notificación */
   /** Notificación basada SOLO en el JSON de payment (sin cálculos) */
   function buildPaymentNotificationFromPayment(payment: any) {
     const currencyFmt = new Intl.NumberFormat("es-AR", {
@@ -419,7 +401,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const daysUsed = d0?.days_used;
     const discountRateTxt =
       typeof d0?.discount_rate === "number"
-        ? `${(d0.discount_rate * 100).toFixed(1)}%`
+        ? `${(d0.discount_rate * 100).toFixed(2)}%`
         : undefined;
 
     // Header lines
@@ -478,7 +460,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           const daysCharged = v?.cheque?.days_charged;
           const interestPct =
             typeof v?.cheque?.interest_pct === "number"
-              ? (v.cheque.interest_pct * 100).toFixed(1) + "%"
+              ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
               : undefined;
           const interestAmount = v?.cheque?.interest_amount;
 
@@ -639,7 +621,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         payment_condition: { id: getPaymentConditionId() },
 
         totals,
-        total: round4(totalToPayWithValuesAdj),
+        total: round4(totalNetForUI),
 
         documents: computedDiscounts.map((d) => ({
           document_id: d.document_id,
@@ -660,58 +642,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         values: valuesPayload,
       } as any;
+      console.log("Creating payment with payload:", payload);
       const created = await createPayment(payload).unwrap();
 
       // ===== Datos para armar el texto =====
       const now = new Date();
-
-      const id = created._id || "—";
-      const customerCode = customer?.id ?? selectedClientId;
-      const customerName = customer?.name ?? "";
-      const sellerName = customer?.seller_id; // ajustá al nombre real del vendedor si lo tenés
-      const userName = userData?.username || "";
-
-      // DOCUMENTOS: usamos tus totales ya calculados en la UI
-      const docsBase = round2(totalBase);
-      const docsFinal = round2(totalDocsFinal);
-
-      // Promedio ponderado de días por doc (pesa cada base de doc)
-      const docsDaysAvg = weightedDaysByDocs(
-        (computedDiscounts || []).map((d) => ({ base: d.base, days: d.days }))
-      );
-
-      // VALORES
-      const valuesTotal = round2(totalValues);
-      const valuesTotalNominal = round2(valuesRawTotal);
-
-      // Ajuste aplicado SOBRE VALORES (el que prorrateás): puede ser + (descuento) o - (recargo)
-      const valuesAdjAmount = round2(totalAdjustmentSigned);
-
-      // Promedio ponderado de días por valores (cheques con gracia; otros = 0)
-      const grace = checkGrace?.value ?? 45;
-      const valuesDaysAvg = weightedDaysByValues(
-        (newValues || []).map((v) => ({
-          method: v.method,
-          amount: v.amount,
-          chequeDate: v.chequeDate,
-        })),
-        grace
-      );
-
-      // Composición legible
-      const valuesBreakdown = prettyValuesBreakdown(
-        (newValues || []).map((v) => ({
-          method: v.method,
-          amount: v.amount,
-          chequeDate: v.chequeDate,
-          raw_amount: v.raw_amount,
-        }))
-      );
-
-      const docsAdjAmount = round2(docsFinal - docsBase); // 👈 ojo: final - base
-      const docsAdjRate = docsBase !== 0 ? docsAdjAmount / docsBase : 0;
-
-      const sellerDisplay = customer?.seller_id ?? userData?.seller_id ?? "—";
 
       // Armamos el texto EXACTO
       const longDescription = buildPaymentNotificationFromPayment(created);
@@ -729,12 +664,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         },
       }).unwrap();
 
-      // ===== Notificación al usuario (resumen corto + adjunto el bloque completo abajo) =====
-      const shortHeader = `Cliente ${customerCode} - ${customerName}\nNeto ${fmtARS(
-        docsFinal
-      )} • Pagado ${fmtARS(valuesTotal)} • Saldo ${fmtARS(
-        docsFinal - valuesTotal
-      )}`;
 
       await addNotificationToUserById({
         id: "67a60be545b75a39f99a485b",
@@ -881,8 +810,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     newValues,
     computedDiscounts
   );
-
-  const totalToPayWithValuesAdj = round2(totalBase - totalAdjustmentSigned);
 
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
@@ -1164,10 +1091,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               value={
                 <div className="text-right">
                   {(() => {
-                    const signed = showSobrePago
-                      ? totalAdjustmentSigned ?? 0
-                      : docAdjustmentSigned;
-                    const { text, cls } = formatAdjText(signed);
+                    const signedRaw = showSobrePago
+                      ? totalAdjustmentSigned // desc<0, rec>0
+                      : docAdjustmentSigned; // desc>0, rec<0
+
+                    // Normalizamos para UI: "desc" se muestra con signo "−" y en verde
+                    const isDiscount = showSobrePago
+                      ? signedRaw < 0
+                      : signedRaw >= 0;
+
+                    const displayAbs = Math.abs(signedRaw);
+                    const text = `${isDiscount ? "−" : "+"}${currencyFmt.format(
+                      displayAbs
+                    )}`;
+                    const cls = isDiscount
+                      ? "text-emerald-400"
+                      : "text-red-400";
+
                     return <div className={cls}>{text}</div>;
                   })()}
                 </div>
@@ -1381,8 +1321,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   netToPay={round2(totalDocsFinal)}
                   docAdjustmentSigned={
                     payTotalDocMode
-                      ? round2(totalBase - totalDocsFinal) // ajuste efectivo por doc
-                      : totalAdjustmentSigned // ajuste “sobre valores”
+                      ? round2(totalBase - totalDocsFinal) // aquí ya viene +desc / -rec
+                      : -totalAdjustmentSigned // invertimos para mantener el contrato (+desc / -rec)
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}

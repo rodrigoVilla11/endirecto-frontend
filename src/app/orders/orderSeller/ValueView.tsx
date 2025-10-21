@@ -263,16 +263,39 @@ export default function ValueView({
     }
     return toNum(v.amount);
   };
-  console.log("nominal test:", newValues.map(v => ({
-  m: v.method,
-  raw: v.raw_amount,
-  amt: v.amount,
-  nominal: nominalOf(v)
-})));
+  console.log(
+    "nominal test:",
+    newValues.map((v) => ({
+      m: v.method,
+      raw: v.raw_amount,
+      amt: v.amount,
+      nominal: nominalOf(v),
+    }))
+  );
 
   // Total NOMINAL solo para mostrar (cheques por raw_amount)
   const totalNominalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + nominalOf(v), 0),
+    [newValues]
+  );
+
+  const totalChequeInterest = useMemo(
+    () =>
+      newValues.reduce((acc, v) => {
+        if (v.method !== "cheque") return acc;
+        return acc + chequeInterest(v);
+      }, 0),
+    [newValues]
+  );
+
+  // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
+  const totalDescCostF = useMemo(
+    () => Math.abs(docAdjustmentSigned) + totalChequeInterest,
+    [docAdjustmentSigned, totalChequeInterest]
+  );
+
+  const hasCheques = useMemo(
+    () => newValues.some((v) => v.method === "cheque"),
     [newValues]
   );
 
@@ -1006,6 +1029,31 @@ export default function ValueView({
             )}`}
           />
 
+          {hasCheques && (
+            <>
+              <RowSummary
+                label={
+                  <LabelWithTip
+                    label="COSTO FINANCIERO (CHEQUES)"
+                    tip={EXPLAIN.costFinCheques}
+                  />
+                }
+                value={currencyFmt.format(totalChequeInterest)}
+              />
+
+              <RowSummary
+                label={
+                  <LabelWithTip
+                    label="TOTAL DESC/COST F."
+                    tip={EXPLAIN.totalDescCostF}
+                  />
+                }
+                value={currencyFmt.format(totalDescCostF)}
+                bold
+              />
+            </>
+          )}
+
           <RowSummary
             label={<LabelWithTip label="SALDO" tip={EXPLAIN.saldo} />}
             value={currencyFmt.format(saldo)}
@@ -1025,7 +1073,7 @@ export default function ValueView({
 }
 
 const fmtPctSigned = (p: number) =>
-  `${p >= 0 ? "+" : ""}${(p * 100).toFixed(1)}%`;
+  `${p >= 0 ? "+" : ""}${(p * 100).toFixed(2)}%`;
 
 /* ================== UI helpers ================== */
 
@@ -1219,4 +1267,8 @@ const EXPLAIN = {
     "Fecha de cobro del cheque. Define los días totales y el costo financiero.",
   numeroCheque: "Número del cheque para trazabilidad.",
   concepto: "Detalle o referencia del pago (se usa para notas/comunicaciones).",
+  costFinCheques:
+    "Suma del costo financiero de todos los cheques (monto bruto x % por días gravados).",
+  totalDescCostF:
+    "Suma del ajuste por documentos (descuento/recargo) y el costo financiero de cheques.",
 };

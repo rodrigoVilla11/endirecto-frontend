@@ -325,7 +325,7 @@ export function DocumentsView({
                             isDesc ? "text-emerald-500" : "text-rose-400"
                           }`}
                         >
-                          {adjPct.toFixed(1)}%
+                          {adjPct.toFixed(2)}%
                         </span>
                       </div>
 

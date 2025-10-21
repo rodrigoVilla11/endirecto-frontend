@@ -591,7 +591,7 @@ const PaymentsChargedPage = () => {
         prettyMethod(m),
         String(o.count),
         currencyFmt.format(o.total),
-        `${((o.total / (grand || 1)) * 100).toFixed(1)}%`,
+        `${((o.total / (grand || 1)) * 100).toFixed(2)}%`,
       ]),
       foot: [
         [
@@ -1198,7 +1198,7 @@ function DetailsModal({
               const discountRate = (d0 as any)?.discount_rate; // p.ej. -0.0969
               const discountRateTxt =
                 typeof discountRate === "number"
-                  ? `${(discountRate * 100).toFixed(1)}%`
+                  ? `${(discountRate * 100).toFixed(2)}%`
                   : undefined;
 
               // Construcción de líneas (solo mostrando lo que existe)
@@ -1278,7 +1278,7 @@ function DetailsModal({
                     const daysCharged = v?.cheque?.days_charged;
                     const interestPct =
                       typeof v?.cheque?.interest_pct === "number"
-                        ? (v.cheque.interest_pct * 100).toFixed(1) + "%"
+                        ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
                         : undefined;
                     const interestAmount = v?.cheque?.interest_amount;
 
@@ -1667,7 +1667,7 @@ function MethodTotalsBar({
                   key={`seg-${m}`}
                   className={`${solid} transition-[flex-basis] duration-300`}
                   style={{ flexBasis: `${pct}%` }}
-                  title={`${pretty(m)}: ${format(val)} (${pct.toFixed(1)}%)`}
+                  title={`${pretty(m)}: ${format(val)} (${pct.toFixed(2)}%)`}
                 />
               );
             })}
@@ -1701,7 +1701,7 @@ function MethodTotalsBar({
                     ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-300"
                     : ""
                 }`}
-                aria-label={`${pretty(m)} ${format(val)} (${pct.toFixed(1)}%)`}
+                aria-label={`${pretty(m)} ${format(val)} (${pct.toFixed(2)}%)`}
               >
                 <div className="flex items-center gap-2">
                   <span
@@ -1716,7 +1716,7 @@ function MethodTotalsBar({
                         {pretty(m)}
                       </span>
                       <span className="text-[11px] text-zinc-500">
-                        · {pct.toFixed(1)}%
+                        · {pct.toFixed(2)}%
                       </span>
                     </div>
                     <div className="mt-1 h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
