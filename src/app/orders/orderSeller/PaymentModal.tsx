@@ -200,6 +200,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
   const { userData } = useAuth();
 
+  console.log("PaymentModal render. userData:", userData);
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   const round4 = (n: number) =>
     Math.round((n + Number.EPSILON) * 10000) / 10000;
@@ -382,7 +383,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const vendedor =
       payment?.seller?.name ?? payment?.seller?.id ?? payment?.seller_id ?? "—";
 
-    const usuario = payment?.user?.name ?? payment?.user_name ?? "—";
 
     // Totales (tal cual vienen)
     const gross = payment?.totals?.gross; // “Documentos”
@@ -410,7 +410,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     lines.push(`ID Pago: ${idPago}`);
     lines.push(`Cliente: ${cliente}`);
     lines.push(`Vendedor: ${vendedor}`);
-    lines.push(`Usuario: ${usuario}`);
+    lines.push(`Usuario: ${userData?.username || "—"}`);
     lines.push(``);
 
     if (typeof gross === "number") lines.push(`Documentos: ${fmt(gross)}`);
@@ -436,10 +436,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         const method = String(v?.method || "").toLowerCase();
         if (method === "cheque") {
           const when =
-            v?.cheque?.collection_date?.$date ??
-            v?.chequeDate ??
-            v?.collection_date?.$date ??
-            v?.collection_date;
+            v?.cheque?.collection_date
+
           const dateTxt = ddmmyy(asDate(when));
 
           const nominal =
@@ -450,8 +448,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             const parts: string[] = [];
             if (typeof nominal === "number")
               parts.push(`Nominal: ${fmt(nominal)}`);
-            if (typeof actual === "number")
-              parts.push(`Actual: ${fmt(actual)}`);
             lines.push(`Cheque ${dateTxt} — ${parts.join(" • ")}`);
           } else {
             lines.push(`Cheque ${dateTxt}`);
@@ -494,10 +490,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const pushIf = (cond: boolean, txt: string) => cond && lines.push(txt);
 
     lines.push(`--------------------------------`);
-    pushIf(
-      typeof valuesActual === "number",
-      `Total Pagado (Actual): ${fmt(valuesActual)}`
-    );
     pushIf(
       typeof valuesNominal === "number",
       `Total Pagado (Nominal): ${fmt(valuesNominal)}`
@@ -642,7 +634,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         values: valuesPayload,
       } as any;
-      console.log("Creating payment with payload:", payload);
       const created = await createPayment(payload).unwrap();
 
       // ===== Datos para armar el texto =====

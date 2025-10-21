@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FaCheck, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
+import { FaCheck, FaCopy, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
@@ -1047,12 +1047,15 @@ function CustomerSellerCell({ customerId }: { customerId?: string }) {
 
 /* ===================== Modal de Detalles ===================== */
 
+
+
+
 type DetailsModalProps = {
   payment: any;
   onClose: () => void;
   onUnmark: () => void;
   isToggling: boolean;
-  t: (k: string) => string;
+  t: (key: string) => string;
 };
 
 function DetailsModal({
@@ -1069,7 +1072,197 @@ function DetailsModal({
     maximumFractionDigits: 2,
   });
 
-  const userQuery = useGetUserByIdQuery({ id: payment?.user.id || "" });
+  const userId =
+    (payment as any)?.user?.id ??
+    (payment as any)?.user?._id ??
+    (payment as any)?.user_id ??
+    "";
+  const userQuery = useGetUserByIdQuery(userId ? { id: userId } : { id: "" }, {
+    skip: !userId,
+  });
+
+  const fmtMoney = (n: any) =>
+    currencyFmt.format(Number(typeof n === "number" ? n : n ?? 0));
+
+  const mainDoc =
+    Array.isArray(payment?.documents) && payment.documents.length
+      ? payment.documents[0]
+      : undefined;
+
+  const fecha = (() => {
+    const raw = (payment?.date as any)?.$date ?? payment?.date;
+    try {
+      return raw ? format(new Date(raw), "dd/MM/yyyy HH:mm") : "—";
+    } catch {
+      return "—";
+    }
+  })();
+
+  const idPago =
+    (payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—";
+
+  const clienteLabel = (() => {
+    const id = payment?.customer?.id ?? (payment as any)?.customer_id;
+    const name = (payment as any)?.customer?.name;
+    if (id && name) return `${id} - ${name}`;
+    if (id) return `${id}`;
+    if (name) return `${name}`;
+    return "—";
+  })();
+
+  const sellerLabel =
+    (payment as any)?.seller?.name ??
+    (payment as any)?.seller?.id ??
+    (payment as any)?.seller_id ??
+    "—";
+
+  const username = userQuery?.data?.username ?? "—";
+
+  const gross = payment?.totals?.gross; // Documentos base (Σ base_i)
+  const discountAmt = payment?.totals?.discount; // Desc/Cost F (monto, puede ser <0)
+  const net = payment?.totals?.net; // TOTAL A PAGAR (efect/transf)
+  const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
+  const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
+  const saldoDiff = (payment?.totals as any)?.diff;
+
+  const daysUsed = (mainDoc as any)?.days_used;
+  const discountRate = (mainDoc as any)?.discount_rate; // fracción
+  const discountRateTxt =
+    typeof discountRate === "number"
+      ? `${(discountRate * 100).toFixed(2)}%`
+      : undefined;
+
+  const hasCheques =
+    Array.isArray(payment?.values) &&
+    payment.values.some((v: any) => String(v?.method).toLowerCase() === "cheque");
+
+  // Genero texto copiable idéntico al “resumen simple” que venías usando
+  const copyLines = (() => {
+    const lines: string[] = [];
+    lines.push(`Fecha: ${fecha.replace(" ", " ")}`);
+    lines.push(`ID Pago: ${idPago}`);
+    lines.push(`Cliente: ${clienteLabel}`);
+    lines.push(`Vendedor: ${sellerLabel}`);
+    lines.push(`Usuario: ${username}`);
+    lines.push(``);
+
+    if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
+    if (typeof daysUsed === "number" && discountRateTxt) {
+      lines.push(`Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`);
+    }
+    if (typeof discountAmt === "number") {
+      lines.push(`Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmt))}`);
+    }
+    if (typeof net === "number") {
+      lines.push(`-----------------------------------`);
+      lines.push(`TOTAL A PAGAR (efect/transf): ${fmtMoney(net)}`);
+      lines.push(``);
+    }
+
+    if (Array.isArray(payment?.values) && payment.values.length > 0) {
+      lines.push(`COMPOSICION DEL PAGO:`);
+      payment.values.forEach((v: any) => {
+        const method = String(v?.method || "").toLowerCase();
+        if (method === "cheque") {
+          const whenRaw = v?.cheque?.collection_date;
+          const dTxt = whenRaw
+            ? (() => {
+                try {
+                  return format(new Date(whenRaw), "dd/MM/yy");
+                } catch {
+                  return "—";
+                }
+              })()
+            : "—";
+          const nominal =
+            typeof v?.raw_amount === "number" ? v.raw_amount : undefined;
+
+          if (typeof nominal === "number") {
+            lines.push(`Cheque ${dTxt} — Nominal: ${fmtMoney(nominal)}`);
+          } else {
+            lines.push(`Cheque ${dTxt}`);
+          }
+
+          const daysCharged = v?.cheque?.days_charged;
+          const interestPct =
+            typeof v?.cheque?.interest_pct === "number"
+              ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
+              : undefined;
+          const interestAmount = v?.cheque?.interest_amount;
+
+          if (typeof daysCharged === "number" || interestPct) {
+            lines.push(
+              `Costo Financiero: ${daysCharged ?? "—"} días${
+                interestPct ? ` - ${interestPct}` : ""
+              }`
+            );
+          }
+          if (typeof interestAmount === "number") {
+            lines.push(`Costo Financiero: ${fmtMoney(interestAmount)}`);
+          }
+          lines.push(`--------------------------------`);
+        } else {
+          const label =
+            method === "efectivo"
+              ? "Efectivo"
+              : method === "transferencia"
+              ? "Transferencia"
+              : v?.method || "Valor";
+          if (typeof v?.amount === "number") {
+            lines.push(`${label}: ${fmtMoney(v.amount)}`);
+            lines.push(`--------------------------------`);
+          } else {
+            lines.push(`${label}`);
+          }
+        }
+      });
+    }
+
+    const totalDescCostF =
+      (typeof discountAmt === "number" ? discountAmt : 0) +
+      (typeof chequeInterest === "number" ? chequeInterest : 0);
+
+    if (
+      typeof valuesNominal === "number" ||
+      typeof discountAmt === "number" ||
+      typeof chequeInterest === "number" ||
+      typeof gross === "number" ||
+      typeof saldoDiff === "number"
+    ) {
+      lines.push(`--------------------------------`);
+      if (typeof valuesNominal === "number") {
+        lines.push(`Total Pagado (Nominal): ${fmtMoney(valuesNominal)}`);
+      }
+      if (typeof discountAmt === "number") {
+        lines.push(`Desc/Cost F: ${fmtMoney(discountAmt)}`);
+      }
+      if (typeof chequeInterest === "number") {
+        lines.push(`Cost F. Cheques: ${fmtMoney(chequeInterest)}`);
+      }
+      if (
+        typeof discountAmt === "number" ||
+        typeof chequeInterest === "number"
+      ) {
+        const shown =
+          totalDescCostF >= 0
+            ? fmtMoney(totalDescCostF)
+            : `-${fmtMoney(Math.abs(totalDescCostF))}`;
+        lines.push(`Total Desc/Cost F: ${shown}`);
+      }
+      if (typeof gross === "number")
+        lines.push(`Neto a aplicar Factura: ${fmtMoney(gross)}`);
+      if (typeof saldoDiff === "number")
+        lines.push(`SALDO ${fmtMoney(saldoDiff)}`);
+    }
+    return lines;
+  })();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(copyLines.join("\n"));
+    } catch {}
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -1083,7 +1276,7 @@ function DetailsModal({
           overflow-hidden flex flex-col
         "
       >
-        {/* Header (sticky) */}
+        {/* Header */}
         <div
           className="
             sticky top-0 z-10
@@ -1096,14 +1289,7 @@ function DetailsModal({
               {t("paymentDetail") || "Detalle de pago"}
             </h4>
             <span className="text-xs text-zinc-500 truncate">
-              {t("number")}: {payment?.documents?.[0]?.number ?? "—"} ·{" "}
-              {t("date")}:{" "}
-              {payment?.date
-                ? format(
-                    new Date((payment.date as any)?.$date ?? payment.date),
-                    "dd/MM/yyyy HH:mm"
-                  )
-                : "N/A"}
+              {t("number")}: {mainDoc?.number ?? "—"} · {t("date")}: {fecha}
             </span>
           </div>
           <button
@@ -1115,7 +1301,7 @@ function DetailsModal({
           </button>
         </div>
 
-        {/* Body (scrollable) */}
+        {/* Body */}
         <div
           className="
             flex-1 overflow-y-auto
@@ -1126,271 +1312,263 @@ function DetailsModal({
           "
         >
           {/* Meta */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
-            <Info
+          <section className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
+            <InfoItem
               label={t("customer") || "Cliente"}
-              value={<CustomerIdAndName id={payment?.customer?.id} />}
+              value={clienteLabel}
             />
-            <Info
-              label={t("status")}
-              value={<StatusPill status={payment?.status} />}
+            <InfoItem
+              label={t("status") || "Estado"}
+              value={<Pill text={payment?.status ?? "—"} />}
             />
-            <Info
+            <InfoItem
               label={t("type") || "Tipo"}
-              value={<TypePill type={payment?.type} />}
+              value={<Pill text={payment?.type ?? "—"} tone="blue" />}
             />
-            <Info
+            <InfoItem
               label={t("charged") || "Cobrado"}
-              value={payment?.isCharged ? t("yes") || "Sí" : t("no") || "No"}
+              value={
+                <Pill
+                  text={payment?.isCharged ? (t("yes") || "Sí") : (t("no") || "No")}
+                  tone={payment?.isCharged ? "green" : "zinc"}
+                />
+              }
             />
-            {/* NUEVO: Usuario */}
-            <Info label={t("user") || "Usuario"} value={userQuery.data?.username ?? ""} />
-          </div>
+            <InfoItem label={t("user") || "Usuario"} value={username} />
+          </section>
 
-          {/* Resumen simple (estilo notificación) */}
-          <div className="rounded-xl border border-zinc-200 overflow-hidden">
-            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
-              {"Resumen simple"}
-            </div>
-
-            {(() => {
-              const fmt = (n: any) =>
-                currencyFmt.format(Number(typeof n === "number" ? n : n ?? 0));
-
-              const getDocMain = () =>
-                payment?.documents?.length ? payment.documents[0] : undefined;
-              const d0 = getDocMain();
-
-              const fecha = payment?.date
-                ? (() => {
-                    try {
-                      return format(
-                        new Date((payment.date as any)?.$date ?? payment.date),
-                        "dd/MM/yy"
-                      );
-                    } catch {
-                      return "—";
-                    }
-                  })()
-                : "—";
-
-              const idPago =
-                (payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—";
-
-              const cliente = (() => {
-                const id = payment?.customer?.id;
-                const name = (payment as any)?.customer?.name;
-                if (id && name) return `${id} - ${name}`;
-                if (id) return `${id}`;
-                if (name) return `${name}`;
-                return "—";
-              })();
-
-              const seller =
-                (payment as any)?.seller?.name ??
-                (payment as any)?.seller?.id ??
-                (payment as any)?.seller_id ??
-                "—";
-
-              const gross = payment?.totals?.gross;
-              const discountAmt = payment?.totals?.discount;
-              const net = payment?.totals?.net;
-              const valuesActual = payment?.totals?.values;
-              const valuesNominal = (payment?.totals as any)?.values_raw;
-              const chequeInterest = (payment?.totals as any)?.cheque_interest;
-              const saldoDiff = (payment?.totals as any)?.diff;
-
-              const daysUsed = (d0 as any)?.days_used;
-              const discountRate = (d0 as any)?.discount_rate;
-              const discountRateTxt =
-                typeof discountRate === "number"
-                  ? `${(discountRate * 100).toFixed(2)}%`
-                  : undefined;
-
-              const headerLines: string[] = [];
-              headerLines.push(`Fecha: ${fecha}`);
-              headerLines.push(`ID Pago: ${idPago}`);
-              headerLines.push(`Cliente: ${cliente}`);
-              headerLines.push(`Vendedor: ${seller}`);
-              headerLines.push(`Usuario: ${userQuery.data?.username ?? ""}`);
-              headerLines.push(``);
-
-              if (typeof gross === "number")
-                headerLines.push(`Documentos: ${fmt(gross)}`);
-              if (typeof daysUsed === "number" && discountRateTxt)
-                headerLines.push(
-                  `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
-                );
-              if (typeof discountAmt === "number")
-                headerLines.push(
-                  `Desc/Costo Financiero: ${fmt(Math.abs(discountAmt))}`
-                );
-
-              if (typeof net === "number") {
-                headerLines.push(`-----------------------------------`);
-                headerLines.push(`TOTAL A PAGAR (efect/transf): ${fmt(net)}`);
-                headerLines.push(``);
-              }
-
-              const compositionLines: string[] = [];
-              if (Array.isArray(payment?.values) && payment.values.length > 0) {
-                compositionLines.push(``);
-                compositionLines.push(`COMPOSICION DEL PAGO:`);
-                payment.values.forEach((v: any) => {
-                  const method = String(v?.method || "").toLowerCase();
-                  if (method === "cheque") {
-                    const whenRaw =
-                      v?.cheque?.collection_date
-                    const dateTxt = whenRaw
-                      ? (() => {
-                          try {
-                            return format(new Date(whenRaw), "dd/MM/yy");
-                          } catch {
-                            return "—";
-                          }
-                        })()
-                      : "—";
-
-                    const nominal =
-                      typeof v?.raw_amount === "number"
-                        ? v.raw_amount
-                        : undefined;
-                    const actual =
-                      typeof v?.amount === "number" ? v.amount : undefined;
-
-                    if (
-                      typeof nominal === "number" ||
-                      typeof actual === "number"
-                    ) {
-                      const parts: string[] = [];
-                      if (typeof nominal === "number")
-                        parts.push(`Nominal: ${fmt(nominal)}`);
-                      compositionLines.push(
-                        `Cheque ${dateTxt} — ${parts.join(" • ")}`
-                      );
-                    } else {
-                      compositionLines.push(`Cheque ${dateTxt}`);
-                    }
-
-                    const daysCharged = v?.cheque?.days_charged;
-                    const interestPct =
-                      typeof v?.cheque?.interest_pct === "number"
-                        ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
-                        : undefined;
-                    const interestAmount = v?.cheque?.interest_amount;
-
-                    if (typeof daysCharged === "number" || interestPct) {
-                      const pctTxt = interestPct ? ` - ${interestPct}` : "";
-                      compositionLines.push(
-                        `Costo Financiero: ${daysCharged ?? "—"} días${pctTxt}`
-                      );
-                    }
-                    if (typeof interestAmount === "number") {
-                      compositionLines.push(
-                        `Costo Financiero: ${fmt(interestAmount)}`
-                      );
-                    }
-
-                    compositionLines.push(`--------------------------------`);
-                  } else {
-                    const label =
-                      method === "efectivo"
-                        ? "Efectivo"
-                        : method === "transferencia"
-                        ? "Transferencia"
-                        : v?.method || "Valor";
-                    if (typeof v?.amount === "number") {
-                      compositionLines.push(`${label}: ${fmt(v.amount)}`);
-                      compositionLines.push(`--------------------------------`);
-                    } else {
-                      compositionLines.push(`${label}`);
-                    }
-                  }
-                });
-              }
-
-              const footerLines: string[] = [];
-              if (
-                typeof valuesNominal === "number" ||
-                typeof discountAmt === "number" ||
-                typeof chequeInterest === "number" ||
-                typeof gross === "number" ||
-                typeof saldoDiff === "number"
-              ) {
-                footerLines.push(`--------------------------------`);
-               
-                if (typeof valuesNominal === "number")
-                  footerLines.push(
-                    `Total Pagado (Nominal): ${fmt(valuesNominal)}`
-                  );
-                if (typeof discountAmt === "number")
-                  footerLines.push(`Desc/Cost F: ${fmt(discountAmt)}`);
-                if (typeof chequeInterest === "number")
-                  footerLines.push(`Cost F. Cheques: ${fmt(chequeInterest)}`);
-                if (
-                  typeof discountAmt === "number" ||
-                  typeof chequeInterest === "number"
-                ) {
-                  const totalDescCostF =
-                    (typeof discountAmt === "number" ? discountAmt : 0) +
-                    (typeof chequeInterest === "number" ? chequeInterest : 0);
-                  const totalShown =
-                    totalDescCostF >= 0
-                      ? fmt(totalDescCostF)
-                      : `-${fmt(Math.abs(totalDescCostF))}`;
-                  footerLines.push(`Total Desc/Cost F: ${totalShown}`);
-                }
-                if (typeof gross === "number")
-                  footerLines.push(`Neto a aplicar Factura: ${fmt(gross)}`);
-                if (typeof saldoDiff === "number")
-                  footerLines.push(`SALDO ${fmt(saldoDiff)}`);
-              }
-
-              const lines = [
-                ...headerLines,
-                ...compositionLines,
-                ...footerLines,
-              ];
-
-              const copy = async () => {
-                try {
-                  await navigator.clipboard.writeText(lines.join("\n"));
-                } catch {}
-              };
-
-              return (
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-2">
+          {/* Resumen visual */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card title="Documentos">
+              <div className="space-y-2">
+                <AmountRow label="Documentos:" value={gross} fmt={fmtMoney} />
+                {typeof daysUsed === "number" && discountRateTxt && (
+                  <Row>
                     <span className="text-xs text-zinc-500">
-                      {t("copiableSummary") || "Texto copiable"}
+                      Desc/Costo Financiero
                     </span>
-                    <button
-                      onClick={copy}
-                      className="px-2 py-1 text-xs rounded border border-zinc-300 hover:bg-zinc-100"
-                    >
-                      {t("copy") || "Copiar"}
-                    </button>
-                  </div>
-                  <pre className="font-mono text-[11px] sm:text-xs leading-5 whitespace-pre-wrap bg-white rounded-lg p-3 border border-zinc-100">
-                    {lines.join("\n")}
-                  </pre>
+                    <span className="text-xs font-medium text-zinc-700">
+                      {daysUsed} días · {discountRateTxt}
+                    </span>
+                  </Row>
+                )}
+                <AmountRow
+                  label="Desc/Costo F (monto)"
+                  value={typeof discountAmt === "number" ? Math.abs(discountAmt) : undefined}
+                  fmt={fmtMoney}
+                />
+                <Divider />
+                <AmountRow
+                  label="TOTAL a pagar (efect/transf)"
+                  value={net}
+                  fmt={fmtMoney}
+                  strong
+                />
+              </div>
+            </Card>
+
+            <Card title="Valores">
+              <div className="space-y-2">
+                <div className="max-h-48 overflow-auto pr-1">
+                  {Array.isArray(payment?.values) && payment.values.length > 0 ? (
+                    <ul className="space-y-2">
+                      {payment.values.map((v: any, idx: number) => {
+                        const method = String(v?.method || "").toLowerCase();
+                        if (method === "cheque") {
+                          const whenRaw = v?.cheque?.collection_date;
+                          const dTxt = whenRaw
+                            ? (() => {
+                                try {
+                                  return format(new Date(whenRaw), "dd/MM/yy");
+                                } catch {
+                                  return "—";
+                                }
+                              })()
+                            : "—";
+                          const nominal =
+                            typeof v?.raw_amount === "number"
+                              ? v.raw_amount
+                              : undefined;
+                          const daysCharged = v?.cheque?.days_charged;
+                          const interestPct =
+                            typeof v?.cheque?.interest_pct === "number"
+                              ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
+                              : undefined;
+                          const interestAmount = v?.cheque?.interest_amount;
+
+                          return (
+                            <li
+                              key={idx}
+                              className="rounded-lg border border-zinc-200 p-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm font-medium">
+                                  Cheque <span className="text-zinc-500">{dTxt}</span>
+                                </div>
+                                <Pill text="Cheque" tone="amber" />
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-600">
+                                {typeof nominal === "number" && (
+                                  <div className="flex items-center justify-between">
+                                    <span>Nominal</span>
+                                    <span className="font-medium">
+                                      {fmtMoney(nominal)}
+                                    </span>
+                                  </div>
+                                )}
+                                {/* Mostrar costo financiero de cheques solo si hay cheques */}
+                                {hasCheques && (
+                                  <>
+                                    {(typeof daysCharged === "number" || interestPct) && (
+                                      <div className="flex items-center justify-between">
+                                        <span>Costo Financiero (días / %)</span>
+                                        <span className="font-medium">
+                                          {(daysCharged ?? "—") +
+                                            (interestPct ? ` · ${interestPct}` : "")}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {typeof interestAmount === "number" && (
+                                      <div className="flex items-center justify-between">
+                                        <span>Costo Financiero (monto)</span>
+                                        <span className="font-medium">
+                                          {fmtMoney(interestAmount)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        }
+
+                        const label =
+                          method === "efectivo"
+                            ? "Efectivo"
+                            : method === "transferencia"
+                            ? "Transferencia"
+                            : v?.method || "Valor";
+
+                        return (
+                          <li
+                            key={idx}
+                            className="rounded-lg border border-zinc-200 p-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium">{label}</div>
+                              <Pill
+                                text={label}
+                                tone={method === "efectivo" ? "green" : "blue"}
+                              />
+                            </div>
+                            {typeof v?.amount === "number" && (
+                              <div className="mt-1 text-xs text-zinc-600 flex items-center justify-between">
+                                <span>Monto</span>
+                                <span className="font-medium">
+                                  {fmtMoney(v.amount)}
+                                </span>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="text-xs text-zinc-500">
+                      {t("noData") || "Sin valores"}
+                    </div>
+                  )}
                 </div>
-              );
-            })()}
-          </div>
+
+                <Divider />
+
+                {typeof valuesNominal === "number" && (
+                  <AmountRow
+                    label="Total Pagado (Nominal)"
+                    value={valuesNominal}
+                    fmt={fmtMoney}
+                  />
+                )}
+                {typeof discountAmt === "number" && (
+                  <AmountRow
+                    label="Desc/Cost F"
+                    value={discountAmt}
+                    fmt={fmtMoney}
+                  />
+                )}
+                {hasCheques && typeof chequeInterest === "number" && (
+                  <AmountRow
+                    label="Cost F. Cheques"
+                    value={chequeInterest}
+                    fmt={fmtMoney}
+                  />
+                )}
+
+                {(typeof discountAmt === "number" ||
+                  (hasCheques && typeof chequeInterest === "number")) && (
+                  <AmountRow
+                    label="Total Desc/Cost F"
+                    value={
+                      (typeof discountAmt === "number" ? discountAmt : 0) +
+                      (hasCheques && typeof chequeInterest === "number"
+                        ? chequeInterest
+                        : 0)
+                    }
+                    fmt={fmtMoney}
+                    strong
+                  />
+                )}
+
+                {typeof gross === "number" && (
+                  <AmountRow
+                    label="Neto a aplicar Factura"
+                    value={gross}
+                    fmt={fmtMoney}
+                    muted
+                  />
+                )}
+                {typeof saldoDiff === "number" && (
+                  <AmountRow
+                    label="SALDO"
+                    value={saldoDiff}
+                    fmt={fmtMoney}
+                    strong
+                  />
+                )}
+              </div>
+            </Card>
+          </section>
+
+          {/* Texto copiable (compacto, con botón) */}
+          <section className="rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50 flex items-center justify-between">
+              <span>{t("copiableSummary") || "Texto copiable"}</span>
+              <button
+                onClick={handleCopy}
+                className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded border border-zinc-300 hover:bg-zinc-100"
+              >
+                <FaCopy />
+                {t("copy") || "Copiar"}
+              </button>
+            </div>
+            <pre className="font-mono text-[11px] sm:text-xs leading-5 whitespace-pre-wrap bg-white rounded-lg p-3">
+              {copyLines.join("\n")}
+            </pre>
+          </section>
 
           {/* Comentarios */}
           {payment?.comments ? (
-            <div className="rounded-xl border border-zinc-200 p-3 text-sm">
+            <section className="rounded-xl border border-zinc-200 p-3 text-sm">
               <div className="font-semibold mb-1">{t("notes") || "Notas"}</div>
               <div className="text-zinc-700 whitespace-pre-wrap break-words">
                 {payment.comments}
               </div>
-            </div>
+            </section>
           ) : null}
         </div>
 
-        {/* Footer (sticky) */}
+        {/* Footer */}
         <div
           className="
             sticky bottom-0 z-10
@@ -1399,7 +1577,7 @@ function DetailsModal({
           "
         >
           <div className="text-[10px] sm:text-xs text-zinc-500">
-            ID: {(payment as any)?._id?.$oid ?? (payment as any)?._id ?? "—"}
+            ID: {idPago}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1440,6 +1618,104 @@ function DetailsModal({
     </div>
   );
 }
+
+/* ───────────── Subcomponentes internos (sin libs externas) ───────────── */
+
+function InfoItem({
+  label,
+  value,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-zinc-200 p-3 bg-white">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-zinc-800 truncate">
+        {value ?? "—"}
+      </div>
+    </div>
+  );
+}
+
+function Pill({
+  text,
+  tone = "zinc",
+}: {
+  text: React.ReactNode;
+  tone?: "zinc" | "green" | "blue" | "amber";
+}) {
+  const map: Record<string, string> = {
+    zinc: "bg-zinc-100 text-zinc-700",
+    green: "bg-emerald-100 text-emerald-700",
+    blue: "bg-blue-100 text-blue-700",
+    amber: "bg-amber-100 text-amber-700",
+  };
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${map[tone]}`}
+    >
+      {text}
+    </span>
+  );
+}
+
+function Card({
+  title,
+  children,
+}: {
+  title: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white">
+      <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-200 bg-zinc-50">
+        {title}
+      </div>
+      <div className="p-3">{children}</div>
+    </div>
+  );
+}
+
+function Row({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-center justify-between">{children}</div>;
+}
+
+function Divider() {
+  return <div className="h-px bg-zinc-200 my-2" />;
+}
+
+function AmountRow({
+  label,
+  value,
+  fmt,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: number | undefined;
+  fmt: (n: number) => string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
+  const base =
+    "text-sm " +
+    (strong
+      ? "font-semibold text-zinc-900"
+      : muted
+      ? "text-zinc-500"
+      : "text-zinc-800");
+
+  return (
+    <Row>
+      <span className="text-xs text-zinc-500">{label}</span>
+      <span className={`${base}`}>{typeof value === "number" ? fmt(value) : "—"}</span>
+    </Row>
+  );
+}
+
 function Info({
   label,
   value,
