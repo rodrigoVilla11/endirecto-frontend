@@ -777,7 +777,7 @@ const PaymentsChargedPage = () => {
             <ImputedPill imputed={p.rendido} />
           </span>
         ),
-        total: currencyFmt.format(p.totals?.values ?? 0),
+        total: currencyFmt.format(p.totals?.values_raw ?? 0),
         notes: p.comments ?? "",
       };
     }) ?? [];
@@ -1061,7 +1061,6 @@ function DetailsModal({
     maximumFractionDigits: 2,
   });
 
-  console.log("Payment details:", payment);
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
