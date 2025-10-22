@@ -244,100 +244,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   );
   const canSend = isValuesValid && newValues.length > 0;
 
-  const fmtARS = (n: number) =>
-    new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-    }).format(n);
-
-  /** Promedio ponderado de días por DOCUMENTO (pesa por base de cada doc) */
-  function weightedDaysByDocs(docs: Array<{ base: number; days: number }>) {
-    let w = 0,
-      sum = 0;
-    for (const d of docs) {
-      const b = Number(d.base) || 0;
-      const days = Number.isFinite(d.days) ? Number(d.days) : 0;
-      w += b * Math.max(0, days);
-      sum += b;
-    }
-    return sum > 0 ? Math.round(w / sum) : 0;
-  }
-
-  /** Promedio ponderado de días por VALORES (cheques pesan por neto imputable; otros métodos = 0 días) */
-  function weightedDaysByValues(
-    values: Array<{ method: string; amount: string; chequeDate?: string }>,
-    graceDays: number
-  ) {
-    // helper local
-    const daysBetweenToday = (iso?: string) => {
-      if (!iso) return 0;
-      const d = new Date(iso);
-      const today = new Date();
-      const start = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      ).getTime();
-      const end = new Date(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate()
-      ).getTime();
-      const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-      return Math.max(diff, 0);
-    };
-
-    let w = 0,
-      sum = 0;
-    for (const v of values) {
-      const net = parseFloat(v.amount || "0") || 0;
-      const daysTotal =
-        v.method === "cheque" ? daysBetweenToday(v.chequeDate) : 0;
-      const charged = Math.max(0, daysTotal - (graceDays ?? 0));
-      w += net * charged;
-      sum += net;
-    }
-    return sum > 0 ? Math.round(w / sum) : 0;
-  }
-
-  /** Lista legible de la composición del pago (con fechas para cheques) */
-  /** Lista legible de la composición del pago (con fechas para cheques)
-   * - Cheques: "Cheque dd/mm/yy — Nominal: $X • Actual: $Y"
-   * - Otros:   "Efectivo/Transferencia: $X"
-   */
-  function prettyValuesBreakdown(
-    values: Array<{
-      method: string;
-      amount: string;
-      chequeDate?: string;
-      raw_amount?: string;
-    }>
-  ) {
-    const lines: string[] = [];
-    for (const v of values) {
-      const net = fmtARS(Number(v.amount || 0)); // Actual (NETO imputable)
-      if (v.method === "cheque") {
-        const nominal = fmtARS(Number(v.raw_amount || v.amount || 0)); // Nominal (BRUTO)
-        const d = v.chequeDate ? new Date(v.chequeDate) : null;
-        const dd = d
-          ? d.toLocaleDateString("es-AR", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "2-digit",
-            })
-          : "—";
-        lines.push(`Cheque ${dd} — Nominal: ${nominal} • Actual: ${net}`);
-      } else if (v.method === "efectivo") {
-        lines.push(`Efectivo: ${net}`);
-      } else if (v.method === "transferencia") {
-        lines.push(`Transferencia: ${net}`);
-      } else {
-        lines.push(`${v.method || "Otro"}: ${net}`);
-      }
-    }
-    return lines.length ? lines.join("\n") : "—";
-  }
   /** Notificación basada SOLO en el JSON de payment (sin cálculos) */
   function buildPaymentNotificationFromPayment(payment: any) {
     const currencyFmt = new Intl.NumberFormat("es-AR", {
@@ -373,16 +279,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       payment?._id ??
       (typeof payment?._id === "string" ? payment._id : "—");
 
-    const customerId = payment?.customer?.id;
-
-    const { data: customerName } = useGetCustomerByIdQuery(
-      { id: payment?.customer?.id ?? "" },
-      { skip: !payment?.customer?.id }
-    );
     const cliente =
-      customerId && customerName
-        ? `${customerId} - ${customerName}`
-        : customerId || customerName || "—";
+      customer?.name && customer?.id
+        ? `${customer.id} - ${customer?.name}`
+        :  "—";
 
     const vendedor =
       payment?.seller?.name ?? payment?.seller?.id ?? payment?.seller_id ?? "—";
