@@ -288,11 +288,12 @@ export default function ValueView({
     [newValues]
   );
 
+  console.log(docAdjustmentSigned);
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-    () => Math.abs(docAdjustmentSigned) + totalChequeInterest,
-    [docAdjustmentSigned, totalChequeInterest]
-  );
+  () => totalChequeInterest - docAdjustmentSigned,
+  [docAdjustmentSigned, totalChequeInterest]
+);
 
   const hasCheques = useMemo(
     () => newValues.some((v) => v.method === "cheque"),

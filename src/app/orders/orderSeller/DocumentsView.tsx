@@ -133,6 +133,16 @@ export function DocumentsView({
     expirationDateStr
   );
   const days_since_invoice = diffFromDateToToday(invoiceDateStr);
+  // ===== Gracia manual por ventana 30–37 días al vencimiento =====
+  const [forceGrace, setForceGrace] = useState(false);
+
+  // días restantes al vencimiento desde HOY
+  const days_to_due = diffFromDateToToday(expirationDateStr);
+
+  // elegible solo si el vencimiento cae entre 30 y 37 días (incluidos)
+  const isGraceEligible =
+    Number.isFinite(days_to_due) && days_to_due >= 30 && days_to_due <= 37;
+  const manualGraceApplied = isGraceEligible && forceGrace;
 
   const balanceRaw = Number(
     customerInformation?.document_balance ?? amount ?? 0
@@ -141,20 +151,22 @@ export function DocumentsView({
 
   const paymentConditionName =
     paymentsConditionsData?.name || t("document.noEspecificado");
-
   const { rate, note } = getDiscountRule(
     days_since_invoice,
     paymentType,
     paymentConditionName
   );
   const isDesc = rate > 0;
+
   const surcharge = getOverdueSurcharge(days_since_invoice);
-  const hasSurcharge = !isDesc && surcharge.pct > 0;
+
+  // ⬇️ Antes: const hasSurcharge = !isDesc && surcharge.pct > 0;
+  // ⬇️ Ahora: si aplicás gracia manual, no hay recargo
+  const hasSurcharge = !isDesc && surcharge.pct > 0 && !manualGraceApplied;
 
   const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
-  const adjAmount = 
-    balance * Math.abs(isDesc ? rate : hasSurcharge ? surcharge.pct : 0)
-  ;
+  const adjAmount =
+    balance * Math.abs(isDesc ? rate : hasSurcharge ? surcharge.pct : 0);
 
   const finalAmount = isDesc
     ? balance - adjAmount
@@ -166,9 +178,9 @@ export function DocumentsView({
     ? null
     : hasSurcharge
     ? `Costo Financiero por ${surcharge.days} días`
+    : manualGraceApplied
+    ? "Gracia manual aplicada (vencimiento 30–37 días)"
     : note || null;
-
-  const discountAmount = balance * rate;
 
   /* ===================== Selección: payload consistente ===================== */
   // 🔎 Debug útil para verificar consistencia
@@ -310,6 +322,20 @@ export function DocumentsView({
                         : "—"}
                     </span>
                   </div>
+                  {/* Checkbox de gracia manual — solo visible si está entre 30 y 37 días */}
+                  {isGraceEligible && (
+                    <div className="flex items-center justify-between">
+                      <label className="text-gray-400 flex-1">
+                        Dar gracia (vencimiento entre 30 y 37 días)
+                      </label>
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        checked={forceGrace}
+                        onChange={(e) => setForceGrace(e.target.checked)}
+                      />
+                    </div>
+                  )}
 
                   {/* Mostrar ajuste si hay descuento o recargo */}
                   {(isDesc || hasSurcharge) && (
