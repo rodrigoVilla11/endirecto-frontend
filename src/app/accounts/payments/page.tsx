@@ -247,23 +247,24 @@ const PaymentsChargedPage = () => {
     () => Object.values(methodTotals).reduce((a, b) => a + b, 0),
     [methodTotals]
   );
+  // ================== Get user (para el PDF) ==================
+  const [user_id, setUser_id] = useState<string>("");
 
-  const prettyMethod = (m?: string) => {
-    const k = (m ?? "").toLowerCase();
-    if (k === "efectivo") return "Efectivo";
-    if (k === "transferencia") return "Transferencia";
-    if (k === "cheque") return "Cheque";
-    return (m || "—").toUpperCase();
-  };
+  const userQuery = useGetUserByIdQuery(
+    user_id ? { id: user_id } : { id: "" },
+    {
+      skip: !user_id,
+    }
+  );
 
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
   const downloadPDFFor = (rows: Payment[], fallbackCustomerName?: string) => {
     if (!rows.length) return;
-
     // ---------- helpers ----------
     const nameFor = (p: Payment) => {
       const id = p.customer?.id ?? "";
       const byPayment = (p as any)?.customer?.name as string | undefined;
+      setUser_id((p as any)?.customer?.id);
       const byCaller =
         fallbackCustomerName && fallbackCustomerName !== "-"
           ? fallbackCustomerName
@@ -392,9 +393,9 @@ const PaymentsChargedPage = () => {
           ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
           : "—";
         const customerId = p.customer?.id ?? "";
-        const cliente = [customerId || "—", nameFor(p)]
-          .filter(Boolean)
-          .join(" · ");
+        const cliente = `${customerId || "—"}, ${
+          userQuery.data?.username ?? "—"
+        }`;
         const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
         const methods =
           p.values && p.values.length
@@ -473,9 +474,9 @@ const PaymentsChargedPage = () => {
       const blockTop = cursorY; // parte superior del contenido
       const fecha = p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—";
       const customerId = p.customer?.id ?? "";
-      const clienteLine = [customerId || "—", nameFor(p)]
-        .filter(Boolean)
-        .join(" · ");
+      const clienteLine = `${customerId || "—"}, ${
+        userQuery.data?.username ?? "—"
+      }`;
       const docsLine =
         (p.documents ?? []).map((d) => d.number).join(", ") || "—";
 
