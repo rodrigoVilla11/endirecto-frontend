@@ -1047,10 +1047,13 @@ function DetailsModal({
     valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
-      
+    const totalDescCostF =
+      (typeof discountAmt === "number" ? discountAmt : 0) +
+      (typeof chequeInterest === "number" ? chequeInterest : 0);
+
   const netToApply =
-  typeof valuesNominal === "number" && typeof discountAmtOriginal === "number"
-    ? valuesNominal - discountAmt
+  typeof valuesNominal === "number" && typeof totalDescCostF === "number"
+    ? valuesNominal - totalDescCostF
     : undefined;
   const hasCheques =
     Array.isArray(payment?.values) &&
@@ -1144,9 +1147,6 @@ function DetailsModal({
       });
     }
 
-    const totalDescCostF =
-      (typeof discountAmt === "number" ? discountAmt : 0) +
-      (typeof chequeInterest === "number" ? chequeInterest : 0);
 
     if (
       typeof valuesNominal === "number" ||
