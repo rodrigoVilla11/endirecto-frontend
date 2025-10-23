@@ -138,7 +138,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
 
   function computeChequeMeta(v: ValueItem) {
-    const raw = parseFloat(v.raw_amount ?? v.amount ?? "0") || 0;
     const days_total = daysBetweenToday(v.chequeDate);
 
     // Usa 1 sola fuente de gracia en todos lados
@@ -151,9 +150,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     const daily = annualNorm / 100 / 365;
     const interest_pct = daily * days_charged;
-    const net_amount = round2(raw / (1 + interest_pct));
+    const raw = parseFloat(v.raw_amount || "0") || 0;
+    const net_amount = parseFloat(v.amount|| "0") || 0;
     const interest_amount = round2(raw - net_amount);
 
+    console.log("Cheque meta:", { v, raw, days_total, days_charged, daily, interest_pct, interest_amount, net_amount });
     return {
       raw,
       days_total,
@@ -447,6 +448,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     return lines.join("\n");
   }
+  console.log("newValues:", newValues);
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
@@ -504,6 +506,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           },
         };
       });
+      console.log("valuesPayload:", valuesPayload);
 
       // ——— Totales generales (incluyendo extras de valores) ———
       const totals = {
