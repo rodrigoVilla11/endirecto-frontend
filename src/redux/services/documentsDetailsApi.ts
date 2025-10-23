@@ -10,6 +10,9 @@ type DocumentsDetail = {
     netprice: string; // Precio neto del artículo
     percentage_1: string; // Porcentaje de descuento 1
     percentage_2: string; // Porcentaje de descuento 2
+    supplier: string; // Porcentaje de descuento 2
+    brand_id: string; // Porcentaje de descuento 2
+    relative_quantity: string; // Porcentaje de descuento 2
 };
 
 export const documentsDetailsApi = createApi({

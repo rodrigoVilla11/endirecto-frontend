@@ -64,6 +64,8 @@ export type Customer = {
   obs4: string;
   obs5: string;
   obs6: string;
+  credit_limit: string;
+  days_limit: string;
 };
 
 export type UpdateCustomersPayload = {
