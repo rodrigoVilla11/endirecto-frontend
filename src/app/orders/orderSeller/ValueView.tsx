@@ -176,25 +176,6 @@ export default function ValueView({
     return { neto, int$ };
   };
 
-  // ===== Normalización: en cheques, amount = neto =====
-  // // Congelar recálculo sólo a cambios de parámetros financieros
-  // useEffect(() => {
-  //   setNewValues((prev) =>
-  //     prev.map((v) => {
-  //       if (v.method !== "cheque") return v;
-  //       // si no tengo rawAmount, NO piso el amount proveniente del padre
-  //       if (v.rawAmount == null) return v;
-
-  //       const { neto } = computeChequeNeto(v.rawAmount, v.chequeDate);
-  //       const current = toNum(v.amount);
-  //       return Math.abs(current - neto) > 0.009
-  //         ? { ...v, amount: neto.toFixed(2) }
-  //         : v;
-  //     })
-  //   );
-  //   // 👇 quitá newValues de las deps
-  // }, [dailyRate, chequeGraceDays]);
-
   const [isEditing, setIsEditing] = useState<Record<number, boolean>>({});
   const [draftText, setDraftText] = useState<Record<number, string>>({});
 
@@ -263,15 +244,6 @@ export default function ValueView({
     }
     return toNum(v.amount);
   };
-  console.log(
-    "nominal test:",
-    newValues.map((v) => ({
-      m: v.method,
-      raw: v.raw_amount,
-      amt: v.amount,
-      nominal: nominalOf(v),
-    }))
-  );
 
   // Total NOMINAL solo para mostrar (cheques por raw_amount)
   const totalNominalValues = useMemo(
@@ -288,7 +260,6 @@ export default function ValueView({
     [newValues]
   );
 
-  console.log(docAdjustmentSigned);
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
   () => totalChequeInterest - docAdjustmentSigned,
@@ -351,15 +322,6 @@ export default function ValueView({
       clone[idx] = merged;
       return clone;
     });
-  };
-
-  const handleAmountChange = (idx: number, value: string, v: ValueItem) => {
-    if (v.method !== "cheque") {
-      patchRow(idx, { amount: value, raw_amount: undefined });
-      return;
-    }
-    const { neto } = computeChequeNeto(value, v.chequeDate);
-    patchRow(idx, { raw_amount: value, amount: neto.toFixed(2) });
   };
 
   const handleMethodChange = (

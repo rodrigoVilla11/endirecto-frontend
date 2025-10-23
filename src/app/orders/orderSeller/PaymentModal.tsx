@@ -310,7 +310,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         ? payment.documents[0]
         : undefined;
     const daysUsed = d0?.days_used;
-  const discountRate = d0?.discount_rate; // fracción
+    const discountRate = d0?.discount_rate; // fracción
     const discountRateTxt =
       typeof d0?.discount_rate === "number"
         ? `${(d0.discount_rate * 100).toFixed(2)}%`
@@ -336,7 +336,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       );
     // En el encabezado se muestra el monto en **valor absoluto** (según tu formato oficial)
     if (typeof discountAmtOriginal === "number")
-      lines.push(`Desc/Costo Financiero: ${fmt(Math.abs(discountAmtOriginal))}`);
+      lines.push(
+        `Desc/Costo Financiero: ${fmt(Math.abs(discountAmtOriginal))}`
+      );
 
     if (typeof net === "number") {
       lines.push(`-----------------------------------`);
@@ -435,7 +437,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
 
     // “Neto a aplicar Factura”: SIN cálculos — usamos el dato disponible (gross)
-    pushIf(typeof netFromValues === "number", `Neto a aplicar Factura: ${fmt(netFromValues)}`);
+    pushIf(
+      typeof netFromValues === "number",
+      `Neto a aplicar Factura: ${fmt(netFromValues)}`
+    );
 
     // SALDO (si viene)
     pushIf(typeof saldoDiff === "number", `SALDO ${fmt(saldoDiff)}`);
@@ -715,7 +720,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     newValues,
     computedDiscounts
   );
-  if (!isOpen) return null;
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
 
@@ -922,6 +926,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     mergeRefiCheques(cheques);
   }
+  if (!isOpen) return null;
 
   return (
     <div

@@ -1021,12 +1021,18 @@ function DetailsModal({
   const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
   const saldoDiff = (payment?.totals as any)?.diff;
+
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
       ? valuesNominal - Math.abs(chequeInterest)
       : typeof valuesNominal === "number"
       ? valuesNominal
       : undefined;
+
+  const netToApply = typeof netFromValues === "number" && typeof gross === "number"
+    ? Math.min(netFromValues, gross)
+    : netFromValues;
+    
   const valuesDoNotReachTotal =
     typeof gross === "number" &&
     typeof netFromValues === "number" &&
@@ -1168,7 +1174,7 @@ function DetailsModal({
         lines.push(`Total Desc/Cost F: ${shown}`);
       }
       if (typeof gross === "number")
-        lines.push(`Neto a aplicar Factura: ${fmtMoney(netFromValues)}`);
+        lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
       if (typeof saldoDiff === "number")
         lines.push(`SALDO ${fmtMoney(saldoDiff)}`);
     }
@@ -1457,7 +1463,7 @@ function DetailsModal({
                 {typeof gross === "number" && (
                   <AmountRow
                     label="Neto a aplicar Factura"
-                    value={netFromValues}
+                    value={netToApply}
                     fmt={fmtMoney}
                     muted
                   />
