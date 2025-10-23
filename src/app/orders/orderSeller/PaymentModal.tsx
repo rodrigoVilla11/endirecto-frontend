@@ -148,11 +148,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     // Normalizá SIEMPRE la anual (admite 0.96 o 96)
     const annualNorm = normalizeAnnualPct(annualInterestPct); // % anual
-    const daily = annualNorm / 100 / 365;
 
+    const daily = annualNorm / 100 / 365;
     const interest_pct = daily * days_charged;
-    const interest_amount = round2(raw * interest_pct);
-    const net_amount = round2(raw - interest_amount);
+    const net_amount = round2(raw / (1 + interest_pct));
+    const interest_amount = round2(raw - net_amount);
 
     return {
       raw,
@@ -200,14 +200,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
   const { userData } = useAuth();
 
-  console.log("PaymentModal render. userData:", userData);
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   const round4 = (n: number) =>
     Math.round((n + Number.EPSILON) * 10000) / 10000;
 
   // TODO: reemplazá por tu fuente real (AuthContext / Redux / NextAuth)
   const getCurrentUserId = () => {
-    // ej: const { user } = useAuth(); return user?.id;
     return userData?._id || "";
   };
 
@@ -282,18 +280,29 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const cliente =
       customer?.name && customer?.id
         ? `${customer.id} - ${customer?.name}`
-        :  "—";
+        : "—";
 
     const vendedor =
       payment?.seller?.name ?? payment?.seller?.id ?? payment?.seller_id ?? "—";
 
     // Totales (tal cual vienen)
     const gross = payment?.totals?.gross; // “Documentos”
-    const discountAmt = payment?.totals?.discount; // Desc/Cost F (monto con signo real)
+    const discountAmtOriginal = -payment?.totals?.discount; // Desc/Cost F (monto con signo real)
     const net = payment?.totals?.net ?? payment?.total; // TOTAL A PAGAR (efect/transf)
     const valuesNominal = payment?.totals?.values_raw; // Total Pagado (Nominal), si viene
     const chequeInterest = payment?.totals?.cheque_interest; // Cost F. Cheques
     const saldoDiff = payment?.totals?.diff; // SALDO, si viene
+
+    const netFromValues =
+      typeof valuesNominal === "number" && typeof chequeInterest === "number"
+        ? valuesNominal - Math.abs(chequeInterest)
+        : typeof valuesNominal === "number"
+        ? valuesNominal
+        : undefined;
+    const valuesDoNotReachTotal =
+      typeof gross === "number" &&
+      typeof netFromValues === "number" &&
+      netFromValues < gross;
 
     // Documento principal (si existe) para días y % (solo mostrar si están)
     const d0 =
@@ -301,11 +310,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         ? payment.documents[0]
         : undefined;
     const daysUsed = d0?.days_used;
+  const discountRate = d0?.discount_rate; // fracción
     const discountRateTxt =
       typeof d0?.discount_rate === "number"
         ? `${(d0.discount_rate * 100).toFixed(2)}%`
         : undefined;
 
+    const discountAmt =
+      valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
+        ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
+        : discountAmtOriginal;
     // Header lines
     const lines: string[] = [];
     lines.push(`Fecha: ${fecha}`);
@@ -321,8 +335,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
       );
     // En el encabezado se muestra el monto en **valor absoluto** (según tu formato oficial)
-    if (typeof discountAmt === "number")
-      lines.push(`Desc/Costo Financiero: ${fmt(Math.abs(discountAmt))}`);
+    if (typeof discountAmtOriginal === "number")
+      lines.push(`Desc/Costo Financiero: ${fmt(Math.abs(discountAmtOriginal))}`);
 
     if (typeof net === "number") {
       lines.push(`-----------------------------------`);
@@ -421,7 +435,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
 
     // “Neto a aplicar Factura”: SIN cálculos — usamos el dato disponible (gross)
-    pushIf(typeof gross === "number", `Neto a aplicar Factura: ${fmt(gross)}`);
+    pushIf(typeof netFromValues === "number", `Neto a aplicar Factura: ${fmt(netFromValues)}`);
 
     // SALDO (si viene)
     pushIf(typeof saldoDiff === "number", `SALDO ${fmt(saldoDiff)}`);
@@ -490,7 +504,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const totals = {
         gross: round2(totalBase), // base por documentos
         // 🔁 ahora el ajuste mostrado es el aplicado a VALORES
-        discount: round2(totalAdjustmentSigned), // +desc / -rec aplicado a valores
+        discount: round2(docAdjustmentSigned), // +desc / -rec aplicado a valores
         net: round2(totalNetForUI), // total a pagar (base - ajuste en valores)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
@@ -508,7 +522,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         currency: "ARS",
         comments,
         source: "web",
-        customer: { id: String(selectedClientId) },
+        customer: { id: String(selectedClientId), name: customer?.name || "" },
         user: { id: String(userId) },
         seller: { id: String(userData?.seller_id) },
         payment_condition: { id: getPaymentConditionId() },
@@ -528,7 +542,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           ),
           base: round2(d.base),
           discount_rate: round4(d.rate),
-          discount_amount: round2(-d.signedAdjustment),
+          discount_amount: round2(d.signedAdjustment),
           final_amount: round2(d.finalAmount),
           note: d.note || undefined,
         })),
@@ -701,7 +715,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     newValues,
     computedDiscounts
   );
-
+  if (!isOpen) return null;
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
 
@@ -866,7 +880,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const interestPct = daily * daysCharged;
 
       // seguridad por si 1 - i <= 0
-      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+      const safeDen = 1 + interestPct <= 0 ? 1 : 1 - interestPct;
 
       let net: number;
       if (idx === n - 1) {
@@ -907,20 +921,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
 
     mergeRefiCheques(cheques);
-  }
-
-  // Formateos para UI
-  const formattedDiff = currencyFmt.format(diff);
-  if (!isOpen) return null;
-
-  // arriba del return (en PaymentModal)
-  // helper arriba del return
-  function formatAdjText(signed: number) {
-    const isDiscount = signed >= 0; // + => descuento | - => recargo
-    const sign = isDiscount ? "−" : "+"; // mostrar - si es descuento, + si es recargo
-    const cls = isDiscount ? "text-emerald-400" : "text-red-400";
-    const abs = Math.abs(signed);
-    return { text: `${sign}${currencyFmt.format(abs)}`, cls };
   }
 
   return (
@@ -1211,9 +1211,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   annualInterestPct={annualInterestPct}
                   netToPay={round2(totalDocsFinal)}
                   docAdjustmentSigned={
-                    payTotalDocMode
-                      ? round2(totalBase - totalDocsFinal) // aquí ya viene +desc / -rec
-                      : -totalAdjustmentSigned // invertimos para mantener el contrato (+desc / -rec)
+                    showSobrePago
+                      ? -totalAdjustmentSigned // desc<0, rec>0
+                      : docAdjustmentSigned // invertimos para mantener el contrato (+desc / -rec)
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}

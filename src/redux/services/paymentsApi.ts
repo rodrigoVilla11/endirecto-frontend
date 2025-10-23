@@ -90,7 +90,7 @@ export interface Payment {
   _id: string;
   status: PaymentStatus;
   multisoft_id?: string;
-  customer: { id: string };
+  customer: { id: string, name: string };
   currency: string; // "ARS"
   date: string; // ISO string
   type: PaymentType; // "pago_anticipado" | "cta_cte"
