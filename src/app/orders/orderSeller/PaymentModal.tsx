@@ -332,14 +332,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
         ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
         : discountAmtOriginal;
-      
-  const totalDescCostF =
-    (typeof discountAmt === "number" ? discountAmt : 0) +
-    (typeof chequeInterest === "number" ? chequeInterest : 0);
+
+    const totalDescCostF =
+      (typeof discountAmt === "number" ? discountAmt : 0) +
+      (typeof chequeInterest === "number" ? chequeInterest : 0);
 
     const netToApply =
-      typeof valuesNominal === "number" &&
-      typeof totalDescCostF === "number"
+      typeof valuesNominal === "number" && typeof totalDescCostF === "number"
         ? valuesNominal - totalDescCostF
         : undefined;
     // Header lines
@@ -524,21 +523,31 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         };
       });
       console.log("valuesPayload:", valuesPayload);
+      const gross = round2(totalBase); // base por documentos
+      const docAdjTotal = round2(docAdjustmentSigned); // +desc / -rec de documentos (total docs)
+      const valuesNominal = round2(valuesRawTotal); // suma de montos originales (cheques nominales)
 
-      // ——— Totales generales (incluyendo extras de valores) ———
+      // tasa (con signo) del ajuste de documentos sobre la base
+      const docAdjRate = gross > 0 ? docAdjTotal / gross : 0;
+
+      // ✅ Descuento (o recargo) aplicado SOLO sobre lo pagado (values)
+      const discountAppliedToValues = round2(valuesNominal * -docAdjRate);
+
+      // ✅ Neto a aplicar a factura = Total Pagado (Nominal) − Descuento aplicado a values
+      const netToApply = round2(valuesNominal - discountAppliedToValues);
+
       const totals = {
-        gross: round2(totalBase), // base por documentos
-        // 🔁 ahora el ajuste mostrado es el aplicado a VALORES
-        discount: round2(docAdjustmentSigned), // +desc / -rec aplicado a valores
-        net: round2(totalNetForUI), // total a pagar (base - ajuste en valores)
+        gross, // documentos base
+        discount: docAdjTotal, // ⬅️ ajuste total de DOCUMENTOS (para "TOTAL a pagar")
+        discount_applied_to_values: discountAppliedToValues, // ⬅️ NUEVO: ajuste prorrateado sobre lo pagado
+        net: round2(totalNetForUI), // docsFinal = gross - discount (header)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
-        values_raw: round2(valuesRawTotal), // suma de montos originales (para cheques)
-        cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
+        values_raw: valuesNominal,
         cheque_grace_days: checkGrace?.value,
         interest_annual_pct: annualInterestPct,
-        diff: round2(totalNetForUI - totalValues),
+        net_to_apply: netToApply, // ⬅️ NUEVO: values_raw - discount_applied_to_values
+        diff: round2(gross - netToApply), // ⬅️ saldo = documentos base - neto aplicado
       };
-
       // ——— Payload final ———
       const payload = {
         status: "pending",
