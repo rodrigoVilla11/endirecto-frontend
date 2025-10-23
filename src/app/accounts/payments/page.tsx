@@ -1029,10 +1029,8 @@ function DetailsModal({
       ? valuesNominal
       : undefined;
 
-  const netToApply = typeof netFromValues === "number" && typeof gross === "number"
-    ? Math.min(netFromValues, gross)
-    : netFromValues;
-    
+
+
   const valuesDoNotReachTotal =
     typeof gross === "number" &&
     typeof netFromValues === "number" &&
@@ -1049,7 +1047,11 @@ function DetailsModal({
     valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
-
+      
+  const netToApply =
+  typeof valuesNominal === "number" && typeof discountAmtOriginal === "number"
+    ? valuesNominal - discountAmt
+    : undefined;
   const hasCheques =
     Array.isArray(payment?.values) &&
     payment.values.some(
@@ -1186,7 +1188,15 @@ function DetailsModal({
       await navigator.clipboard.writeText(copyLines.join("\n"));
     } catch {}
   };
-
+  function formatISODateOnlyUTC(iso: string | Date, pattern = "dd/MM/yy") {
+    const d = typeof iso === "string" ? new Date(iso) : iso;
+    const localMidnight = new Date(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate()
+    );
+    return format(localMidnight, pattern);
+  }
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -1313,13 +1323,7 @@ function DetailsModal({
                         if (method === "cheque") {
                           const whenRaw = v?.cheque?.collection_date;
                           const dTxt = whenRaw
-                            ? (() => {
-                                try {
-                                  return format(new Date(whenRaw), "dd/MM/yy");
-                                } catch {
-                                  return "—";
-                                }
-                              })()
+                            ? formatISODateOnlyUTC(whenRaw, "dd/MM/yy")
                             : "—";
                           const nominal =
                             typeof v?.raw_amount === "number"

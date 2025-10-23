@@ -706,17 +706,39 @@ function DetailsModal({
   const username = userQuery?.data?.username ?? "—";
 
   const gross = payment?.totals?.gross; // Documentos base (Σ base_i)
-  const discountAmt = payment?.totals?.discount; // Desc/Cost F (monto, puede ser <0)
+  const discountAmtOriginal = -payment?.totals?.discount; // Desc/Cost F (monto, puede ser <0)
   const net = payment?.totals?.net; // TOTAL A PAGAR (efect/transf)
   const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
   const saldoDiff = (payment?.totals as any)?.diff;
+
+  const netFromValues =
+    typeof valuesNominal === "number" && typeof chequeInterest === "number"
+      ? valuesNominal - Math.abs(chequeInterest)
+      : typeof valuesNominal === "number"
+      ? valuesNominal
+      : undefined;
+
+  const valuesDoNotReachTotal =
+    typeof gross === "number" &&
+    typeof netFromValues === "number" &&
+    netFromValues < gross;
 
   const daysUsed = (mainDoc as any)?.days_used;
   const discountRate = (mainDoc as any)?.discount_rate; // fracción
   const discountRateTxt =
     typeof discountRate === "number"
       ? `${(discountRate * 100).toFixed(2)}%`
+      : undefined;
+
+  const discountAmt =
+    valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
+      ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
+      : discountAmtOriginal;
+
+  const netToApply =
+    typeof valuesNominal === "number" && typeof discountAmtOriginal === "number"
+      ? valuesNominal - discountAmt
       : undefined;
 
   const hasCheques =
@@ -742,7 +764,9 @@ function DetailsModal({
       );
     }
     if (typeof discountAmt === "number") {
-      lines.push(`Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmt))}`);
+      lines.push(
+        `Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmtOriginal))}`
+      );
     }
     if (typeof net === "number") {
       lines.push(`-----------------------------------`);
@@ -757,13 +781,7 @@ function DetailsModal({
         if (method === "cheque") {
           const whenRaw = v?.cheque?.collection_date;
           const dTxt = whenRaw
-            ? (() => {
-                try {
-                  return format(new Date(whenRaw), "dd/MM/yy");
-                } catch {
-                  return "—";
-                }
-              })()
+            ? formatISODateOnlyUTC(whenRaw, "dd/MM/yy")
             : "—";
           const nominal =
             typeof v?.raw_amount === "number" ? v.raw_amount : undefined;
@@ -841,7 +859,7 @@ function DetailsModal({
         lines.push(`Total Desc/Cost F: ${shown}`);
       }
       if (typeof gross === "number")
-        lines.push(`Neto a aplicar Factura: ${fmtMoney(gross)}`);
+        lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
       if (typeof saldoDiff === "number")
         lines.push(`SALDO ${fmtMoney(saldoDiff)}`);
     }
@@ -853,6 +871,15 @@ function DetailsModal({
       await navigator.clipboard.writeText(copyLines.join("\n"));
     } catch {}
   };
+  function formatISODateOnlyUTC(iso: string | Date, pattern = "dd/MM/yy") {
+    const d = typeof iso === "string" ? new Date(iso) : iso;
+    const localMidnight = new Date(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate()
+    );
+    return format(localMidnight, pattern);
+  }
 
   return (
     <div
@@ -965,8 +992,8 @@ function DetailsModal({
                 <AmountRow
                   label="Desc/Costo F (monto)"
                   value={
-                    typeof discountAmt === "number"
-                      ? Math.abs(discountAmt)
+                    typeof discountAmtOriginal === "number"
+                      ? Math.abs(discountAmtOriginal)
                       : undefined
                   }
                   fmt={fmtMoney}
@@ -1099,9 +1126,7 @@ function DetailsModal({
                     </div>
                   )}
                 </div>
-
                 <Divider />
-
                 {typeof valuesNominal === "number" && (
                   <AmountRow
                     label="Total Pagado (Nominal)"
@@ -1123,7 +1148,6 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-
                 {(typeof discountAmt === "number" ||
                   (hasCheques && typeof chequeInterest === "number")) && (
                   <AmountRow
@@ -1138,11 +1162,10 @@ function DetailsModal({
                     strong
                   />
                 )}
-
                 {typeof gross === "number" && (
                   <AmountRow
                     label="Neto a aplicar Factura"
-                    value={gross}
+                    value={netToApply}
                     fmt={fmtMoney}
                     muted
                   />

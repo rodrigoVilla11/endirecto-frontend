@@ -23,6 +23,7 @@ import {
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
 import PlanCalculator from "@/app/finance/planCaluculator";
+import { format } from "date-fns";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -141,7 +142,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const days_totals = daysBetweenToday(v.chequeDate);
     const days_total = days_totals + 1;
 
-
     // Usa 1 sola fuente de gracia en todos lados
     const grace = checkGrace?.value ?? 45;
 
@@ -153,7 +153,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const daily = annualNorm / 100 / 365;
     const interest_pct = daily * days_charged;
     const raw = parseFloat(v.raw_amount || "0") || 0;
-    const net_amount = parseFloat(v.amount|| "0") || 0;
+    const net_amount = parseFloat(v.amount || "0") || 0;
     const interest_amount = round2(raw - net_amount);
 
     return {
@@ -301,11 +301,21 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         : typeof valuesNominal === "number"
         ? valuesNominal
         : undefined;
+
     const valuesDoNotReachTotal =
       typeof gross === "number" &&
       typeof netFromValues === "number" &&
       netFromValues < gross;
 
+    function formatISODateOnlyUTC(iso: string | Date, pattern = "dd/MM/yy") {
+      const d = typeof iso === "string" ? new Date(iso) : iso;
+      const localMidnight = new Date(
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate()
+      );
+      return format(localMidnight, pattern);
+    }
     // Documento principal (si existe) para días y % (solo mostrar si están)
     const d0 =
       Array.isArray(payment?.documents) && payment.documents.length
@@ -322,6 +332,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
         ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
         : discountAmtOriginal;
+
+    const netToApply =
+      typeof valuesNominal === "number" &&
+      typeof discountAmtOriginal === "number"
+        ? valuesNominal - discountAmt
+        : undefined;
     // Header lines
     const lines: string[] = [];
     lines.push(`Fecha: ${fecha}`);
@@ -357,7 +373,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         if (method === "cheque") {
           const when = v?.cheque?.collection_date;
 
-          const dateTxt = ddmmyy(asDate(when));
+          const dateTxt = when ? formatISODateOnlyUTC(when, "dd/MM/yy") : "—";
 
           const nominal =
             typeof v?.raw_amount === "number" ? v.raw_amount : undefined;
@@ -437,14 +453,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           : `-${fmt(Math.abs(totalDescCostF))}`;
       lines.push(`Total Desc/Cost F: ${labelTotal}`);
     }
-
-    // “Neto a aplicar Factura”: SIN cálculos — usamos el dato disponible (gross)
     pushIf(
       typeof netFromValues === "number",
-      `Neto a aplicar Factura: ${fmt(netFromValues)}`
+      `Neto a aplicar Factura: ${fmt(netToApply)}`
     );
-
-    // SALDO (si viene)
     pushIf(typeof saldoDiff === "number", `SALDO ${fmt(saldoDiff)}`);
 
     return lines.join("\n");
