@@ -22,7 +22,6 @@ import {
 } from "@/redux/services/settingsApi";
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
-import PlanCalculator from "@/app/finance/planCaluculator";
 import { format } from "date-fns";
 
 interface PaymentModalProps {
@@ -293,7 +292,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const net = payment?.totals?.net ?? payment?.total; // TOTAL A PAGAR (efect/transf)
     const valuesNominal = payment?.totals?.values_raw; // Total Pagado (Nominal), si viene
     const chequeInterest = payment?.totals?.cheque_interest; // Cost F. Cheques
-
+    const saldoDiff = payment?.totals?.diff;
+    
     const netFromValues =
       typeof valuesNominal === "number" && typeof chequeInterest === "number"
         ? valuesNominal - Math.abs(chequeInterest)
@@ -340,7 +340,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       typeof valuesNominal === "number" && typeof totalDescCostF === "number"
         ? valuesNominal - totalDescCostF
         : 0;
-    const saldoDiff = gross - netToApply;
 
     // Header lines
     const lines: string[] = [];
@@ -547,11 +546,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           ? -1 * (netFromValues * docAdjRate) // Aplicar la tasa sobre el neto real
           : docAdjTotal;
 
-      // ✅ Neto a aplicar a factura = Total Pagado (Nominal) − Descuento aplicado a values
-      const totalDiscountAppliedToValues = discountAmt + chequeInterestTotal;
-      const netToApply = round2(totalValues - totalDiscountAppliedToValues);
+      const totalDescCostF =
+        (typeof discountAmt === "number" ? discountAmt : 0) +
+        (typeof chequeInterestTotal === "number" ? chequeInterestTotal : 0);
 
-      const totalDiff = round2(diff - totalDiscountAppliedToValues);
+      const netToApply =
+        typeof valuesNominal === "number" && typeof totalDescCostF === "number"
+          ? valuesNominal - totalDescCostF
+          : 0;
+
+      const saldoDiff = gross - netToApply;
 
       const totals = {
         gross, // documentos base
@@ -564,7 +568,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         interest_annual_pct: annualInterestPct,
         net_to_apply: netToApply, // ⬅️ NUEVO: values_raw - discount_applied_to_values
-        diff: totalDiff, // ⬅️ saldo = documentos base - neto aplicado
+        diff: saldoDiff, // ⬅️ saldo = documentos base - neto aplicado
       };
       // ——— Payload final ———
       const payload = {
@@ -1253,7 +1257,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
-                  
                 />
               </div>
             )}

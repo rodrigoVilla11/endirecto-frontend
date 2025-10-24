@@ -1020,7 +1020,7 @@ function DetailsModal({
   const net = payment?.totals?.net; // TOTAL A PAGAR (efect/transf)
   const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
-  // const saldoDiff = (payment?.totals as any)?.diff;
+  const saldoDiff = (payment?.totals as any)?.diff;
 
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
@@ -1059,7 +1059,6 @@ function DetailsModal({
     payment.values.some(
       (v: any) => String(v?.method).toLowerCase() === "cheque"
     );
-  const saldoDiff = gross - netToApply;
 
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {

@@ -710,6 +710,7 @@ function DetailsModal({
   const net = payment?.totals?.net; // TOTAL A PAGAR (efect/transf)
   const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
+  const saldoDiff = (payment?.totals as any)?.diff;
 
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
@@ -743,7 +744,6 @@ function DetailsModal({
     typeof valuesNominal === "number" && typeof discountAmtOriginal === "number"
       ? valuesNominal - totalDescCostF
       : 0;
-  const saldoDiff = gross - netToApply;
 
   const hasCheques =
     Array.isArray(payment?.values) &&
