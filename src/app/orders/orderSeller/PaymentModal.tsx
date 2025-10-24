@@ -556,7 +556,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           : 0;
 
       const saldoDiff = gross - netToApply;
-
+      console.log({saldoDiff, gross, netToApply});
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ⬅️ ajuste total de DOCUMENTOS (para "TOTAL a pagar")
