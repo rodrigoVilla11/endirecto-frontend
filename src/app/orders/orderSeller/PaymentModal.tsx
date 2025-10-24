@@ -293,7 +293,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const net = payment?.totals?.net ?? payment?.total; // TOTAL A PAGAR (efect/transf)
     const valuesNominal = payment?.totals?.values_raw; // Total Pagado (Nominal), si viene
     const chequeInterest = payment?.totals?.cheque_interest; // Cost F. Cheques
-    const saldoDiff = payment?.totals?.diff; // SALDO, si viene
 
     const netFromValues =
       typeof valuesNominal === "number" && typeof chequeInterest === "number"
@@ -340,7 +339,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const netToApply =
       typeof valuesNominal === "number" && typeof totalDescCostF === "number"
         ? valuesNominal - totalDescCostF
-        : undefined;
+        : 0;
+    const saldoDiff = gross - netToApply;
+
     // Header lines
     const lines: string[] = [];
     lines.push(`Fecha: ${fecha}`);
@@ -464,7 +465,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     return lines.join("\n");
   }
-  console.log("newValues:", newValues);
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
@@ -522,7 +522,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           },
         };
       });
-      console.log("valuesPayload:", valuesPayload);
       const gross = round2(totalBase); // base por documentos
       const docAdjTotal = round2(docAdjustmentSigned); // +desc / -rec de documentos (total docs)
       const valuesNominal = round2(valuesRawTotal); // suma de montos originales (cheques nominales)
@@ -530,16 +529,34 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       // tasa (con signo) del ajuste de documentos sobre la base
       const docAdjRate = gross > 0 ? docAdjTotal / gross : 0;
 
-      // ✅ Descuento (o recargo) aplicado SOLO sobre lo pagado (values)
-      const discountAppliedToValues = round2(valuesNominal * -docAdjRate);
+      const netFromValues =
+        typeof valuesNominal === "number" &&
+        typeof chequeInterestTotal === "number"
+          ? valuesNominal - Math.abs(chequeInterestTotal)
+          : typeof valuesNominal === "number"
+          ? valuesNominal
+          : undefined;
+
+      const valuesDoNotReachTotal =
+        typeof gross === "number" &&
+        typeof netFromValues === "number" &&
+        netFromValues < gross;
+
+      const discountAmt =
+        valuesDoNotReachTotal && typeof netFromValues === "number" && docAdjRate
+          ? -1 * (netFromValues * docAdjRate) // Aplicar la tasa sobre el neto real
+          : docAdjTotal;
 
       // ✅ Neto a aplicar a factura = Total Pagado (Nominal) − Descuento aplicado a values
-      const netToApply = round2(valuesNominal - discountAppliedToValues);
+      const totalDiscountAppliedToValues = discountAmt + chequeInterestTotal;
+      const netToApply = round2(totalValues - totalDiscountAppliedToValues);
+
+      const totalDiff = round2(diff - totalDiscountAppliedToValues);
 
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ⬅️ ajuste total de DOCUMENTOS (para "TOTAL a pagar")
-        discount_applied_to_values: discountAppliedToValues, // ⬅️ NUEVO: ajuste prorrateado sobre lo pagado
+        discount_applied_to_values: discountAmt, // ⬅️ NUEVO: ajuste prorrateado sobre lo pagado
         net: round2(totalNetForUI), // docsFinal = gross - discount (header)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: valuesNominal,
@@ -547,7 +564,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         interest_annual_pct: annualInterestPct,
         net_to_apply: netToApply, // ⬅️ NUEVO: values_raw - discount_applied_to_values
-        diff: round2(gross - netToApply), // ⬅️ saldo = documentos base - neto aplicado
+        diff: totalDiff, // ⬅️ saldo = documentos base - neto aplicado
       };
       // ——— Payload final ———
       const payload = {
@@ -779,21 +796,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return `${y}-${m}-${dd}`;
   }
 
-  function buildPresetSchedule(count: 1 | 2 | 3) {
-    if (count === 1)
-      return [{ label: "30 días", dateISO: dateISOPlusDays(30) }];
-    if (count === 2)
-      return [
-        { label: "30 días", dateISO: dateISOPlusDays(30) },
-        { label: "60 días", dateISO: dateISOPlusDays(60) },
-      ];
-    return [
-      { label: "30 días", dateISO: dateISOPlusDays(30) },
-      { label: "60 días", dateISO: dateISOPlusDays(60) },
-      { label: "90 días", dateISO: dateISOPlusDays(90) },
-    ];
-  }
-
   function mergeRefiCheques(cheques: ValueItem[]) {
     setNewValues((prev) => {
       const keep = prev.filter(
@@ -877,7 +879,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // Diferencia coherente con el neto mostrado
   const diff = round2(totalNetForUI - totalValues);
-
   const remainingToRefi = Math.max(0, diff); // saldo restante (neto mostrado - valores cargados)
   function proposeChequesPreset(daysList: number[]) {
     const targetPV = remainingToRefi; // saldo restante
@@ -1244,7 +1245,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   newValues={newValues}
                   setNewValues={setNewValues}
                   annualInterestPct={annualInterestPct}
-                  netToPay={round2(totalDocsFinal)}
+                  gross={round2(totalBase)}
                   docAdjustmentSigned={
                     showSobrePago
                       ? -totalAdjustmentSigned // desc<0, rec>0
@@ -1252,6 +1253,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
+                  
                 />
               </div>
             )}

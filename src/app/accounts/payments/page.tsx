@@ -1020,16 +1020,14 @@ function DetailsModal({
   const net = payment?.totals?.net; // TOTAL A PAGAR (efect/transf)
   const valuesNominal = (payment?.totals as any)?.values_raw; // suma de bases (nominal cheques)
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
-  const saldoDiff = (payment?.totals as any)?.diff;
+  // const saldoDiff = (payment?.totals as any)?.diff;
 
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
       ? valuesNominal - Math.abs(chequeInterest)
       : typeof valuesNominal === "number"
       ? valuesNominal
-      : undefined;
-
-
+      : 0;
 
   const valuesDoNotReachTotal =
     typeof gross === "number" &&
@@ -1047,19 +1045,21 @@ function DetailsModal({
     valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
-    const totalDescCostF =
-      (typeof discountAmt === "number" ? discountAmt : 0) +
-      (typeof chequeInterest === "number" ? chequeInterest : 0);
+
+  const totalDescCostF =
+    (typeof discountAmt === "number" ? discountAmt : 0) +
+    (typeof chequeInterest === "number" ? chequeInterest : 0)
 
   const netToApply =
-  typeof valuesNominal === "number" && typeof totalDescCostF === "number"
-    ? valuesNominal - totalDescCostF
-    : undefined;
+    typeof valuesNominal === "number" && typeof totalDescCostF === "number"
+      ? valuesNominal - totalDescCostF
+      : 0;
   const hasCheques =
     Array.isArray(payment?.values) &&
     payment.values.some(
       (v: any) => String(v?.method).toLowerCase() === "cheque"
     );
+  const saldoDiff = gross - netToApply;
 
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {
@@ -1146,7 +1146,6 @@ function DetailsModal({
         }
       });
     }
-
 
     if (
       typeof valuesNominal === "number" ||

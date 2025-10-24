@@ -30,7 +30,7 @@ export default function ValueView({
   /** ajuste de documentos (+desc / -rec) que ves en PaymentModal */
   docAdjustmentSigned = 0,
   /** neto que ves en PaymentModal (usá totalNetForUI) */
-  netToPay = 0,
+  gross = 0,
   /** gracia para cheques (por defecto 45) */
   chequeGraceDays,
   onValidityChange,
@@ -39,7 +39,7 @@ export default function ValueView({
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
   annualInterestPct: number;
   docAdjustmentSigned?: number;
-  netToPay?: number;
+  gross?: number;
   chequeGraceDays?: number;
   onValidityChange?: (isValid: boolean) => void;
 }) {
@@ -262,18 +262,22 @@ export default function ValueView({
 
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-  () => totalChequeInterest - docAdjustmentSigned,
-  [docAdjustmentSigned, totalChequeInterest]
-);
+    () => totalChequeInterest - docAdjustmentSigned,
+    [docAdjustmentSigned, totalChequeInterest]
+  );
 
   const hasCheques = useMemo(
     () => newValues.some((v) => v.method === "cheque"),
     [newValues]
   );
+  const realValue = useMemo(
+    () => totalNominalValues - totalDescCostF,
+    [totalDescCostF, totalNominalValues]
+  );  
 
   const saldo = useMemo(
-    () => +(netToPay - totalValues).toFixed(2),
-    [netToPay, totalValues]
+    () => +(gross - realValue).toFixed(2),
+    [gross, realValue]
   );
 
   const isImage = (url?: string) =>
