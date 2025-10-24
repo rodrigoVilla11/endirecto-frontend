@@ -544,6 +544,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: valuesNominal,
         cheque_grace_days: checkGrace?.value,
+        cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         interest_annual_pct: annualInterestPct,
         net_to_apply: netToApply, // ⬅️ NUEVO: values_raw - discount_applied_to_values
         diff: round2(gross - netToApply), // ⬅️ saldo = documentos base - neto aplicado
