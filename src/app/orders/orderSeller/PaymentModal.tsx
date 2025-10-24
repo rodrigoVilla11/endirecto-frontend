@@ -293,7 +293,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const valuesNominal = payment?.totals?.values_raw; // Total Pagado (Nominal), si viene
     const chequeInterest = payment?.totals?.cheque_interest; // Cost F. Cheques
     const saldoDiff = payment?.totals?.diff;
-    
+
     const netFromValues =
       typeof valuesNominal === "number" && typeof chequeInterest === "number"
         ? valuesNominal - Math.abs(chequeInterest)
@@ -552,11 +552,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       const netToApply =
         typeof valuesNominal === "number" && typeof totalDescCostF === "number"
-          ? valuesNominal - totalDescCostF
+          ? valuesNominal - -totalDescCostF
           : 0;
 
       const saldoDiff = gross - netToApply;
-
+      console.log({saldoDiff, gross, netToApply});
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ⬅️ ajuste total de DOCUMENTOS (para "TOTAL a pagar")
@@ -605,47 +605,47 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         values: valuesPayload,
       } as any;
-      const created = await createPayment(payload).unwrap();
+      // const created = await createPayment(payload).unwrap();
 
-      // ===== Datos para armar el texto =====
-      const now = new Date();
+      // // ===== Datos para armar el texto =====
+      // const now = new Date();
 
-      // Armamos el texto EXACTO
-      const longDescription = buildPaymentNotificationFromPayment(created);
+      // // Armamos el texto EXACTO
+      // const longDescription = buildPaymentNotificationFromPayment(created);
 
-      // ===== Notificación al cliente =====
-      await addNotificationToCustomer({
-        customerId: String(selectedClientId),
-        notification: {
-          title: `PAGO REGISTRADO`,
-          type: "PAGO",
-          description: longDescription,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-        },
-      }).unwrap();
+      // // ===== Notificación al cliente =====
+      // await addNotificationToCustomer({
+      //   customerId: String(selectedClientId),
+      //   notification: {
+      //     title: `PAGO REGISTRADO`,
+      //     type: "PAGO",
+      //     description: longDescription,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //   },
+      // }).unwrap();
 
-      await addNotificationToUserById({
-        id: "67a60be545b75a39f99a485b",
-        notification: {
-          title: "PAGO REGISTRADO",
-          type: "PAGO",
-          description: `${longDescription}`,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-          customer_id: String(selectedClientId),
-        },
-      }).unwrap();
+      // await addNotificationToUserById({
+      //   id: "67a60be545b75a39f99a485b",
+      //   notification: {
+      //     title: "PAGO REGISTRADO",
+      //     type: "PAGO",
+      //     description: `${longDescription}`,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //     customer_id: String(selectedClientId),
+      //   },
+      // }).unwrap();
 
-      setIsConfirmModalOpen(false);
-      setSubmittedPayment(true);
-      setNewValues([]);
-      setNewPayment([]);
-      setSelectedRows([]);
-      setComments("");
-      onClose();
+      // setIsConfirmModalOpen(false);
+      // setSubmittedPayment(true);
+      // setNewValues([]);
+      // setNewPayment([]);
+      // setSelectedRows([]);
+      // setComments("");
+      // onClose();
     } catch (e) {
       console.error("CreatePayment error:", e);
       alert(
