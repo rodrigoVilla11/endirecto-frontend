@@ -464,7 +464,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     return lines.join("\n");
   }
-  console.log("newValues:", newValues);
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
@@ -522,7 +521,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           },
         };
       });
-      console.log("valuesPayload:", valuesPayload);
       const gross = round2(totalBase); // base por documentos
       const docAdjTotal = round2(docAdjustmentSigned); // +desc / -rec de documentos (total docs)
       const valuesNominal = round2(valuesRawTotal); // suma de montos originales (cheques nominales)
@@ -530,23 +528,46 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       // tasa (con signo) del ajuste de documentos sobre la base
       const docAdjRate = gross > 0 ? docAdjTotal / gross : 0;
 
-      // ✅ Descuento (o recargo) aplicado SOLO sobre lo pagado (values)
-      const discountAppliedToValues = round2(valuesNominal * -docAdjRate);
+      const netFromValues =
+        typeof valuesNominal === "number" &&
+        typeof chequeInterestTotal === "number"
+          ? valuesNominal - Math.abs(chequeInterestTotal)
+          : typeof valuesNominal === "number"
+          ? valuesNominal
+          : undefined;
 
-      // ✅ Neto a aplicar a factura = Total Pagado (Nominal) − Descuento aplicado a values
-      const netToApply = round2(valuesNominal - discountAppliedToValues);
+      const valuesDoNotReachTotal =
+        typeof gross === "number" &&
+        typeof netFromValues === "number" &&
+        netFromValues < gross;
 
+      const discountAmt =
+        valuesDoNotReachTotal && typeof netFromValues === "number" && docAdjRate
+          ? -1 * (netFromValues * docAdjRate) // Aplicar la tasa sobre el neto real
+          : -docAdjTotal;
+
+      const totalDescCostF =
+        (typeof discountAmt === "number" ? discountAmt : 0) +
+        (typeof chequeInterestTotal === "number" ? chequeInterestTotal : 0);
+      
+      const netToApply =
+        typeof valuesNominal === "number" && typeof totalDescCostF === "number"
+          ? valuesNominal - totalDescCostF
+          : 0;
+
+      const saldoDiff = gross - netToApply;
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ⬅️ ajuste total de DOCUMENTOS (para "TOTAL a pagar")
-        discount_applied_to_values: discountAppliedToValues, // ⬅️ NUEVO: ajuste prorrateado sobre lo pagado
+        discount_applied_to_values: discountAmt, // ⬅️ NUEVO: ajuste prorrateado sobre lo pagado
         net: round2(totalNetForUI), // docsFinal = gross - discount (header)
         values: round2(totalValues), // suma de valores imputables (cheque ya neto)
         values_raw: valuesNominal,
         cheque_grace_days: checkGrace?.value,
+        cheque_interest: round2(chequeInterestTotal), // intereses totales por cheques
         interest_annual_pct: annualInterestPct,
         net_to_apply: netToApply, // ⬅️ NUEVO: values_raw - discount_applied_to_values
-        diff: round2(gross - netToApply), // ⬅️ saldo = documentos base - neto aplicado
+        diff: saldoDiff, // ⬅️ saldo = documentos base - neto aplicado
       };
       // ——— Payload final ———
       const payload = {
@@ -583,47 +604,48 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         values: valuesPayload,
       } as any;
-      const created = await createPayment(payload).unwrap();
+      console.log("Payment payload:", payload);
+      // const created = await createPayment(payload).unwrap();
 
-      // ===== Datos para armar el texto =====
-      const now = new Date();
+      // // ===== Datos para armar el texto =====
+      // const now = new Date();
 
-      // Armamos el texto EXACTO
-      const longDescription = buildPaymentNotificationFromPayment(created);
+      // // Armamos el texto EXACTO
+      // const longDescription = buildPaymentNotificationFromPayment(created);
 
-      // ===== Notificación al cliente =====
-      await addNotificationToCustomer({
-        customerId: String(selectedClientId),
-        notification: {
-          title: `PAGO REGISTRADO`,
-          type: "PAGO",
-          description: longDescription,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-        },
-      }).unwrap();
+      // // ===== Notificación al cliente =====
+      // await addNotificationToCustomer({
+      //   customerId: String(selectedClientId),
+      //   notification: {
+      //     title: `PAGO REGISTRADO`,
+      //     type: "PAGO",
+      //     description: longDescription,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //   },
+      // }).unwrap();
 
-      await addNotificationToUserById({
-        id: "67a60be545b75a39f99a485b",
-        notification: {
-          title: "PAGO REGISTRADO",
-          type: "PAGO",
-          description: `${longDescription}`,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-          customer_id: String(selectedClientId),
-        },
-      }).unwrap();
+      // await addNotificationToUserById({
+      //   id: "67a60be545b75a39f99a485b",
+      //   notification: {
+      //     title: "PAGO REGISTRADO",
+      //     type: "PAGO",
+      //     description: `${longDescription}`,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //     customer_id: String(selectedClientId),
+      //   },
+      // }).unwrap();
 
-      setIsConfirmModalOpen(false);
-      setSubmittedPayment(true);
-      setNewValues([]);
-      setNewPayment([]);
-      setSelectedRows([]);
-      setComments("");
-      onClose();
+      // setIsConfirmModalOpen(false);
+      // setSubmittedPayment(true);
+      // setNewValues([]);
+      // setNewPayment([]);
+      // setSelectedRows([]);
+      // setComments("");
+      // onClose();
     } catch (e) {
       console.error("CreatePayment error:", e);
       alert(
@@ -745,10 +767,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }
 
   // 2) AJUSTE TOTAL aplicado sobre VALORES
-  const totalAdjustmentSigned = computeAdjustmentOnValuesFull(
+  const rawAdjustmentOnValues = computeAdjustmentOnValuesFull(
     newValues,
     computedDiscounts
   );
+
   // (UI)
   const formattedTotalGross = currencyFmt.format(totalBase);
 
@@ -862,10 +885,29 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   }, [newValues, totalDocsFinal]);
 
   // Neto modelo “dto sobre valores”
-  const net_by_values = round2(totalBase - totalAdjustmentSigned);
 
   // Ajuste calculado por REGLA DE CADA COMPROBANTE (siempre visible)
   const docAdjustmentSigned = round2(totalBase - totalDocsFinal);
+
+  // Si querés capear SIEMPRE:
+  const totalAdjustmentSigned = capAdjustmentOnValues(
+    rawAdjustmentOnValues,
+    docAdjustmentSigned
+  );
+
+  function capAdjustmentOnValues(adjOnValues: number, docAdjSigned: number) {
+    // docAdjSigned usa convención opuesta (+desc / -rec); lo pasamos a "sobre valores" (desc<0 / rec>0)
+    const docAdjInValuesSign = -docAdjSigned;
+
+    const limit = Math.abs(docAdjInValuesSign);
+    const sign = Math.sign(adjOnValues) || 0;
+
+    // devolvemos el menor por magnitud, manteniendo el signo de adjOnValues
+    const capped = Math.min(Math.abs(adjOnValues), limit) * sign;
+    // redondeo igual que el resto
+    return Math.round((capped + Number.EPSILON) * 100) / 100;
+  }
+
   const hasPartialPayment =
     totalValues > 0 && Math.abs(totalValues - round2(totalDocsFinal)) > 0.01;
 
@@ -1017,7 +1059,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 <div className="text-right">
                   {(() => {
                     const signedRaw = showSobrePago
-                      ? totalAdjustmentSigned // desc<0, rec>0
+                      ? -totalAdjustmentSigned // desc<0, rec>0
                       : docAdjustmentSigned; // desc>0, rec<0
 
                     // Normalizamos para UI: "desc" se muestra con signo "−" y en verde
@@ -1247,7 +1289,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   docAdjustmentSigned={
                     showSobrePago
                       ? -totalAdjustmentSigned // desc<0, rec>0
-                      : docAdjustmentSigned // invertimos para mantener el contrato (+desc / -rec)
+                      : docAdjustmentSigned
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
