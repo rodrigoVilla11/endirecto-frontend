@@ -95,7 +95,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days_until_expiration_today: number;
     }[]
   >([]);
-
+    console.log("New Payment Docs:", newPayment);
   const [annualInterestPct, setAnnualInterestPct] = useState<number>(96);
   const annualInterest = annualInterestPct / 100;
 
@@ -1286,6 +1286,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   setNewValues={setNewValues}
                   annualInterestPct={annualInterestPct}
                   netToPay={round2(totalDocsFinal)}
+                  gross={totalBase}
                   docAdjustmentSigned={
                     showSobrePago
                       ? -totalAdjustmentSigned // desc<0, rec>0

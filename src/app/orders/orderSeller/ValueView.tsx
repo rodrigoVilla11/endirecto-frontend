@@ -31,6 +31,7 @@ export default function ValueView({
   docAdjustmentSigned = 0,
   /** neto que ves en PaymentModal (usá totalNetForUI) */
   netToPay = 0,
+  gross = 0,
   /** gracia para cheques (por defecto 45) */
   chequeGraceDays,
   onValidityChange,
@@ -40,6 +41,7 @@ export default function ValueView({
   annualInterestPct: number;
   docAdjustmentSigned?: number;
   netToPay?: number;
+  gross?: number;
   chequeGraceDays?: number;
   onValidityChange?: (isValid: boolean) => void;
 }) {
@@ -262,7 +264,7 @@ export default function ValueView({
 
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-  () => totalChequeInterest - docAdjustmentSigned,
+  () => totalChequeInterest + -docAdjustmentSigned,
   [docAdjustmentSigned, totalChequeInterest]
 );
 
@@ -271,10 +273,15 @@ export default function ValueView({
     [newValues]
   );
 
-  const saldo = useMemo(
-    () => +(netToPay - totalValues).toFixed(2),
-    [netToPay, totalValues]
+ const netToApply = useMemo(
+   () => +(totalValues - -docAdjustmentSigned).toFixed(2),
+    [totalValues, totalDescCostF]
   );
+  const saldo = useMemo(
+    () => +(gross - netToApply).toFixed(2),
+    [netToPay, netToApply]
+  );
+ 
 
   const isImage = (url?: string) =>
     !!url && !url.toLowerCase().endsWith(".pdf");
