@@ -500,7 +500,22 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         }
 
         // 👉 CHEQUE: el amount del payload debe ser el neto calculado
-        const m = computeChequeMeta(v);
+        let m = computeChequeMeta(v);
+
+        if (blockChequeInterest) {
+          // Fuerzo “sin recargo”: nominal = neto, interés 0, días cobrados 0
+          const net = parseFloat(v.amount || "0") || 0;
+          const rawFromUser = parseFloat(v.raw_amount || "") || net; // si no pasó raw, uso net
+          m = {
+            ...m,
+            raw: rawFromUser,
+            net_amount: net,
+            interest_amount: 0,
+            interest_pct: 0,
+            days_charged: 0,
+          };
+        }
+
         chequeInterestTotal += m.interest_amount;
         valuesRawTotal += m.raw;
 
@@ -727,6 +742,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     };
   });
   // ===== TOTALES (ajuste aplicado sobre VALORES prorrateado por documento) =====
+  const blockChequeInterest = computedDiscounts.some(
+    (d) => d.noDiscountBlocked
+  );
 
   // total base de documentos
   const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
@@ -933,7 +951,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       return;
     }
 
-    const grace = 0;
+    const grace = blockChequeInterest ? 100000 : 0;
     const daily = dailyRateFromAnnual(annualInterestPct);
 
     // helper: fecha YYYY-MM-DD a partir de hoy + d días
@@ -1292,12 +1310,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   netToPay={round2(totalDocsFinal)}
                   gross={totalBase}
                   docAdjustmentSigned={
-                    showSobrePago
-                      ? -totalAdjustmentSigned // desc<0, rec>0
-                      : docAdjustmentSigned
+                    showSobrePago ? -totalAdjustmentSigned : docAdjustmentSigned
                   }
                   onValidityChange={setIsValuesValid}
-                  chequeGraceDays={checkGrace?.value ? checkGrace.value : 10}
+                  chequeGraceDays={
+                    blockChequeInterest
+                      ? 100000 // 👈 fuerza días_cobrados = 0 en la UI
+                      : checkGrace?.value
+                      ? checkGrace.value
+                      : 10
+                  }
                 />
               </div>
             )}

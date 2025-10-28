@@ -63,17 +63,27 @@ export default function ValueView({
     m === "cheque" || m === "transferencia";
 
   // ===== Validación por fila =====
+  // ===== Validación por fila =====
   const rowErrors = newValues.map((v) => {
     const bankErr = needsBank(v.method) && !(v.bank || "").trim();
     const chequeNumErr =
       v.method === "cheque" && !(v.chequeNumber || "").trim();
+    const chequeDateErr = v.method === "cheque" && !(v.chequeDate || "").trim();
+
     // Monto requerido (> 0). En cheque se valida el ORIGINAL (rawAmount)
     const amountStr =
       v.method === "cheque" ? v.raw_amount ?? v.amount ?? "" : v.amount ?? "";
     const amountNum = parseFloat((amountStr || "").replace(",", "."));
     const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
-    return { bank: bankErr, chequeNumber: chequeNumErr, amount: amountErr };
+
+    return {
+      bank: bankErr,
+      chequeNumber: chequeNumErr,
+      chequeDate: chequeDateErr,
+      amount: amountErr,
+    };
   });
+
   const [digitsByRow, setDigitsByRow] = useState<Record<number, string>>({});
   // Solo dígitos
   const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");
@@ -88,7 +98,10 @@ export default function ValueView({
 
   const numberToDigitsStr = (n: number) => String(Math.round((n || 0) * 100));
 
-  const hasErrors = rowErrors.some((e) => e.bank || e.chequeNumber || e.amount);
+  const hasErrors = rowErrors.some(
+    (e) => e.bank || e.chequeNumber || e.chequeDate || e.amount
+  );
+
   useEffect(() => {
     onValidityChange?.(!hasErrors);
   }, [hasErrors, onValidityChange]);
@@ -264,24 +277,23 @@ export default function ValueView({
 
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-  () => totalChequeInterest + -docAdjustmentSigned,
-  [docAdjustmentSigned, totalChequeInterest]
-);
+    () => totalChequeInterest + -docAdjustmentSigned,
+    [docAdjustmentSigned, totalChequeInterest]
+  );
 
   const hasCheques = useMemo(
     () => newValues.some((v) => v.method === "cheque"),
     [newValues]
   );
 
- const netToApply = useMemo(
-   () => +(totalValues - -docAdjustmentSigned).toFixed(2),
+  const netToApply = useMemo(
+    () => +(totalValues - -docAdjustmentSigned).toFixed(2),
     [totalValues, totalDescCostF]
   );
   const saldo = useMemo(
     () => +(gross - netToApply).toFixed(2),
     [netToPay, netToApply]
   );
- 
 
   const isImage = (url?: string) =>
     !!url && !url.toLowerCase().endsWith(".pdf");
@@ -451,7 +463,8 @@ export default function ValueView({
           const hasRowError =
             rowErrors[idx].amount ||
             rowErrors[idx].bank ||
-            rowErrors[idx].chequeNumber;
+            rowErrors[idx].chequeNumber ||
+            rowErrors[idx].chequeDate;
 
           return (
             <div
@@ -675,12 +688,19 @@ export default function ValueView({
                       </label>
                       <input
                         type="date"
+                        required
                         value={v.chequeDate || ""}
                         onChange={(e) =>
                           handleChequeDateChange(idx, e.target.value, v)
                         }
-                        className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none"
+                        className={`w-full px-2 py-1 rounded text-white outline-none
+    ${
+      rowErrors[idx].chequeDate
+        ? "bg-zinc-700 border border-red-500"
+        : "bg-zinc-700 border border-transparent"
+    }`}
                       />
+
                       <div className="mt-1 text-[10px] text-zinc-500">
                         <Tip
                           text={`${EXPLAIN.chequeDiasTotales} • ${EXPLAIN.chequeGracia}`}
