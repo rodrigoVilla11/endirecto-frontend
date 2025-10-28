@@ -95,7 +95,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days_until_expiration_today: number;
     }[]
   >([]);
-  console.log("New Payment Docs:", newPayment);
+
   const [annualInterestPct, setAnnualInterestPct] = useState<number>(96);
   const annualInterest = annualInterestPct / 100;
 
@@ -1061,7 +1061,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 <div className="text-right">
                   {(() => {
                     const signedRaw = showSobrePago
-                      ? -totalAdjustmentSigned // desc<0, rec>0
+                      ? totalAdjustmentSigned // desc<0, rec>0
                       : docAdjustmentSigned; // desc>0, rec<0
 
                     // Normalizamos para UI: "desc" se muestra con signo "−" y en verde

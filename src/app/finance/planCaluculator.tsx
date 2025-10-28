@@ -165,7 +165,6 @@ export default function PlanCalculator({
     ? (graceDays as number)
     : 0;
 
-    console.log("daily plan",(dailyRateFromAnnual(annualInterestPct) * 30 * 100))
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
