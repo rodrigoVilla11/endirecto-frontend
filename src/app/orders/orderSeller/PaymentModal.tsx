@@ -95,7 +95,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days_until_expiration_today: number;
     }[]
   >([]);
-    console.log("New Payment Docs:", newPayment);
+  console.log("New Payment Docs:", newPayment);
   const [annualInterestPct, setAnnualInterestPct] = useState<number>(96);
   const annualInterest = annualInterestPct / 100;
 
@@ -233,6 +233,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (manualTenPct) return "cta_cte:30-37d:10%:manual";
 
     if (isNaN(days)) return "cta_cte:invalido";
+    if (days <= 7) return "cta_cte:<=7d:20%";
     if (days <= 15) return "cta_cte:<=15d:13%";
     if (days <= 30) return "cta_cte:<=30d:10%";
     if (days > 45) return "cta_cte:>45d:actualizacion";
@@ -549,7 +550,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const totalDescCostF =
         (typeof discountAmt === "number" ? discountAmt : 0) +
         (typeof chequeInterestTotal === "number" ? chequeInterestTotal : 0);
-      
+
       const netToApply =
         typeof valuesNominal === "number" && typeof totalDescCostF === "number"
           ? valuesNominal - totalDescCostF
@@ -675,6 +676,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     if (isNaN(days))
       return { rate: 0, note: "Fecha/estimación de días inválida" };
+    if (days <= 7) return { rate: +0.2, note: "Descuento 20%" };
     if (days <= 15) return { rate: +0.13, note: "Descuento 13%" };
     if (days <= 30) return { rate: +0.1, note: "Descuento 10%" };
     if (days <= 45) return { rate: 0, note: "Sin ajuste (0%)" };
@@ -1139,6 +1141,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         interestSetting?.value ? interestSetting.value : 0
                       }
                       setFinalAmount={setTotalFinal}
+                      graceDiscount={graceDiscount}
+                      setGraceDiscount={setGraceDiscount}
                     />
                   ))}
               </div>
