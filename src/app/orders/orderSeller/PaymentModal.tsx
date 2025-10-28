@@ -933,7 +933,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       return;
     }
 
-    const grace = checkGrace?.value ?? 45;
+    const grace = 0;
     const daily = dailyRateFromAnnual(annualInterestPct);
 
     // helper: fecha YYYY-MM-DD a partir de hoy + d días

@@ -276,13 +276,9 @@ const PaymentsChargedPage = () => {
       for (const v of values || []) {
         const m = String(v?.method || "").toLowerCase();
         if (m === "cheque") {
-          const num =
-            v?.cheque_number ??
-            v?.chequeNumber ??
-            v?.cheque?.cheque_number ??
-            v?.cheque?.chequeNumber ??
-            "s/n";
-          chequeNums.push(String(num));
+          console.log("Found cheque value:", v);
+          const num = v?.cheque.cheque_number; 
+          chequeNums.push(num);
         } else if (m) {
           others.add(prettyMethod(m));
         }
@@ -434,7 +430,7 @@ const PaymentsChargedPage = () => {
         const bruto = currencyFmt.format(valueGross(v));
         const num =
           m === "cheque"
-            ? `N° ${v?.cheque_number ?? v?.chequeNumber ?? "—"}`
+            ? `N° ${v?.cheque.cheque_number ?? "—"}`
             : "—";
         return [metodo, bruto, num];
       });
