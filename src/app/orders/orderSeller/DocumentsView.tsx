@@ -1,7 +1,7 @@
 // DOCUMENTSVIEW.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useGetDocumentByIdQuery } from "@/redux/services/documentsApi";
@@ -170,7 +170,8 @@ export function DocumentsView({
 
   const surcharge = getOverdueSurcharge(days_since_invoice);
   // si hay 10% manual, no aplicamos recargo
-  const hasSurcharge = !isDesc && surcharge.pct > 0 && !(eligibleManual10 && manualTenApplied);
+  const hasSurcharge =
+    !isDesc && surcharge.pct > 0 && !(eligibleManual10 && manualTenApplied);
 
   const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
   const adjAmount =
@@ -181,7 +182,26 @@ export function DocumentsView({
     : hasSurcharge
     ? balance + adjAmount
     : balance;
+  const selected = selectedRows.includes(data?.id ?? "");
+  const prevFinalRef = useRef<number>(finalAmount);
+  useEffect(() => {
+    if (!data?.id) return;
+    const prev = prevFinalRef.current ?? 0;
+    const curr = Number.isFinite(finalAmount) ? finalAmount : 0;
 
+    if (selected) {
+      const delta = curr - prev;
+      // evitamos micro-ruido por flotantes
+      if (Math.abs(delta) >= 0.01) {
+        setFinalAmount(
+          (prevTotal) =>
+            Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100
+        );
+      }
+    }
+    // actualizamos el "último" final para el próximo delta
+    prevFinalRef.current = curr;
+  }, [finalAmount, selected, data?.id, setFinalAmount]);
   const bannerNote = isDesc
     ? null
     : hasSurcharge
@@ -218,10 +238,15 @@ export function DocumentsView({
   const handleCheckboxChange = (id: string, checked: boolean) => {
     if (checked) {
       setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
+      // como vamos a sumar `finalAmount` al total inmediatamente,
+      // seteo el ref al valor actual para que el próximo delta sea correcto
+      prevFinalRef.current = finalAmount;
     } else {
       setNewPayment?.((prev: any[]) =>
         prev.filter((doc) => doc.document_id !== id)
       );
+      // al deseleccionar, no hace falta mantener el último; lo reseteo por prolijidad
+      prevFinalRef.current = finalAmount;
     }
 
     onRowSelect?.(id, checked);
