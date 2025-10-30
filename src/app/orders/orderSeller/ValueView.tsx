@@ -292,7 +292,7 @@ export default function ValueView({
   );
   const saldo = useMemo(
     () => +(gross - netToApply).toFixed(2),
-    [netToPay, netToApply]
+    [gross, netToApply]
   );
 
   const isImage = (url?: string) =>
