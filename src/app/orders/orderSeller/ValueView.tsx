@@ -138,11 +138,18 @@ export default function ValueView({
   ) => {
     const n = parseMaskedCurrencyToNumber(input); // número en pesos
 
-    if (v.method === "cheque") {
-      const { neto } = computeChequeNeto(n.toFixed(2), v); // 👈 pasa v
-      patchRow(idx, { raw_amount: n.toFixed(2), amount: neto.toFixed(2) });
+    if (v.method !== "cheque") {
+      // Guardamos internamente con punto decimal y 2 decimales
+      patchRow(idx, { amount: n.toFixed(2), raw_amount: undefined });
       return;
     }
+
+    // Para cheques, el input controla el "monto original" (rawAmount)
+    const { neto } = computeChequeNeto(n.toFixed(2), v.chequeDate ? v : { ...v, chequeDate: "" }); // 👈
+    patchRow(idx, {
+      raw_amount: n.toFixed(2),
+      amount: neto.toFixed(2),
+    });
   };
 
   // ===== Cálculo interés simple cheques =====
