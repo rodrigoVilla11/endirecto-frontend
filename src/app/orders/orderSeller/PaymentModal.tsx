@@ -117,6 +117,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     receiptUrl?: string;
     receiptOriginalName?: string;
     chequeNumber?: string;
+    overrideGraceDays?: number;
   };
 
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
@@ -142,14 +143,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const days_totals = daysBetweenToday(v.chequeDate);
     const days_total = days_totals + 1;
 
-    // Usa 1 sola fuente de gracia en todos lados
-    const grace = checkGrace?.value ?? 45;
+    // 👇 prioridad al override por ítem; si no, usa el setting global
+    const grace = Number.isFinite(v.overrideGraceDays as any)
+      ? (v.overrideGraceDays as number)
+      : checkGrace?.value ?? 45;
 
     const days_charged = Math.max(0, days_total - grace);
 
-    // Normalizá SIEMPRE la anual (admite 0.96 o 96)
-    const annualNorm = normalizeAnnualPct(annualInterestPct); // % anual
-
+    const annualNorm = normalizeAnnualPct(annualInterestPct);
     const daily = annualNorm / 100 / 365;
     const interest_pct = daily * days_charged;
     const raw = parseFloat(v.raw_amount || "0") || 0;
@@ -159,11 +160,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return {
       raw,
       days_total,
-      days_charged: days_charged,
+      days_charged,
       daily,
       interest_pct,
       interest_amount,
       net_amount,
+      // 👇 útil si querés inspeccionarlo luego
+      grace_days_used: grace,
     };
   }
 
@@ -521,18 +524,18 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         return {
           ...common,
-          amount: round2(m.net_amount), // ⬅️ clave: forzamos que amount = net_amount
+          amount: round2(m.net_amount),
           raw_amount: round2(m.raw),
           cheque: {
             collection_date: v.chequeDate || null,
             days_total: m.days_total,
-            grace_days: checkGrace?.value,
+            grace_days: m.grace_days_used ?? checkGrace?.value, // 👈 usa la real
             days_charged: m.days_charged,
             annual_interest_pct: annualInterestPct,
             daily_rate: round4(m.daily),
             interest_pct: round4(m.interest_pct),
             interest_amount: round2(m.interest_amount),
-            net_amount: round2(m.net_amount), // coincide con amount
+            net_amount: round2(m.net_amount),
             cheque_number: v.chequeNumber || undefined,
           },
         };
@@ -994,6 +997,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         amount: round2(net).toFixed(2), // NETO imputable
         raw_amount: round2(raw).toFixed(2), // NOMINAL (bruto)
         chequeDate: isoInDays(d), // 30/60/90
+        overrideGraceDays: 0,
       });
     });
 

@@ -20,6 +20,7 @@ export type ValueItem = {
   chequeNumber?: string;
   receiptUrl?: string;
   receiptOriginalName?: string;
+  overrideGraceDays?: number; // solo cheques
 };
 
 export default function ValueView({
@@ -137,18 +138,11 @@ export default function ValueView({
   ) => {
     const n = parseMaskedCurrencyToNumber(input); // número en pesos
 
-    if (v.method !== "cheque") {
-      // Guardamos internamente con punto decimal y 2 decimales
-      patchRow(idx, { amount: n.toFixed(2), raw_amount: undefined });
+    if (v.method === "cheque") {
+      const { neto } = computeChequeNeto(n.toFixed(2), v); // 👈 pasa v
+      patchRow(idx, { raw_amount: n.toFixed(2), amount: neto.toFixed(2) });
       return;
     }
-
-    // Para cheques, el input controla el "monto original" (rawAmount)
-    const { neto } = computeChequeNeto(n.toFixed(2), v.chequeDate);
-    patchRow(idx, {
-      raw_amount: n.toFixed(2),
-      amount: neto.toFixed(2),
-    });
   };
 
   // ===== Cálculo interés simple cheques =====
@@ -174,19 +168,30 @@ export default function ValueView({
     return Math.max(0, days - grace);
   };
 
-  /** Interés $ sobre monto ORIGINAL del cheque */
+  const chargeableDaysFor = (v: ValueItem) => {
+    const days = daysBetweenToday(v.chequeDate);
+    // prioridad: override por fila
+    const hasOverride = Number.isFinite(v.overrideGraceDays as any);
+    const grace = hasOverride
+      ? (v.overrideGraceDays as number)
+      : v.selectedReason === "Refinanciación"
+      ? 0 // 👈 sin gracia para refinanciación
+      : chequeGraceDays ?? 45; // 👈 global para el resto
+
+    return Math.max(0, days - grace);
+  };
+
   const chequeInterest = (v: ValueItem) => {
     if (v.method !== "cheque") return 0;
     const base = toNum(v.raw_amount ?? v.amount);
     if (!base) return 0;
-    const pct = dailyRate * chargeableDays(v.chequeDate);
+    const pct = dailyRate * chargeableDaysFor(v); // 👈 antes usaba la global
     return +(base * pct).toFixed(2);
   };
 
-  /** Neto imputable desde monto ORIGINAL (rawAmount) */
-  const computeChequeNeto = (raw: string, iso?: string) => {
+  const computeChequeNeto = (raw: string, v: ValueItem) => {
     const base = toNum(raw);
-    const int$ = +(base * (dailyRate * chargeableDays(iso))).toFixed(2);
+    const int$ = +(base * (dailyRate * chargeableDaysFor(v))).toFixed(2); // 👈
     const neto = Math.max(0, +(base - int$).toFixed(2));
     return { neto, int$ };
   };
@@ -353,22 +358,24 @@ export default function ValueView({
       return;
     }
     const raw = v.raw_amount ?? v.amount ?? "0";
-    const { neto } = computeChequeNeto(raw, v.chequeDate);
+    const { neto } = computeChequeNeto(
+      raw,
+      v.chequeDate ? v : { ...v, chequeDate: "" }
+    ); // 👈
     patchRow(idx, { method, raw_amount: raw, amount: neto.toFixed(2) });
   };
 
   const handleChequeDateChange = (idx: number, iso: string, v: ValueItem) => {
-    if (v.method !== "cheque") {
-      patchRow(idx, { chequeDate: iso });
+    if (v.method === "cheque") {
+      const raw = v.raw_amount ?? v.amount ?? "0";
+      const { neto } = computeChequeNeto(raw, { ...v, chequeDate: iso }); // 👈
+      patchRow(idx, {
+        chequeDate: iso,
+        raw_amount: raw,
+        amount: neto.toFixed(2),
+      });
       return;
     }
-    const raw = v.raw_amount ?? v.amount ?? "0";
-    const { neto } = computeChequeNeto(raw, iso);
-    patchRow(idx, {
-      chequeDate: iso,
-      raw_amount: raw,
-      amount: neto.toFixed(2),
-    });
   };
 
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
@@ -452,8 +459,7 @@ export default function ValueView({
           const showBank =
             v.method === "transferencia" || v.method === "cheque";
           const daysTotal = daysBetweenToday(v.chequeDate);
-          const daysGrav =
-            v.method === "cheque" ? chargeableDays(v.chequeDate) : 0;
+          const daysGrav = v.method === "cheque" ? chargeableDaysFor(v) : 0; // 👈
           const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
