@@ -161,24 +161,12 @@ export default function ValueView({
 
   const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
 
-  /** Días gravados (aplica gracia; default 45) */
-  const chargeableDays = (iso?: string) => {
-    const days = daysBetweenToday(iso);
-    const grace = chequeGraceDays ?? 45;
-    return Math.max(0, days - grace);
-  };
+  const graceFor = (v: ValueItem) =>
+    v.selectedReason === "Refinanciación" ? 0 : chequeGraceDays ?? 45;
 
   const chargeableDaysFor = (v: ValueItem) => {
-    const days = daysBetweenToday(v.chequeDate);
-    // prioridad: override por fila
-    const hasOverride = Number.isFinite(v.overrideGraceDays as any);
-    const grace = hasOverride
-      ? (v.overrideGraceDays as number)
-      : v.selectedReason === "Refinanciación"
-      ? 0 // 👈 sin gracia para refinanciación
-      : chequeGraceDays ?? 45; // 👈 global para el resto
-
-    return Math.max(0, days - grace);
+    const days = diffFromTodayToDate(v.chequeDate);
+    return Math.max(0, days - graceFor(v));
   };
 
   const chequeInterest = (v: ValueItem) => {
@@ -1047,6 +1035,53 @@ export default function ValueView({
                 value={currencyFmt.format(totalDescCostF)}
                 bold
               />
+
+              {/* 👉 Detalle por cheque con gracia real */}
+              <div className="mt-2 rounded-lg border border-zinc-700 bg-zinc-800/40 p-2">
+                <div className="text-[11px] text-zinc-400 mb-1">
+                  Detalle cheques (gracia aplicada)
+                </div>
+                <ul className="space-y-1">
+                  {newValues.map((v, i) =>
+                    v.method === "cheque" ? (
+                      <li
+                        key={`sum-chq-${i}`}
+                        className="flex flex-wrap gap-x-2 text-[12px]"
+                      >
+                        <span className="text-zinc-300">
+                          Cheque {v.chequeDate || "—"}
+                        </span>
+                        <span className="text-zinc-400">
+                          · Gracia: {graceFor(v)}d
+                        </span>
+                        <span className="text-zinc-400">
+                          · Gravados: {chargeableDaysFor(v)}d
+                        </span>
+                        <span className="text-zinc-400">
+                          · %: {fmtPctSigned(dailyRate * chargeableDaysFor(v))}
+                        </span>
+                        <span className="text-zinc-300">
+                          · CF:{" "}
+                          {currencyFmt.format(
+                            // mismo cálculo que arriba, pero inline para coherencia visual
+                            (() => {
+                              const base =
+                                Number(
+                                  (v.raw_amount ?? v.amount ?? "0").replace(
+                                    ",",
+                                    "."
+                                  )
+                                ) || 0;
+                              const pct = dailyRate * chargeableDaysFor(v);
+                              return +(base * pct).toFixed(2);
+                            })()
+                          )}
+                        </span>
+                      </li>
+                    ) : null
+                  )}
+                </ul>
+              </div>
             </>
           )}
 
