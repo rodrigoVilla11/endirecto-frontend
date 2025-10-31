@@ -784,8 +784,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     // 👇 cambio pedido: si es la promo 15/13% & 30D/10%, para <=7 días usar 13% en vez de 20%
     if (days <= 7)
       return {
-        rate: promo ? +0.13 : +0.2,
-        note: promo ? "Descuento 13% (promo)" : "Descuento 20%",
+        rate: promo ? +0.15 : +0.2,
+        note: promo ? "Descuento 15% (promo)" : "Descuento 20%",
       };
     if (days <= 15) return { rate: +0.13, note: "Descuento 13%" };
     if (days <= 30) return { rate: +0.1, note: "Descuento 10%" };

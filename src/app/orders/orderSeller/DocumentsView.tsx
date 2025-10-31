@@ -135,7 +135,7 @@ export function DocumentsView({
     const promo1310 = isPromo1310(docPaymentCondition);
 
     // ⚠️ Ajuste pedido: si es la promo 15/13% y 30D/10%, para <= 7 días usar 13% en lugar de 20%
-    if (docDays <= 7) return { rate: promo1310 ? 0.13 : 0.2 };
+    if (docDays <= 7) return { rate: promo1310 ? 0.15 : 0.2 };
     if (docDays <= 15) return { rate: 0.13 };
     if (docDays <= 30) return { rate: 0.1 };
     if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
