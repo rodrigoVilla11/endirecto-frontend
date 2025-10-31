@@ -103,6 +103,22 @@ export function DocumentsView({
     );
   };
 
+  function isPromo1310(txt?: string) {
+    const v = (txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+    // Busca las palabras clave de forma laxa
+    // "promo", "15 dias", "13", "30", "10"
+    return (
+      /promo/.test(v) &&
+      /15\s*dias/.test(v) &&
+      /(13(\s*%|.?dto))/i.test(v) &&
+      /30\s*d/.test(v) &&
+      /10(\s*%|)/.test(v)
+    );
+  }
+
   function getDiscountRule(
     docDays: number,
     pt: "pago_anticipado" | "cta_cte",
@@ -115,7 +131,11 @@ export function DocumentsView({
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
     if (isNaN(docDays)) return { rate: 0, note: "Fecha/estimación inválida" };
-    if (docDays <= 7) return { rate: 0.2 };
+
+    const promo1310 = isPromo1310(docPaymentCondition);
+
+    // ⚠️ Ajuste pedido: si es la promo 15/13% y 30D/10%, para <= 7 días usar 13% en lugar de 20%
+    if (docDays <= 7) return { rate: promo1310 ? 0.13 : 0.2 };
     if (docDays <= 15) return { rate: 0.13 };
     if (docDays <= 30) return { rate: 0.1 };
     if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
