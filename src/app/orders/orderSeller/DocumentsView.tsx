@@ -97,7 +97,7 @@ export function DocumentsView({
     const v = (txt || "").toLowerCase().trim();
     return (
       v === "segun pliego" ||
-      v === "según pliego" ||
+      v === "cuenta corriente" ||
       v === "no especificado" ||
       v === "not specified"
     );

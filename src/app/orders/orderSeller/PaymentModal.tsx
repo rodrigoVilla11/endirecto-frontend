@@ -189,7 +189,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const v = (txt || "").toLowerCase().trim();
     return (
       v === "segun pliego" ||
-      v === "según pliego" || // por si viene con tilde
+      v === "cuenta corriente" || // por si viene con tilde
       v === "no especificado" ||
       v === "not specified"
     );
@@ -1047,84 +1047,86 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // Saldo a refinanciar
   const remainingToRefi = Math.max(0, diff);
-  function proposeChequesPreset(daysList: number[]) {
-    const targetPV = remainingToRefi; // saldo restante
-    if (computedDiscounts.length === 0) {
-      alert("No se puede refinanciar sin documentos seleccionados.");
-      return;
-    }
-    if (targetPV <= 0) {
-      alert("No hay saldo pendiente para refinanciar.");
-      return;
-    }
 
-    const grace = blockChequeInterest ? 100000 : 0;
-    const daily = dailyRateFromAnnual(annualInterestPct);
 
-    // helper: fecha YYYY-MM-DD a partir de hoy + d días
-    function isoInDays(d: number) {
-      const base = new Date();
-      const dt = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate() + d
-      );
-      return dt.toISOString().slice(0, 10);
-    }
-
-    const n = daysList.length;
-    const cheques: ValueItem[] = [];
-    let accNet = 0;
-
-    daysList.forEach((d, idx) => {
-      const daysTotal = d;
-      const daysCharged = Math.max(0, daysTotal - grace);
-      const interestPct = daily * daysCharged;
-
-      // seguridad por si 1 - i <= 0
-      const safeDen = 1 + interestPct <= 0 ? 1 : 1 - interestPct;
-
-      let net: number;
-      if (idx === n - 1) {
-        // último: ajusta para cerrar exacto
-        net = targetPV - accNet;
-      } else {
-        net = targetPV / n;
-      }
-
-      const raw = net / safeDen;
-      accNet += net;
-
-      cheques.push({
-        method: "cheque",
-        selectedReason: "Refinanciación",
-        amount: round2(net).toFixed(2), // NETO imputable
-        raw_amount: round2(raw).toFixed(2), // NOMINAL (bruto)
-        chequeDate: isoInDays(d), // 30/60/90
-        overrideGraceDays: 0,
-      });
-    });
-
-    // Corrección de redondeo (si hiciera falta)
-    const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
-    const delta = round2(targetPV - sumNet);
-    if (Math.abs(delta) > 0.01) {
-      const last = cheques[cheques.length - 1];
-      const newNet = round2(parseFloat(last.amount) + delta);
-
-      // recalcular raw del último
-      const dLast = daysList[daysList.length - 1];
-      const daysCharged = Math.max(0, dLast - grace);
-      const interestPct = daily * daysCharged;
-      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
-      const newRaw = round2(newNet / safeDen);
-
-      last.amount = newNet.toFixed(2);
-      last.raw_amount = newRaw.toFixed(2);
-    }
-    console.log(cheques);
-    mergeRefiCheques(cheques);
+// 2) Úsalo dentro de proposeChequesPreset
+function proposeChequesPreset(daysList: number[]) {
+  const targetPV = remainingToRefi; // saldo restante a refinanciar
+  if (computedDiscounts.length === 0) {
+    alert("No se puede refinanciar sin documentos seleccionados.");
+    return;
   }
+  if (targetPV <= 0) {
+    alert("No hay saldo pendiente para refinanciar.");
+    return;
+  }
+
+  // Si hay "según pliego", anulamos interés (gracia gigante)
+ const grace = blockChequeInterest ? 100000 : (checkGrace?.value ?? 10);
+  const daily = dailyRateFromAnnual(annualInterestPct);
+
+  // helper: fecha YYYY-MM-DD a partir de hoy + d días
+  function isoInDays(d: number) {
+    const base = new Date();
+    const dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
+    return dt.toISOString().slice(0, 10);
+  }
+
+  const n = daysList.length;
+  const cheques: ValueItem[] = [];
+  let accNet = 0;
+
+  daysList.forEach((d, idx) => {
+    const daysTotal = d;
+    const daysCharged = Math.max(0, daysTotal - grace);
+    // Si grace es enorme, daysCharged = 0 y por ende interestPct = 0
+    const interestPct = daily * daysCharged;
+
+    // seguridad por si 1 - i <= 0 (igual acá será 1 cuando interestPct = 0)
+    const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+
+    // NETO objetivo por cheque (reparto simple; último cierra exacto)
+    let net: number;
+    if (idx === n - 1) {
+      net = targetPV - accNet;
+    } else {
+      net = targetPV / n;
+    }
+
+    const raw = net / safeDen; // si interestPct=0, raw=net
+
+    accNet += net;
+
+    cheques.push({
+      method: "cheque",
+      selectedReason: "Refinanciación",
+      amount: round2(net).toFixed(2),       // NETO imputable
+      raw_amount: round2(raw).toFixed(2),   // NOMINAL (bruto)
+      chequeDate: isoInDays(d),             // 30/60/90...
+      overrideGraceDays: grace,             // <<— MUY IMPORTANTE
+    });
+  });
+
+  // Corrección de redondeo (si hiciera falta)
+  const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
+  const delta = round2(targetPV - sumNet);
+  if (Math.abs(delta) > 0.01) {
+    const last = cheques[cheques.length - 1];
+    const newNet = round2(parseFloat(last.amount) + delta);
+
+    // Recalcular raw del último con el mismo interés (probablemente 0)
+    const dLast = daysList[daysList.length - 1];
+    const daysCharged = Math.max(0, dLast - grace);
+    const interestPct = daily * daysCharged;
+    const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+
+    last.amount = newNet.toFixed(2);
+    last.raw_amount = round2(newNet / safeDen).toFixed(2);
+  }
+  console.log(cheques)
+  mergeRefiCheques(cheques);
+}
+
   if (!isOpen) return null;
 
   return (

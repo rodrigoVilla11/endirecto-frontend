@@ -46,6 +46,8 @@ export default function ValueView({
   chequeGraceDays?: number;
   onValidityChange?: (isValid: boolean) => void;
 }) {
+
+  console.log(newValues)
   const currencyFmt = useMemo(
     () =>
       new Intl.NumberFormat("es-AR", {
@@ -169,11 +171,15 @@ export default function ValueView({
   const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
 
   const graceFor = (v: ValueItem) =>
-    v.selectedReason === "Refinanciación" ? 0 : chequeGraceDays ?? 45;
+    v.selectedReason === "Refinanciación"
+      ? (v.overrideGraceDays ?? chequeGraceDays ?? 45)
+      : (chequeGraceDays ?? 45);
 
   const chargeableDaysFor = (v: ValueItem) => {
     const days = diffFromTodayToDate(v.chequeDate);
-    return Math.max(0, days - graceFor(v));
+    const daysNum = typeof days === "number" && Number.isFinite(days) ? days : 0;
+    const grace = graceFor(v) ?? 0;
+    return Math.max(0, daysNum - grace);
   };
 
   const chequeInterest = (v: ValueItem) => {
