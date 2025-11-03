@@ -36,6 +36,10 @@ export default function ValueView({
   /** gracia para cheques (por defecto 45) */
   chequeGraceDays,
   onValidityChange,
+  /** mínimo de días de factura al momento del recibo (p.ej., el menor d.days de los docs seleccionados) */
+  docsDaysMin,
+  /** fecha del recibo (default: hoy) */
+  receiptDate = new Date(),
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -45,9 +49,10 @@ export default function ValueView({
   gross?: number;
   chequeGraceDays?: number;
   onValidityChange?: (isValid: boolean) => void;
+  docsDaysMin?: number;
+  receiptDate?: Date;
 }) {
-
-  console.log(newValues)
+  console.log(newValues);
   const currencyFmt = useMemo(
     () =>
       new Intl.NumberFormat("es-AR", {
@@ -90,6 +95,62 @@ export default function ValueView({
   const [digitsByRow, setDigitsByRow] = useState<Record<number, string>>({});
   // Solo dígitos
   const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");
+
+  // ===== Helpers promo cheques =====
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const toYMD = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  /** Estima fecha de emisión tomando el mínimo days de los docs seleccionados */
+  function inferInvoiceIssueDate(receipt: Date, minDays?: number) {
+    if (typeof minDays !== "number" || !isFinite(minDays)) return undefined;
+    return toYMD(new Date(receipt.getTime() - minDays * MS_PER_DAY));
+  }
+
+  /** Reglas:
+   * A) 0–7 días la factura (al recibo) Y cheque ≤30 días desde emisión → 13%
+   * B) 7–15 días la factura (al recibo) Y cheque al día (mismo día recibo) → 13%
+   * C) 15–30 días la factura (al recibo) Y cheque al día → 10%
+   */
+  function getChequePromoRate({
+    invoiceAgeAtReceiptDaysMin,
+    invoiceIssueDateApprox,
+    receiptDate,
+    chequeDateISO,
+  }: {
+    invoiceAgeAtReceiptDaysMin?: number;
+    invoiceIssueDateApprox?: Date;
+    receiptDate: Date;
+    chequeDateISO?: string;
+  }) {
+    if (!chequeDateISO) return 0;
+    const cd = toYMD(new Date(chequeDateISO));
+    const rd = toYMD(receiptDate);
+    const age = invoiceAgeAtReceiptDaysMin;
+    const isSameDay = cd.getTime() === rd.getTime();
+
+    if (typeof age === "number") {
+      // A)
+      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+        const daysFromIssueToCheque = Math.round(
+          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+        );
+        if (daysFromIssueToCheque <= 30) return 0.13;
+      }
+      // B)
+      if (age > 7 && age <= 15 && isSameDay) return 0.13;
+      // C)
+      if (age > 15 && age <= 30 && isSameDay) return 0.1;
+    }
+    return 0;
+  }
+
+  /** Base nominal para promo: raw_amount si existe (>0), si no, neto */
+  const promoBaseOf = (v: ValueItem) => {
+    const raw = Number((v.raw_amount ?? "").replace(",", ".")) || 0;
+    if (raw > 0) return raw;
+    return Number((v.amount ?? "").replace(",", ".")) || 0;
+  };
 
   const formatDigitsAsCurrencyAR = (digits: string) => {
     if (!digits) return ""; // << vacío hasta que escribís
@@ -147,7 +208,10 @@ export default function ValueView({
     }
 
     // Para cheques, el input controla el "monto original" (rawAmount)
-    const { neto } = computeChequeNeto(n.toFixed(2), v.chequeDate ? v : { ...v, chequeDate: "" }); // 👈
+    const { neto } = computeChequeNeto(
+      n.toFixed(2),
+      v.chequeDate ? v : { ...v, chequeDate: "" }
+    ); // 👈
     patchRow(idx, {
       raw_amount: n.toFixed(2),
       amount: neto.toFixed(2),
@@ -172,12 +236,13 @@ export default function ValueView({
 
   const graceFor = (v: ValueItem) =>
     v.selectedReason === "Refinanciación"
-      ? (v.overrideGraceDays ?? chequeGraceDays ?? 45)
-      : (chequeGraceDays ?? 45);
+      ? v.overrideGraceDays ?? chequeGraceDays ?? 45
+      : chequeGraceDays ?? 45;
 
   const chargeableDaysFor = (v: ValueItem) => {
     const days = diffFromTodayToDate(v.chequeDate);
-    const daysNum = typeof days === "number" && Number.isFinite(days) ? days : 0;
+    const daysNum =
+      typeof days === "number" && Number.isFinite(days) ? days : 0;
     const grace = graceFor(v) ?? 0;
     return Math.max(0, daysNum - grace);
   };
@@ -281,10 +346,40 @@ export default function ValueView({
     [newValues]
   );
 
+  // Fecha de emisión estimada
+  const invoiceIssueDateApprox = useMemo(
+    () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
+    [receiptDate, docsDaysMin]
+  );
+
+  // Promo por cheque (suma)
+  const chequePromoItems = useMemo(() => {
+    return newValues.map((v) => {
+      if (v.method !== "cheque") return { rate: 0, amount: 0 };
+      const rate = getChequePromoRate({
+        invoiceAgeAtReceiptDaysMin: docsDaysMin,
+        invoiceIssueDateApprox,
+        receiptDate,
+        chequeDateISO: v.chequeDate,
+      });
+      const base = promoBaseOf(v);
+      const amount = +(base * rate).toFixed(2); // monto de DESCUENTO
+      return { rate, amount };
+    });
+  }, [newValues, docsDaysMin, invoiceIssueDateApprox, receiptDate]);
+
+  const totalChequePromo = useMemo(
+    () =>
+      chequePromoItems.reduce(
+        (acc, x) => acc + (x.amount > 0 ? x.amount : 0),
+        0
+      ),
+    [chequePromoItems]
+  );
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-    () => totalChequeInterest + -docAdjustmentSigned,
-    [docAdjustmentSigned, totalChequeInterest]
+    () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
+    [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
   );
 
   const hasCheques = useMemo(
@@ -293,8 +388,8 @@ export default function ValueView({
   );
 
   const netToApply = useMemo(
-    () => +(totalValues - -docAdjustmentSigned).toFixed(2),
-    [totalValues, totalDescCostF]
+    () => +(totalNominalValues - totalDescCostF).toFixed(2),
+    [totalNominalValues, totalDescCostF]
   );
   const saldo = useMemo(
     () => +(gross - netToApply).toFixed(2),
@@ -982,6 +1077,19 @@ export default function ValueView({
                             {currencyFmt.format(interest$)}
                           </span>
                         </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">Promo</span>
+                          <span className="text-emerald-400 tabular-nums">
+                            {(chequePromoItems[idx].rate * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-300">Descuento Promo</span>
+                          <span className="text-emerald-400 tabular-nums">
+                            {currencyFmt.format(chequePromoItems[idx].amount)}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1041,6 +1149,16 @@ export default function ValueView({
               <RowSummary
                 label={
                   <LabelWithTip
+                    label="DTO PROMO (CHEQUES)"
+                    tip="Descuento promocional aplicado a cheques según reglas de días (0–7/7–15/15–30)."
+                  />
+                }
+                value={`-${currencyFmt.format(totalChequePromo)}`}
+              />
+
+              <RowSummary
+                label={
+                  <LabelWithTip
                     label="TOTAL DESC/COST F."
                     tip={EXPLAIN.totalDescCostF}
                   />
@@ -1089,6 +1207,16 @@ export default function ValueView({
                               return +(base * pct).toFixed(2);
                             })()
                           )}
+                        </span>
+                        <span className="text-zinc-300">
+                          · Promo:{" "}
+                          {chequePromoItems[i]?.rate > 0
+                            ? `${(chequePromoItems[i].rate * 100).toFixed(
+                                2
+                              )}% - ${currencyFmt.format(
+                                chequePromoItems[i].amount
+                              )}`
+                            : "—"}
                         </span>
                       </li>
                     ) : null

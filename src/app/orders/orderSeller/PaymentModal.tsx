@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { DocumentsView } from "./DocumentsView";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
@@ -440,6 +440,63 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return lines.join("\n");
   }
 
+  // ——— helpers fecha ———
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const toYMD = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  // Dado el mínimo "days" de los documentos, inferimos fecha de emisión aproximada
+  function inferInvoiceIssueDate(receiptDate: Date, minDaysAtReceipt?: number) {
+    if (typeof minDaysAtReceipt !== "number" || !isFinite(minDaysAtReceipt))
+      return undefined;
+    const d = new Date(receiptDate.getTime() - minDaysAtReceipt * MS_PER_DAY);
+    return toYMD(d);
+  }
+
+  // Regla de PROMO por cheque, según tus 3 casos:
+  // A) 0–7 días la factura (al recibo) Y cheque ≤30 días desde emisión → 13%
+  // B) 7–15 días factura (al recibo) Y cheque “al día” (mismo día recibo) → 13%
+  // C) 15–30 días factura (al recibo) Y cheque “al día” → 10%
+  function getChequePromoRate({
+    invoiceAgeAtReceiptDaysMin,
+    invoiceIssueDateApprox,
+    receiptDate,
+    chequeDate,
+  }: {
+    invoiceAgeAtReceiptDaysMin?: number;
+    invoiceIssueDateApprox?: Date;
+    receiptDate: Date;
+    chequeDate?: string | null;
+  }) {
+    if (!chequeDate) return 0;
+    const cd = toYMD(new Date(chequeDate));
+    const rd = toYMD(receiptDate);
+
+    const age =
+      typeof invoiceAgeAtReceiptDaysMin === "number"
+        ? invoiceAgeAtReceiptDaysMin
+        : undefined;
+
+    // "cheque al día": misma fecha que el recibo
+    const isSameDay = cd.getTime() === rd.getTime();
+
+    if (typeof age === "number") {
+      // Caso A
+      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+        const daysFromIssueToCheque = Math.round(
+          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+        );
+        if (daysFromIssueToCheque <= 30) return 0.13;
+      }
+      // Caso B
+      if (age > 7 && age <= 15 && isSameDay) return 0.13;
+
+      // Caso C
+      if (age > 15 && age <= 30 && isSameDay) return 0.1;
+    }
+    return 0;
+  }
+
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;
 
@@ -507,6 +564,64 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         };
       });
 
+      // ====== PROMO por CHEQUES (según reglas) ======
+      const receiptDate = receiptDateRef.current; // la fecha del recibo (ya la estás usando en payload)
+      const minDaysAtReceipt = (() => {
+        const xs = (computedDiscounts || [])
+          .map((d) => (typeof d?.days === "number" ? d.days : undefined))
+          .filter((v) => typeof v === "number") as number[];
+        return xs.length ? Math.min(...xs) : undefined;
+      })();
+      const invoiceIssueDateApprox = inferInvoiceIssueDate(
+        receiptDate,
+        minDaysAtReceipt
+      );
+
+      // Sumar promo por cada cheque elegible, basado en RAW (nominal) cuando esté disponible
+      let chequePromoDiscountTotal = 0;
+
+      // Si querés además dejar trazabilidad por valor (opcional):
+      const chequePromoAnnotations: Array<{
+        index: number;
+        promo_rate: number;
+        promo_amount: number;
+      }> = [];
+
+      newValues.forEach((v, idx) => {
+        if (v.method !== "cheque") return;
+
+        const promoRate = getChequePromoRate({
+          invoiceAgeAtReceiptDaysMin: minDaysAtReceipt,
+          invoiceIssueDateApprox,
+          receiptDate,
+          chequeDate: v.chequeDate || null,
+        });
+
+        if (promoRate > 0) {
+          const raw = parseFloat(v.raw_amount || "");
+          const net = parseFloat(v.amount || "");
+          const baseForPromo =
+            Number.isFinite(raw) && raw > 0
+              ? raw
+              : Number.isFinite(net)
+              ? net
+              : 0;
+          const promoAmount = round2(baseForPromo * promoRate);
+
+          if (promoAmount > 0) {
+            // Es DESCUENTO → se suma como negativo en "applied to values"
+            chequePromoDiscountTotal += -promoAmount;
+
+            // Guardar para anotar en el valuesPayload (opcional)
+            chequePromoAnnotations.push({
+              index: idx,
+              promo_rate: promoRate,
+              promo_amount: promoAmount,
+            });
+          }
+        }
+      });
+
       // ——— Totales base ———
       const gross = round2(totalBase); // base documentos
       const docAdjTotal = round2(docAdjustmentSigned); // +desc / -rec total documentos
@@ -546,30 +661,33 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       // ——— Cálculo del ajuste aplicado a valores ———
       let discountAmt = 0;
+      const rate = gross > 0 ? docAdjTotal / gross : 0;
 
       if (isDiscountContext) {
+        const discountOnCashOnly = -round2(valuesNetNonCheque * rate);
+
         if (hasCheques) {
-          // 🔒 Con cheques NO hay descuento
-          discountAmt = 0;
-        } else if (valuesDoNotReachTotal) {
-          // 💡 Pago parcial en efectivo: aplicar descuento SOBRE EL VALOR PAGADO (no-cheques)
-          // ej: 20% de $100.000 = -$20.000
-          discountAmt = -round2(valuesNetNonCheque * (docAdjTotal / gross));
+          // Mixto: descuento SOLO sobre efectivo/transfer
+          discountAmt = discountOnCashOnly;
         } else {
-          // ✅ Pago total (sin cheques): usar el descuento TOTAL de documentos
-          discountAmt = -docAdjTotal;
+          discountAmt = valuesDoNotReachTotal
+            ? discountOnCashOnly
+            : -docAdjTotal;
         }
       } else if (isSurchargeContext) {
-        // Recargo: si no cubre todo, aplicar sobre valores; si cubre, usar el total de documentos
-        const recargoSobreValores = -1 * (valuesNetTotal * docAdjRate);
+        const recargoSobreValores = -1 * (valuesNetTotal * rate);
         discountAmt = valuesDoNotReachTotal
           ? recargoSobreValores
           : -docAdjTotal;
       }
-
+      const discountAmtWithChequePromo = round2(
+        discountAmt + chequePromoDiscountTotal
+      );
       // Total Desc/CF = desc/rec aplicado + intereses cheques
       const totalDescCostF =
-        (typeof discountAmt === "number" ? discountAmt : 0) +
+        (typeof discountAmtWithChequePromo === "number"
+          ? discountAmtWithChequePromo
+          : 0) +
         (typeof chequeInterestTotal === "number" ? chequeInterestTotal : 0);
 
       // Neto a aplicar = nominal - (desc/rec aplicado + intereses cheques)
@@ -597,7 +715,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ajuste total documentos
-        discount_applied_to_values: discountAmt, // ajuste aplicado a valores
+        discount_applied_to_values: discountAmtWithChequePromo, // ajuste aplicado a valores
         net: round2(totalNetForUI), // docsFinal (header)
         values: round2(totalValues), // suma de valores (cheques ya netos)
         values_raw: valuesNominal, // nominales (cheques raw)
@@ -640,48 +758,48 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         values: valuesPayload,
       } as any;
 
-      // console.log("Payment payload:", payload);
-      const created = await createPayment(payload).unwrap();
+      console.log("Payment payload:", payload);
+      // const created = await createPayment(payload).unwrap();
 
-      // ===== Datos para armar el texto =====
-      const now = new Date();
+      // // ===== Datos para armar el texto =====
+      // const now = new Date();
 
-      // Armamos el texto EXACTO
-      const longDescription = buildPaymentNotificationFromPayment(created);
+      // // Armamos el texto EXACTO
+      // const longDescription = buildPaymentNotificationFromPayment(created);
 
-      // ===== Notificación al cliente =====
-      await addNotificationToCustomer({
-        customerId: String(selectedClientId),
-        notification: {
-          title: `PAGO REGISTRADO`,
-          type: "PAGO",
-          description: longDescription,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-        },
-      }).unwrap();
+      // // ===== Notificación al cliente =====
+      // await addNotificationToCustomer({
+      //   customerId: String(selectedClientId),
+      //   notification: {
+      //     title: `PAGO REGISTRADO`,
+      //     type: "PAGO",
+      //     description: longDescription,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //   },
+      // }).unwrap();
 
-      await addNotificationToUserById({
-        id: "67a60be545b75a39f99a485b",
-        notification: {
-          title: "PAGO REGISTRADO",
-          type: "PAGO",
-          description: `${longDescription}`,
-          link: "/payments",
-          schedule_from: now,
-          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-          customer_id: String(selectedClientId),
-        },
-      }).unwrap();
+      // await addNotificationToUserById({
+      //   id: "67a60be545b75a39f99a485b",
+      //   notification: {
+      //     title: "PAGO REGISTRADO",
+      //     type: "PAGO",
+      //     description: `${longDescription}`,
+      //     link: "/payments",
+      //     schedule_from: now,
+      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      //     customer_id: String(selectedClientId),
+      //   },
+      // }).unwrap();
 
-      setIsConfirmModalOpen(false);
-      setSubmittedPayment(true);
-      setNewValues([]);
-      setNewPayment([]);
-      setSelectedRows([]);
-      setComments("");
-      onClose();
+      // setIsConfirmModalOpen(false);
+      // setSubmittedPayment(true);
+      // setNewValues([]);
+      // setNewPayment([]);
+      // setSelectedRows([]);
+      // setComments("");
+      // onClose();
     } catch (e) {
       console.error("CreatePayment error:", e);
       alert(
@@ -691,6 +809,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       setIsSubmittingPayment(false);
     }
   };
+
   function isPromo1310(txt?: string) {
     const v = (txt || "")
       .toLowerCase()
@@ -1073,6 +1192,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     mergeRefiCheques(cheques);
   }
 
+  const receiptDateRef = useRef<Date>(new Date());
+
+  const docsDaysMin = useMemo(() => {
+    const xs = (computedDiscounts || [])
+      .map((d) => (typeof d?.days === "number" ? d.days : undefined))
+      .filter((v): v is number => Number.isFinite(v));
+    return xs.length ? Math.min(...xs) : undefined;
+  }, [computedDiscounts]);
+
   if (!isOpen) return null;
 
   return (
@@ -1386,6 +1514,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       ? checkGrace.value
                       : 10
                   }
+                  docsDaysMin={docsDaysMin}
+                  receiptDate={receiptDateRef.current}
                 />
               </div>
             )}
