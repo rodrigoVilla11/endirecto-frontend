@@ -1289,9 +1289,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
             />
 
-            <InfoRow
+            {/* <InfoRow
               label="Total a pagar a la fecha"
               value={currencyFmt.format(totalFinal)}
+            /> */}
+            <InfoRow
+              label="Total a pagar a la fecha"
+              value={currencyFmt.format(round2(totalDocsFinal))}
             />
 
             {/* Valores y Diferencia (igual que antes) */}
