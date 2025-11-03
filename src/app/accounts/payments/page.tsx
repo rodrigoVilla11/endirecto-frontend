@@ -27,14 +27,12 @@ import {
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
-import {
-  useGetSellerByIdQuery,
-  useGetSellersQuery,
-} from "@/redux/services/sellersApi";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
   useGetUserByIdQuery,
   useGetUsersQuery,
 } from "@/redux/services/usersApi";
+import { useUploadPdfMutation } from "@/redux/services/cloduinaryApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -60,8 +58,8 @@ const PaymentsChargedPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState<string>("");
-  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
-
+  const [uploadPdf, { data: dataPdf, isLoading: isLoadingPdf }] =
+    useUploadPdfMutation();
   const [methodFilter, setMethodFilter] = useState<
     "" | "efectivo" | "transferencia" | "cheque"
   >("");
@@ -249,7 +247,20 @@ const PaymentsChargedPage = () => {
   );
   // ================== Get user (para el PDF) ==================
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
-  const downloadPDFFor = (rows: Payment[]) => {
+  const downloadPDFFor = async (
+    rows: Payment[],
+    opts?: {
+      // Inyectables opcionales (si ya tenés los hooks en el scope de tu componente)
+      uploadPdf?: (
+        file: File,
+        folder?: string
+      ) => Promise<{ inline_url?: string; secure_url?: string; url?: string }>;
+      updatePayment?: (id: string, body: any) => Promise<any>;
+      // Config opcional
+      folder?: string; // carpeta en Cloudinary (default: "rendiciones")
+      alsoDownload?: boolean; // si querés además descargar localmente
+    }
+  ) => {
     if (!rows.length) return;
 
     const currencyFmt = new Intl.NumberFormat("es-AR", {
@@ -276,22 +287,20 @@ const PaymentsChargedPage = () => {
       for (const v of values || []) {
         const m = String(v?.method || "").toLowerCase();
         if (m === "cheque") {
-          console.log("Found cheque value:", v);
-          const num = v?.cheque.cheque_number; 
-          chequeNums.push(num);
+          const num = v?.cheque?.cheque_number;
+          if (num) chequeNums.push(num);
         } else if (m) {
           others.add(prettyMethod(m));
         }
       }
       const parts: string[] = [];
       if (chequeNums.length) {
-        const label = "Cheque";
         const shown = chequeNums
           .slice(0, 3)
           .map((n) => `N° ${n}`)
           .join(" / ");
         const extra = chequeNums.length > 3 ? ` +${chequeNums.length - 3}` : "";
-        parts.push(`${label} ${shown}${extra}`);
+        parts.push(`Cheque ${shown}${extra}`);
       }
       if (others.size) parts.push(...others);
       return parts.join(", ");
@@ -300,7 +309,7 @@ const PaymentsChargedPage = () => {
     const buildMethodTotalsGross = (payments: Payment[]) => {
       const acc: Record<string, { total: number; count: number }> = {};
       for (const p of payments) {
-        for (const v of p.values ?? []) {
+        for (const v of (p as any).values ?? []) {
           const m = (v?.method ?? "—").toString().toLowerCase();
           const amount = valueGross(v);
           if (!Number.isFinite(amount)) continue;
@@ -333,7 +342,10 @@ const PaymentsChargedPage = () => {
     const sumValuesGross = rows.reduce(
       (s, p) =>
         s +
-        (p.values ?? []).reduce((x: number, v: any) => x + valueGross(v), 0),
+        ((p as any).values ?? []).reduce(
+          (x: number, v: any) => x + valueGross(v),
+          0
+        ),
       0
     );
 
@@ -349,7 +361,7 @@ const PaymentsChargedPage = () => {
       startY: 72,
       tableWidth: wAvail,
       head: [["Fecha", "Cliente", "Docs", "Métodos", "Cobrado (bruto)"]],
-      body: rows.map((p) => {
+      body: rows.map((p: any) => {
         const fecha = p.date
           ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
           : "—";
@@ -357,7 +369,8 @@ const PaymentsChargedPage = () => {
         const nombre = p.customer?.name;
         const cliente =
           id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
-        const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+        const docs =
+          (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
         const methods =
           p.values && p.values.length ? formatMethodsCell(p.values) : "—";
         const cobradoBruto = currencyFmt.format(
@@ -401,7 +414,8 @@ const PaymentsChargedPage = () => {
     doc.setFontSize(11);
     doc.text("Detalle por pago y método", margin.left, cursorY - 30);
 
-    for (const [idx, p] of rows.entries()) {
+    for (const [idx, pAny] of rows.entries()) {
+      const p = pAny as any;
       if (cursorY > pageH - 200) {
         (doc as any).addPage();
         cursorY = 72;
@@ -414,7 +428,7 @@ const PaymentsChargedPage = () => {
       const cliente =
         id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
       const docsLine =
-        (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+        (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -429,9 +443,7 @@ const PaymentsChargedPage = () => {
         const metodo = prettyMethod(m);
         const bruto = currencyFmt.format(valueGross(v));
         const num =
-          m === "cheque"
-            ? `N° ${v?.cheque.cheque_number ?? "—"}`
-            : "—";
+          m === "cheque" ? `N° ${v?.cheque?.cheque_number ?? "—"}` : "—";
         return [metodo, bruto, num];
       });
 
@@ -473,7 +485,7 @@ const PaymentsChargedPage = () => {
     }
 
     // Totales por método
-    const totalsMap = buildMethodTotalsGross(rows);
+    const totalsMap = buildMethodTotalsGross(rows as any);
     const totalsEntries = Object.entries(totalsMap).sort(
       (a, b) => b[1].total - a[1].total
     );
@@ -515,7 +527,69 @@ const PaymentsChargedPage = () => {
       margin,
     });
 
-    doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    const filename = `rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
+    const ab = doc.output("arraybuffer");
+    const blob = new Blob([ab], { type: "application/pdf" });
+    const file = new File([blob], filename, { type: "application/pdf" });
+
+    if (opts?.alsoDownload) {
+      doc.save(filename); // opcional
+    }
+
+    const folder = opts?.folder ?? "rendiciones";
+    let pdfUrl = "";
+
+    // 1) Subir a Cloudinary (usa o bien el hook inyectado o fetch)
+    try {
+      if (typeof opts?.uploadPdf === "function") {
+        const r = await opts.uploadPdf(file, folder);
+        pdfUrl = r?.inline_url || r?.secure_url || r?.url || "";
+      } else {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", folder);
+        const base =
+          process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000";
+        const resp = await fetch(`${base}/cloudinary/upload-pdf`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
+        const j = await resp.json();
+        pdfUrl = j?.inline_url || j?.secure_url || "";
+      }
+    } catch (e) {
+      console.error("Error subiendo PDF a Cloudinary:", e);
+      return;
+    }
+
+    if (!pdfUrl) return;
+
+    // 2) Actualizar cada pago con la URL del PDF
+    try {
+      await Promise.all(
+        (rows as any[]).map((p) => {
+          const id = p?.id || p?._id;
+          if (!id) return Promise.resolve();
+
+          if (typeof opts?.updatePayment === "function") {
+            return opts.updatePayment(id, { pdf: pdfUrl });
+          } else {
+            const base =
+              process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000";
+            return fetch(`${base}/payments/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pdf: pdfUrl }),
+            }).then(() => undefined);
+          }
+        })
+      );
+    } catch (e) {
+      console.error("Error actualizando pagos con PDF:", e);
+    }
+
+    return pdfUrl;
   };
 
   const { data: customer } = useGetCustomerByIdQuery(
@@ -536,6 +610,7 @@ const PaymentsChargedPage = () => {
 
     setIsRindiendo(true);
     try {
+      // 🔹 Primero marcamos los pagos como rendidos
       const results = await Promise.allSettled(
         toRendir.map((p) =>
           updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
@@ -551,6 +626,7 @@ const PaymentsChargedPage = () => {
         return;
       }
 
+      // 🔹 Actualizamos localmente
       setItems((prev) =>
         prev.map((p) =>
           okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
@@ -558,8 +634,16 @@ const PaymentsChargedPage = () => {
       );
 
       const okRows = toRendir.filter((p) => okIds.includes(p._id));
-      downloadPDFFor(okRows);
 
+      // 🔹 Generamos + subimos el PDF + actualizamos cada pago con el link
+      await downloadPDFFor(okRows, {
+        uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
+        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(), // 👈 importante: usa el mismo campo "data"
+        folder: "rendiciones",
+        alsoDownload: true, // poné true si querés que lo descargue también local
+      });
+
+      // 🔹 Limpiamos selección
       setSelectedIds(new Set());
     } catch (e) {
       console.error(e);
@@ -1547,6 +1631,17 @@ function DetailsModal({
             </pre>
           </section>
 
+          {payment?.pdf ? (
+            <a
+              href={payment.pdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-600 underline"
+              title="Ver PDF"
+            >
+              Ver PDF
+            </a>
+          ) : null}
           {/* Comentarios */}
           {payment?.comments ? (
             <section className="rounded-xl border border-zinc-200 p-3 text-sm">
@@ -2036,3 +2131,55 @@ function Tooltip({
     </span>
   );
 }
+
+function PaymentPdfViewer({ payment }: { payment: any }) {
+  const [open, setOpen] = useState(false);
+  const pdfUrl: string | undefined = payment?.pdf || undefined;
+
+  if (!pdfUrl) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-md bg-blue-600 text-white"
+        onClick={() => setOpen(true)}
+      >
+        Ver PDF
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-5xl h-[80vh] rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3 flex items-center justify-between border-b">
+              <h3 className="font-medium">Comprobante / Rendición (PDF)</h3>
+              <div className="flex gap-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  Abrir en pestaña
+                </a>
+                <button onClick={() => setOpen(false)}>Cerrar</button>
+              </div>
+            </div>
+            <iframe
+              src={`${pdfUrl}#view=FitH`}
+              title="PDF"
+              className="w-full h-[calc(80vh-48px)] border-0"
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+ 

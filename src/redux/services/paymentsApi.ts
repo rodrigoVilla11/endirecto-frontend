@@ -104,6 +104,7 @@ export interface Payment {
   seller: { id: string };
   comments?: string;
   source?: string; // "web" | "mobile" | "pos"
+  pdf?: string;
   version?: number;
   isCharged: boolean; // default false
   rendido: boolean; // default false
