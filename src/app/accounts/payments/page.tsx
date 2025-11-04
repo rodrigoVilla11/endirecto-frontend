@@ -835,6 +835,84 @@ const PaymentsChargedPage = () => {
     if (!isSellerRole) setSellerFilter("");
   }, [selectedClientId, isSellerRole]);
 
+  // === Helpers para habilitar el botón diario (ADMIN + 1 día + 1 vendedor) ===
+  const isAdmin = (userData?.role || "").toUpperCase() === "ADMINISTRADOR";
+  const isSingleDaySelected = useMemo(() => {
+    if (!searchParams.startDate || !searchParams.endDate) return false;
+    const a = format(searchParams.startDate, "yyyy-MM-dd");
+    const b = format(searchParams.endDate, "yyyy-MM-dd");
+    return a === b;
+  }, [searchParams.startDate, searchParams.endDate]);
+
+  const canDownloadDaily =
+    isAdmin && isSingleDaySelected && Boolean(sellerFilter);
+
+  // === Traer TODAS las páginas del filtro actual (día + vendedor) y generar PDF ===
+  const handleDownloadDailyForCurrentFilters = async () => {
+    try {
+      if (!canDownloadDaily) {
+        alert("Faltan filtros: día único y vendedor (y rol ADMIN).");
+        return;
+      }
+
+      // Fechas yyyy-MM-dd ya usadas en loadItems
+      const startDate = searchParams.startDate
+        ? format(searchParams.startDate, "yyyy-MM-dd")
+        : undefined;
+      const endDate = searchParams.endDate
+        ? format(searchParams.endDate, "yyyy-MM-dd")
+        : undefined;
+
+      // Construir args base (igual que en loadItems) pero independiente del estado de página
+      const baseArgs: any = {
+        page: 1,
+        limit: ITEMS_PER_PAGE,
+        startDate,
+        endDate,
+        sort: sortQuery,
+        includeLookup: false,
+        seller_id: sellerFilter, // admin elige vendedor explícito
+      };
+
+      // Paginar hasta traer todo
+      const all: Payment[] = [];
+      let curPage = 1;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const res = await fetchPayments({
+          ...baseArgs,
+          page: curPage,
+        }).unwrap();
+        const chunk: Payment[] = res?.payments ?? [];
+        if (!chunk.length) break;
+        all.push(...chunk);
+        if (chunk.length < ITEMS_PER_PAGE) break;
+        curPage++;
+      }
+
+      if (!all.length) {
+        alert("No hay pagos para ese día y vendedor.");
+        return;
+      }
+
+      // Carpeta por fecha/vendedor para mantener ordenado
+      const folder = `rendiciones/diarias/${sellerFilter}/${format(
+        searchParams.startDate!,
+        "yyyyMMdd"
+      )}`;
+
+      await downloadPDFFor(all, {
+        uploadPdf: (file, f) => uploadPdf({ file, folder: f }).unwrap(),
+        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
+        folder,
+        alsoDownload: true, // baja local además de subir
+      });
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo generar el PDF diario.");
+    }
+  };
+
   const headerBody = {
     buttons: [],
     filters: [
@@ -951,6 +1029,31 @@ const PaymentsChargedPage = () => {
             }
           >
             {isRindiendo ? "Rindiendo..." : "Rendir"}
+          </button>
+        ),
+      },
+      {
+        content: (
+          <button
+            key="pdf-diario"
+            onClick={handleDownloadDailyForCurrentFilters}
+            disabled={!canDownloadDaily || isRindiendo}
+            className={`px-3 py-2 rounded text-white ${
+              !canDownloadDaily || isRindiendo
+                ? "bg-zinc-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+            title={
+              canDownloadDaily
+                ? "Descargar PDF diario del vendedor"
+                : !isAdmin
+                ? "Requiere rol ADMIN"
+                : !isSingleDaySelected
+                ? "Seleccioná el mismo día en ambos campos"
+                : "Elegí un vendedor o mostrás solo un vendedor en la lista"
+            }
+          >
+            PDF diario (vendedor)
           </button>
         ),
       },

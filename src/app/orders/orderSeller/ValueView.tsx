@@ -106,11 +106,6 @@ export default function ValueView({
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
-  // ===== Helpers adicionales =====
-  const addDays = (d: Date, days: number) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
-  const clampNonNegInt = (n: number) => Math.max(0, Math.round(n));
-
   /** Estima fecha de emisión tomando el mínimo days de los docs seleccionados */
   function inferInvoiceIssueDate(receipt: Date, minDays?: number) {
     if (typeof minDays !== "number" || !isFinite(minDays)) return undefined;
@@ -274,37 +269,44 @@ export default function ValueView({
    * - Si la fecha de cobro (cd) es  > (emisión + 45 días), cobra CF por TODOS los días del cheque:
    *     días_cheque = diff(receiptDate -> chequeDate)
    */
-  // Helper para detectar Refinanciación (tolerante a mayúsculas/acentos)
+
   const isRefinanciacion = (v: ValueItem) =>
     (v.selectedReason || "").toLowerCase().includes("refinanci");
 
-  // Reemplazá tu chargeableDaysFor por esta versión:
+  const addDays = (d: Date, n: number) => {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() + n);
+    return x;
+  };
+  const clampNonNegInt = (x: number) =>
+    Math.max(0, Math.round(Number.isFinite(x) ? x : 0));
+
   function chargeableDaysFor(v: ValueItem) {
     if (v.method !== "cheque") return 0;
     if (!v.chequeDate) return 0;
 
-    const cd = toYMD(v.chequeDate); // fecha de cobro del cheque
-    const rd = toYMD(receiptDate); // fecha del recibo (hoy por defecto)
+    const cd = toYMD(v.chequeDate); // fecha cobro del cheque
+    const rd = toYMD(receiptDate); // fecha recibo (hoy)
     const daysCheque = clampNonNegInt(
       (cd.getTime() - rd.getTime()) / MS_PER_DAY
     );
 
-    // 🔒 Regla nueva: si es Refinanciación → SIEMPRE cobra CF por TODOS los días del cheque
+    // 🔒 Si es Refinanciación → cobra CF por todos los días
     if (isRefinanciacion(v)) return daysCheque;
 
-    // Resto de casos: aplicar umbral 45 días desde emisión
     const issue = invoiceIssueDateApprox;
-    if (!issue) {
-      // Si no podemos estimar emisión y NO es refinanciación, podés decidir política.
-      // Yo dejo "no cobrar" como antes (0), pero si preferís cobrar, devolvé daysCheque.
-      return 0;
-    }
+    if (!issue) return 0; // no hay emisión → no cobra
 
     const threshold45 = addDays(issue, 45);
 
-    // Si cobra en o antes del día 45 → 0; si después → TODOS los días del cheque
+    console.log(
+      clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY)
+    );
+    // 🔥 Nueva lógica: solo cobra los días posteriores al día 45 desde emisión
     if (cd.getTime() <= threshold45.getTime()) return 0;
-    return daysCheque;
+
+    // Días excedentes
+    return clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY);
   }
 
   const chequeInterest = (v: ValueItem) => {
