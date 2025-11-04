@@ -255,6 +255,7 @@ export default function ValueView({
       ? v.overrideGraceDays ?? chequeGraceDays ?? 45
       : chequeGraceDays ?? 45;
 
+      
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
     () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
