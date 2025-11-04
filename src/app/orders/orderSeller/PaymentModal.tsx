@@ -457,45 +457,49 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // A) 0–7 días la factura (al recibo) Y cheque ≤30 días desde emisión → 13%
   // B) 7–15 días factura (al recibo) Y cheque “al día” (mismo día recibo) → 13%
   // C) 15–30 días factura (al recibo) Y cheque “al día” → 10%
-  function getChequePromoRate({
-    invoiceAgeAtReceiptDaysMin,
-    invoiceIssueDateApprox,
-    receiptDate,
-    chequeDate,
-  }: {
-    invoiceAgeAtReceiptDaysMin?: number;
-    invoiceIssueDateApprox?: Date;
-    receiptDate: Date;
-    chequeDate?: string | null;
-  }) {
-    if (!chequeDate) return 0;
-    const cd = toYMD(new Date(chequeDate));
-    const rd = toYMD(receiptDate);
+ function getChequePromoRate({
+  invoiceAgeAtReceiptDaysMin,
+  invoiceIssueDateApprox,
+  receiptDate,
+  chequeDate,
+}: {
+  invoiceAgeAtReceiptDaysMin?: number;
+  invoiceIssueDateApprox?: Date;
+  receiptDate: Date;
+  chequeDate?: string | null;
+}) {
+  if (!chequeDate) return 0;
 
-    const age =
-      typeof invoiceAgeAtReceiptDaysMin === "number"
-        ? invoiceAgeAtReceiptDaysMin
-        : undefined;
+  const cd = toYMD(new Date(chequeDate));
+  const rd = toYMD(receiptDate);
 
-    // "cheque al día": misma fecha que el recibo
-    const isSameDay = cd.getTime() === rd.getTime();
+  const age =
+    typeof invoiceAgeAtReceiptDaysMin === "number"
+      ? invoiceAgeAtReceiptDaysMin
+      : undefined;
 
-    if (typeof age === "number") {
-      // Caso A
-      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
-        const daysFromIssueToCheque = Math.round(
-          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
-        );
-        if (daysFromIssueToCheque <= 30) return 0.13;
-      }
-      // Caso B
-      if (age > 7 && age <= 15 && isSameDay) return 0.13;
+  // ✅ “Cheque al día”: diferencia de hasta ±1 día (por zona horaria o margen operativo)
+  const diffDays = Math.abs(cd.getTime() - rd.getTime()) / MS_PER_DAY;
+  const isSameDayLoose = diffDays <= 1;
 
-      // Caso C
-      if (age > 15 && age <= 30 && isSameDay) return 0.1;
+  if (typeof age === "number") {
+    // 🟩 Caso A: factura 0–7 días + cheque ≤30 días desde emisión → 13%
+    if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+      const daysFromIssueToCheque = Math.round(
+        (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+      );
+      if (daysFromIssueToCheque <= 30) return 0.13;
     }
-    return 0;
+
+    // 🟨 Caso B: factura 7–15 días + cheque al día (±1 día) → 13%
+    if (age > 7 && age <= 15 && isSameDayLoose) return 0.13;
+
+    // 🟧 Caso C: factura 16–30 días + cheque al día (±1 día) → 10%
+    if (age > 15 && age <= 30 && isSameDayLoose) return 0.10;
   }
+
+  return 0;
+}
 
   const handleCreatePayment = async () => {
     if (isCreating || isSubmittingPayment) return;

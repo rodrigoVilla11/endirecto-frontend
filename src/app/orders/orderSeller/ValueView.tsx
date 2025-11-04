@@ -98,9 +98,14 @@ export default function ValueView({
 
   // ===== Helpers promo cheques =====
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
-  const toYMD = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
+  function toYMD(dOrStr: string | Date): Date {
+    if (typeof dOrStr === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dOrStr)) {
+      const [y, m, d] = dOrStr.split("-").map(Number);
+      return new Date(y, m - 1, d); // <-- crea fecha local sin TZ shift
+    }
+    const d = new Date(dOrStr);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
   /** Estima fecha de emisión tomando el mínimo days de los docs seleccionados */
   function inferInvoiceIssueDate(receipt: Date, minDays?: number) {
     if (typeof minDays !== "number" || !isFinite(minDays)) return undefined;
@@ -112,39 +117,51 @@ export default function ValueView({
    * B) 7–15 días la factura (al recibo) Y cheque al día (mismo día recibo) → 13%
    * C) 15–30 días la factura (al recibo) Y cheque al día → 10%
    */
-  function getChequePromoRate({
-    invoiceAgeAtReceiptDaysMin,
-    invoiceIssueDateApprox,
-    receiptDate,
-    chequeDateISO,
-  }: {
-    invoiceAgeAtReceiptDaysMin?: number;
-    invoiceIssueDateApprox?: Date;
-    receiptDate: Date;
-    chequeDateISO?: string;
-  }) {
-    if (!chequeDateISO) return 0;
-    const cd = toYMD(new Date(chequeDateISO));
-    const rd = toYMD(receiptDate);
-    const age = invoiceAgeAtReceiptDaysMin;
-    const isSameDay = cd.getTime() === rd.getTime();
+  const clampInt = (n?: number) =>
+    typeof n === "number" && isFinite(n)
+      ? Math.max(0, Math.round(n))
+      : undefined;
 
-    if (typeof age === "number") {
-      // A)
-      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
-        const daysFromIssueToCheque = Math.round(
-          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
-        );
-        if (daysFromIssueToCheque <= 30) return 0.13;
-      }
-      // B)
-      if (age > 7 && age <= 15 && isSameDay) return 0.13;
-      // C)
-      if (age > 15 && age <= 30 && isSameDay) return 0.1;
+ 
+function getChequePromoRate({
+  invoiceAgeAtReceiptDaysMin,
+  invoiceIssueDateApprox,
+  receiptDate,
+  chequeDateISO,
+}: {
+  invoiceAgeAtReceiptDaysMin?: number;
+  invoiceIssueDateApprox?: Date;
+  receiptDate: Date;
+  chequeDateISO?: string;
+}) {
+  if (!chequeDateISO) return 0;
+
+  // ⚠️ Asegurate de usar la versión de toYMD que NO pierde el día por TZ
+  const cd = toYMD(chequeDateISO); // cheque date (normalizado)
+  const rd = toYMD(receiptDate);
+  const age = clampInt(invoiceAgeAtReceiptDaysMin); // redondeo/clamp
+
+  // “cheque al día” con tolerancia de ±1 día (por TZ/operativa)
+  const isSameDayLoose = Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY;
+
+  if (typeof age === "number") {
+    // A) 0–7 INCLUSIVE + cheque ≤30 días desde emisión → 13%
+    if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+      const daysFromIssueToCheque = Math.round(
+        (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+      );
+      if (daysFromIssueToCheque <= 30) return 0.13;
     }
-    return 0;
+
+    // B) 7–15 INCLUSIVE + cheque “al día” (±1 día) → 13%
+    if (age >= 7 && age <= 15 && isSameDayLoose) return 0.13;
+
+    // C) 16–30 INCLUSIVE + cheque “al día” (±1 día) → 10%
+    if (age >= 16 && age <= 30 && isSameDayLoose) return 0.10;
   }
 
+  return 0;
+}
   /** Base nominal para promo: raw_amount si existe (>0), si no, neto */
   const promoBaseOf = (v: ValueItem) => {
     const raw = Number((v.raw_amount ?? "").replace(",", ".")) || 0;
