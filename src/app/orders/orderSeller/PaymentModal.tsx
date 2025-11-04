@@ -22,8 +22,6 @@ import {
 } from "@/redux/services/settingsApi";
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
-import PlanCalculator from "@/app/finance/planCaluculator";
-import { format } from "date-fns";
 
 interface PaymentModalProps {
   isOpen: boolean;

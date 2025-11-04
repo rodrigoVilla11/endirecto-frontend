@@ -736,15 +736,35 @@ function DetailsModal({
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
 
-  const totalDescCostF =
-    (typeof discountAmt === "number" ? discountAmt : 0) +
-    (typeof chequeInterest === "number" ? chequeInterest : 0);
-
-  const netToApply =
-    typeof valuesNominal === "number" && typeof discountAmtOriginal === "number"
-      ? valuesNominal - totalDescCostF
+  // Monto aplicado a valores que vino en el payload (handleCreatePayment v04/11/2025)
+  const discountAmtToValuesRaw =
+    typeof (payment?.totals as any)?.discount_applied_to_values === "number"
+      ? (payment!.totals as any).discount_applied_to_values
       : undefined;
 
+  // Si no vino en totals, usamos tu cálculo derivado (`discountAmt`)
+  const discountAmtToValues =
+    typeof discountAmtToValuesRaw === "number"
+      ? discountAmtToValuesRaw
+      : discountAmt;
+
+  // Atajo: el que realmente se aplica a valores (y alimenta "Total Desc/Cost F")
+  const appliedDiscount =
+    typeof discountAmtToValues === "number" ? discountAmtToValues : 0;
+
+  // Para decidir si mostrar la fila separada
+  const showDiscountToValuesRow =
+    typeof discountAmtToValues === "number" &&
+    typeof discountAmtOriginal === "number" &&
+    Math.abs(discountAmtToValues - discountAmtOriginal) > 0.009;
+
+  const totalDescCostF =
+    (typeof appliedDiscount === "number" ? appliedDiscount : 0) +
+    (typeof chequeInterest === "number" ? chequeInterest : 0);
+  const netToApply =
+    typeof valuesNominal === "number" && typeof totalDescCostF === "number"
+      ? valuesNominal - totalDescCostF
+      : undefined;
   const hasCheques =
     Array.isArray(payment?.values) &&
     payment.values.some(
@@ -767,7 +787,7 @@ function DetailsModal({
         `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
       );
     }
-    if (typeof discountAmt === "number") {
+    if (typeof discountAmtOriginal === "number") {
       lines.push(
         `Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmtOriginal))}`
       );

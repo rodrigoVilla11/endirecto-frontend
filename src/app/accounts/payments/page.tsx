@@ -1155,7 +1155,6 @@ function DetailsModal({
     maximumFractionDigits: 2,
   });
 
-  console.log({ payment });
   const userId =
     (payment as any)?.user?.id ??
     (payment as any)?.user?._id ??
