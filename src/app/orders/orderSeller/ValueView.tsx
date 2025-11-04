@@ -286,26 +286,26 @@ export default function ValueView({
     if (!v.chequeDate) return 0;
 
     const cd = toYMD(v.chequeDate); // fecha cobro del cheque
-    const rd = toYMD(receiptDate); // fecha recibo (hoy)
+    const rd = toYMD(receiptDate); // fecha del recibo (hoy)
     const daysCheque = clampNonNegInt(
       (cd.getTime() - rd.getTime()) / MS_PER_DAY
     );
 
-    // 🔒 Si es Refinanciación → cobra CF por todos los días
+    // Refinanciación: siempre cobrar los días del cheque (si es al día, será 0)
     if (isRefinanciacion(v)) return daysCheque;
 
     const issue = invoiceIssueDateApprox;
-    if (!issue) return 0; // no hay emisión → no cobra
+    if (!issue) return 0; // si no sabemos emisión, política conservadora
 
     const threshold45 = addDays(issue, 45);
 
-    console.log(
-      clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY)
-    );
-    // 🔥 Nueva lógica: solo cobra los días posteriores al día 45 desde emisión
+    // 1) Si el cobro es en/antes del día 45 desde emisión → 0
     if (cd.getTime() <= threshold45.getTime()) return 0;
 
-    // Días excedentes
+    // 2) Si ya pasamos el umbral al momento del recibo → cobrar SOLO días del cheque
+    if (rd.getTime() >= threshold45.getTime()) return daysCheque;
+
+    // 3) El umbral cae entre recibo y cheque → cobrar desde el umbral hasta el cheque
     return clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY);
   }
 
