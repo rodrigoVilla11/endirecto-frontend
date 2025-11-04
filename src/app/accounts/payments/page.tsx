@@ -67,9 +67,9 @@ const PaymentsChargedPage = () => {
   const [searchParams, setSearchParams] = useState<{
     startDate: Date | null;
     endDate: Date | null;
-  }>({
-    startDate: null,
-    endDate: null,
+  }>(() => {
+    const today = new Date();
+    return { startDate: today, endDate: today };
   });
 
   // Modal de detalles
@@ -85,6 +85,8 @@ const PaymentsChargedPage = () => {
   const [updatePayment] = useUpdatePaymentMutation();
   const { data: sellersData, isLoading: isSellersLoading } =
     useGetSellersQuery(null);
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+
   const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">("");
   useEffect(() => {
     setSelectedIds(new Set());
@@ -807,21 +809,14 @@ const PaymentsChargedPage = () => {
   }, [someSelected, allSelected]);
   // ===================== Header (filtros/acciones) =====================
   const sellerOptions = React.useMemo(() => {
-    const raw = (sellersData ?? sellersData ?? []) as any[];
+    const raw = Array.isArray(usersData) ? usersData : [];
     return raw
-      .map((s) => {
-        const id = String(s?.id ?? s?._id ?? s?.seller_id ?? "");
-        const name =
-          s?.name ??
-          s?.fullName ??
-          ([s?.first_name, s?.last_name].filter(Boolean).join(" ") ||
-            s?.username ||
-            s?.email ||
-            id);
-        return id ? { id, name } : null;
-      })
-      .filter(Boolean) as Array<{ id: string; name: string }>;
-  }, [sellersData]);
+      .filter((s) => !!s?.seller_id) // solo los que tienen seller_id truthy
+      .map((s) => ({
+        id: String(s.seller_id),
+        name: s.username ?? String(s.seller_id),
+      }));
+  }, [usersData]);
 
   useEffect(() => {
     if (isSellerRole) {
