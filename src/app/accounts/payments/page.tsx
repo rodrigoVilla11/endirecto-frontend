@@ -600,60 +600,72 @@ const PaymentsChargedPage = () => {
   );
 
   const handleRendir = async () => {
-    const candidates = selectedIds.size
-      ? items.filter((p) => selectedIds.has(p._id))
-      : items;
-    const toRendir = candidates.filter((p) => !(p as any).rendido);
+  // Si no hay selección, tomamos TODOS los visibles no rendidos
+  const poolWhenEmpty = visibleItems.filter((p) => !(p as any).rendido);
 
-    if (!toRendir.length) {
-      alert("No hay pagos para rendir (ya están rendidos o no hay selección).");
+  const candidates = selectedIds.size
+    ? items.filter((p) => selectedIds.has(p._id))
+    : poolWhenEmpty;
+
+  // Si llega sin selección y además no hay nada para rendir, avisamos
+  if (!candidates.length) {
+    alert("No hay pagos para rendir (ya están rendidos o no hay en la vista actual).");
+    return;
+  }
+
+  // Si no había selección, la marcamos en la UI (solo visibles no rendidos)
+  if (selectedIds.size === 0) {
+    setSelectedIds(new Set(poolWhenEmpty.map((p) => p._id)));
+  }
+
+  // Filtramos por si había seleccionados rendidos por error
+  const toRendir = candidates.filter((p) => !(p as any).rendido);
+
+  setIsRindiendo(true);
+  try {
+    // 1) Marcamos como rendidos en backend
+    const results = await Promise.allSettled(
+      toRendir.map((p) =>
+        updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
+      )
+    );
+
+    const okIds = results
+      .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
+      .filter((x): x is string => !!x);
+
+    if (!okIds.length) {
+      alert("No se pudo rendir ninguno de los pagos seleccionados.");
       return;
     }
 
-    setIsRindiendo(true);
-    try {
-      // 🔹 Primero marcamos los pagos como rendidos
-      const results = await Promise.allSettled(
-        toRendir.map((p) =>
-          updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
-        )
-      );
+    // 2) Actualizamos localmente
+    setItems((prev) =>
+      prev.map((p) =>
+        okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
+      )
+    );
 
-      const okIds = results
-        .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
-        .filter((x): x is string => !!x);
+    const okRows = toRendir.filter((p) => okIds.includes(p._id));
 
-      if (!okIds.length) {
-        alert("No se pudo rendir ninguno de los pagos seleccionados.");
-        return;
-      }
+    // 3) Generamos + subimos PDF + actualizamos cada pago con el link
+    await downloadPDFFor(okRows, {
+      uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
+      updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
+      folder: "rendiciones",
+      alsoDownload: true,
+    });
 
-      // 🔹 Actualizamos localmente
-      setItems((prev) =>
-        prev.map((p) =>
-          okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
-        )
-      );
+    // 4) Limpiamos selección
+    setSelectedIds(new Set());
+  } catch (e) {
+    console.error(e);
+    alert("Ocurrió un error al rendir.");
+  } finally {
+    setIsRindiendo(false);
+  }
+};
 
-      const okRows = toRendir.filter((p) => okIds.includes(p._id));
-
-      // 🔹 Generamos + subimos el PDF + actualizamos cada pago con el link
-      await downloadPDFFor(okRows, {
-        uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
-        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(), // 👈 importante: usa el mismo campo "data"
-        folder: "rendiciones",
-        alsoDownload: true, // poné true si querés que lo descargue también local
-      });
-
-      // 🔹 Limpiamos selección
-      setSelectedIds(new Set());
-    } catch (e) {
-      console.error(e);
-      alert("Ocurrió un error al rendir.");
-    } finally {
-      setIsRindiendo(false);
-    }
-  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
