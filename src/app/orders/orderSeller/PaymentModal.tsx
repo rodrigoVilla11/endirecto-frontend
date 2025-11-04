@@ -702,19 +702,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const saldoDiff = round2(gross - netToApply);
 
       // Debug útil
-      // console.log({
-      //   gross,
-      //   docAdjTotal,
-      //   discountAmt,
-      //   chequeInterestTotal,
-      //   netFromValues,
-      //   valuesNetNonCheque,
-      //   threshold,
-      //   valuesDoNotReachTotal,
-      //   netToApply,
-      //   saldoDiff,
-      // });
-
+    
       // ——— Totales para payload ———
       const totals = {
         gross, // documentos base
@@ -730,6 +718,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         diff: saldoDiff,
       };
 
+      console.log({totals})
       // ——— Payload final ———
       const payload = {
         status: "pending",

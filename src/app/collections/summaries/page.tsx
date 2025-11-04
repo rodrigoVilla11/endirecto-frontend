@@ -986,7 +986,6 @@ function DetailsModal({
                       // helper para formatear comprobante
                       const renderReceipt = () => {
                         if (!v?.receipt_url) return null;
-                        console.log("Rendering receipt for", v);
                         return (
                           <div className="mt-2">
                             <a

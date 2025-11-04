@@ -52,7 +52,6 @@ export default function ValueView({
   docsDaysMin?: number;
   receiptDate?: Date;
 }) {
-  console.log(newValues);
   const currencyFmt = useMemo(
     () =>
       new Intl.NumberFormat("es-AR", {
@@ -106,6 +105,12 @@ export default function ValueView({
     const d = new Date(dOrStr);
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
+
+  // ===== Helpers adicionales =====
+  const addDays = (d: Date, days: number) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+  const clampNonNegInt = (n: number) => Math.max(0, Math.round(n));
+
   /** Estima fecha de emisión tomando el mínimo days de los docs seleccionados */
   function inferInvoiceIssueDate(receipt: Date, minDays?: number) {
     if (typeof minDays !== "number" || !isFinite(minDays)) return undefined;
@@ -122,46 +127,45 @@ export default function ValueView({
       ? Math.max(0, Math.round(n))
       : undefined;
 
- 
-function getChequePromoRate({
-  invoiceAgeAtReceiptDaysMin,
-  invoiceIssueDateApprox,
-  receiptDate,
-  chequeDateISO,
-}: {
-  invoiceAgeAtReceiptDaysMin?: number;
-  invoiceIssueDateApprox?: Date;
-  receiptDate: Date;
-  chequeDateISO?: string;
-}) {
-  if (!chequeDateISO) return 0;
+  function getChequePromoRate({
+    invoiceAgeAtReceiptDaysMin,
+    invoiceIssueDateApprox,
+    receiptDate,
+    chequeDateISO,
+  }: {
+    invoiceAgeAtReceiptDaysMin?: number;
+    invoiceIssueDateApprox?: Date;
+    receiptDate: Date;
+    chequeDateISO?: string;
+  }) {
+    if (!chequeDateISO) return 0;
 
-  // ⚠️ Asegurate de usar la versión de toYMD que NO pierde el día por TZ
-  const cd = toYMD(chequeDateISO); // cheque date (normalizado)
-  const rd = toYMD(receiptDate);
-  const age = clampInt(invoiceAgeAtReceiptDaysMin); // redondeo/clamp
+    // ⚠️ Asegurate de usar la versión de toYMD que NO pierde el día por TZ
+    const cd = toYMD(chequeDateISO); // cheque date (normalizado)
+    const rd = toYMD(receiptDate);
+    const age = clampInt(invoiceAgeAtReceiptDaysMin); // redondeo/clamp
 
-  // “cheque al día” con tolerancia de ±1 día (por TZ/operativa)
-  const isSameDayLoose = Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY;
+    // “cheque al día” con tolerancia de ±1 día (por TZ/operativa)
+    const isSameDayLoose = Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY;
 
-  if (typeof age === "number") {
-    // A) 0–7 INCLUSIVE + cheque ≤30 días desde emisión → 13%
-    if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
-      const daysFromIssueToCheque = Math.round(
-        (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
-      );
-      if (daysFromIssueToCheque <= 30) return 0.13;
+    if (typeof age === "number") {
+      // A) 0–7 INCLUSIVE + cheque ≤30 días desde emisión → 13%
+      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+        const daysFromIssueToCheque = Math.round(
+          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+        );
+        if (daysFromIssueToCheque <= 30) return 0.13;
+      }
+
+      // B) 7–15 INCLUSIVE + cheque “al día” (±1 día) → 13%
+      if (age >= 7 && age <= 15 && isSameDayLoose) return 0.13;
+
+      // C) 16–30 INCLUSIVE + cheque “al día” (±1 día) → 10%
+      if (age >= 16 && age <= 30 && isSameDayLoose) return 0.1;
     }
 
-    // B) 7–15 INCLUSIVE + cheque “al día” (±1 día) → 13%
-    if (age >= 7 && age <= 15 && isSameDayLoose) return 0.13;
-
-    // C) 16–30 INCLUSIVE + cheque “al día” (±1 día) → 10%
-    if (age >= 16 && age <= 30 && isSameDayLoose) return 0.10;
+    return 0;
   }
-
-  return 0;
-}
   /** Base nominal para promo: raw_amount si existe (>0), si no, neto */
   const promoBaseOf = (v: ValueItem) => {
     const raw = Number((v.raw_amount ?? "").replace(",", ".")) || 0;
@@ -256,13 +260,52 @@ function getChequePromoRate({
       ? v.overrideGraceDays ?? chequeGraceDays ?? 45
       : chequeGraceDays ?? 45;
 
-  const chargeableDaysFor = (v: ValueItem) => {
-    const days = diffFromTodayToDate(v.chequeDate);
-    const daysNum =
-      typeof days === "number" && Number.isFinite(days) ? days : 0;
-    const grace = graceFor(v) ?? 0;
-    return Math.max(0, daysNum - grace);
-  };
+  // Fecha de emisión estimada
+  const invoiceIssueDateApprox = useMemo(
+    () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
+    [receiptDate, docsDaysMin]
+  );
+
+  /**
+   * Nueva regla:
+   * - Si NO tenemos fecha aproximada de emisión (invoiceIssueDateApprox) o NO hay chequeDate,
+   *   caemos a 0 días gravados (o si querés, podés caer a la lógica anterior).
+   * - Si la fecha de cobro (cd) es <= (emisión + 45 días), NO cobra CF (0 días).
+   * - Si la fecha de cobro (cd) es  > (emisión + 45 días), cobra CF por TODOS los días del cheque:
+   *     días_cheque = diff(receiptDate -> chequeDate)
+   */
+  // Helper para detectar Refinanciación (tolerante a mayúsculas/acentos)
+  const isRefinanciacion = (v: ValueItem) =>
+    (v.selectedReason || "").toLowerCase().includes("refinanci");
+
+  // Reemplazá tu chargeableDaysFor por esta versión:
+  function chargeableDaysFor(v: ValueItem) {
+    if (v.method !== "cheque") return 0;
+    if (!v.chequeDate) return 0;
+
+    const cd = toYMD(v.chequeDate); // fecha de cobro del cheque
+    const rd = toYMD(receiptDate); // fecha del recibo (hoy por defecto)
+    const daysCheque = clampNonNegInt(
+      (cd.getTime() - rd.getTime()) / MS_PER_DAY
+    );
+
+    // 🔒 Regla nueva: si es Refinanciación → SIEMPRE cobra CF por TODOS los días del cheque
+    if (isRefinanciacion(v)) return daysCheque;
+
+    // Resto de casos: aplicar umbral 45 días desde emisión
+    const issue = invoiceIssueDateApprox;
+    if (!issue) {
+      // Si no podemos estimar emisión y NO es refinanciación, podés decidir política.
+      // Yo dejo "no cobrar" como antes (0), pero si preferís cobrar, devolvé daysCheque.
+      return 0;
+    }
+
+    const threshold45 = addDays(issue, 45);
+
+    // Si cobra en o antes del día 45 → 0; si después → TODOS los días del cheque
+    if (cd.getTime() <= threshold45.getTime()) return 0;
+    return daysCheque;
+  }
 
   const chequeInterest = (v: ValueItem) => {
     if (v.method !== "cheque") return 0;
@@ -361,12 +404,6 @@ function getChequePromoRate({
         return acc + chequeInterest(v);
       }, 0),
     [newValues]
-  );
-
-  // Fecha de emisión estimada
-  const invoiceIssueDateApprox = useMemo(
-    () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
-    [receiptDate, docsDaysMin]
   );
 
   // Promo por cheque (suma)
@@ -1184,10 +1221,10 @@ function getChequePromoRate({
                 bold
               />
 
-              {/* 👉 Detalle por cheque con gracia real */}
+              {/* 👉 Detalle por cheque con umbral 45d desde emisión */}
               <div className="mt-2 rounded-lg border border-zinc-700 bg-zinc-800/40 p-2">
                 <div className="text-[11px] text-zinc-400 mb-1">
-                  Detalle cheques (gracia aplicada)
+                  Detalle cheques (umbral 45 días desde emisión)
                 </div>
                 <ul className="space-y-1">
                   {newValues.map((v, i) =>
@@ -1200,7 +1237,22 @@ function getChequePromoRate({
                           Cheque {v.chequeDate || "—"}
                         </span>
                         <span className="text-zinc-400">
-                          · Gracia: {graceFor(v)}d
+                          · Emisión aprox:{" "}
+                          {invoiceIssueDateApprox
+                            ? invoiceIssueDateApprox.toLocaleDateString("es-AR")
+                            : "—"}
+                        </span>
+                        <span className="text-zinc-400">
+                          · Umbral 45d:{" "}
+                          {invoiceIssueDateApprox
+                            ? addDays(
+                                invoiceIssueDateApprox,
+                                45
+                              ).toLocaleDateString("es-AR")
+                            : "—"}
+                        </span>
+                        <span className="text-zinc-400">
+                          · Días cheque: {diffFromTodayToDate(v.chequeDate)}
                         </span>
                         <span className="text-zinc-400">
                           · Gravados: {chargeableDaysFor(v)}d
@@ -1211,7 +1263,6 @@ function getChequePromoRate({
                         <span className="text-zinc-300">
                           · CF:{" "}
                           {currencyFmt.format(
-                            // mismo cálculo que arriba, pero inline para coherencia visual
                             (() => {
                               const base =
                                 Number(
@@ -1443,7 +1494,7 @@ const EXPLAIN = {
   chequeDiasTotales:
     "Días calendario desde hoy hasta la fecha de cobro del cheque.",
   chequeGracia:
-    "Días de gracia durante los cuales no se cobra costo financiero. Pasado ese umbral, los días generan interés.",
+    "No se aplica costo financiero si la fecha de cobro del cheque es en o antes del día 45 desde la emisión de la factura. Si se cobra después del día 45, se cobra el costo financiero por todos los días del cheque.",
   chequePorcentaje:
     "Porcentaje de interés simple acumulado: tasa diaria x días gravados.",
   chequeCostoFinanciero:

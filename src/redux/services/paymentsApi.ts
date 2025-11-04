@@ -19,7 +19,7 @@ export interface PaymentTotals {
   values: number;
   /** diferencia: net - values */
   diff: number;
-
+  discount_applied_to_values: number;
   /** ===== Extensiones para cheques / trazabilidad ===== */
   /** suma de montos originales de los valores (cheques usan raw_amount) */
   values_raw?: number;
@@ -90,7 +90,7 @@ export interface Payment {
   _id: string;
   status: PaymentStatus;
   multisoft_id?: string;
-  customer: { id: string, name: string };
+  customer: { id: string; name: string };
   currency: string; // "ARS"
   date: string; // ISO string
   type: PaymentType; // "pago_anticipado" | "cta_cte"

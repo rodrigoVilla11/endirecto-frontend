@@ -1045,6 +1045,7 @@ function DetailsModal({
     maximumFractionDigits: 2,
   });
 
+  console.log({ payment });
   const userId =
     (payment as any)?.user?.id ??
     (payment as any)?.user?._id ??
@@ -1125,10 +1126,32 @@ function DetailsModal({
     valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
-  const totalDescCostF =
-    (typeof discountAmt === "number" ? discountAmt : 0) +
-    (typeof chequeInterest === "number" ? chequeInterest : 0);
 
+  // Monto aplicado a valores que vino en el payload (handleCreatePayment v04/11/2025)
+  const discountAmtToValuesRaw =
+    typeof (payment?.totals as any)?.discount_applied_to_values === "number"
+      ? (payment!.totals as any).discount_applied_to_values
+      : undefined;
+
+  // Si no vino en totals, usamos tu cálculo derivado (`discountAmt`)
+  const discountAmtToValues =
+    typeof discountAmtToValuesRaw === "number"
+      ? discountAmtToValuesRaw
+      : discountAmt;
+
+  // Atajo: el que realmente se aplica a valores (y alimenta "Total Desc/Cost F")
+  const appliedDiscount =
+    typeof discountAmtToValues === "number" ? discountAmtToValues : 0;
+
+  // Para decidir si mostrar la fila separada
+  const showDiscountToValuesRow =
+    typeof discountAmtToValues === "number" &&
+    typeof discountAmtOriginal === "number" &&
+    Math.abs(discountAmtToValues - discountAmtOriginal) > 0.009;
+
+  const totalDescCostF =
+    (typeof appliedDiscount === "number" ? appliedDiscount : 0) +
+    (typeof chequeInterest === "number" ? chequeInterest : 0);
   const netToApply =
     typeof valuesNominal === "number" && typeof totalDescCostF === "number"
       ? valuesNominal - totalDescCostF
@@ -1236,14 +1259,23 @@ function DetailsModal({
       if (typeof valuesNominal === "number") {
         lines.push(`Total Pagado (Nominal): ${fmtMoney(valuesNominal)}`);
       }
-      if (typeof discountAmt === "number") {
-        lines.push(`Desc/Cost F: ${fmtMoney(discountAmt)}`);
+
+      // 👇 NUEVO: si vino `discount_applied_to_values` y difiere del ajuste original, lo mostramos explícito
+      if (showDiscountToValuesRow) {
+        lines.push(
+          `Desc/Cost F aplicado a valores: ${fmtMoney(appliedDiscount)}`
+        );
+      } else if (typeof appliedDiscount === "number") {
+        // Si no difiere, mantenemos la fila corta como antes
+        lines.push(`Desc/Cost F: ${fmtMoney(appliedDiscount)}`);
       }
+
       if (typeof chequeInterest === "number") {
         lines.push(`Cost F. Cheques: ${fmtMoney(chequeInterest)}`);
       }
+
       if (
-        typeof discountAmt === "number" ||
+        typeof appliedDiscount === "number" ||
         typeof chequeInterest === "number"
       ) {
         const shown =
@@ -1252,6 +1284,7 @@ function DetailsModal({
             : `-${fmtMoney(Math.abs(totalDescCostF))}`;
         lines.push(`Total Desc/Cost F: ${shown}`);
       }
+
       if (typeof gross === "number")
         lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
       if (typeof saldoDiff === "number")
@@ -1388,7 +1421,6 @@ function DetailsModal({
                       // helper para formatear comprobante
                       const renderReceipt = () => {
                         if (!v?.receipt_url) return null;
-                        console.log("Rendering receipt for", v);
                         return (
                           <div className="mt-2">
                             <a
@@ -1546,6 +1578,7 @@ function DetailsModal({
                     }
                     fmt={fmtMoney}
                   />
+
                   <Divider />
                   <AmountRow
                     label="TOTAL a pagar (efect/transf)"
@@ -1554,9 +1587,7 @@ function DetailsModal({
                     strong
                   />
                 </div>
-
                 <Divider />
-
                 {typeof valuesNominal === "number" && (
                   <AmountRow
                     label="Total Pagado (Nominal)"
@@ -1564,13 +1595,14 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-                {typeof discountAmt === "number" && (
-                  <AmountRow
-                    label="Desc/Cost F"
-                    value={discountAmt}
-                    fmt={fmtMoney}
-                  />
-                )}
+                {!showDiscountToValuesRow &&
+                  typeof appliedDiscount === "number" && (
+                    <AmountRow
+                      label="Desc/Cost F"
+                      value={appliedDiscount}
+                      fmt={fmtMoney}
+                    />
+                  )}
                 {hasCheques && typeof chequeInterest === "number" && (
                   <AmountRow
                     label="Cost F. Cheques"
@@ -1578,13 +1610,14 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-
-                {(typeof discountAmt === "number" ||
+                {(typeof appliedDiscount === "number" ||
                   (hasCheques && typeof chequeInterest === "number")) && (
                   <AmountRow
                     label="Total Desc/Cost F"
                     value={
-                      (typeof discountAmt === "number" ? discountAmt : 0) +
+                      (typeof appliedDiscount === "number"
+                        ? appliedDiscount
+                        : 0) +
                       (hasCheques && typeof chequeInterest === "number"
                         ? chequeInterest
                         : 0)
@@ -1593,7 +1626,6 @@ function DetailsModal({
                     strong
                   />
                 )}
-
                 {typeof gross === "number" && (
                   <AmountRow
                     label="Neto a aplicar Factura"
@@ -2182,4 +2214,3 @@ function PaymentPdfViewer({ payment }: { payment: any }) {
     </>
   );
 }
- 
