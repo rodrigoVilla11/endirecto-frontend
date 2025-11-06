@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DocumentsView } from "./DocumentsView";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
-import ValueView from "./ValueView";
+import ValueView, { ValueItem } from "./ValueView";
 import { CommentsView } from "./CommentsView";
 import { useTranslation } from "react-i18next";
 import { useCreatePaymentMutation } from "@/redux/services/paymentsApi";
@@ -22,6 +22,8 @@ import {
 } from "@/redux/services/settingsApi";
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
+import Modal from "@/app/components/components/Modal";
+import PlanCalculator from "@/app/finance/planCaluculator";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -58,6 +60,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
   const [showRefi, setShowRefi] = useState(false);
+  const [openModalRefi, setOpenModalRefi] = useState(false);
+
+  const openCreateModal = useCallback(() => setOpenModalRefi(true), []);
+  const closeCreateModal = useCallback(() => {
+    setOpenModalRefi(false);
+  }, []);
 
   type PaymentType = "pago_anticipado" | "cta_cte";
 
@@ -137,6 +145,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return Math.max(diff, 0);
   }
 
+  const [grace, setGrace] = useState<number>();
   function computeChequeMeta(v: ValueItem) {
     const days_totals = daysBetweenToday(v.chequeDate);
     const days_total = days_totals + 1;
@@ -145,7 +154,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const grace = Number.isFinite(v.overrideGraceDays as any)
       ? (v.overrideGraceDays as number)
       : checkGrace?.value ?? 45;
-
+    setGrace(grace);
     const days_charged = Math.max(0, days_total - grace);
 
     const annualNorm = normalizeAnnualPct(annualInterestPct);
@@ -1105,98 +1114,101 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
-  // saldo restante a refinanciar
-  const targetPV = remainingToRefi;
+    // saldo restante a refinanciar
+    const targetPV = remainingToRefi;
 
-  if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
-    alert("No se puede refinanciar sin documentos seleccionados.");
-    return;
-  }
-  if (!Array.isArray(daysList) || daysList.length === 0) {
-    alert("Debes elegir al menos un plazo para los cheques (30/60/90, etc).");
-    return;
-  }
-  if (targetPV <= 0) {
-    alert("No hay saldo pendiente para refinanciar.");
-    return;
-  }
-
-  // ⚠️ Reglas de gracia para REFINANCIACIÓN:
-  // - Si hay “según pliego” => sin CF (gracia gigante)
-  // - Si NO, en refi la gracia debe ser 0 (NO 10)
-  const grace = blockChequeInterest ? 100000 : 0;
-
-  const daily = dailyRateFromAnnual(annualInterestPct);
-
-  function isoInDays(d: number) {
-    const base = new Date();
-    const dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
-    return dt.toISOString().slice(0, 10);
-  }
-
-  // === NOMINAL IGUAL PARA TODOS LOS CHEQUES ===
-  // Para cada plazo, calculamos el "safeDen" (= 1 - interés aplicado)
-  const denoms = daysList.map((d) => {
-    const daysTotal = d;
-    const daysCharged = Math.max(0, daysTotal - grace);
-    const interestPct = daily * daysCharged;
-    const safeDen = (1 - interestPct) <= 0 ? 1 : (1 - interestPct); // evita 0/negativo
-    return { d: daysTotal, daysCharged, interestPct, safeDen };
-  });
-
-  // Hallamos R (nominal común) tal que sum(R * safeDen_i) == targetPV
-  const sumSafeDen = denoms.reduce((a, x) => a + x.safeDen, 0);
-  const Rraw = sumSafeDen > 0 ? (targetPV / sumSafeDen) : targetPV;
-
-  const cheques: ValueItem[] = [];
-  let accNet = 0;
-
-  for (let i = 0; i < denoms.length; i++) {
-    const { d, safeDen } = denoms[i];
-
-    // Nominal igual (redondeado a 2). El último ajusta centavos para cerrar exacto.
-    let raw = round2(Rraw);
-    let net = round2(raw * (safeDen <= 0 ? 1 : safeDen));
-
-    if (i === denoms.length - 1) {
-      // Ajuste final para que la suma de netos sea EXACTA a targetPV
-      const neededNet = round2(targetPV - accNet);
-      const safeDenLast = safeDen <= 0 ? 1 : safeDen;
-      raw = round2(neededNet / safeDenLast);
-      net = round2(raw * safeDenLast);
+    if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
+      alert("No se puede refinanciar sin documentos seleccionados.");
+      return;
+    }
+    if (!Array.isArray(daysList) || daysList.length === 0) {
+      alert("Debes elegir al menos un plazo para los cheques (30/60/90, etc).");
+      return;
+    }
+    if (targetPV <= 0) {
+      alert("No hay saldo pendiente para refinanciar.");
+      return;
     }
 
-    accNet += net;
+    // ⚠️ Reglas de gracia para REFINANCIACIÓN:
+    // - Si hay “según pliego” => sin CF (gracia gigante)
+    // - Si NO, en refi la gracia debe ser 0 (NO 10)
+    const grace = blockChequeInterest ? 100000 : 0;
 
-    cheques.push({
-      method: "cheque",
-      selectedReason: "Refinanciación",
-      amount: net.toFixed(2),     // NETO imputable
-      raw_amount: raw.toFixed(2), // NOMINAL (igual salvo ajuste final de centavos)
-      chequeDate: isoInDays(d),   // 30/60/90...
-      overrideGraceDays: grace,   // 0 en refi normal, 100000 si “según pliego”
+    const daily = dailyRateFromAnnual(annualInterestPct);
+
+    function isoInDays(d: number) {
+      const base = new Date();
+      const dt = new Date(
+        base.getFullYear(),
+        base.getMonth(),
+        base.getDate() + d
+      );
+      return dt.toISOString().slice(0, 10);
+    }
+
+    // === NOMINAL IGUAL PARA TODOS LOS CHEQUES ===
+    // Para cada plazo, calculamos el "safeDen" (= 1 - interés aplicado)
+    const denoms = daysList.map((d) => {
+      const daysTotal = d;
+      const daysCharged = Math.max(0, daysTotal - grace);
+      const interestPct = daily * daysCharged;
+      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct; // evita 0/negativo
+      return { d: daysTotal, daysCharged, interestPct, safeDen };
     });
+
+    // Hallamos R (nominal común) tal que sum(R * safeDen_i) == targetPV
+    const sumSafeDen = denoms.reduce((a, x) => a + x.safeDen, 0);
+    const Rraw = sumSafeDen > 0 ? targetPV / sumSafeDen : targetPV;
+
+    const cheques: ValueItem[] = [];
+    let accNet = 0;
+
+    for (let i = 0; i < denoms.length; i++) {
+      const { d, safeDen } = denoms[i];
+
+      // Nominal igual (redondeado a 2). El último ajusta centavos para cerrar exacto.
+      let raw = round2(Rraw);
+      let net = round2(raw * (safeDen <= 0 ? 1 : safeDen));
+
+      if (i === denoms.length - 1) {
+        // Ajuste final para que la suma de netos sea EXACTA a targetPV
+        const neededNet = round2(targetPV - accNet);
+        const safeDenLast = safeDen <= 0 ? 1 : safeDen;
+        raw = round2(neededNet / safeDenLast);
+        net = round2(raw * safeDenLast);
+      }
+
+      accNet += net;
+
+      cheques.push({
+        method: "cheque",
+        selectedReason: "Refinanciación",
+        amount: net.toFixed(2), // NETO imputable
+        raw_amount: raw.toFixed(2), // NOMINAL (igual salvo ajuste final de centavos)
+        chequeDate: isoInDays(d), // 30/60/90...
+        overrideGraceDays: grace, // 0 en refi normal, 100000 si “según pliego”
+      });
+    }
+
+    // Verificación/mini-ajuste por si quedara un delta mínimo tras redondeos
+    const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
+    const delta = round2(targetPV - sumNet);
+    if (Math.abs(delta) >= 0.01) {
+      const lastIdx = cheques.length - 1;
+      const last = cheques[lastIdx];
+      const safeDenLast =
+        denoms[lastIdx].safeDen <= 0 ? 1 : denoms[lastIdx].safeDen;
+
+      const newNet = round2(parseFloat(last.amount) + delta);
+      const newRaw = round2(newNet / safeDenLast);
+
+      last.amount = newNet.toFixed(2);
+      last.raw_amount = newRaw.toFixed(2);
+    }
+
+    mergeRefiCheques(cheques);
   }
-
-  // Verificación/mini-ajuste por si quedara un delta mínimo tras redondeos
-  const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
-  const delta = round2(targetPV - sumNet);
-  if (Math.abs(delta) >= 0.01) {
-    const lastIdx = cheques.length - 1;
-    const last = cheques[lastIdx];
-    const safeDenLast =
-      (denoms[lastIdx].safeDen <= 0 ? 1 : denoms[lastIdx].safeDen);
-
-    const newNet = round2(parseFloat(last.amount) + delta);
-    const newRaw = round2(newNet / safeDenLast);
-
-    last.amount = newNet.toFixed(2);
-    last.raw_amount = newRaw.toFixed(2);
-  }
-
-  mergeRefiCheques(cheques);
-}
-
 
   const receiptDateRef = useRef<Date>(new Date());
 
@@ -1207,7 +1219,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     // Extraemos solo valores numéricos de días (días entre emisión y recibo)
     const daysArray = computedDiscounts
       .map((d) => (typeof d?.days === "number" ? d.days : undefined))
-      .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0);
+      .filter(
+        (n): n is number =>
+          typeof n === "number" && Number.isFinite(n) && n >= 0
+      );
 
     // Devolvemos el mayor número de días de antigüedad (más vieja)
     return daysArray.length > 0 ? Math.max(...daysArray) : undefined;
@@ -1438,14 +1453,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 >
                   Pagar total
                 </button>
-                <button
-                  className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
-                  onClick={() => setShowRefi((s) => !s)}
-                  disabled={computedDiscounts.length === 0}
-                  title="Armar plan en 30/60/90 con cheques iguales"
-                >
-                  {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
-                </button>
+                {newValues.length > 0 ? (
+                  <button
+                    className="mx-4 mt-1 px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+                    onClick={() => openCreateModal()}
+                    disabled={computedDiscounts.length === 0}
+                    title="Armar plan en 30/60/90 con cheques iguales"
+                  >
+                    {openModalRefi ? "Cerrar refinanciación" : "Refi. Saldo"}
+                  </button>
+                ) : (
+                  <button
+                    className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
+                    onClick={() => setShowRefi((s) => !s)}
+                    disabled={computedDiscounts.length === 0}
+                    title="Armar plan en 30/60/90 con cheques iguales"
+                  >
+                    {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
+                  </button>
+                )}
 
                 {showRefi && (
                   <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50 space-y-3">
@@ -1595,6 +1621,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           </p>
         </ConfirmDialog>
       )}
+
+      {openModalRefi && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <ModalCalculator
+            open={openModalRefi}
+            onCancel={closeCreateModal}
+            grace={grace}
+            interestSetting={interestSetting}
+            newValues={newValues}
+            setNewValues={setNewValues}
+            docsDaysMin={docsDaysMin}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1615,6 +1658,108 @@ function InfoRow({
       <span className="text-zinc-400">{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
+  );
+}
+
+type ModalCalculatorProps = {
+  open: boolean;
+  onCancel: () => void;
+  grace?: number | null;
+  interestSetting?: { value?: number | null } | null;
+  /** opcional: contenedor para el portal (útil si tu app ya tiene un #modal-root) */
+  portalContainer?: Element | null;
+  newValues: ValueItem[];
+  setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
+  docsDaysMin?: number
+};
+
+function ModalCalculator({
+  open,
+  onCancel,
+  grace,
+  interestSetting,
+  portalContainer,
+  newValues,
+  setNewValues,
+  docsDaysMin
+}: ModalCalculatorProps) {
+  const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  // Montaje para evitar SSR mismatches
+  useEffect(() => setMounted(true), []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onCancel]);
+
+  // Bloquear scroll del body cuando el modal está abierto
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open || !mounted) return null;
+
+  const container = portalContainer ?? document.body;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Backdrop: cierra solo si el click fue exactamente en el backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onCancel();
+        }}
+      />
+
+      {/* Dialog: bloquea la propagación para no cerrar al clickear adentro */}
+      <div
+        ref={dialogRef}
+        className="relative z-[101] w-full max-w-3xl mx-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl outline-none ring-1 ring-black/5"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-black/10 dark:border-white/10">
+          <h2 className="text-lg font-semibold">Cálculo de pagos a plazo</h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center rounded-xl px-3 py-1 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="p-5">
+          <PlanCalculator
+            title="Cálculo de pagos a plazo"
+            graceDays={grace ?? undefined}
+            annualInterestPct={Number(interestSetting?.value) || 96}
+            copy={true}
+            newValues={newValues}
+            setNewValues={setNewValues}
+            docsDaysMin={docsDaysMin}
+          />
+        </div>
+      </div>
+    </div>,
+    container
   );
 }
 

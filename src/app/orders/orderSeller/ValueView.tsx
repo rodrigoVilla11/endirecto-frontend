@@ -255,7 +255,6 @@ export default function ValueView({
       ? v.overrideGraceDays ?? chequeGraceDays ?? 45
       : chequeGraceDays ?? 45;
 
-      
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
     () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
@@ -482,7 +481,7 @@ export default function ValueView({
         },
       ];
       // abrir la nueva fila (último índice)
-      setOpenRows((o) => ({ ...o, [next.length - 1]: true }));
+      // setOpenRows((o) => ({ ...o, [next.length - 1]: true }));
       return next;
     });
   };
@@ -1301,6 +1300,7 @@ export default function ValueView({
             label={<LabelWithTip label="SALDO" tip={EXPLAIN.saldo} />}
             value={currencyFmt.format(saldo)}
             highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
+            copy={saldo}
           />
         </div>
       )}
@@ -1325,11 +1325,13 @@ function RowSummary({
   value,
   bold,
   highlight,
+  copy,
 }: {
   label: React.ReactNode;
   value: string;
   bold?: boolean;
   highlight?: "ok" | "bad" | "warn";
+  copy?: number;
 }) {
   const color =
     highlight === "ok"
@@ -1344,9 +1346,25 @@ function RowSummary({
       <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>
         {label}
       </span>
-      <span className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}>
-        {value}
-      </span>
+      <div>
+        <span
+          className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}
+        >
+          {value}
+        </span>
+        {copy && copy > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(copy.toFixed(2));
+            }}
+            className="ml-2 text-xs text-zinc-400 hover:text-emerald-400 transition-colors"
+            title="Copiar saldo"
+          >
+            📋
+          </button>
+        )}
+      </div>
     </div>
   );
 }
