@@ -872,7 +872,7 @@ export default function ValueView({
                   )}
 
                   {/* Solo cheques: Valor neto (read-only) */}
-                  {v.method === "cheque" && (
+                  {/* {v.method === "cheque" && (
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1">
                         <LabelWithTip
@@ -893,7 +893,7 @@ export default function ValueView({
                         {currencyFmt.format(interest$)}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {/* Banco (si corresponde) */}
                   {showBank && (
@@ -1063,15 +1063,15 @@ export default function ValueView({
                   {/* Resumen por ítem (una fila por item, expandible) */}
                   <div className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
                     {/* encabezado con valor neto + toggle */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 flex justify-between text-sm">
+                    <div className="flex items-center gap-3 justify-center">
+                      {/* <div className="flex-1 flex justify-between text-sm">
                         <span className="text-zinc-300 font-medium">
                           Valor Neto
                         </span>
                         <span className="text-white font-medium tabular-nums">
                           {currencyFmt.format(toNum(v.amount))}
                         </span>
-                      </div>
+                      </div> */}
 
                       {/* botón toggle detalle (solo tiene sentido para cheques) */}
                       {v.method === "cheque" && (

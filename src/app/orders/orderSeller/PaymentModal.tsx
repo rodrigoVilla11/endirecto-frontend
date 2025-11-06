@@ -1105,83 +1105,98 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
-    const targetPV = remainingToRefi; // saldo restante a refinanciar
-    if (computedDiscounts.length === 0) {
-      alert("No se puede refinanciar sin documentos seleccionados.");
-      return;
-    }
-    if (targetPV <= 0) {
-      alert("No hay saldo pendiente para refinanciar.");
-      return;
-    }
+  // saldo restante a refinanciar
+  const targetPV = remainingToRefi;
 
-    // ⚠️ Reglas de gracia para REFINANCIACIÓN:
-    // - Si hay “según pliego” => sin CF (gracia gigante)
-    // - Si NO, en refi la gracia debe ser 0 (NO 10)
-    const grace = blockChequeInterest ? 100000 : 0;
-
-    const daily = dailyRateFromAnnual(annualInterestPct);
-
-    function isoInDays(d: number) {
-      const base = new Date();
-      const dt = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate() + d
-      );
-      return dt.toISOString().slice(0, 10);
-    }
-
-    const n = daysList.length;
-    const cheques: ValueItem[] = [];
-    let accNet = 0;
-
-    daysList.forEach((d, idx) => {
-      const daysTotal = d;
-      const daysCharged = Math.max(0, daysTotal - grace);
-      const interestPct = daily * daysCharged;
-
-      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
-
-      let net: number;
-      if (idx === n - 1) {
-        net = targetPV - accNet; // último cierra exacto
-      } else {
-        net = targetPV / n;
-      }
-
-      const raw = net / safeDen;
-
-      accNet += net;
-
-      cheques.push({
-        method: "cheque",
-        selectedReason: "Refinanciación",
-        amount: round2(net).toFixed(2), // NETO imputable
-        raw_amount: round2(raw).toFixed(2), // NOMINAL
-        chequeDate: isoInDays(d), // 30/60/90...
-        overrideGraceDays: grace, // 👈 0 en refi normal, 100000 si “según pliego”
-      });
-    });
-
-    // Corrección de redondeo (si hiciera falta)
-    const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
-    const delta = round2(targetPV - sumNet);
-    if (Math.abs(delta) > 0.01) {
-      const last = cheques[cheques.length - 1];
-      const newNet = round2(parseFloat(last.amount) + delta);
-
-      const dLast = daysList[daysList.length - 1];
-      const daysCharged = Math.max(0, dLast - grace);
-      const interestPct = daily * daysCharged;
-      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
-
-      last.amount = newNet.toFixed(2);
-      last.raw_amount = round2(newNet / safeDen).toFixed(2);
-    }
-
-    mergeRefiCheques(cheques);
+  if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
+    alert("No se puede refinanciar sin documentos seleccionados.");
+    return;
   }
+  if (!Array.isArray(daysList) || daysList.length === 0) {
+    alert("Debes elegir al menos un plazo para los cheques (30/60/90, etc).");
+    return;
+  }
+  if (targetPV <= 0) {
+    alert("No hay saldo pendiente para refinanciar.");
+    return;
+  }
+
+  // ⚠️ Reglas de gracia para REFINANCIACIÓN:
+  // - Si hay “según pliego” => sin CF (gracia gigante)
+  // - Si NO, en refi la gracia debe ser 0 (NO 10)
+  const grace = blockChequeInterest ? 100000 : 0;
+
+  const daily = dailyRateFromAnnual(annualInterestPct);
+
+  function isoInDays(d: number) {
+    const base = new Date();
+    const dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + d);
+    return dt.toISOString().slice(0, 10);
+  }
+
+  // === NOMINAL IGUAL PARA TODOS LOS CHEQUES ===
+  // Para cada plazo, calculamos el "safeDen" (= 1 - interés aplicado)
+  const denoms = daysList.map((d) => {
+    const daysTotal = d;
+    const daysCharged = Math.max(0, daysTotal - grace);
+    const interestPct = daily * daysCharged;
+    const safeDen = (1 - interestPct) <= 0 ? 1 : (1 - interestPct); // evita 0/negativo
+    return { d: daysTotal, daysCharged, interestPct, safeDen };
+  });
+
+  // Hallamos R (nominal común) tal que sum(R * safeDen_i) == targetPV
+  const sumSafeDen = denoms.reduce((a, x) => a + x.safeDen, 0);
+  const Rraw = sumSafeDen > 0 ? (targetPV / sumSafeDen) : targetPV;
+
+  const cheques: ValueItem[] = [];
+  let accNet = 0;
+
+  for (let i = 0; i < denoms.length; i++) {
+    const { d, safeDen } = denoms[i];
+
+    // Nominal igual (redondeado a 2). El último ajusta centavos para cerrar exacto.
+    let raw = round2(Rraw);
+    let net = round2(raw * (safeDen <= 0 ? 1 : safeDen));
+
+    if (i === denoms.length - 1) {
+      // Ajuste final para que la suma de netos sea EXACTA a targetPV
+      const neededNet = round2(targetPV - accNet);
+      const safeDenLast = safeDen <= 0 ? 1 : safeDen;
+      raw = round2(neededNet / safeDenLast);
+      net = round2(raw * safeDenLast);
+    }
+
+    accNet += net;
+
+    cheques.push({
+      method: "cheque",
+      selectedReason: "Refinanciación",
+      amount: net.toFixed(2),     // NETO imputable
+      raw_amount: raw.toFixed(2), // NOMINAL (igual salvo ajuste final de centavos)
+      chequeDate: isoInDays(d),   // 30/60/90...
+      overrideGraceDays: grace,   // 0 en refi normal, 100000 si “según pliego”
+    });
+  }
+
+  // Verificación/mini-ajuste por si quedara un delta mínimo tras redondeos
+  const sumNet = cheques.reduce((a, c) => a + parseFloat(c.amount), 0);
+  const delta = round2(targetPV - sumNet);
+  if (Math.abs(delta) >= 0.01) {
+    const lastIdx = cheques.length - 1;
+    const last = cheques[lastIdx];
+    const safeDenLast =
+      (denoms[lastIdx].safeDen <= 0 ? 1 : denoms[lastIdx].safeDen);
+
+    const newNet = round2(parseFloat(last.amount) + delta);
+    const newRaw = round2(newNet / safeDenLast);
+
+    last.amount = newNet.toFixed(2);
+    last.raw_amount = newRaw.toFixed(2);
+  }
+
+  mergeRefiCheques(cheques);
+}
+
 
   const receiptDateRef = useRef<Date>(new Date());
 
@@ -1291,7 +1306,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               value={currencyFmt.format(totalFinal)}
             /> */}
             <InfoRow
-              label="Total a pagar a la fecha"
+              label="TOTAL A PAGAR (efect/transf)"
               value={currencyFmt.format(round2(totalDocsFinal))}
             />
 
