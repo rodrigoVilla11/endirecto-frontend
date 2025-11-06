@@ -72,7 +72,7 @@ function chargeableDaysFor({
   const rd = toYMD(receiptDate);
   const daysCheque = clampNonNegInt((cd.getTime() - rd.getTime()) / MS_PER_DAY);
 
-  if (refinanciacion) return daysCheque;
+  // if (refinanciacion) return daysCheque;
 
   const issue = invoiceIssueDateApprox;
   if (!issue) return 0;
@@ -145,6 +145,11 @@ type PlanChequeItem = {
 type PlanResult = {
   cheques: PlanChequeItem[];
   invoiceIssueDateApprox?: Date;
+  // NUEVO: RECARGO DOCS
+  docSurchargeDays: number; // días > 45 (si hay)
+  docSurchargeRate: number; // fracción (ej: 0.035 para 3.5%)
+  docSurchargeAmount: number; // monto aplicado al PV
+  targetNetWithDocSurcharge: number; // PV ajustado por recargo
 };
 
 /* ===== Plan con BRUTO igual y reglas de ValueView ===== */
@@ -171,11 +176,28 @@ function computeEqualRawChequesWithRules(params: {
     docsDaysMin
   );
 
-  // Si no hay target o fechas, devolver objeto vacío consistente
+  // NUEVO: RECARGO DOCS (solo si supera 45 días)
+  const docSurchargeDays = Math.max(0, (docsDaysMin ?? 0) - 45);
+  const docSurchargeRate = docSurchargeDays > 0 ? daily * docSurchargeDays : 0;
+  // Ajusto el objetivo neto para que el plan incluya el recargo
+  const targetNetWithDocSurcharge =
+    Math.round(targetNet * (1 + docSurchargeRate) * 100) / 100;
+  const docSurchargeAmount =
+    Math.round((targetNetWithDocSurcharge - targetNet) * 100) / 100;
+
+  // Si no hay target o fechas, devolver objeto vacío consistente (incluyendo meta de recargo)
   if (targetNet <= 0 || chequeDatesISO.length === 0) {
-    return { cheques: [], invoiceIssueDateApprox };
+    return {
+      cheques: [],
+      invoiceIssueDateApprox,
+      docSurchargeDays,
+      docSurchargeRate,
+      docSurchargeAmount,
+      targetNetWithDocSurcharge: targetNetWithDocSurcharge || targetNet,
+    };
   }
 
+  // Usar el PV ajustado por recargo como base para distribuir en cheques
   const factors = chequeDatesISO.map((iso) => {
     const daysTotal = diffFromTodayToDate(iso) || 0;
     const daysCharged = chargeableDaysFor({
@@ -196,7 +218,8 @@ function computeEqualRawChequesWithRules(params: {
   });
 
   const sumFactors = factors.reduce((a, f) => a + f.factor, 0) || 1;
-  const raw = Math.round((targetNet / sumFactors) * 100) / 100;
+  // IMPORTANT: calcular el bruto de cada cheque contra el objetivo AJUSTADO
+  const raw = Math.round((targetNetWithDocSurcharge / sumFactors) * 100) / 100;
 
   const cheques: PlanChequeItem[] = factors.map((f) => {
     const net = Math.max(0, +(raw * f.factor).toFixed(2));
@@ -213,7 +236,15 @@ function computeEqualRawChequesWithRules(params: {
     };
   });
 
-  return { cheques, invoiceIssueDateApprox };
+  return {
+    cheques,
+    invoiceIssueDateApprox,
+    // NUEVO: RECARGO DOCS
+    docSurchargeDays,
+    docSurchargeRate,
+    docSurchargeAmount,
+    targetNetWithDocSurcharge,
+  };
 }
 
 /* ====== UI ====== */
@@ -252,7 +283,6 @@ export default function PlanCalculator({
   const [months, setMonths] = useState<number>(3);
   const [startISO, setStartISO] = useState<string>(() => toISO(new Date()));
   const [total, setTotal] = useState<string>("");
-
   // Prefill del total cuando viene del padre
   useEffect(() => {
     if (
@@ -287,7 +317,15 @@ export default function PlanCalculator({
 
   // Plan con las mismas reglas que ValueView
   // 3) En tu useMemo, tipá el resultado y destrucurá sin warnings
-  const { cheques: schedule, invoiceIssueDateApprox } = useMemo<PlanResult>(
+  const {
+    cheques: schedule,
+    invoiceIssueDateApprox,
+    // NUEVO: RECARGO DOCS
+    docSurchargeDays,
+    docSurchargeRate,
+    docSurchargeAmount,
+    targetNetWithDocSurcharge,
+  } = useMemo<PlanResult>(
     () =>
       computeEqualRawChequesWithRules({
         targetNet: PV,
@@ -414,6 +452,20 @@ export default function PlanCalculator({
         <Metric label="PROMO (INFO)" value={fmt.format(promoTotal)} />
       </div>
 
+      {/* NUEVO: mostrar recargo si corresponde */}
+      {docSurchargeDays > 0 && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <div className="text-sm text-red-200">
+            <strong>Recargo por documentos:</strong> {docSurchargeDays} días
+            sobre 45 ⇒ {(docSurchargeRate * 100).toFixed(2)}%{" · "}
+            Monto: <strong>{fmt.format(docSurchargeAmount)}</strong>
+            {" · "}
+            Objetivo ajustado:{" "}
+            <strong>{fmt.format(targetNetWithDocSurcharge)}</strong>
+          </div>
+        </div>
+      )}
+
       {/* CRONOGRAMA */}
       <div className="rounded border border-zinc-800 overflow-hidden">
         <div className="px-3 py-2 text-sm font-semibold border-b border-zinc-800 text-white bg-zinc-800/50">
@@ -487,19 +539,22 @@ export default function PlanCalculator({
       </div>
 
       {/* AVISO DE DIFERENCIA */}
-      {schedule.length > 0 && Math.abs(totalNet - PV) >= 0.01 && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-          <div className="flex items-start gap-2">
-            <span className="text-amber-500 text-lg">⚠️</span>
-            <div className="text-sm text-amber-200">
-              <strong>Atención:</strong> Diferencia de{" "}
-              {fmt.format(Math.abs(totalNet - PV))} detectada (los netos se
-              calculan solo con CF; las promos se aplican luego como en
-              ValueView).
+      {schedule.length > 0 &&
+        Math.abs(totalNet - (targetNetWithDocSurcharge || PV)) >= 0.01 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-amber-500 text-lg">⚠️</span>
+              <div className="text-sm text-amber-200">
+                <strong>Atención:</strong> Diferencia de{" "}
+                {fmt.format(
+                  Math.abs(totalNet - (targetNetWithDocSurcharge || PV))
+                )}{" "}
+                detectada (los netos se calculan solo con CF; las promos se
+                aplican luego como en ValueView).
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="flex items-center justify-end gap-2">
         <button

@@ -271,7 +271,8 @@ export default function ValueView({
    */
 
   const isRefinanciacion = (v: ValueItem) =>
-    (v.selectedReason || "").toLowerCase().includes("refinanci");
+    (v.selectedReason || "").trim().toLowerCase() ===
+    "refinanciación".toLowerCase();
 
   const addDays = (d: Date, n: number) => {
     const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -1224,7 +1225,7 @@ export default function ValueView({
               />
 
               {/* 👉 Detalle por cheque con umbral 45d desde emisión */}
-              <div className="mt-2 rounded-lg border border-zinc-700 bg-zinc-800/40 p-2">
+              {/* <div className="mt-2 rounded-lg border border-zinc-700 bg-zinc-800/40 p-2">
                 <div className="text-[11px] text-zinc-400 mb-1">
                   Detalle cheques (umbral 45 días desde emisión)
                 </div>
@@ -1292,7 +1293,7 @@ export default function ValueView({
                     ) : null
                   )}
                 </ul>
-              </div>
+              </div> */}
             </>
           )}
 
