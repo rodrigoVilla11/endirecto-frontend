@@ -15,12 +15,13 @@ function addDaysLocal(dateISO: string, days: number) {
   d1.setDate(d0.getDate() + days);
   return toYMD(d1);
 }
-
+const MAX_MONTHS = 6;
 /* ===== Matemática ===== */
 const dailyRateFromAnnual = (annualInterestPct: number) => {
-  const normalized = typeof annualInterestPct === 'number' && isFinite(annualInterestPct) 
-    ? annualInterestPct 
-    : 96;
+  const normalized =
+    typeof annualInterestPct === "number" && isFinite(annualInterestPct)
+      ? annualInterestPct
+      : 96;
   return normalized / 100 / 365;
 };
 
@@ -32,8 +33,9 @@ function getChequeDays(chequeISO?: string, graceDays?: number) {
 }
 
 // ✅ FUNCIÓN CORREGIDA: genera cheques cuyo NETO sume exacto el objetivo
+// ✅ FUNCIÓN ACTUALIZADA: genera cheques con monto BRUTO igual
 function computeEqualNetCheques(params: {
-  targetNet: number; // el monto NETO total que deben sumar los cheques
+  targetNet: number; // el monto NETO total que se quiere alcanzar
   chequeDatesISO: string[];
   annualInterestPct: number;
   graceDays?: number;
@@ -44,52 +46,38 @@ function computeEqualNetCheques(params: {
   const n = chequeDatesISO.length;
   const daily = dailyRateFromAnnual(annualInterestPct);
 
-  // ✅ Trabajar en CENTAVOS para evitar errores de redondeo
-  const toCents = (num: number) => Math.round(num * 100);
-  const fromCents = (cents: number) => cents / 100;
-
-  const targetCents = toCents(targetNet);
-  const cheques = [];
-  let accumulatedCents = 0;
-
-
-  for (let i = 0; i < n; i++) {
-    const iso = chequeDatesISO[i];
-    const { daysTotal, daysCharged } = getChequeDays(iso, graceDays);
+  // --- 1. Estimamos tasas por cheque ---
+  const interestPcts = chequeDatesISO.map((iso) => {
+    const { daysCharged } = getChequeDays(iso, graceDays);
     const interestPct = daily * daysCharged;
-    const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+    return Math.max(0, interestPct);
+  });
 
-    let netCents: number;
+  // --- 2. Encontramos el bruto común que hace que el total neto = targetNet ---
+  // totalNet = sum(raw * (1 - r_i)) = raw * sum(1 - r_i)
+  const denom = interestPcts.reduce((acc, r) => acc + (1 - r), 0);
+  const rawEach = denom > 0 ? targetNet / denom : targetNet / n;
 
-    if (i === n - 1) {
-      // ✅ ÚLTIMO CHEQUE: asignar el residuo EXACTO
-      netCents = targetCents - accumulatedCents;
-    } else {
-      // Cheques intermedios: división entera en centavos
-      netCents = Math.floor(targetCents / n);
-    }
-
-    const net = fromCents(netCents);
-    const raw = net / safeDen; // bruto necesario para obtener ese neto
-    
-    accumulatedCents += netCents;
-
-    cheques.push({
+  // --- 3. Construimos el plan ---
+  const cheques = chequeDatesISO.map((iso, idx) => {
+    const { daysTotal, daysCharged } = getChequeDays(iso, graceDays);
+    const r = interestPcts[idx];
+    const net = rawEach * (1 - r);
+    return {
       dateISO: iso,
       daysTotal,
       daysCharged,
       net: parseFloat(net.toFixed(2)),
-      raw: parseFloat(raw.toFixed(2)),
-      periodPct: interestPct * 100,
-    });
-  }
+      raw: parseFloat(rawEach.toFixed(2)),
+      periodPct: r * 100,
+    };
+  });
 
-  // ✅ Verificación final
-  const sumNets = cheques.reduce((a, c) => a + c.net, 0);
-  const diff = Math.abs(targetNet - sumNets);
-  
+  // --- 4. Verificación final ---
+  const totalNet = cheques.reduce((a, c) => a + c.net, 0);
+  const diff = Math.abs(totalNet - targetNet);
   if (diff > 0.005) {
-    console.error("❌ ERROR: Diferencia mayor a medio centavo");
+    console.warn("⚠️ Diferencia pequeña detectada:", diff.toFixed(2));
   }
 
   return cheques;
@@ -121,7 +109,11 @@ export default function PlanCalculator({
 
   // ✅ Prefill del total cuando viene del padre
   useEffect(() => {
-    if (typeof initialTotal === "number" && isFinite(initialTotal) && initialTotal > 0) {
+    if (
+      typeof initialTotal === "number" &&
+      isFinite(initialTotal) &&
+      initialTotal > 0
+    ) {
       setTotal(initialTotal.toFixed(2));
     }
   }, [initialTotal]);
@@ -170,7 +162,7 @@ export default function PlanCalculator({
       <div className="flex items-center justify-between">
         <h4 className="text-white font-semibold">{title}</h4>
         <div className="text-xs text-white/80">
-          Máx. 3 meses · cuotas iguales · Tasa anual:{" "}
+          Máx. {MAX_MONTHS} meses · cuotas iguales · Tasa anual:{" "}
           <span className="font-semibold">{annualInterestPct}%</span> · Gracia:{" "}
           <span className="font-semibold">{graceUsedDisplay}</span> días
         </div>
@@ -206,16 +198,20 @@ export default function PlanCalculator({
 
         <div>
           <label className="block text-xs text-white/80 mb-1">
-            Meses (1–3)
+            Meses (1–{MAX_MONTHS})
           </label>
           <select
             value={months}
-            onChange={(e) => setMonths(Number(e.target.value))}
+            onChange={(e) =>
+              setMonths(Math.min(Number(e.target.value), MAX_MONTHS))
+            }
             className="w-full h-10 px-3 rounded-md bg-zinc-900 text-white border border-zinc-700 focus:ring-2 focus:ring-emerald-400"
           >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
+            {Array.from({ length: MAX_MONTHS }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -231,24 +227,14 @@ export default function PlanCalculator({
 
       {/* ✅ MÉTRICAS MEJORADAS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Metric 
-          label="CHEQUES" 
-          value={String(schedule.length)}
-          highlight
-        />
-        <Metric 
-          label="NETO TOTAL" 
+        <Metric label="CHEQUES" value={String(schedule.length)} highlight />
+        <Metric
+          label="NETO TOTAL"
           value={fmt.format(totalNet)}
           highlight={Math.abs(totalNet - PV) < 0.01}
         />
-        <Metric 
-          label="BRUTO TOTAL" 
-          value={fmt.format(totalNominal)} 
-        />
-        <Metric 
-          label="INTERÉS" 
-          value={fmt.format(totalNominal - totalNet)} 
-        />
+        <Metric label="BRUTO TOTAL" value={fmt.format(totalNominal)} />
+        <Metric label="INTERÉS" value={fmt.format(totalNominal - totalNet)} />
       </div>
 
       {/* ✅ CRONOGRAMA MEJORADO */}
@@ -257,12 +243,12 @@ export default function PlanCalculator({
           Cronograma de cheques
         </div>
 
-        <div className="hidden md:grid grid-cols-6 px-3 py-2 text-xs text-white/60 bg-zinc-800/30">
+        <div className="hidden md:grid grid-cols-5 px-3 py-2 text-xs text-white/60 bg-zinc-800/30">
           <span>#</span>
           <span>Fecha</span>
           <span>Días total</span>
           <span>Días gravados</span>
-          <span className="text-right">Neto</span>
+          {/* <span className="text-right">Neto</span> */}
           <span className="text-right">Bruto</span>
         </div>
 
@@ -270,19 +256,20 @@ export default function PlanCalculator({
           {schedule.map((it, idx) => (
             <div
               key={idx}
-              className="grid grid-cols-1 md:grid-cols-6 px-3 py-2 text-sm hover:bg-zinc-800/30 transition-colors"
+              className="grid grid-cols-1 md:grid-cols-5 px-3 py-2 text-sm hover:bg-zinc-800/30 transition-colors"
             >
-              <div className="font-medium text-white">
-                #{idx + 1}
-              </div>
+              <div className="font-medium text-white">#{idx + 1}</div>
               <div className="text-white/90">{it.dateISO}</div>
               <div className="text-white/90">{it.daysTotal}</div>
               <div className="text-white/90">
-                {it.daysCharged} <span className="text-xs text-white/60">({it.periodPct.toFixed(2)}%)</span>
+                {it.daysCharged}{" "}
+                <span className="text-xs text-white/60">
+                  ({it.periodPct.toFixed(2)}%)
+                </span>
               </div>
-              <div className="text-right text-emerald-400 font-semibold">
+              {/* <div className="text-right text-emerald-400 font-semibold">
                 {fmt.format(it.net)}
-              </div>
+              </div> */}
               <div className="text-right text-white/90">
                 {fmt.format(it.raw)}
               </div>
@@ -302,8 +289,9 @@ export default function PlanCalculator({
           <div className="flex items-start gap-2">
             <span className="text-amber-500 text-lg">⚠️</span>
             <div className="text-sm text-amber-200">
-              <strong>Atención:</strong> Diferencia de {fmt.format(Math.abs(totalNet - PV))} detectada.
-              Verificá los cálculos.
+              <strong>Atención:</strong> Diferencia de{" "}
+              {fmt.format(Math.abs(totalNet - PV))} detectada. Verificá los
+              cálculos.
             </div>
           </div>
         </div>
@@ -324,7 +312,7 @@ export default function PlanCalculator({
         >
           Restablecer
         </button>
-        
+
         <button
           type="button"
           className={`px-4 py-2 rounded font-medium transition-colors ${
@@ -334,8 +322,7 @@ export default function PlanCalculator({
           }`}
           onClick={() => {
             if (!onProposeCheques || schedule.length === 0 || PV <= 0) return;
-         
-            
+
             onProposeCheques({
               schedule: schedule.map((it, idx) => ({
                 k: idx + 1,
@@ -362,27 +349,31 @@ export default function PlanCalculator({
   );
 }
 
-function Metric({ 
-  label, 
-  value, 
-  highlight = false 
-}: { 
-  label: string; 
+function Metric({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
   value: string;
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-md border p-3 text-center shadow-sm transition-colors ${
-      highlight 
-        ? "border-emerald-500/50 bg-emerald-500/10" 
-        : "border-zinc-800 bg-zinc-900"
-    }`}>
+    <div
+      className={`rounded-md border p-3 text-center shadow-sm transition-colors ${
+        highlight
+          ? "border-emerald-500/50 bg-emerald-500/10"
+          : "border-zinc-800 bg-zinc-900"
+      }`}
+    >
       <div className="text-[11px] uppercase tracking-wide text-zinc-400">
         {label}
       </div>
-      <div className={`tabular-nums mt-0.5 font-semibold ${
-        highlight ? "text-emerald-400" : "text-white"
-      }`}>
+      <div
+        className={`tabular-nums mt-0.5 font-semibold ${
+          highlight ? "text-emerald-400" : "text-white"
+        }`}
+      >
         {value}
       </div>
     </div>

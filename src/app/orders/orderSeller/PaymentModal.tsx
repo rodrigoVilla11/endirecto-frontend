@@ -1670,7 +1670,7 @@ type ModalCalculatorProps = {
   portalContainer?: Element | null;
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
-  docsDaysMin?: number
+  docsDaysMin?: number;
 };
 
 function ModalCalculator({
@@ -1681,10 +1681,11 @@ function ModalCalculator({
   portalContainer,
   newValues,
   setNewValues,
-  docsDaysMin
+  docsDaysMin,
 }: ModalCalculatorProps) {
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const prevLen = useRef<number>(newValues?.length ?? 0);
 
   // Montaje para evitar SSR mismatches
   useEffect(() => setMounted(true), []);
@@ -1708,7 +1709,13 @@ function ModalCalculator({
       document.body.style.overflow = prev;
     };
   }, [open]);
-
+  useEffect(() => {
+    const len = newValues?.length ?? 0;
+    if (prevLen.current !== len) {
+      prevLen.current = len;
+      onCancel();
+    }
+  }, [newValues?.length, onCancel]);
   if (!open || !mounted) return null;
 
   const container = portalContainer ?? document.body;
