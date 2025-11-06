@@ -226,13 +226,13 @@ export default function PlanCalculator({
       </div>
 
       {/* ✅ MÉTRICAS MEJORADAS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Metric label="CHEQUES" value={String(schedule.length)} highlight />
-        <Metric
+        {/* <Metric
           label="NETO TOTAL"
           value={fmt.format(totalNet)}
           highlight={Math.abs(totalNet - PV) < 0.01}
-        />
+        /> */}
         <Metric label="BRUTO TOTAL" value={fmt.format(totalNominal)} />
         <Metric label="INTERÉS" value={fmt.format(totalNominal - totalNet)} />
       </div>
