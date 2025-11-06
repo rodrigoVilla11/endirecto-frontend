@@ -249,7 +249,7 @@ export default function PlanCalculator({
           <span>Días total</span>
           <span>Días gravados</span>
           {/* <span className="text-right">Neto</span> */}
-          <span className="text-right">Bruto</span>
+          <span className="text-right">Monto Bruto</span>
         </div>
 
         <div className="divide-y divide-zinc-800">
