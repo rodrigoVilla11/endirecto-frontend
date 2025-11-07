@@ -908,6 +908,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // total base de documentos
   const totalBase = computedDiscounts.reduce((a, d) => a + d.base, 0);
 
+  const valuesNetNonChequeUI = useMemo(
+    () =>
+      newValues.reduce(
+        (acc, v) =>
+          acc + (v.method !== "cheque" ? parseFloat(v.amount || "0") || 0 : 0),
+        0
+      ),
+    [newValues]
+  );
+
   // total de valores ingresados
   const totalValues = newValues.reduce(
     (total, v) => total + parseFloat(v.amount || "0"),
@@ -1074,6 +1084,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // Ajuste calculado por REGLA DE CADA COMPROBANTE (siempre visible)
   const docAdjustmentSigned = round2(totalBase - totalDocsFinal);
 
+  // 👉 recargo pendiente por documentos (solo si hay recargo)
+  const docSurchargePending = useMemo(() => {
+    const gross = totalBase; // base de documentos
+    const docAdjTotal = docAdjustmentSigned; // +desc / -rec (ya lo tenés)
+    if (!(gross > 0) || !(docAdjTotal < 0)) return 0;
+
+    // tasa absoluta de ajuste por documentos
+    const rateAbs = Math.abs(docAdjTotal) / gross;
+
+    // lo ya aplicado sobre los valores no-cheque
+    const appliedSoFar = Math.round(valuesNetNonChequeUI * rateAbs * 100) / 100;
+
+    // pendiente (cap a 2 dec)
+    const pending = Math.max(0, Math.abs(docAdjTotal) - appliedSoFar);
+    return Math.round(pending * 100) / 100;
+  }, [totalBase, docAdjustmentSigned, valuesNetNonChequeUI]);
+
   // Si querés capear SIEMPRE:
   const totalAdjustmentSigned = capAdjustmentOnValues(
     rawAdjustmentOnValues,
@@ -1115,7 +1142,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
     // saldo restante a refinanciar
-    const targetPV = remainingToRefi;
+    const targetPV = remainingToRefi + docSurchargePending;
 
     if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
       alert("No se puede refinanciar sin documentos seleccionados.");
@@ -1635,6 +1662,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             newValues={newValues}
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
+            docSurchargePending={docSurchargePending}
+            remainingToRefi={remainingToRefi}
           />
         </div>
       )}
@@ -1671,6 +1700,8 @@ type ModalCalculatorProps = {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
   docsDaysMin?: number;
+  docSurchargePending?: number;
+  remainingToRefi?: number;
 };
 
 function ModalCalculator({
@@ -1682,6 +1713,8 @@ function ModalCalculator({
   newValues,
   setNewValues,
   docsDaysMin,
+  docSurchargePending,
+  remainingToRefi,
 }: ModalCalculatorProps) {
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -1762,6 +1795,7 @@ function ModalCalculator({
             newValues={newValues}
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
+            initialTotal={remainingToRefi}
           />
         </div>
       </div>

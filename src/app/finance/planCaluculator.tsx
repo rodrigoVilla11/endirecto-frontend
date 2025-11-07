@@ -179,11 +179,9 @@ function computeEqualRawChequesWithRules(params: {
   // NUEVO: RECARGO DOCS (solo si supera 45 días)
   const docSurchargeDays = Math.max(0, (docsDaysMin ?? 0) - 45);
   const docSurchargeRate = docSurchargeDays > 0 ? daily * docSurchargeDays : 0;
-  // Ajusto el objetivo neto para que el plan incluya el recargo
-  const targetNetWithDocSurcharge =
-    Math.round(targetNet * (1 + docSurchargeRate) * 100) / 100;
   const docSurchargeAmount =
-    Math.round((targetNetWithDocSurcharge - targetNet) * 100) / 100;
+    Math.round(targetNet * docSurchargeRate * 100) / 100;
+  const targetNetWithDocSurcharge = targetNet; // mantener contrato, pero sin inflar
 
   // Si no hay target o fechas, devolver objeto vacío consistente (incluyendo meta de recargo)
   if (targetNet <= 0 || chequeDatesISO.length === 0) {
@@ -193,7 +191,7 @@ function computeEqualRawChequesWithRules(params: {
       docSurchargeDays,
       docSurchargeRate,
       docSurchargeAmount,
-      targetNetWithDocSurcharge: targetNetWithDocSurcharge || targetNet,
+      targetNetWithDocSurcharge,
     };
   }
 
@@ -219,7 +217,7 @@ function computeEqualRawChequesWithRules(params: {
 
   const sumFactors = factors.reduce((a, f) => a + f.factor, 0) || 1;
   // IMPORTANT: calcular el bruto de cada cheque contra el objetivo AJUSTADO
-  const raw = Math.round((targetNetWithDocSurcharge / sumFactors) * 100) / 100;
+  const raw = Math.round((targetNet / sumFactors) * 100) / 100;
 
   const cheques: PlanChequeItem[] = factors.map((f) => {
     const net = Math.max(0, +(raw * f.factor).toFixed(2));
@@ -461,7 +459,7 @@ export default function PlanCalculator({
             Monto: <strong>{fmt.format(docSurchargeAmount)}</strong>
             {" · "}
             Objetivo ajustado:{" "}
-            <strong>{fmt.format(targetNetWithDocSurcharge)}</strong>
+            <strong>{fmt.format(PV + docSurchargeAmount)}</strong>
           </div>
         </div>
       )}
@@ -539,22 +537,19 @@ export default function PlanCalculator({
       </div>
 
       {/* AVISO DE DIFERENCIA */}
-      {schedule.length > 0 &&
-        Math.abs(totalNet - (targetNetWithDocSurcharge || PV)) >= 0.01 && (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-            <div className="flex items-start gap-2">
-              <span className="text-amber-500 text-lg">⚠️</span>
-              <div className="text-sm text-amber-200">
-                <strong>Atención:</strong> Diferencia de{" "}
-                {fmt.format(
-                  Math.abs(totalNet - (targetNetWithDocSurcharge || PV))
-                )}{" "}
-                detectada (los netos se calculan solo con CF; las promos se
-                aplican luego como en ValueView).
-              </div>
+      {schedule.length > 0 && Math.abs(totalNet - PV) >= 0.01 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div className="text-sm text-amber-200">
+              <strong>Atención:</strong> Diferencia de{" "}
+              {fmt.format(Math.abs(totalNet - PV))}
+              detectada (los netos se calculan solo con CF; las promos se
+              aplican luego como en ValueView).
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <button
