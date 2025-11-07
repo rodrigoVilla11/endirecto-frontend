@@ -25,7 +25,10 @@ import {
   type Payment,
   useUpdatePaymentMutation,
 } from "@/redux/services/paymentsApi";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import {
+  useAddNotificationToCustomerMutation,
+  useGetCustomerByIdQuery,
+} from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
@@ -111,7 +114,10 @@ const PaymentsChargedPage = () => {
   const toggleAll = (checked: boolean) => {
     setSelectedIds((prev) => {
       if (!checked) return new Set();
-      return new Set(visibleItems.map((p) => p._id)); // ⬅️ antes: items
+      const eligible = visibleItems
+        .filter((p) => !isAnulado(p))
+        .map((p) => p._id);
+      return new Set(eligible);
     });
   };
 
@@ -127,8 +133,14 @@ const PaymentsChargedPage = () => {
   }, [selectedClientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { userData } = useAuth();
+  const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
+
   const role = userData?.role as "CUSTOMER" | "VENDEDOR" | string | undefined;
   const isSellerRole = role === "VENDEDOR";
+  const isSeller = role === "VENDEDOR";
+
+  const isAnulado = (p: Payment | any) =>
+    String(p?.status || "").toLowerCase() === "reversed" || Boolean(p?.anulado);
 
   useEffect(() => {
     const loadItems = async () => {
@@ -600,72 +612,73 @@ const PaymentsChargedPage = () => {
   );
 
   const handleRendir = async () => {
-  // Si no hay selección, tomamos TODOS los visibles no rendidos
-  const poolWhenEmpty = visibleItems.filter((p) => !(p as any).rendido);
+    // Si no hay selección, tomamos TODOS los visibles no rendidos
+    const poolWhenEmpty = visibleItems.filter((p) => !(p as any).rendido);
 
-  const candidates = selectedIds.size
-    ? items.filter((p) => selectedIds.has(p._id))
-    : poolWhenEmpty;
+    const candidates = selectedIds.size
+      ? items.filter((p) => selectedIds.has(p._id))
+      : poolWhenEmpty;
 
-  // Si llega sin selección y además no hay nada para rendir, avisamos
-  if (!candidates.length) {
-    alert("No hay pagos para rendir (ya están rendidos o no hay en la vista actual).");
-    return;
-  }
-
-  // Si no había selección, la marcamos en la UI (solo visibles no rendidos)
-  if (selectedIds.size === 0) {
-    setSelectedIds(new Set(poolWhenEmpty.map((p) => p._id)));
-  }
-
-  // Filtramos por si había seleccionados rendidos por error
-  const toRendir = candidates.filter((p) => !(p as any).rendido);
-
-  setIsRindiendo(true);
-  try {
-    // 1) Marcamos como rendidos en backend
-    const results = await Promise.allSettled(
-      toRendir.map((p) =>
-        updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
-      )
-    );
-
-    const okIds = results
-      .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
-      .filter((x): x is string => !!x);
-
-    if (!okIds.length) {
-      alert("No se pudo rendir ninguno de los pagos seleccionados.");
+    // Si llega sin selección y además no hay nada para rendir, avisamos
+    if (!candidates.length) {
+      alert(
+        "No hay pagos para rendir (ya están rendidos o no hay en la vista actual)."
+      );
       return;
     }
 
-    // 2) Actualizamos localmente
-    setItems((prev) =>
-      prev.map((p) =>
-        okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
-      )
-    );
+    // Si no había selección, la marcamos en la UI (solo visibles no rendidos)
+    if (selectedIds.size === 0) {
+      setSelectedIds(new Set(poolWhenEmpty.map((p) => p._id)));
+    }
 
-    const okRows = toRendir.filter((p) => okIds.includes(p._id));
+    // Filtramos por si había seleccionados rendidos por error
+    const toRendir = candidates.filter((p) => !(p as any).rendido);
 
-    // 3) Generamos + subimos PDF + actualizamos cada pago con el link
-    await downloadPDFFor(okRows, {
-      uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
-      updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
-      folder: "rendiciones",
-      alsoDownload: true,
-    });
+    setIsRindiendo(true);
+    try {
+      // 1) Marcamos como rendidos en backend
+      const results = await Promise.allSettled(
+        toRendir.map((p) =>
+          updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
+        )
+      );
 
-    // 4) Limpiamos selección
-    setSelectedIds(new Set());
-  } catch (e) {
-    console.error(e);
-    alert("Ocurrió un error al rendir.");
-  } finally {
-    setIsRindiendo(false);
-  }
-};
+      const okIds = results
+        .map((r, i) => (r.status === "fulfilled" ? toRendir[i]._id : null))
+        .filter((x): x is string => !!x);
 
+      if (!okIds.length) {
+        alert("No se pudo rendir ninguno de los pagos seleccionados.");
+        return;
+      }
+
+      // 2) Actualizamos localmente
+      setItems((prev) =>
+        prev.map((p) =>
+          okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
+        )
+      );
+
+      const okRows = toRendir.filter((p) => okIds.includes(p._id));
+
+      // 3) Generamos + subimos PDF + actualizamos cada pago con el link
+      await downloadPDFFor(okRows, {
+        uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
+        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
+        folder: "rendiciones",
+        alsoDownload: true,
+      });
+
+      // 4) Limpiamos selección
+      setSelectedIds(new Set());
+    } catch (e) {
+      console.error(e);
+      alert("Ocurrió un error al rendir.");
+    } finally {
+      setIsRindiendo(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -726,12 +739,124 @@ const PaymentsChargedPage = () => {
     }
   };
 
+  function buildAnnulmentNotificationText(p: any, username?: string) {
+    const fechaPago = (() => {
+      const raw = (p?.date as any)?.$date ?? p?.date;
+      try {
+        return raw ? format(new Date(raw), "dd/MM/yyyy HH:mm") : "—";
+      } catch {
+        return "—";
+      }
+    })();
+
+    const idPago = p?._id?.$oid ?? p?._id ?? "—";
+    const customerId = p?.customer?.id ?? "—";
+    const customerName = p?.customer?.name ? ` - ${p.customer.name}` : "";
+    const vendedor =
+      (p as any)?.seller?.name ??
+      (p as any)?.seller?.id ??
+      (p as any)?.seller_id ??
+      "—";
+
+    // Totales útiles para contexto
+    const gross = p?.totals?.gross;
+    const valuesNominal = (p?.totals as any)?.values_raw;
+    const fmt = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: p?.currency || "ARS",
+    }).format;
+
+    const lines: string[] = [];
+    lines.push(`Fecha: ${fechaPago}`);
+    lines.push(`ID Pago: ${idPago}`);
+    lines.push(`Cliente: ${customerId}${customerName}`);
+    lines.push(`Vendedor: ${vendedor}`);
+    lines.push(`Usuario: ${username || "—"}`);
+    lines.push(``);
+    lines.push(`*** ESTE PAGO FUE ANULADO ***`);
+    if (typeof gross === "number") lines.push(`Documentos: ${fmt(gross)}`);
+    if (typeof valuesNominal === "number")
+      lines.push(`Total Pagado (Nominal): ${fmt(valuesNominal)}`);
+    lines.push(`-----------------------------------`);
+    lines.push(`Estado: ANULADO`);
+    return lines.join("\n");
+  }
+
+  const onAnnulPayment = async (p: Payment) => {
+    if (!isAdmin) return;
+
+    // Si ya está anulado, no volvemos a notificar al cliente
+    if (isAnulado(p)) {
+      // opcional: console.warn("Pago ya anulado");
+      return;
+    }
+
+    const ok = window.confirm("¿Anular definitivamente este pago?");
+    if (!ok) return;
+
+    try {
+      // 1) Marcar anulado en backend
+      await updatePayment({
+        id: (p as any)._id,
+        data: { status: "reversed", isCharged: false, rendido: false },
+      }).unwrap();
+
+      // 2) Actualizar estado local
+      setItems((prev) =>
+        prev.map((x) =>
+          x._id === (p as any)._id
+            ? ({
+                ...x,
+                status: "reversed",
+                isCharged: false,
+                rendido: false,
+              } as any)
+            : x
+        )
+      );
+      setSelectedIds((prev) => {
+        const n = new Set(prev);
+        n.delete((p as any)._id);
+        return n;
+      });
+
+      // 3) Notificar al cliente (7 días de ventana)
+      try {
+        const now = new Date();
+        const longDescription = buildAnnulmentNotificationText(
+          p,
+          userData?.username
+        );
+
+        await addNotificationToCustomer({
+          customerId: String(p?.customer?.id || selectedClientId),
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
+      } catch (e) {
+        console.error("No se pudo notificar al cliente sobre la anulación:", e);
+        // sin alert; dejamos log
+      }
+
+      // ✅ Sin alert: la comunicación al cliente se hace por notificación
+    } catch (e) {
+      console.error(e);
+      // Podés mostrar un toast no intrusivo si querés, pero me pediste quitar alerts.
+    }
+  };
+
   // ===================== Tabla =====================
 
   const tableData =
     visibleItems?.map((p) => {
       const isThisRowToggling = togglingId === p._id;
-
+      const gray = isAnulado(p) ? "text-zinc-400" : "";
       return {
         key: p._id,
         select: (
@@ -742,10 +867,11 @@ const PaymentsChargedPage = () => {
             aria-checked={selectedIds.has(p._id)}
             checked={selectedIds.has(p._id)}
             onChange={(e) => toggleOne(p._id, e.target.checked)}
+            disabled={isAnulado(p)}
           />
         ),
         info: (
-          <div className="grid place-items-center">
+          <div className={`grid place-items-center  ${gray} `}>
             <button
               type="button"
               className="inline-flex items-center justify-center w-6 h-6 rounded "
@@ -1105,8 +1231,11 @@ const PaymentsChargedPage = () => {
           payment={selected}
           onClose={closeDetails}
           onUnmark={() => onUnmarkCharged(selected._id)}
+          onAnnul={() => onAnnulPayment(selected)}
           isToggling={isToggling || togglingId === selected._id}
           t={t}
+          isAdmin={isAdmin}
+          isSeller={isSeller}
         />
       )}
 
@@ -1137,16 +1266,22 @@ type DetailsModalProps = {
   payment: any;
   onClose: () => void;
   onUnmark: () => void;
+  onAnnul: () => void; // ⬅️ nuevo
   isToggling: boolean;
   t: (key: string) => string;
+  isAdmin: boolean; // ⬅️ nuevo
+  isSeller: boolean;
 };
 
 function DetailsModal({
   payment,
   onClose,
   onUnmark,
+  onAnnul,
   isToggling,
   t,
+  isAdmin,
+  isSeller,
 }: DetailsModalProps) {
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -1416,6 +1551,10 @@ function DetailsModal({
     );
     return format(localMidnight, pattern);
   }
+  const isAnulado = (p: Payment | any) =>
+    String(p?.status || "").toLowerCase() === "reversed" || Boolean(p?.anulado);
+
+  const anulado = isAnulado(payment);
   // 👇 añadí esto arriba (cerca de tus helpers como fmtMoney/t)
   const ReceiptLink = ({ url, name }: { url?: string; name?: string }) => {
     if (!url || typeof url !== "string" || url.trim() === "") return null;
@@ -1464,6 +1603,7 @@ function DetailsModal({
             </h4>
             <span className="text-xs text-zinc-500 truncate">
               {t("number")}: {mainDoc?.number ?? "—"} · {t("date")}: {fecha}
+              {anulado ? " · ANULADO" : ""}
             </span>
           </div>
           <button
@@ -1814,30 +1954,49 @@ function DetailsModal({
               {t("close") || "Cerrar"}
             </button>
 
-            <button
-              className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
-                isToggling
-                  ? "bg-amber-500 cursor-wait"
-                  : "bg-rose-600 hover:bg-rose-700"
-              }`}
-              onClick={onUnmark}
-              disabled={isToggling}
-              title={
-                t("areYouSureUnmarkCharged") ||
-                "¿Desmarcar este pago como cobrado?"
-              }
-            >
-              {isToggling ? (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <FaSpinner className="animate-spin" />
-                  {t("processing") || "Procesando..."}
-                </span>
-              ) : (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
-                </span>
-              )}
-            </button>
+            {/* Solo ADMIN puede realizar acciones, VENDEDOR no */}
+            {isAdmin && !isSeller && (
+              <>
+                {/* ANULAR (si no está anulado) */}
+                {!anulado && (
+                  <button
+                    className="w-full sm:w-auto px-3 py-2 rounded text-white bg-zinc-700 hover:bg-zinc-800"
+                    onClick={onAnnul}
+                    title="Anular pago"
+                  >
+                    Anular
+                  </button>
+                )}
+
+                {/* Desmarcar cobrado (no permitido si está anulado) */}
+                <button
+                  className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
+                    isToggling || anulado
+                      ? "bg-amber-500/60 cursor-not-allowed"
+                      : "bg-rose-600 hover:bg-rose-700"
+                  }`}
+                  onClick={onUnmark}
+                  disabled={isToggling || anulado}
+                  title={
+                    anulado
+                      ? "Pago anulado (no se puede desmarcar como cobrado)"
+                      : t("areYouSureUnmarkCharged") ||
+                        "¿Desmarcar este pago como cobrado?"
+                  }
+                >
+                  {isToggling ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <FaSpinner className="animate-spin" />
+                      {t("processing") || "Procesando..."}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
