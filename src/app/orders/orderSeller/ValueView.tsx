@@ -40,6 +40,7 @@ export default function ValueView({
   docsDaysMin,
   /** fecha del recibo (default: hoy) */
   receiptDate = new Date(),
+  forceChequeCF = false,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -51,6 +52,7 @@ export default function ValueView({
   onValidityChange?: (isValid: boolean) => void;
   docsDaysMin?: number;
   receiptDate?: Date;
+  forceChequeCF?: boolean;
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -292,21 +294,22 @@ export default function ValueView({
       (cd.getTime() - rd.getTime()) / MS_PER_DAY
     );
 
-    // Refinanciación: siempre cobrar los días del cheque (si es al día, será 0)
+    // 👇 En pago anticipado, siempre cobramos CF con gracia estándar
+    if (forceChequeCF) {
+      const g = clampNonNegInt(graceFor(v) ?? 45);
+      return Math.max(0, daysCheque - g);
+    }
+
+    // --- LÓGICA EXISTENTE (umbral 45 días desde emisión) ---
     if (isRefinanciacion(v)) return daysCheque;
 
     const issue = invoiceIssueDateApprox;
-    if (!issue) return 0; // si no sabemos emisión, política conservadora
+    if (!issue) return 0;
 
     const threshold45 = addDays(issue, 45);
-
-    // 1) Si el cobro es en/antes del día 45 desde emisión → 0
     if (cd.getTime() <= threshold45.getTime()) return 0;
-
-    // 2) Si ya pasamos el umbral al momento del recibo → cobrar SOLO días del cheque
     if (rd.getTime() >= threshold45.getTime()) return daysCheque;
 
-    // 3) El umbral cae entre recibo y cheque → cobrar desde el umbral hasta el cheque
     return clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY);
   }
 

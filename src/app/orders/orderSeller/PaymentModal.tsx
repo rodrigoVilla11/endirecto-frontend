@@ -1585,6 +1585,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }
                   docsDaysMin={docsDaysMin}
                   receiptDate={receiptDateRef.current}
+                  forceChequeCF={paymentTypeUI === "pago_anticipado"} 
                 />
               </div>
             )}
