@@ -1801,7 +1801,7 @@ function ModalCalculator({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto"
       aria-modal="true"
       role="dialog"
     >
@@ -1816,7 +1816,7 @@ function ModalCalculator({
       {/* Dialog: bloquea la propagación para no cerrar al clickear adentro */}
       <div
         ref={dialogRef}
-        className="relative z-[101] w-full max-w-3xl mx-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl outline-none ring-1 ring-black/5"
+        className="relative z-[101] w-full max-w-3xl mx-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl outline-none ring-1 ring-black/5 "
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
