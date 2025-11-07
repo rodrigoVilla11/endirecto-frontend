@@ -370,7 +370,7 @@ export default function PlanCalculator({
   console.log(schedule, invoiceIssueDateApprox);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 sm:pr-3">
       <div className="flex items-center justify-between">
         <h4 className="text-white font-semibold">{title}</h4>
         <div className="text-xs text-white/80">
