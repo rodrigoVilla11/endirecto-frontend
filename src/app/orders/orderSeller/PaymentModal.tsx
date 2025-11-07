@@ -124,6 +124,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     receiptOriginalName?: string;
     chequeNumber?: string;
     overrideGraceDays?: number;
+    cf?: number;
   };
 
   const [newValues, setNewValues] = useState<ValueItem[]>([]);
@@ -1139,10 +1140,29 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // Saldo a refinanciar
   const remainingToRefi = Math.max(0, diff);
 
+  // ¿Algún comprobante tiene menos de 45 días de emisión?
+  // (si querés que sean TODOS <45, cambiá 'some' por 'every')
+  const hasAnyUnder45Days = computedDiscounts.some(
+    (d) => typeof d.days === "number" && d.days < 45
+  );
+
+  const hasInvoiceToday = useMemo(
+    () =>
+      computedDiscounts.some(
+        (d) => typeof d.days === "number" && Math.round(d.days) === 0
+      ),
+    [computedDiscounts]
+  );
+
+  // Si hay <45 días, sumar el ajuste; si no, usar solo remainingToRefi
+  const remainingToRefiWithSurchage = hasAnyUnder45Days
+    ? remainingToRefi + totalAdjustmentSigned
+    : remainingToRefi;
+
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
     // saldo restante a refinanciar
-    const targetPV = remainingToRefi + docSurchargePending;
+    const targetPV = remainingToRefi;
 
     if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
       alert("No se puede refinanciar sin documentos seleccionados.");
@@ -1207,7 +1227,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       }
 
       accNet += net;
-
+      console.log({ raw, net });
       cheques.push({
         method: "cheque",
         selectedReason: "Refinanciación",
@@ -1215,6 +1235,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         raw_amount: raw.toFixed(2), // NOMINAL (igual salvo ajuste final de centavos)
         chequeDate: isoInDays(d), // 30/60/90...
         overrideGraceDays: grace, // 0 en refi normal, 100000 si “según pliego”
+        cf: raw - net, // 0 en refi normal, 100000 si “según pliego”
       });
     }
 
@@ -1483,18 +1504,42 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 {newValues.length > 0 ? (
                   <button
                     className="mx-4 mt-1 px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
-                    onClick={() => openCreateModal()}
-                    disabled={computedDiscounts.length === 0}
-                    title="Armar plan en 30/60/90 con cheques iguales"
+                    onClick={() => {
+                      if (hasInvoiceToday) {
+                        alert(
+                          "No se puede refinanciar saldo cuando hay una factura de hoy."
+                        );
+                        return;
+                      }
+                      openCreateModal();
+                    }}
+                    disabled={computedDiscounts.length === 0 || hasInvoiceToday}
+                    title={
+                      hasInvoiceToday
+                        ? "No disponible: hay una factura de hoy"
+                        : "Armar plan en 30/60/90 con cheques iguales"
+                    }
                   >
                     {openModalRefi ? "Cerrar refinanciación" : "Refi. Saldo"}
                   </button>
                 ) : (
                   <button
                     className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
-                    onClick={() => setShowRefi((s) => !s)}
-                    disabled={computedDiscounts.length === 0}
-                    title="Armar plan en 30/60/90 con cheques iguales"
+                    onClick={() => {
+                      if (hasInvoiceToday) {
+                        alert(
+                          "No se puede refinanciar saldo cuando hay una factura de hoy."
+                        );
+                        return;
+                      }
+                      setShowRefi((s) => !s);
+                    }}
+                    disabled={computedDiscounts.length === 0 || hasInvoiceToday}
+                    title={
+                      hasInvoiceToday
+                        ? "No disponible: hay una factura de hoy"
+                        : "Armar plan en 30/60/90 con cheques iguales"
+                    }
                   >
                     {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
                   </button>
@@ -1663,7 +1708,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
             docSurchargePending={docSurchargePending}
-            remainingToRefi={remainingToRefi}
+            remainingToRefi={remainingToRefiWithSurchage}
           />
         </div>
       )}

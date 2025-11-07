@@ -21,6 +21,7 @@ export type ValueItem = {
   receiptUrl?: string;
   receiptOriginalName?: string;
   overrideGraceDays?: number; // solo cheques
+  cf?: number
 };
 
 export default function ValueView({
@@ -403,6 +404,7 @@ export default function ValueView({
   const totalChequeInterest = useMemo(
     () =>
       newValues.reduce((acc, v) => {
+        console.log(acc, v)
         if (v.method !== "cheque") return acc;
         return acc + chequeInterest(v);
       }, 0),
