@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FaCheck, FaCopy, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
+import { FaCopy, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
@@ -32,6 +32,7 @@ import {
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
+  useAddNotificationToUserByIdMutation,
   useGetUserByIdQuery,
   useGetUsersQuery,
 } from "@/redux/services/usersApi";
@@ -134,6 +135,7 @@ const PaymentsChargedPage = () => {
 
   const { userData } = useAuth();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
+  const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
 
   const role = userData?.role as "CUSTOMER" | "VENDEDOR" | string | undefined;
   const isSellerRole = role === "VENDEDOR";
@@ -827,6 +829,30 @@ const PaymentsChargedPage = () => {
           p,
           userData?.username
         );
+
+        await addNotificationToUserById({
+          id: "67a60be545b75a39f99a485b",
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
+
+        await addNotificationToUserById({
+          id: "67a66d36c646d2c766b81065",
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
 
         await addNotificationToCustomer({
           customerId: String(p?.customer?.id || selectedClientId),
@@ -1969,7 +1995,7 @@ function DetailsModal({
                 )}
 
                 {/* Desmarcar cobrado (no permitido si está anulado) */}
-                <button
+                {/* <button
                   className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
                     isToggling || anulado
                       ? "bg-amber-500/60 cursor-not-allowed"
@@ -1994,7 +2020,7 @@ function DetailsModal({
                       <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
                     </span>
                   )}
-                </button>
+                </button> */}
               </>
             )}
           </div>
