@@ -21,7 +21,7 @@ export type ValueItem = {
   receiptUrl?: string;
   receiptOriginalName?: string;
   overrideGraceDays?: number; // solo cheques
-  cf?: number
+  cf?: number;
 };
 
 export default function ValueView({
@@ -41,6 +41,7 @@ export default function ValueView({
   docsDaysMin,
   /** fecha del recibo (default: hoy) */
   receiptDate = new Date(),
+  blockChequeInterest = false,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -52,6 +53,7 @@ export default function ValueView({
   onValidityChange?: (isValid: boolean) => void;
   docsDaysMin?: number;
   receiptDate?: Date;
+  blockChequeInterest?: boolean;
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -313,6 +315,7 @@ export default function ValueView({
 
   const chequeInterest = (v: ValueItem) => {
     if (v.method !== "cheque") return 0;
+    if (blockChequeInterest) return 0;
     const base = toNum(v.raw_amount ?? v.amount);
     if (!base) return 0;
     const pct = dailyRate * chargeableDaysFor(v); // 👈 antes usaba la global
@@ -321,6 +324,10 @@ export default function ValueView({
 
   const computeChequeNeto = (raw: string, v: ValueItem) => {
     const base = toNum(raw);
+    if (blockChequeInterest) {
+      // NEW: sin recargo → neto = bruto
+      return { neto: base, int$: 0 };
+    }
     const int$ = +(base * (dailyRate * chargeableDaysFor(v))).toFixed(2); // 👈
     const neto = Math.max(0, +(base - int$).toFixed(2));
     return { neto, int$ };
@@ -404,11 +411,10 @@ export default function ValueView({
   const totalChequeInterest = useMemo(
     () =>
       newValues.reduce((acc, v) => {
-        console.log(acc, v)
         if (v.method !== "cheque") return acc;
-        return acc + chequeInterest(v);
+        return acc + chequeInterest(v); // devolverá 0 si blockChequeInterest
       }, 0),
-    [newValues]
+    [newValues, blockChequeInterest] // NEW: depende del flag
   );
 
   // Promo por cheque (suma)
@@ -615,7 +621,12 @@ export default function ValueView({
             v.method === "transferencia" || v.method === "cheque";
           const daysTotal = daysBetweenToday(v.chequeDate);
           const daysGrav = v.method === "cheque" ? chargeableDaysFor(v) : 0; // 👈
-          const pctInt = v.method === "cheque" ? dailyRate * daysGrav : 0;
+          const pctInt =
+            v.method === "cheque"
+              ? blockChequeInterest
+                ? 0
+                : dailyRate * daysGrav // NEW: muestra 0%
+              : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
 
           const shownAmountInput =

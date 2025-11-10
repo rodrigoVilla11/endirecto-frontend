@@ -1630,6 +1630,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }
                   docsDaysMin={docsDaysMin}
                   receiptDate={receiptDateRef.current}
+                  blockChequeInterest={blockChequeInterest}
                 />
               </div>
             )}
@@ -1709,6 +1710,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             docsDaysMin={docsDaysMin}
             docSurchargePending={docSurchargePending}
             remainingToRefi={remainingToRefiWithSurchage}
+            blockChequeInterest={blockChequeInterest}
           />
         </div>
       )}
@@ -1747,6 +1749,7 @@ type ModalCalculatorProps = {
   docsDaysMin?: number;
   docSurchargePending?: number;
   remainingToRefi?: number;
+   blockChequeInterest?: boolean
 };
 
 function ModalCalculator({
@@ -1760,6 +1763,7 @@ function ModalCalculator({
   docsDaysMin,
   docSurchargePending,
   remainingToRefi,
+   blockChequeInterest=false
 }: ModalCalculatorProps) {
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -1841,6 +1845,7 @@ function ModalCalculator({
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
             initialTotal={remainingToRefi}
+            blockChequeInterest={blockChequeInterest}
           />
         </div>
       </div>
