@@ -299,7 +299,7 @@ export default function ValueView({
     if (isRefinanciacion(v)) return daysCheque;
 
     const issue = invoiceIssueDateApprox;
-    if (!issue) return 0; // si no sabemos emisión, política conservadora
+    if (!issue) return daysCheque; // si no sabemos emisión, política conservadora
 
     const threshold45 = addDays(issue, 45);
 
@@ -620,7 +620,12 @@ export default function ValueView({
           const showBank =
             v.method === "transferencia" || v.method === "cheque";
           const daysTotal = daysBetweenToday(v.chequeDate);
-          const daysGrav = v.method === "cheque" ? chargeableDaysFor(v) : 0; // 👈
+          const daysGrav =
+            v.method === "cheque"
+              ? blockChequeInterest
+                ? 0
+                : chargeableDaysFor(v)
+              : 0;
           const pctInt =
             v.method === "cheque"
               ? blockChequeInterest
