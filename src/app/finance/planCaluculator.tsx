@@ -160,6 +160,8 @@ function computeEqualRawChequesWithRules(params: {
   docsDaysMin?: number;
   receiptDate: Date;
   refinanciacion?: boolean;
+  /** NEW: bloquear costo financiero de cheques (según pliego) */
+  blockChequeInterest?: boolean; // NEW
 }): PlanResult {
   const {
     targetNet,
@@ -168,6 +170,7 @@ function computeEqualRawChequesWithRules(params: {
     docsDaysMin,
     receiptDate,
     refinanciacion,
+    blockChequeInterest = false, // NEW
   } = params;
 
   const daily = dailyRateFromAnnual(annualInterestPct);
@@ -176,14 +179,13 @@ function computeEqualRawChequesWithRules(params: {
     docsDaysMin
   );
 
-  // NUEVO: RECARGO DOCS (solo si supera 45 días)
+  // NUEVO: RECARGO DOCS (lo dejamos informativo como ya tenías)
   const docSurchargeDays = Math.max(0, (docsDaysMin ?? 0) - 45);
   const docSurchargeRate = docSurchargeDays > 0 ? daily * docSurchargeDays : 0;
   const docSurchargeAmount =
     Math.round(targetNet * docSurchargeRate * 100) / 100;
-  const targetNetWithDocSurcharge = targetNet; // mantener contrato, pero sin inflar
+  const targetNetWithDocSurcharge = targetNet;
 
-  // Si no hay target o fechas, devolver objeto vacío consistente (incluyendo meta de recargo)
   if (targetNet <= 0 || chequeDatesISO.length === 0) {
     return {
       cheques: [],
@@ -195,32 +197,35 @@ function computeEqualRawChequesWithRules(params: {
     };
   }
 
-  // Usar el PV ajustado por recargo como base para distribuir en cheques
   const factors = chequeDatesISO.map((iso) => {
     const daysTotal = diffFromTodayToDate(iso) || 0;
-    const daysCharged = chargeableDaysFor({
+
+    // === NEW: si blockChequeInterest => SIN días gravados, SIN interés, factor 1
+    const daysChargedRaw = chargeableDaysFor({
       chequeDateISO: iso,
       receiptDate,
       invoiceIssueDateApprox,
       refinanciacion,
     });
-    const interestPct = daily * daysCharged;
-    const factor = Math.max(0, 1 - interestPct);
+    const daysCharged = blockChequeInterest ? 0 : daysChargedRaw; // NEW
+    const interestPct = blockChequeInterest ? 0 : daily * daysCharged; // NEW
+    const factor = blockChequeInterest ? 1 : Math.max(0, 1 - interestPct); // NEW
+
     const promoRate = getChequePromoRate({
       invoiceAgeAtReceiptDaysMin: docsDaysMin,
       invoiceIssueDateApprox,
       receiptDate,
       chequeDateISO: iso,
     });
+
     return { iso, daysTotal, daysCharged, interestPct, factor, promoRate };
   });
 
   const sumFactors = factors.reduce((a, f) => a + f.factor, 0) || 1;
-  // IMPORTANT: calcular el bruto de cada cheque contra el objetivo AJUSTADO
   const raw = Math.round((targetNet / sumFactors) * 100) / 100;
 
   const cheques: PlanChequeItem[] = factors.map((f) => {
-    const net = Math.max(0, +(raw * f.factor).toFixed(2));
+    const net = Math.max(0, +(raw * f.factor).toFixed(2)); // con block: net = raw
     const promoAmount = +(promoBaseOf(raw, net) * f.promoRate).toFixed(2);
     return {
       dateISO: f.iso,
@@ -237,7 +242,6 @@ function computeEqualRawChequesWithRules(params: {
   return {
     cheques,
     invoiceIssueDateApprox,
-    // NUEVO: RECARGO DOCS
     docSurchargeDays,
     docSurchargeRate,
     docSurchargeAmount,
@@ -258,8 +262,10 @@ export default function PlanCalculator({
   /** Reglas extra para igualar a ValueView */
   docsDaysMin,
   receiptDate = new Date(),
-  refinanciacion = true, // por defecto es plan de refinanciación
-}: {
+  refinanciacion = true,
+  blockChequeInterest = false,
+}: // por defecto es plan de refinanciación
+{
   title?: string;
   graceDays?: number;
   initialTotal?: number;
@@ -277,6 +283,7 @@ export default function PlanCalculator({
   docsDaysMin?: number;
   receiptDate?: Date;
   refinanciacion?: boolean;
+  blockChequeInterest?: boolean;
 }) {
   const [months, setMonths] = useState<number>(3);
   const [startISO, setStartISO] = useState<string>(() => toISO(new Date()));
@@ -332,6 +339,7 @@ export default function PlanCalculator({
         docsDaysMin,
         receiptDate,
         refinanciacion,
+        blockChequeInterest,
       }),
     [
       PV,
@@ -340,6 +348,7 @@ export default function PlanCalculator({
       docsDaysMin,
       receiptDate,
       refinanciacion,
+      blockChequeInterest,
     ]
   );
 
@@ -449,6 +458,12 @@ export default function PlanCalculator({
         <Metric label="INTERÉS" value={fmt.format(totalNominal - totalNet)} />
         <Metric label="PROMO (INFO)" value={fmt.format(promoTotal)} />
       </div>
+
+      {blockChequeInterest && (
+        <div className="text-xs mt-1 px-2 py-1 rounded bg-emerald-600/15 border border-emerald-600/30 text-emerald-300 inline-block">
+          Sin recargo de cheques (según pliego)
+        </div>
+      )}
 
       {/* NUEVO: mostrar recargo si corresponde */}
       {docSurchargeDays > 0 && (
