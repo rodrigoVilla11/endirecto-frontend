@@ -418,43 +418,54 @@ export default function ValueView({
   );
 
   // Promo por cheque (suma)
-  const chequePromoItems = useMemo(() => {
-    return newValues.map((v) => {
-      if (v.method !== "cheque") return { rate: 0, amount: 0 };
-      const rate = getChequePromoRate({
-        invoiceAgeAtReceiptDaysMin: docsDaysMin,
-        invoiceIssueDateApprox,
-        receiptDate,
-        chequeDateISO: v.chequeDate,
-      });
-      const base = promoBaseOf(v);
-      const amount = +(base * rate).toFixed(2); // monto de DESCUENTO
-      return { rate, amount };
-    });
-  }, [newValues, docsDaysMin, invoiceIssueDateApprox, receiptDate]);
 
-  const totalChequePromo = useMemo(
-    () =>
-      chequePromoItems.reduce(
-        (acc, x) => acc + (x.amount > 0 ? x.amount : 0),
-        0
-      ),
-    [chequePromoItems]
+  const hasCheques = useMemo(
+    () => newValues.some((v) => v.method === "cheque"),
+    [newValues]
   );
+
+  const EPS = 1; // tolerancia de $1
+  const reachesNetToPay = Math.abs(totalNominalValues - (netToPay || 0)) <= EPS;
+  const shouldApplyChequePromo = !(
+    docAdjustmentSigned > 0 &&
+    hasCheques &&
+    reachesNetToPay
+  );
+const chequePromoItems = useMemo(() => {
+  if (!shouldApplyChequePromo) {
+    // mismo shape, pero todo en 0 para no romper la UI
+    return newValues.map(() => ({ rate: 0, amount: 0 }));
+  }
+  return newValues.map((v) => {
+    if (v.method !== "cheque") return { rate: 0, amount: 0 };
+    const rate = getChequePromoRate({
+      invoiceAgeAtReceiptDaysMin: docsDaysMin,
+      invoiceIssueDateApprox,
+      receiptDate,
+      chequeDateISO: v.chequeDate,
+    });
+    const base = promoBaseOf(v);
+    const amount = +(base * rate).toFixed(2); // descuento
+    return { rate, amount };
+  });
+}, [newValues, docsDaysMin, invoiceIssueDateApprox, receiptDate, shouldApplyChequePromo]);
+
+const totalChequePromo = useMemo(
+  () => chequePromoItems.reduce((acc, x) => acc + (x.amount > 0 ? x.amount : 0), 0),
+  [chequePromoItems]
+);
+
+
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
     () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
     [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
   );
 
-  const hasCheques = useMemo(
-    () => newValues.some((v) => v.method === "cheque"),
-    [newValues]
-  );
   const realValue = useMemo(
     () => totalNominalValues - totalDescCostF,
     [totalDescCostF, totalNominalValues]
-  );  
+  );
 
   const netToApply = useMemo(
     () => +(totalNominalValues - totalDescCostF).toFixed(2),
