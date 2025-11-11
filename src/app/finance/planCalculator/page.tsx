@@ -7,7 +7,7 @@ import {
   useGetCalculatorChequeGraceDaysQuery,
   useGetInterestRateQuery,
 } from "@/redux/services/settingsApi";
-import PlanCalculator from "../planCaluculator";
+import PlanCalculator from "../planCalculator2";
 
 export default function PlanCalculatorPage() {
   const { t } = useTranslation();

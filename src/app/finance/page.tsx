@@ -9,7 +9,7 @@ import {
 } from "@/redux/services/settingsApi";
 import { useAuth } from "../context/AuthContext";
 import { FaCheck, FaSpinner } from "react-icons/fa";
-import PlanCalculator from "./planCaluculator";
+import PlanCalculator from "./planCalculator2";
 
 const Page = () => {
   const { t } = useTranslation();

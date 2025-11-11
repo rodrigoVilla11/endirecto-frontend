@@ -1,7 +1,7 @@
-//DOCUMENTSVIEW.tsx
+// DOCUMENTSVIEW.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useGetDocumentByIdQuery } from "@/redux/services/documentsApi";
@@ -22,6 +22,10 @@ export interface ExpandableTableProps {
   graceDays: number;
   annualInterestPct: number;
   setFinalAmount: React.Dispatch<React.SetStateAction<number>>;
+  graceDiscount: Record<string, boolean>;
+  setGraceDiscount: React.Dispatch<
+    React.SetStateAction<Record<string, boolean>>
+  >;
 }
 
 export function DocumentsView({
@@ -34,6 +38,8 @@ export function DocumentsView({
   graceDays,
   annualInterestPct,
   setFinalAmount,
+  graceDiscount,
+  setGraceDiscount,
 }: ExpandableTableProps) {
   const { t } = useTranslation();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -52,19 +58,13 @@ export function DocumentsView({
 
   /* ===================== Helpers ===================== */
 
-  // const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-
-  // ======= Recargo por vencido =======
-
   const getOverdueSurcharge = (docDays: number) => {
-    // días que generan recargo
     const chargeableDays = Math.max(0, docDays - graceDays);
     if (!Number.isFinite(docDays) || chargeableDays <= 0) {
       return { pct: 0, amount: 0, days: 0 };
     }
     const dailyRate = annualInterestPct / 100 / 365;
-    const pct = dailyRate * chargeableDays; // ej: 0.01578 = 1.578%
-
+    const pct = dailyRate * chargeableDays;
     return { pct, amount: 0, days: chargeableDays };
   };
 
@@ -97,11 +97,27 @@ export function DocumentsView({
     const v = (txt || "").toLowerCase().trim();
     return (
       v === "segun pliego" ||
-      v === "según pliego" ||
+      v === "cuenta corriente" ||
       v === "no especificado" ||
       v === "not specified"
     );
   };
+
+  function isPromo1310(txt?: string) {
+    const v = (txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+    // Busca las palabras clave de forma laxa
+    // "promo", "15 dias", "13", "30", "10"
+    return (
+      /promo/.test(v) &&
+      /15\s*dias/.test(v) &&
+      /(13(\s*%|.?dto))/i.test(v) &&
+      /30\s*d/.test(v) &&
+      /10(\s*%|)/.test(v)
+    );
+  }
 
   function getDiscountRule(
     docDays: number,
@@ -115,6 +131,11 @@ export function DocumentsView({
       return { rate: 0, note: "Pago anticipado sin regla" };
     }
     if (isNaN(docDays)) return { rate: 0, note: "Fecha/estimación inválida" };
+
+    const promo1310 = isPromo1310(docPaymentCondition);
+
+    // ⚠️ Ajuste pedido: si es la promo 15/13% y 30D/10%, para <= 7 días usar 13% en lugar de 20%
+    if (docDays <= 7) return { rate: promo1310 ? 0.15 : 0.2 };
     if (docDays <= 15) return { rate: 0.13 };
     if (docDays <= 30) return { rate: 0.1 };
     if (docDays > 45) return { rate: 0, note: "Actualización de precios" };
@@ -127,42 +148,50 @@ export function DocumentsView({
   const docNumber = data?.number ?? "";
   const amount = Number(data?.amount ?? 0);
 
-  // días calendario exactos usando utilidades compartidas
   const days_until_expiration = diffCalendarDays(
     invoiceDateStr,
     expirationDateStr
   );
   const days_since_invoice = diffFromDateToToday(invoiceDateStr);
-  // ===== Gracia manual por ventana 30–37 días al vencimiento =====
-  const [forceGrace, setForceGrace] = useState(false);
 
-  // días restantes al vencimiento desde HOY
-  const days_to_due = diffFromDateToToday(expirationDateStr);
+  // === 10% manual entre 31–37 días (inclusive), solo cta_cte y sin bloqueo por condición ===
+  const paymentConditionName =
+    paymentsConditionsData?.name || t("document.noEspecificado");
 
-  // elegible solo si el vencimiento cae entre 30 y 37 días (incluidos)
-  const isGraceEligible =
-    Number.isFinite(days_to_due) && days_to_due >= 30 && days_to_due <= 37;
-  const manualGraceApplied = isGraceEligible && forceGrace;
+  const noDiscountBlocked = isNoDiscountCondition(paymentConditionName);
+
+  const eligibleManual10 =
+    paymentType === "cta_cte" &&
+    !noDiscountBlocked &&
+    Number.isFinite(days_since_invoice) &&
+    days_since_invoice > 30 &&
+    days_since_invoice <= 37;
+
+  const manualTenApplied = !!graceDiscount[data?.id || ""];
 
   const balanceRaw = Number(
     customerInformation?.document_balance ?? amount ?? 0
   );
   const balance = isNaN(balanceRaw) ? 0 : balanceRaw;
 
-  const paymentConditionName =
-    paymentsConditionsData?.name || t("document.noEspecificado");
-  const { rate, note } = getDiscountRule(
+  // Regla base
+  let { rate, note } = getDiscountRule(
     days_since_invoice,
     paymentType,
     paymentConditionName
   );
+  // Si aplica el 10% manual, pisa la regla
+  if (eligibleManual10 && manualTenApplied) {
+    rate = 0.1;
+    note = "Descuento 10% (30–37 días activado)";
+  }
+
   const isDesc = rate > 0;
 
   const surcharge = getOverdueSurcharge(days_since_invoice);
-
-  // ⬇️ Antes: const hasSurcharge = !isDesc && surcharge.pct > 0;
-  // ⬇️ Ahora: si aplicás gracia manual, no hay recargo
-  const hasSurcharge = !isDesc && surcharge.pct > 0 && !manualGraceApplied;
+  // si hay 10% manual, no aplicamos recargo
+  const hasSurcharge =
+    !isDesc && surcharge.pct > 0 && !(eligibleManual10 && manualTenApplied);
 
   const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
   const adjAmount =
@@ -173,23 +202,40 @@ export function DocumentsView({
     : hasSurcharge
     ? balance + adjAmount
     : balance;
+  const selected = selectedRows.includes(data?.id ?? "");
+  const prevFinalRef = useRef<number>(finalAmount);
+  useEffect(() => {
+    if (!data?.id) return;
+    const prev = prevFinalRef.current ?? 0;
+    const curr = Number.isFinite(finalAmount) ? finalAmount : 0;
 
+    if (selected) {
+      const delta = curr - prev;
+      // evitamos micro-ruido por flotantes
+      if (Math.abs(delta) >= 0.01) {
+        setFinalAmount(
+          (prevTotal) =>
+            Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100
+        );
+      }
+    }
+    // actualizamos el "último" final para el próximo delta
+    prevFinalRef.current = curr;
+  }, [finalAmount, selected, data?.id, setFinalAmount]);
   const bannerNote = isDesc
     ? null
     : hasSurcharge
     ? `Costo Financiero por ${surcharge.days} días`
-    : manualGraceApplied
-    ? "Gracia manual aplicada (vencimiento 30–37 días)"
+    : eligibleManual10 && manualTenApplied
+    ? "Descuento manual 10% aplicado (30–37 días)"
     : note || null;
 
   /* ===================== Selección: payload consistente ===================== */
-  // 🔎 Debug útil para verificar consistencia
 
   const documentDetails = {
     document_id: data?.id || "",
     number: docNumber,
 
-    // guardamos crudo + formateado (para futuros recálculos correctos)
     date_raw: invoiceDateStr || "",
     date: formatDateDDMMYYYY(invoiceDateStr || ""),
 
@@ -210,22 +256,23 @@ export function DocumentsView({
   };
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
-    // 1) Actualiza lista de pagos seleccionados (como ya hacías)
     if (checked) {
       setNewPayment?.((prev: any[]) => [...prev, documentDetails]);
+      // como vamos a sumar `finalAmount` al total inmediatamente,
+      // seteo el ref al valor actual para que el próximo delta sea correcto
+      prevFinalRef.current = finalAmount;
     } else {
       setNewPayment?.((prev: any[]) =>
         prev.filter((doc) => doc.document_id !== id)
       );
+      // al deseleccionar, no hace falta mantener el último; lo reseteo por prolijidad
+      prevFinalRef.current = finalAmount;
     }
 
-    // 2) Avisa al padre si querés mantener el array de IDs
     onRowSelect?.(id, checked);
 
-    // 3) Actualiza el total acumulado con el finalAmount de ESTA factura
     setFinalAmount((prevTotal) => {
       const delta = checked ? finalAmount : -finalAmount;
-      // redondeo a 2 decimales para evitar ruido de coma flotante
       return Math.round((prevTotal + delta + Number.EPSILON) * 100) / 100;
     });
   };
@@ -322,22 +369,27 @@ export function DocumentsView({
                         : "—"}
                     </span>
                   </div>
-                  {/* Checkbox de gracia manual — solo visible si está entre 30 y 37 días */}
-                  {isGraceEligible && (
+
+                  {/* Checkbox 10% manual — solo visible si es elegible */}
+                  {eligibleManual10 && (
                     <div className="flex items-center justify-between">
                       <label className="text-gray-400 flex-1">
-                        Dar gracia (vencimiento entre 30 y 37 días)
+                        Aplicar 10% (30–37 días)
                       </label>
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        checked={forceGrace}
-                        onChange={(e) => setForceGrace(e.target.checked)}
+                        checked={manualTenApplied}
+                        onChange={(e) =>
+                          setGraceDiscount((prev) => ({
+                            ...prev,
+                            [data.id]: e.target.checked,
+                          }))
+                        }
                       />
                     </div>
                   )}
 
-                  {/* Mostrar ajuste si hay descuento o recargo */}
                   {(isDesc || hasSurcharge) && (
                     <>
                       <div className="flex justify-between">
@@ -384,7 +436,6 @@ export function DocumentsView({
                     </>
                   )}
 
-                  {/* Nota (descuento 0%, recargo, etc.) */}
                   {bannerNote ? (
                     <div className="text-xs text-amber-400 mt-1">
                       {bannerNote}

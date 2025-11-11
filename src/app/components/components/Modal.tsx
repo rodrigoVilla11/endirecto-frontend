@@ -22,7 +22,7 @@ const Modal = ({ isOpen, onClose, children }: any) => {
   return ReactDOM.createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50"
+      className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50 "
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >

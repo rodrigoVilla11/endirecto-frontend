@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FaCheck, FaCopy, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
+import { FaCopy, FaEye, FaSpinner, FaTimes } from "react-icons/fa";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
 import PrivateRoute from "@/app/context/PrivateRoutes";
@@ -25,16 +25,18 @@ import {
   type Payment,
   useUpdatePaymentMutation,
 } from "@/redux/services/paymentsApi";
-import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import {
+  useAddNotificationToCustomerMutation,
+  useGetCustomerByIdQuery,
+} from "@/redux/services/customersApi";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import {
-  useGetSellerByIdQuery,
-  useGetSellersQuery,
-} from "@/redux/services/sellersApi";
-import {
+  useAddNotificationToUserByIdMutation,
   useGetUserByIdQuery,
   useGetUsersQuery,
 } from "@/redux/services/usersApi";
+import { useUploadPdfMutation } from "@/redux/services/cloduinaryApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -60,8 +62,8 @@ const PaymentsChargedPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState<string>("");
-  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
-
+  const [uploadPdf, { data: dataPdf, isLoading: isLoadingPdf }] =
+    useUploadPdfMutation();
   const [methodFilter, setMethodFilter] = useState<
     "" | "efectivo" | "transferencia" | "cheque"
   >("");
@@ -69,9 +71,9 @@ const PaymentsChargedPage = () => {
   const [searchParams, setSearchParams] = useState<{
     startDate: Date | null;
     endDate: Date | null;
-  }>({
-    startDate: null,
-    endDate: null,
+  }>(() => {
+    const today = new Date();
+    return { startDate: today, endDate: today };
   });
 
   // Modal de detalles
@@ -87,6 +89,8 @@ const PaymentsChargedPage = () => {
   const [updatePayment] = useUpdatePaymentMutation();
   const { data: sellersData, isLoading: isSellersLoading } =
     useGetSellersQuery(null);
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+
   const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">("");
   useEffect(() => {
     setSelectedIds(new Set());
@@ -111,7 +115,10 @@ const PaymentsChargedPage = () => {
   const toggleAll = (checked: boolean) => {
     setSelectedIds((prev) => {
       if (!checked) return new Set();
-      return new Set(visibleItems.map((p) => p._id)); // ⬅️ antes: items
+      const eligible = visibleItems
+        .filter((p) => !isAnulado(p))
+        .map((p) => p._id);
+      return new Set(eligible);
     });
   };
 
@@ -127,8 +134,15 @@ const PaymentsChargedPage = () => {
   }, [selectedClientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { userData } = useAuth();
+  const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
+  const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
+
   const role = userData?.role as "CUSTOMER" | "VENDEDOR" | string | undefined;
   const isSellerRole = role === "VENDEDOR";
+  const isSeller = role === "VENDEDOR";
+
+  const isAnulado = (p: Payment | any) =>
+    String(p?.status || "").toLowerCase() === "reversed" || Boolean(p?.anulado);
 
   useEffect(() => {
     const loadItems = async () => {
@@ -249,7 +263,20 @@ const PaymentsChargedPage = () => {
   );
   // ================== Get user (para el PDF) ==================
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
-  const downloadPDFFor = (rows: Payment[]) => {
+  const downloadPDFFor = async (
+    rows: Payment[],
+    opts?: {
+      // Inyectables opcionales (si ya tenés los hooks en el scope de tu componente)
+      uploadPdf?: (
+        file: File,
+        folder?: string
+      ) => Promise<{ inline_url?: string; secure_url?: string; url?: string }>;
+      updatePayment?: (id: string, body: any) => Promise<any>;
+      // Config opcional
+      folder?: string; // carpeta en Cloudinary (default: "rendiciones")
+      alsoDownload?: boolean; // si querés además descargar localmente
+    }
+  ) => {
     if (!rows.length) return;
 
     const currencyFmt = new Intl.NumberFormat("es-AR", {
@@ -276,26 +303,20 @@ const PaymentsChargedPage = () => {
       for (const v of values || []) {
         const m = String(v?.method || "").toLowerCase();
         if (m === "cheque") {
-          const num =
-            v?.cheque_number ??
-            v?.chequeNumber ??
-            v?.cheque?.cheque_number ??
-            v?.cheque?.chequeNumber ??
-            "s/n";
-          chequeNums.push(String(num));
+          const num = v?.cheque?.cheque_number;
+          if (num) chequeNums.push(num);
         } else if (m) {
           others.add(prettyMethod(m));
         }
       }
       const parts: string[] = [];
       if (chequeNums.length) {
-        const label = "Cheque";
         const shown = chequeNums
           .slice(0, 3)
           .map((n) => `N° ${n}`)
           .join(" / ");
         const extra = chequeNums.length > 3 ? ` +${chequeNums.length - 3}` : "";
-        parts.push(`${label} ${shown}${extra}`);
+        parts.push(`Cheque ${shown}${extra}`);
       }
       if (others.size) parts.push(...others);
       return parts.join(", ");
@@ -304,7 +325,7 @@ const PaymentsChargedPage = () => {
     const buildMethodTotalsGross = (payments: Payment[]) => {
       const acc: Record<string, { total: number; count: number }> = {};
       for (const p of payments) {
-        for (const v of p.values ?? []) {
+        for (const v of (p as any).values ?? []) {
           const m = (v?.method ?? "—").toString().toLowerCase();
           const amount = valueGross(v);
           if (!Number.isFinite(amount)) continue;
@@ -337,7 +358,10 @@ const PaymentsChargedPage = () => {
     const sumValuesGross = rows.reduce(
       (s, p) =>
         s +
-        (p.values ?? []).reduce((x: number, v: any) => x + valueGross(v), 0),
+        ((p as any).values ?? []).reduce(
+          (x: number, v: any) => x + valueGross(v),
+          0
+        ),
       0
     );
 
@@ -353,7 +377,7 @@ const PaymentsChargedPage = () => {
       startY: 72,
       tableWidth: wAvail,
       head: [["Fecha", "Cliente", "Docs", "Métodos", "Cobrado (bruto)"]],
-      body: rows.map((p) => {
+      body: rows.map((p: any) => {
         const fecha = p.date
           ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
           : "—";
@@ -361,7 +385,8 @@ const PaymentsChargedPage = () => {
         const nombre = p.customer?.name;
         const cliente =
           id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
-        const docs = (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+        const docs =
+          (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
         const methods =
           p.values && p.values.length ? formatMethodsCell(p.values) : "—";
         const cobradoBruto = currencyFmt.format(
@@ -405,7 +430,8 @@ const PaymentsChargedPage = () => {
     doc.setFontSize(11);
     doc.text("Detalle por pago y método", margin.left, cursorY - 30);
 
-    for (const [idx, p] of rows.entries()) {
+    for (const [idx, pAny] of rows.entries()) {
+      const p = pAny as any;
       if (cursorY > pageH - 200) {
         (doc as any).addPage();
         cursorY = 72;
@@ -418,7 +444,7 @@ const PaymentsChargedPage = () => {
       const cliente =
         id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
       const docsLine =
-        (p.documents ?? []).map((d) => d.number).join(", ") || "—";
+        (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -433,9 +459,7 @@ const PaymentsChargedPage = () => {
         const metodo = prettyMethod(m);
         const bruto = currencyFmt.format(valueGross(v));
         const num =
-          m === "cheque"
-            ? `N° ${v?.cheque_number ?? v?.chequeNumber ?? "—"}`
-            : "—";
+          m === "cheque" ? `N° ${v?.cheque?.cheque_number ?? "—"}` : "—";
         return [metodo, bruto, num];
       });
 
@@ -477,7 +501,7 @@ const PaymentsChargedPage = () => {
     }
 
     // Totales por método
-    const totalsMap = buildMethodTotalsGross(rows);
+    const totalsMap = buildMethodTotalsGross(rows as any);
     const totalsEntries = Object.entries(totalsMap).sort(
       (a, b) => b[1].total - a[1].total
     );
@@ -519,7 +543,69 @@ const PaymentsChargedPage = () => {
       margin,
     });
 
-    doc.save(`rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    const filename = `rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
+    const ab = doc.output("arraybuffer");
+    const blob = new Blob([ab], { type: "application/pdf" });
+    const file = new File([blob], filename, { type: "application/pdf" });
+
+    if (opts?.alsoDownload) {
+      doc.save(filename); // opcional
+    }
+
+    const folder = opts?.folder ?? "rendiciones";
+    let pdfUrl = "";
+
+    // 1) Subir a Cloudinary (usa o bien el hook inyectado o fetch)
+    try {
+      if (typeof opts?.uploadPdf === "function") {
+        const r = await opts.uploadPdf(file, folder);
+        pdfUrl = r?.inline_url || r?.secure_url || r?.url || "";
+      } else {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", folder);
+        const base =
+          process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000";
+        const resp = await fetch(`${base}/cloudinary/upload-pdf`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
+        const j = await resp.json();
+        pdfUrl = j?.inline_url || j?.secure_url || "";
+      }
+    } catch (e) {
+      console.error("Error subiendo PDF a Cloudinary:", e);
+      return;
+    }
+
+    if (!pdfUrl) return;
+
+    // 2) Actualizar cada pago con la URL del PDF
+    try {
+      await Promise.all(
+        (rows as any[]).map((p) => {
+          const id = p?.id || p?._id;
+          if (!id) return Promise.resolve();
+
+          if (typeof opts?.updatePayment === "function") {
+            return opts.updatePayment(id, { pdf: pdfUrl });
+          } else {
+            const base =
+              process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000";
+            return fetch(`${base}/payments/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pdf: pdfUrl }),
+            }).then(() => undefined);
+          }
+        })
+      );
+    } catch (e) {
+      console.error("Error actualizando pagos con PDF:", e);
+    }
+
+    return pdfUrl;
   };
 
   const { data: customer } = useGetCustomerByIdQuery(
@@ -528,18 +614,32 @@ const PaymentsChargedPage = () => {
   );
 
   const handleRendir = async () => {
+    // Si no hay selección, tomamos TODOS los visibles no rendidos
+    const poolWhenEmpty = visibleItems.filter((p) => !(p as any).rendido);
+
     const candidates = selectedIds.size
       ? items.filter((p) => selectedIds.has(p._id))
-      : items;
-    const toRendir = candidates.filter((p) => !(p as any).rendido);
+      : poolWhenEmpty;
 
-    if (!toRendir.length) {
-      alert("No hay pagos para rendir (ya están rendidos o no hay selección).");
+    // Si llega sin selección y además no hay nada para rendir, avisamos
+    if (!candidates.length) {
+      alert(
+        "No hay pagos para rendir (ya están rendidos o no hay en la vista actual)."
+      );
       return;
     }
 
+    // Si no había selección, la marcamos en la UI (solo visibles no rendidos)
+    if (selectedIds.size === 0) {
+      setSelectedIds(new Set(poolWhenEmpty.map((p) => p._id)));
+    }
+
+    // Filtramos por si había seleccionados rendidos por error
+    const toRendir = candidates.filter((p) => !(p as any).rendido);
+
     setIsRindiendo(true);
     try {
+      // 1) Marcamos como rendidos en backend
       const results = await Promise.allSettled(
         toRendir.map((p) =>
           updatePayment({ id: p._id, data: { rendido: true } }).unwrap()
@@ -555,6 +655,7 @@ const PaymentsChargedPage = () => {
         return;
       }
 
+      // 2) Actualizamos localmente
       setItems((prev) =>
         prev.map((p) =>
           okIds.includes(p._id) ? ({ ...p, rendido: true } as any) : p
@@ -562,8 +663,16 @@ const PaymentsChargedPage = () => {
       );
 
       const okRows = toRendir.filter((p) => okIds.includes(p._id));
-      downloadPDFFor(okRows);
 
+      // 3) Generamos + subimos PDF + actualizamos cada pago con el link
+      await downloadPDFFor(okRows, {
+        uploadPdf: (file, folder) => uploadPdf({ file, folder }).unwrap(),
+        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
+        folder: "rendiciones",
+        alsoDownload: true,
+      });
+
+      // 4) Limpiamos selección
       setSelectedIds(new Set());
     } catch (e) {
       console.error(e);
@@ -632,12 +741,148 @@ const PaymentsChargedPage = () => {
     }
   };
 
+  function buildAnnulmentNotificationText(p: any, username?: string) {
+    const fechaPago = (() => {
+      const raw = (p?.date as any)?.$date ?? p?.date;
+      try {
+        return raw ? format(new Date(raw), "dd/MM/yyyy HH:mm") : "—";
+      } catch {
+        return "—";
+      }
+    })();
+
+    const idPago = p?._id?.$oid ?? p?._id ?? "—";
+    const customerId = p?.customer?.id ?? "—";
+    const customerName = p?.customer?.name ? ` - ${p.customer.name}` : "";
+    const vendedor =
+      (p as any)?.seller?.name ??
+      (p as any)?.seller?.id ??
+      (p as any)?.seller_id ??
+      "—";
+
+    // Totales útiles para contexto
+    const gross = p?.totals?.gross;
+    const valuesNominal = (p?.totals as any)?.values_raw;
+    const fmt = new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: p?.currency || "ARS",
+    }).format;
+
+    const lines: string[] = [];
+    lines.push(`Fecha: ${fechaPago}`);
+    lines.push(`ID Pago: ${idPago}`);
+    lines.push(`Cliente: ${customerId}${customerName}`);
+    lines.push(`Vendedor: ${vendedor}`);
+    lines.push(`Usuario: ${username || "—"}`);
+    lines.push(``);
+    lines.push(`*** ESTE PAGO FUE ANULADO ***`);
+    if (typeof gross === "number") lines.push(`Documentos: ${fmt(gross)}`);
+    if (typeof valuesNominal === "number")
+      lines.push(`Total Pagado (Nominal): ${fmt(valuesNominal)}`);
+    lines.push(`-----------------------------------`);
+    lines.push(`Estado: ANULADO`);
+    return lines.join("\n");
+  }
+
+  const onAnnulPayment = async (p: Payment) => {
+    if (!isAdmin) return;
+
+    // Si ya está anulado, no volvemos a notificar al cliente
+    if (isAnulado(p)) {
+      // opcional: console.warn("Pago ya anulado");
+      return;
+    }
+
+    const ok = window.confirm("¿Anular definitivamente este pago?");
+    if (!ok) return;
+
+    try {
+      // 1) Marcar anulado en backend
+      await updatePayment({
+        id: (p as any)._id,
+        data: { status: "reversed", isCharged: false, rendido: false },
+      }).unwrap();
+
+      // 2) Actualizar estado local
+      setItems((prev) =>
+        prev.map((x) =>
+          x._id === (p as any)._id
+            ? ({
+                ...x,
+                status: "reversed",
+                isCharged: false,
+                rendido: false,
+              } as any)
+            : x
+        )
+      );
+      setSelectedIds((prev) => {
+        const n = new Set(prev);
+        n.delete((p as any)._id);
+        return n;
+      });
+
+      // 3) Notificar al cliente (7 días de ventana)
+      try {
+        const now = new Date();
+        const longDescription = buildAnnulmentNotificationText(
+          p,
+          userData?.username
+        );
+
+        await addNotificationToUserById({
+          id: "67a60be545b75a39f99a485b",
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
+
+        await addNotificationToUserById({
+          id: "67a66d36c646d2c766b81065",
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
+
+        await addNotificationToCustomer({
+          customerId: String(p?.customer?.id || selectedClientId),
+          notification: {
+            title: "PAGO ANULADO",
+            type: "PAGO",
+            description: longDescription,
+            link: "/payments",
+            schedule_from: now,
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }).unwrap();
+      } catch (e) {
+        console.error("No se pudo notificar al cliente sobre la anulación:", e);
+        // sin alert; dejamos log
+      }
+
+      // ✅ Sin alert: la comunicación al cliente se hace por notificación
+    } catch (e) {
+      console.error(e);
+      // Podés mostrar un toast no intrusivo si querés, pero me pediste quitar alerts.
+    }
+  };
+
   // ===================== Tabla =====================
 
   const tableData =
     visibleItems?.map((p) => {
       const isThisRowToggling = togglingId === p._id;
-
+      const gray = isAnulado(p) ? "text-zinc-400" : "";
       return {
         key: p._id,
         select: (
@@ -648,10 +893,11 @@ const PaymentsChargedPage = () => {
             aria-checked={selectedIds.has(p._id)}
             checked={selectedIds.has(p._id)}
             onChange={(e) => toggleOne(p._id, e.target.checked)}
+            disabled={isAnulado(p)}
           />
         ),
         info: (
-          <div className="grid place-items-center">
+          <div className={`grid place-items-center  ${gray} `}>
             <button
               type="button"
               className="inline-flex items-center justify-center w-6 h-6 rounded "
@@ -727,21 +973,14 @@ const PaymentsChargedPage = () => {
   }, [someSelected, allSelected]);
   // ===================== Header (filtros/acciones) =====================
   const sellerOptions = React.useMemo(() => {
-    const raw = (sellersData ?? sellersData ?? []) as any[];
+    const raw = Array.isArray(usersData) ? usersData : [];
     return raw
-      .map((s) => {
-        const id = String(s?.id ?? s?._id ?? s?.seller_id ?? "");
-        const name =
-          s?.name ??
-          s?.fullName ??
-          ([s?.first_name, s?.last_name].filter(Boolean).join(" ") ||
-            s?.username ||
-            s?.email ||
-            id);
-        return id ? { id, name } : null;
-      })
-      .filter(Boolean) as Array<{ id: string; name: string }>;
-  }, [sellersData]);
+      .filter((s) => !!s?.seller_id) // solo los que tienen seller_id truthy
+      .map((s) => ({
+        id: String(s.seller_id),
+        name: s.username ?? String(s.seller_id),
+      }));
+  }, [usersData]);
 
   useEffect(() => {
     if (isSellerRole) {
@@ -754,6 +993,84 @@ const PaymentsChargedPage = () => {
     // al cambiar de cliente, limpiamos el filtro manual de vendedor (si no sos VENDEDOR)
     if (!isSellerRole) setSellerFilter("");
   }, [selectedClientId, isSellerRole]);
+
+  // === Helpers para habilitar el botón diario (ADMIN + 1 día + 1 vendedor) ===
+  const isAdmin = (userData?.role || "").toUpperCase() === "ADMINISTRADOR";
+  const isSingleDaySelected = useMemo(() => {
+    if (!searchParams.startDate || !searchParams.endDate) return false;
+    const a = format(searchParams.startDate, "yyyy-MM-dd");
+    const b = format(searchParams.endDate, "yyyy-MM-dd");
+    return a === b;
+  }, [searchParams.startDate, searchParams.endDate]);
+
+  const canDownloadDaily =
+    isAdmin && isSingleDaySelected && Boolean(sellerFilter);
+
+  // === Traer TODAS las páginas del filtro actual (día + vendedor) y generar PDF ===
+  const handleDownloadDailyForCurrentFilters = async () => {
+    try {
+      if (!canDownloadDaily) {
+        alert("Faltan filtros: día único y vendedor (y rol ADMIN).");
+        return;
+      }
+
+      // Fechas yyyy-MM-dd ya usadas en loadItems
+      const startDate = searchParams.startDate
+        ? format(searchParams.startDate, "yyyy-MM-dd")
+        : undefined;
+      const endDate = searchParams.endDate
+        ? format(searchParams.endDate, "yyyy-MM-dd")
+        : undefined;
+
+      // Construir args base (igual que en loadItems) pero independiente del estado de página
+      const baseArgs: any = {
+        page: 1,
+        limit: ITEMS_PER_PAGE,
+        startDate,
+        endDate,
+        sort: sortQuery,
+        includeLookup: false,
+        seller_id: sellerFilter, // admin elige vendedor explícito
+      };
+
+      // Paginar hasta traer todo
+      const all: Payment[] = [];
+      let curPage = 1;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const res = await fetchPayments({
+          ...baseArgs,
+          page: curPage,
+        }).unwrap();
+        const chunk: Payment[] = res?.payments ?? [];
+        if (!chunk.length) break;
+        all.push(...chunk);
+        if (chunk.length < ITEMS_PER_PAGE) break;
+        curPage++;
+      }
+
+      if (!all.length) {
+        alert("No hay pagos para ese día y vendedor.");
+        return;
+      }
+
+      // Carpeta por fecha/vendedor para mantener ordenado
+      const folder = `rendiciones/diarias/${sellerFilter}/${format(
+        searchParams.startDate!,
+        "yyyyMMdd"
+      )}`;
+
+      await downloadPDFFor(all, {
+        uploadPdf: (file, f) => uploadPdf({ file, folder: f }).unwrap(),
+        updatePayment: (id, body) => updatePayment({ id, data: body }).unwrap(),
+        folder,
+        alsoDownload: true, // baja local además de subir
+      });
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo generar el PDF diario.");
+    }
+  };
 
   const headerBody = {
     buttons: [],
@@ -874,6 +1191,31 @@ const PaymentsChargedPage = () => {
           </button>
         ),
       },
+      {
+        content: (
+          <button
+            key="pdf-diario"
+            onClick={handleDownloadDailyForCurrentFilters}
+            disabled={!canDownloadDaily || isRindiendo}
+            className={`px-3 py-2 rounded text-white ${
+              !canDownloadDaily || isRindiendo
+                ? "bg-zinc-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+            title={
+              canDownloadDaily
+                ? "Descargar PDF diario del vendedor"
+                : !isAdmin
+                ? "Requiere rol ADMIN"
+                : !isSingleDaySelected
+                ? "Seleccioná el mismo día en ambos campos"
+                : "Elegí un vendedor o mostrás solo un vendedor en la lista"
+            }
+          >
+            PDF diario (vendedor)
+          </button>
+        ),
+      },
     ],
     results: `${data?.total ?? 0} ${t("page.header.results")}`,
   };
@@ -915,8 +1257,11 @@ const PaymentsChargedPage = () => {
           payment={selected}
           onClose={closeDetails}
           onUnmark={() => onUnmarkCharged(selected._id)}
+          onAnnul={() => onAnnulPayment(selected)}
           isToggling={isToggling || togglingId === selected._id}
           t={t}
+          isAdmin={isAdmin}
+          isSeller={isSeller}
         />
       )}
 
@@ -947,16 +1292,22 @@ type DetailsModalProps = {
   payment: any;
   onClose: () => void;
   onUnmark: () => void;
+  onAnnul: () => void; // ⬅️ nuevo
   isToggling: boolean;
   t: (key: string) => string;
+  isAdmin: boolean; // ⬅️ nuevo
+  isSeller: boolean;
 };
 
 function DetailsModal({
   payment,
   onClose,
   onUnmark,
+  onAnnul,
   isToggling,
   t,
+  isAdmin,
+  isSeller,
 }: DetailsModalProps) {
   const currencyFmt = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -1027,7 +1378,7 @@ function DetailsModal({
       ? valuesNominal - Math.abs(chequeInterest)
       : typeof valuesNominal === "number"
       ? valuesNominal
-      : 0;
+      : undefined;
 
   const valuesDoNotReachTotal =
     typeof gross === "number" &&
@@ -1046,14 +1397,35 @@ function DetailsModal({
       ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
       : discountAmtOriginal;
 
-  const totalDescCostF =
-    (typeof discountAmt === "number" ? discountAmt : 0) +
-    (typeof chequeInterest === "number" ? chequeInterest : 0)
+  // Monto aplicado a valores que vino en el payload (handleCreatePayment v04/11/2025)
+  const discountAmtToValuesRaw =
+    typeof (payment?.totals as any)?.discount_applied_to_values === "number"
+      ? (payment!.totals as any).discount_applied_to_values
+      : undefined;
 
+  // Si no vino en totals, usamos tu cálculo derivado (`discountAmt`)
+  const discountAmtToValues =
+    typeof discountAmtToValuesRaw === "number"
+      ? discountAmtToValuesRaw
+      : discountAmt;
+
+  // Atajo: el que realmente se aplica a valores (y alimenta "Total Desc/Cost F")
+  const appliedDiscount =
+    typeof discountAmtToValues === "number" ? discountAmtToValues : 0;
+
+  // Para decidir si mostrar la fila separada
+  const showDiscountToValuesRow =
+    typeof discountAmtToValues === "number" &&
+    typeof discountAmtOriginal === "number" &&
+    Math.abs(discountAmtToValues - discountAmtOriginal) > 0.009;
+
+  const totalDescCostF =
+    (typeof appliedDiscount === "number" ? appliedDiscount : 0) +
+    (typeof chequeInterest === "number" ? chequeInterest : 0);
   const netToApply =
     typeof valuesNominal === "number" && typeof totalDescCostF === "number"
       ? valuesNominal - totalDescCostF
-      : 0;
+      : undefined;
   const hasCheques =
     Array.isArray(payment?.values) &&
     payment.values.some(
@@ -1157,14 +1529,23 @@ function DetailsModal({
       if (typeof valuesNominal === "number") {
         lines.push(`Total Pagado (Nominal): ${fmtMoney(valuesNominal)}`);
       }
-      if (typeof discountAmt === "number") {
-        lines.push(`Desc/Cost F: ${fmtMoney(discountAmt)}`);
+
+      // 👇 NUEVO: si vino `discount_applied_to_values` y difiere del ajuste original, lo mostramos explícito
+      if (showDiscountToValuesRow) {
+        lines.push(
+          `Desc/Cost F aplicado a valores: ${fmtMoney(appliedDiscount)}`
+        );
+      } else if (typeof appliedDiscount === "number") {
+        // Si no difiere, mantenemos la fila corta como antes
+        lines.push(`Desc/Cost F: ${fmtMoney(appliedDiscount)}`);
       }
+
       if (typeof chequeInterest === "number") {
         lines.push(`Cost F. Cheques: ${fmtMoney(chequeInterest)}`);
       }
+
       if (
-        typeof discountAmt === "number" ||
+        typeof appliedDiscount === "number" ||
         typeof chequeInterest === "number"
       ) {
         const shown =
@@ -1173,6 +1554,7 @@ function DetailsModal({
             : `-${fmtMoney(Math.abs(totalDescCostF))}`;
         lines.push(`Total Desc/Cost F: ${shown}`);
       }
+
       if (typeof gross === "number")
         lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
       if (typeof saldoDiff === "number")
@@ -1195,6 +1577,31 @@ function DetailsModal({
     );
     return format(localMidnight, pattern);
   }
+  const isAnulado = (p: Payment | any) =>
+    String(p?.status || "").toLowerCase() === "reversed" || Boolean(p?.anulado);
+
+  const anulado = isAnulado(payment);
+  // 👇 añadí esto arriba (cerca de tus helpers como fmtMoney/t)
+  const ReceiptLink = ({ url, name }: { url?: string; name?: string }) => {
+    if (!url || typeof url !== "string" || url.trim() === "") return null;
+    return (
+      <div className="mt-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium underline decoration-dotted hover:decoration-solid"
+          title={name || "Comprobante"}
+        >
+          {/* Si usás lucide-react podés poner un ícono si querés */}
+          {/* <FileText className="h-3.5 w-3.5" /> */}
+          {t?.("viewReceipt") || "Ver comprobante"}
+          {name ? ` · ${name}` : ""}
+        </a>
+      </div>
+    );
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -1222,6 +1629,7 @@ function DetailsModal({
             </h4>
             <span className="text-xs text-zinc-500 truncate">
               {t("number")}: {mainDoc?.number ?? "—"} · {t("date")}: {fecha}
+              {anulado ? " · ANULADO" : ""}
             </span>
           </div>
           <button
@@ -1278,119 +1686,49 @@ function DetailsModal({
 
           {/* Resumen visual */}
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Card title="Documentos">
-              <div className="space-y-2">
-                <AmountRow label="Documentos:" value={gross} fmt={fmtMoney} />
-                {typeof daysUsed === "number" && discountRateTxt && (
-                  <Row>
-                    <span className="text-xs text-zinc-500">
-                      Desc/Costo Financiero
-                    </span>
-                    <span className="text-xs font-medium text-zinc-700">
-                      {daysUsed} días · {discountRateTxt}
-                    </span>
-                  </Row>
-                )}
-                <AmountRow
-                  label="Desc/Costo F (monto)"
-                  value={
-                    typeof discountAmtOriginal === "number"
-                      ? Math.abs(discountAmtOriginal)
-                      : undefined
-                  }
-                  fmt={fmtMoney}
-                />
-                <Divider />
-                <AmountRow
-                  label="TOTAL a pagar (efect/transf)"
-                  value={net}
-                  fmt={fmtMoney}
-                  strong
-                />
-              </div>
-            </Card>
-
             <Card title="Valores">
-              <div className="space-y-2">
-                <div className="max-h-48 overflow-auto pr-1">
-                  {Array.isArray(payment?.values) &&
-                  payment.values.length > 0 ? (
-                    <ul className="space-y-2">
-                      {payment.values.map((v: any, idx: number) => {
-                        const method = String(v?.method || "").toLowerCase();
-                        if (method === "cheque") {
-                          const whenRaw = v?.cheque?.collection_date;
-                          const dTxt = whenRaw
-                            ? formatISODateOnlyUTC(whenRaw, "dd/MM/yy")
-                            : "—";
-                          const nominal =
-                            typeof v?.raw_amount === "number"
-                              ? v.raw_amount
-                              : undefined;
-                          const daysCharged = v?.cheque?.days_charged;
-                          const interestPct =
-                            typeof v?.cheque?.interest_pct === "number"
-                              ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
-                              : undefined;
-                          const interestAmount = v?.cheque?.interest_amount;
+              <div className="max-h overflow-auto pr-1">
+                {Array.isArray(payment?.values) && payment.values.length > 0 ? (
+                  <ul className="space-y-2">
+                    {payment.values.map((v: any, idx: number) => {
+                      const method = String(v?.method || "").toLowerCase();
 
-                          return (
-                            <li
-                              key={idx}
-                              className="rounded-lg border border-zinc-200 p-2"
+                      // helper para formatear comprobante
+                      const renderReceipt = () => {
+                        if (!v?.receipt_url) return null;
+                        return (
+                          <div className="mt-2">
+                            <a
+                              href={v.receipt_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium underline decoration-dotted hover:decoration-solid text-blue-600"
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium">
-                                  Cheque{" "}
-                                  <span className="text-zinc-500">{dTxt}</span>
-                                </div>
-                                <Pill text="Cheque" tone="amber" />
-                              </div>
-                              <div className="mt-1 text-xs text-zinc-600">
-                                {typeof nominal === "number" && (
-                                  <div className="flex items-center justify-between">
-                                    <span>Nominal</span>
-                                    <span className="font-medium">
-                                      {fmtMoney(nominal)}
-                                    </span>
-                                  </div>
-                                )}
-                                {/* Mostrar costo financiero de cheques solo si hay cheques */}
-                                {hasCheques && (
-                                  <>
-                                    {(typeof daysCharged === "number" ||
-                                      interestPct) && (
-                                      <div className="flex items-center justify-between">
-                                        <span>Costo Financiero (días / %)</span>
-                                        <span className="font-medium">
-                                          {(daysCharged ?? "—") +
-                                            (interestPct
-                                              ? ` · ${interestPct}`
-                                              : "")}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {typeof interestAmount === "number" && (
-                                      <div className="flex items-center justify-between">
-                                        <span>Costo Financiero (monto)</span>
-                                        <span className="font-medium">
-                                          {fmtMoney(interestAmount)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </li>
-                          );
-                        }
+                              Ver comprobante
+                              {v?.receipt_original_name
+                                ? ` · ${v.receipt_original_name}`
+                                : ""}
+                            </a>
+                          </div>
+                        );
+                      };
 
-                        const label =
-                          method === "efectivo"
-                            ? "Efectivo"
-                            : method === "transferencia"
-                            ? "Transferencia"
-                            : v?.method || "Valor";
+                      // ---- CHEQUE ----
+                      if (method === "cheque") {
+                        const whenRaw = v?.cheque?.collection_date;
+                        const dTxt = whenRaw
+                          ? formatISODateOnlyUTC(whenRaw, "dd/MM/yy")
+                          : "—";
+                        const nominal =
+                          typeof v?.raw_amount === "number"
+                            ? v.raw_amount
+                            : undefined;
+                        const daysCharged = v?.cheque?.days_charged;
+                        const interestPct =
+                          typeof v?.cheque?.interest_pct === "number"
+                            ? (v.cheque.interest_pct * 100).toFixed(2) + "%"
+                            : undefined;
+                        const interestAmount = v?.cheque?.interest_amount;
 
                         return (
                           <li
@@ -1398,33 +1736,133 @@ function DetailsModal({
                             className="rounded-lg border border-zinc-200 p-2"
                           >
                             <div className="flex items-center justify-between">
-                              <div className="text-sm font-medium">{label}</div>
-                              <Pill
-                                text={label}
-                                tone={method === "efectivo" ? "green" : "blue"}
-                              />
-                            </div>
-                            {typeof v?.amount === "number" && (
-                              <div className="mt-1 text-xs text-zinc-600 flex items-center justify-between">
-                                <span>Monto</span>
-                                <span className="font-medium">
-                                  {fmtMoney(v.amount)}
-                                </span>
+                              <div className="text-sm font-medium">
+                                Cheque{" "}
+                                <span className="text-zinc-500">{dTxt}</span>
                               </div>
-                            )}
+                              <Pill text="Cheque" tone="amber" />
+                            </div>
+
+                            <div className="mt-1 text-xs text-zinc-600">
+                              {typeof nominal === "number" && (
+                                <div className="flex items-center justify-between">
+                                  <span>Nominal</span>
+                                  <span className="font-medium">
+                                    {fmtMoney(nominal)}
+                                  </span>
+                                </div>
+                              )}
+
+                              {hasCheques && (
+                                <>
+                                  {(typeof daysCharged === "number" ||
+                                    interestPct) && (
+                                    <div className="flex items-center justify-between">
+                                      <span>Costo Financiero (días / %)</span>
+                                      <span className="font-medium">
+                                        {(daysCharged ?? "—") +
+                                          (interestPct
+                                            ? ` · ${interestPct}`
+                                            : "")}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {typeof interestAmount === "number" && (
+                                    <div className="flex items-center justify-between">
+                                      <span>Costo Financiero (monto)</span>
+                                      <span className="font-medium">
+                                        {fmtMoney(interestAmount)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            {/* 👇 Nuevo: Link al comprobante */}
+                            {renderReceipt()}
                           </li>
                         );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="text-xs text-zinc-500">
-                      {t("noData") || "Sin valores"}
-                    </div>
+                      }
+
+                      // ---- EFECTIVO / TRANSFERENCIA / OTROS ----
+                      const label =
+                        method === "efectivo"
+                          ? "Efectivo"
+                          : method === "transferencia"
+                          ? "Transferencia"
+                          : v?.method || "Valor";
+
+                      return (
+                        <li
+                          key={idx}
+                          className="rounded-lg border border-zinc-200 p-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">{label}</div>
+                            <Pill
+                              text={label}
+                              tone={method === "efectivo" ? "green" : "blue"}
+                            />
+                          </div>
+
+                          {typeof v?.amount === "number" && (
+                            <div className="mt-1 text-xs text-zinc-600 flex items-center justify-between">
+                              <span>Monto</span>
+                              <span className="font-medium">
+                                {fmtMoney(v.amount)}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* 👇 Nuevo: Link al comprobante */}
+                          {renderReceipt()}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="text-xs text-zinc-500">
+                    {t("noData") || "Sin valores"}
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card title="Documentos y Totales">
+              <div className="space-y-2">
+                <div className="space-y-2">
+                  <AmountRow label="Documentos:" value={gross} fmt={fmtMoney} />
+                  {typeof daysUsed === "number" && discountRateTxt && (
+                    <Row>
+                      <span className="text-xs text-zinc-500">
+                        Desc/Costo Financiero
+                      </span>
+                      <span className="text-xs font-medium text-zinc-700">
+                        {daysUsed} días · {discountRateTxt}
+                      </span>
+                    </Row>
                   )}
+                  <AmountRow
+                    label="Desc/Costo F (monto)"
+                    value={
+                      typeof discountAmtOriginal === "number"
+                        ? Math.abs(discountAmtOriginal)
+                        : undefined
+                    }
+                    fmt={fmtMoney}
+                  />
+
+                  <Divider />
+                  <AmountRow
+                    label="TOTAL a pagar (efect/transf)"
+                    value={net}
+                    fmt={fmtMoney}
+                    strong
+                  />
                 </div>
-
                 <Divider />
-
                 {typeof valuesNominal === "number" && (
                   <AmountRow
                     label="Total Pagado (Nominal)"
@@ -1432,13 +1870,14 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-                {typeof discountAmt === "number" && (
-                  <AmountRow
-                    label="Desc/Cost F"
-                    value={discountAmt}
-                    fmt={fmtMoney}
-                  />
-                )}
+                {!showDiscountToValuesRow &&
+                  typeof appliedDiscount === "number" && (
+                    <AmountRow
+                      label="Desc/Cost F"
+                      value={appliedDiscount}
+                      fmt={fmtMoney}
+                    />
+                  )}
                 {hasCheques && typeof chequeInterest === "number" && (
                   <AmountRow
                     label="Cost F. Cheques"
@@ -1446,13 +1885,14 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-
-                {(typeof discountAmt === "number" ||
+                {(typeof appliedDiscount === "number" ||
                   (hasCheques && typeof chequeInterest === "number")) && (
                   <AmountRow
                     label="Total Desc/Cost F"
                     value={
-                      (typeof discountAmt === "number" ? discountAmt : 0) +
+                      (typeof appliedDiscount === "number"
+                        ? appliedDiscount
+                        : 0) +
                       (hasCheques && typeof chequeInterest === "number"
                         ? chequeInterest
                         : 0)
@@ -1461,7 +1901,6 @@ function DetailsModal({
                     strong
                   />
                 )}
-
                 {typeof gross === "number" && (
                   <AmountRow
                     label="Neto a aplicar Factura"
@@ -1499,6 +1938,17 @@ function DetailsModal({
             </pre>
           </section>
 
+          {payment?.pdf ? (
+            <a
+              href={payment.pdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-600 underline"
+              title="Ver PDF"
+            >
+              Ver PDF
+            </a>
+          ) : null}
           {/* Comentarios */}
           {payment?.comments ? (
             <section className="rounded-xl border border-zinc-200 p-3 text-sm">
@@ -1530,30 +1980,49 @@ function DetailsModal({
               {t("close") || "Cerrar"}
             </button>
 
-            <button
-              className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
-                isToggling
-                  ? "bg-amber-500 cursor-wait"
-                  : "bg-rose-600 hover:bg-rose-700"
-              }`}
-              onClick={onUnmark}
-              disabled={isToggling}
-              title={
-                t("areYouSureUnmarkCharged") ||
-                "¿Desmarcar este pago como cobrado?"
-              }
-            >
-              {isToggling ? (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <FaSpinner className="animate-spin" />
-                  {t("processing") || "Procesando..."}
-                </span>
-              ) : (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
-                </span>
-              )}
-            </button>
+            {/* Solo ADMIN puede realizar acciones, VENDEDOR no */}
+            {isAdmin && !isSeller && (
+              <>
+                {/* ANULAR (si no está anulado) */}
+                {!anulado && (
+                  <button
+                    className="w-full sm:w-auto px-3 py-2 rounded text-white bg-zinc-700 hover:bg-zinc-800"
+                    onClick={onAnnul}
+                    title="Anular pago"
+                  >
+                    Anular
+                  </button>
+                )}
+
+                {/* Desmarcar cobrado (no permitido si está anulado) */}
+                {/* <button
+                  className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
+                    isToggling || anulado
+                      ? "bg-amber-500/60 cursor-not-allowed"
+                      : "bg-rose-600 hover:bg-rose-700"
+                  }`}
+                  onClick={onUnmark}
+                  disabled={isToggling || anulado}
+                  title={
+                    anulado
+                      ? "Pago anulado (no se puede desmarcar como cobrado)"
+                      : t("areYouSureUnmarkCharged") ||
+                        "¿Desmarcar este pago como cobrado?"
+                  }
+                >
+                  {isToggling ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <FaSpinner className="animate-spin" />
+                      {t("processing") || "Procesando..."}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
+                    </span>
+                  )}
+                </button> */}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1986,5 +2455,56 @@ function Tooltip({
         {content}
       </span>
     </span>
+  );
+}
+
+function PaymentPdfViewer({ payment }: { payment: any }) {
+  const [open, setOpen] = useState(false);
+  const pdfUrl: string | undefined = payment?.pdf || undefined;
+
+  if (!pdfUrl) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-md bg-blue-600 text-white"
+        onClick={() => setOpen(true)}
+      >
+        Ver PDF
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-5xl h-[80vh] rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3 flex items-center justify-between border-b">
+              <h3 className="font-medium">Comprobante / Rendición (PDF)</h3>
+              <div className="flex gap-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  Abrir en pestaña
+                </a>
+                <button onClick={() => setOpen(false)}>Cerrar</button>
+              </div>
+            </div>
+            <iframe
+              src={`${pdfUrl}#view=FitH`}
+              title="PDF"
+              className="w-full h-[calc(80vh-48px)] border-0"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
