@@ -1823,12 +1823,12 @@ function ModalCalculator({
         <div className="p-5">
           <PlanCalculator
             title="Cálculo de pagos a plazo"
-            graceDays={grace ?? undefined}
+            // graceDays={grace ?? undefined}
             annualInterestPct={Number(interestSetting?.value) || 96}
-            copy={true}
+            // copy={true}
             newValues={newValues}
             setNewValues={setNewValues}
-            docsDaysMin={docsDaysMin}
+            // docsDaysMin={docsDaysMin}
             initialTotal={remainingToRefi}
             blockChequeInterest={blockChequeInterest}
           />
