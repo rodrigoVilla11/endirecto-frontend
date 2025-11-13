@@ -496,12 +496,42 @@ export default function ValueView({
     () => +(gross - netToApply).toFixed(2),
     [gross, netToApply]
   );
+  const hasDiscount = docAdjustmentSigned > 0;
 
   // 👉 Saldo UI: total facturas - total pagado nominal - costo financiero cheques
-  const saldoUI = useMemo(
-    () => +(netToPay - totalNominalValues + totalChequeInterest).toFixed(2),
-    [netToPay, totalNominalValues, totalChequeInterest]
+  const hasExactRefi = useMemo(
+    () =>
+      newValues.some(
+        (v) =>
+          (v.selectedReason || "").toLowerCase().trim() === "refinanciación"
+      ),
+    [newValues]
   );
+
+  // 👉 Caso viejo donde querías usar gross como base sólo si hay refi + descuento
+  const hasRefiConcept = useMemo(
+    () => hasExactRefi && hasDiscount,
+    [hasExactRefi, hasDiscount]
+  );
+  // 👉 Saldo UI: normalmente usa netToPay, pero si hay una refinanciación
+  // (saldo, completa, etc.) usa gross como base.
+  const saldoUI = useMemo(() => {
+    // 🔥 Si hay descuento O refi completa, saldoUI debe ser igual a saldo
+    if (hasDiscount || hasExactRefi) return saldo;
+
+    // Caso normal
+    const base = hasRefiConcept ? gross : netToPay;
+    return +(base - totalNominalValues + totalChequeInterest).toFixed(2);
+  }, [
+    hasDiscount,
+    hasExactRefi,
+    saldo,
+    hasRefiConcept,
+    gross,
+    netToPay,
+    totalNominalValues,
+    totalChequeInterest,
+  ]);
 
   console.log({
     totalChequePromo,
