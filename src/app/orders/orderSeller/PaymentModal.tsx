@@ -1144,6 +1144,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     ? remainingToRefi + totalAdjustmentSigned
     : remainingToRefi;
 
+    console.log({remainingToRefiWithSurchage, remainingToRefi,totalAdjustmentSigned})
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
     // saldo restante a refinanciar

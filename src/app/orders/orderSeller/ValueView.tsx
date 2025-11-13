@@ -481,7 +481,7 @@ export default function ValueView({
       ),
     [chequePromoItems]
   );
-
+  const hasChequePromo = totalChequePromo > 0.005; // tolerancia centavos
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
     () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
@@ -498,7 +498,6 @@ export default function ValueView({
   );
   const hasDiscount = docAdjustmentSigned > 0;
 
-  // 👉 Saldo UI: total facturas - total pagado nominal - costo financiero cheques
   const hasExactRefi = useMemo(
     () =>
       newValues.some(
@@ -508,7 +507,8 @@ export default function ValueView({
     [newValues]
   );
 
-  // 👉 Caso viejo donde querías usar gross como base sólo si hay refi + descuento
+  const hasChequeAndDiscount = hasCheques && hasDiscount;
+
   const hasRefiConcept = useMemo(
     () => hasExactRefi && hasDiscount,
     [hasExactRefi, hasDiscount]
@@ -516,15 +516,19 @@ export default function ValueView({
   // 👉 Saldo UI: normalmente usa netToPay, pero si hay una refinanciación
   // (saldo, completa, etc.) usa gross como base.
   const saldoUI = useMemo(() => {
-    // 🔥 Si hay descuento O refi completa, saldoUI debe ser igual a saldo
-    if (hasDiscount || hasExactRefi) return saldo;
+    // 🔥 Casos donde la UI debe seguir al saldo contable:
+    // - Refi completa
+    // - Hay cheque + descuento en documentos
+    // - Hay descuento promo en cheques
+    if (hasExactRefi || hasChequeAndDiscount || hasChequePromo) return saldo;
 
     // Caso normal
     const base = hasRefiConcept ? gross : netToPay;
     return +(base - totalNominalValues + totalChequeInterest).toFixed(2);
   }, [
-    hasDiscount,
     hasExactRefi,
+    hasChequeAndDiscount,
+    hasChequePromo,
     saldo,
     hasRefiConcept,
     gross,
@@ -532,6 +536,12 @@ export default function ValueView({
     totalNominalValues,
     totalChequeInterest,
   ]);
+
+    const saldoUiConPromo = useMemo(
+    () => +(saldoUI + totalChequePromo).toFixed(2),
+    [saldoUI, totalChequePromo]
+  );
+
 
   console.log({
     totalChequePromo,
@@ -1404,19 +1414,26 @@ export default function ValueView({
             highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
             copy={saldo}
           /> */}
-          <RowSummary
+                 <RowSummary
             label={
               <LabelWithTip
                 label="SALDO UI"
                 tip={
-                  "Saldo a pagar HOY: total de las facturas menos el total pagado nominal (sin costo financiero ni ajustes futuros)."
+                  "Saldo a pagar HOY (considerando también el descuento promo de cheques)."
                 }
               />
             }
-            value={currencyFmt.format(saldoUI)}
-            highlight={saldoUI === 0 ? "ok" : saldoUI < 0 ? "bad" : "warn"}
-            copy={saldoUI}
+            value={currencyFmt.format(saldoUiConPromo)}
+            highlight={
+              saldoUiConPromo === 0
+                ? "ok"
+                : saldoUiConPromo < 0
+                ? "bad"
+                : "warn"
+            }
+            copy={saldoUiConPromo}
           />
+
         </div>
       )}
 
