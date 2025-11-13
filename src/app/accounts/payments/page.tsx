@@ -91,7 +91,9 @@ const PaymentsChargedPage = () => {
     useGetSellersQuery(null);
   const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
 
-  const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">("");
+  const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">(
+    "false"
+  );
   useEffect(() => {
     setSelectedIds(new Set());
   }, [
@@ -1073,7 +1075,7 @@ const PaymentsChargedPage = () => {
   };
 
   const headerBody = {
-    buttons: [],
+    buttons: [{}],
     filters: [
       {
         content: (
@@ -1213,6 +1215,21 @@ const PaymentsChargedPage = () => {
             }
           >
             PDF diario (vendedor)
+          </button>
+        ),
+      },
+      {
+        content: (
+          <button
+            onClick={() => toggleAll(!allSelected)}
+            disabled={visibleItems.length === 0}
+            className={`sm:hidden px-3 py-2 rounded text-white text-sm ${
+              visibleItems.length === 0
+                ? "bg-zinc-300 cursor-not-allowed"
+                : "bg-zinc-800 hover:bg-zinc-900"
+            }`}
+          >
+            {allSelected ? "Deseleccionar visibles" : "Seleccionar visibles"}
           </button>
         ),
       },
