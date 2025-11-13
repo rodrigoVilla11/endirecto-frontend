@@ -316,19 +316,36 @@ export default function ValueView({
   const chequeInterest = (v: ValueItem) => {
     if (v.method !== "cheque") return 0;
     if (blockChequeInterest) return 0;
+
+    // 👉 Si viene de PlanCalculator con CF pre-calculado, lo usamos tal cual
+    if (typeof v.cf === "number" && Number.isFinite(v.cf)) {
+      return +v.cf.toFixed(2);
+    }
+
     const base = toNum(v.raw_amount ?? v.amount);
     if (!base) return 0;
-    const pct = dailyRate * chargeableDaysFor(v); // 👈 antes usaba la global
+
+    const pct = dailyRate * chargeableDaysFor(v);
     return +(base * pct).toFixed(2);
   };
 
   const computeChequeNeto = (raw: string, v: ValueItem) => {
     const base = toNum(raw);
+
     if (blockChequeInterest) {
-      // NEW: sin recargo → neto = bruto
+      // sin recargo → neto = bruto
       return { neto: base, int$: 0 };
     }
-    const int$ = +(base * (dailyRate * chargeableDaysFor(v))).toFixed(2); // 👈
+
+    // 👉 Si tenemos CF pre-calculado, neto = bruto - cf
+    if (typeof v.cf === "number" && Number.isFinite(v.cf)) {
+      const int$ = +v.cf.toFixed(2);
+      const neto = Math.max(0, +(base - int$).toFixed(2));
+      return { neto, int$ };
+    }
+
+    // Lógica tradicional (sin cf)
+    const int$ = +(base * (dailyRate * chargeableDaysFor(v))).toFixed(2);
     const neto = Math.max(0, +(base - int$).toFixed(2));
     return { neto, int$ };
   };
@@ -431,40 +448,44 @@ export default function ValueView({
     hasCheques &&
     reachesNetToPay
   );
-const chequePromoItems = useMemo(() => {
-  if (!shouldApplyChequePromo) {
-    // mismo shape, pero todo en 0 para no romper la UI
-    return newValues.map(() => ({ rate: 0, amount: 0 }));
-  }
-  return newValues.map((v) => {
-    if (v.method !== "cheque") return { rate: 0, amount: 0 };
-    const rate = getChequePromoRate({
-      invoiceAgeAtReceiptDaysMin: docsDaysMin,
-      invoiceIssueDateApprox,
-      receiptDate,
-      chequeDateISO: v.chequeDate,
+  const chequePromoItems = useMemo(() => {
+    if (!shouldApplyChequePromo) {
+      // mismo shape, pero todo en 0 para no romper la UI
+      return newValues.map(() => ({ rate: 0, amount: 0 }));
+    }
+    return newValues.map((v) => {
+      if (v.method !== "cheque") return { rate: 0, amount: 0 };
+      const rate = getChequePromoRate({
+        invoiceAgeAtReceiptDaysMin: docsDaysMin,
+        invoiceIssueDateApprox,
+        receiptDate,
+        chequeDateISO: v.chequeDate,
+      });
+      const base = promoBaseOf(v);
+      const amount = +(base * rate).toFixed(2); // descuento
+      return { rate, amount };
     });
-    const base = promoBaseOf(v);
-    const amount = +(base * rate).toFixed(2); // descuento
-    return { rate, amount };
-  });
-}, [newValues, docsDaysMin, invoiceIssueDateApprox, receiptDate, shouldApplyChequePromo]);
+  }, [
+    newValues,
+    docsDaysMin,
+    invoiceIssueDateApprox,
+    receiptDate,
+    shouldApplyChequePromo,
+  ]);
 
-const totalChequePromo = useMemo(
-  () => chequePromoItems.reduce((acc, x) => acc + (x.amount > 0 ? x.amount : 0), 0),
-  [chequePromoItems]
-);
-
+  const totalChequePromo = useMemo(
+    () =>
+      chequePromoItems.reduce(
+        (acc, x) => acc + (x.amount > 0 ? x.amount : 0),
+        0
+      ),
+    [chequePromoItems]
+  );
 
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
     () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
     [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
-  );
-
-  const realValue = useMemo(
-    () => totalNominalValues - totalDescCostF,
-    [totalDescCostF, totalNominalValues]
   );
 
   const netToApply = useMemo(
@@ -476,6 +497,23 @@ const totalChequePromo = useMemo(
     [gross, netToApply]
   );
 
+  // 👉 Saldo UI: total facturas - total pagado nominal - costo financiero cheques
+  const saldoUI = useMemo(
+    () => +(netToPay - totalNominalValues + totalChequeInterest).toFixed(2),
+    [netToPay, totalNominalValues, totalChequeInterest]
+  );
+
+  console.log({
+    totalChequePromo,
+    totalDescCostF,
+    netToApply,
+    totalNominalValues,
+    saldo,
+    gross,
+    netToPay,
+    saldoUI,
+    totalChequeInterest,
+  });
   const isImage = (url?: string) =>
     !!url && !url.toLowerCase().endsWith(".pdf");
 
@@ -1330,11 +1368,24 @@ const totalChequePromo = useMemo(
             </>
           )}
 
-          <RowSummary
+          {/* <RowSummary
             label={<LabelWithTip label="SALDO" tip={EXPLAIN.saldo} />}
             value={currencyFmt.format(saldo)}
             highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
             copy={saldo}
+          /> */}
+          <RowSummary
+            label={
+              <LabelWithTip
+                label="SALDO UI"
+                tip={
+                  "Saldo a pagar HOY: total de las facturas menos el total pagado nominal (sin costo financiero ni ajustes futuros)."
+                }
+              />
+            }
+            value={currencyFmt.format(saldoUI)}
+            highlight={saldoUI === 0 ? "ok" : saldoUI < 0 ? "bad" : "warn"}
+            copy={saldoUI}
           />
         </div>
       )}

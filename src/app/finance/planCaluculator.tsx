@@ -112,7 +112,9 @@ function computeEqualRawChequesExcelStyle(params: {
   const cheques: PlanChequeItem[] = chequeDatesISO.map((iso, idx) => {
     const cd = toYMD(iso);
     const rd = toYMD(receiptDate);
-    const daysTotal = clampNonNegInt((cd.getTime() - rd.getTime()) / MS_PER_DAY);
+    const daysTotal = clampNonNegInt(
+      (cd.getTime() - rd.getTime()) / MS_PER_DAY
+    );
     const daysCharged = chargeableDaysFor({
       chequeDateISO: iso,
       receiptDate,
@@ -155,7 +157,11 @@ export default function PlanCalculator({
   const [total, setTotal] = useState<string>("");
 
   useEffect(() => {
-    if (typeof initialTotal === "number" && isFinite(initialTotal) && initialTotal > 0) {
+    if (
+      typeof initialTotal === "number" &&
+      isFinite(initialTotal) &&
+      initialTotal > 0
+    ) {
       setTotal(initialTotal.toFixed(2));
     }
   }, [initialTotal]);
@@ -174,7 +180,10 @@ export default function PlanCalculator({
   const PV = parseFloat(total || "0") || 0;
 
   const chequeDates = useMemo(
-    () => Array.from({ length: months }, (_, i) => addDaysLocalISO(startISO, 30 * (i + 1))),
+    () =>
+      Array.from({ length: months }, (_, i) =>
+        addDaysLocalISO(startISO, 30 * (i + 1))
+      ),
     [startISO, months]
   );
 
@@ -188,7 +197,14 @@ export default function PlanCalculator({
         refinanciacion,
         blockChequeInterest,
       }),
-    [PV, chequeDates, annualInterestPct, receiptDate, refinanciacion, blockChequeInterest]
+    [
+      PV,
+      chequeDates,
+      annualInterestPct,
+      receiptDate,
+      refinanciacion,
+      blockChequeInterest,
+    ]
   );
 
   const totalNominal = schedule.reduce((sum, it) => sum + it.raw, 0);
@@ -197,19 +213,27 @@ export default function PlanCalculator({
 
   const pushPlanToValues = () => {
     if (schedule.length === 0 || PV <= 0) return;
+
     setNewValues((prev) => {
       const next = [...prev];
+
       schedule.forEach((it, i) => {
+        const raw = +it.raw.toFixed(2); // bruto
+        const net = +it.net.toFixed(2); // neto
+        const cf = +(raw - net).toFixed(2); // 👈 costo financiero de ese cheque
+
         next.push({
-          amount: it.net.toFixed(2),
-          raw_amount: it.raw.toFixed(2),
+          amount: net.toFixed(2), // neto imputable
+          raw_amount: raw.toFixed(2), // bruto
           selectedReason: `Refinanciación saldo ${i + 1}/${schedule.length}`,
           method: "cheque",
           bank: "",
           chequeDate: it.dateISO,
           chequeNumber: "",
+          cf, // 👈 acá se lo pasamos al ValueItem
         });
       });
+
       return next;
     });
   };
@@ -226,7 +250,9 @@ export default function PlanCalculator({
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-white/80 mb-1">Fecha inicio</label>
+          <label className="block text-xs text-white/80 mb-1">
+            Fecha inicio
+          </label>
           <input
             type="date"
             value={startISO}
@@ -251,7 +277,9 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white/80 mb-1">Meses (1–6)</label>
+          <label className="block text-xs text-white/80 mb-1">
+            Meses (1–6)
+          </label>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
@@ -266,7 +294,9 @@ export default function PlanCalculator({
         </div>
 
         <div>
-          <label className="block text-xs text-white/80 mb-1">TASA MENSUAL</label>
+          <label className="block text-xs text-white/80 mb-1">
+            TASA MENSUAL
+          </label>
           <div className="w-full h-10 px-3 rounded-md bg-zinc-800 text-white flex items-center border border-zinc-700">
             {(dailyRateFromAnnual(annualInterestPct) * 30 * 100).toFixed(2)}%
           </div>
@@ -310,7 +340,9 @@ export default function PlanCalculator({
                   ({it.periodPct.toFixed(2)}%)
                 </span>
               </div>
-              <div className="text-right text-white/90">{fmt.format(it.raw)}</div>
+              <div className="text-right text-white/90">
+                {fmt.format(it.raw)}
+              </div>
               <div className="text-right text-white/90">
                 {it.periodPct.toFixed(2)}%
               </div>
@@ -374,7 +406,9 @@ function Metric({
           : "border-zinc-800 bg-zinc-900"
       }`}
     >
-      <div className="text-[11px] uppercase tracking-wide text-zinc-400">{label}</div>
+      <div className="text-[11px] uppercase tracking-wide text-zinc-400">
+        {label}
+      </div>
       <div
         className={`tabular-nums mt-0.5 font-semibold ${
           highlight ? "text-emerald-400" : "text-white"
