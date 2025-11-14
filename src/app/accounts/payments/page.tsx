@@ -1467,7 +1467,7 @@ function DetailsModal({
     }
     if (typeof discountAmtOriginal === "number") {
       lines.push(
-        `Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmtOriginal))}`
+        `Desc/Costo Financiero por pago efect/transf: ${fmtMoney(Math.abs(discountAmtOriginal))}`
       );
     }
     if (typeof net === "number") {

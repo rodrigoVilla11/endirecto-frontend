@@ -394,7 +394,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (gross > 0 && docsAdjTotal !== 0) {
       const pctTxt = `${(docRate * 100).toFixed(2)}%`;
       lines.push(`Desc/Costo Financiero: ${daysWeighted || 0} - ${pctTxt}`);
-      lines.push(`Desc/Costo Financiero: ${fmtMoney(Math.abs(docsAdjTotal))}`);
+      lines.push(`Desc/Costo Financiero por pago efect/transf: ${fmtMoney(Math.abs(docsAdjTotal))}`);
     }
     lines.push(`TOTAL A PAGAR (efect/transf): ${fmtMoney(docsFinal)}`);
     lines.push(`-------------------------------------------`);
