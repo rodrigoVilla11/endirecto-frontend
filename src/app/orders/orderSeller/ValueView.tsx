@@ -94,8 +94,6 @@ export default function ValueView({
     };
   });
 
-  console.log({newValues})
-
   const [digitsByRow, setDigitsByRow] = useState<Record<number, string>>({});
   // Solo dígitos
   const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");
@@ -522,16 +520,18 @@ export default function ValueView({
     // 🔥 Casos donde la UI debe seguir al saldo contable:
     // - Refi completa
     // - Hay cheque + descuento en documentos
-    // - Hay descuento promo en cheques
-    if (hasExactRefi || hasChequeAndDiscount || hasChequePromo) return saldo;
+    if (hasExactRefi || hasChequeAndDiscount) return saldo;
 
-    // Caso normal
+    // Caso normal:
+    // - Si es refiConcept (saldo/refinanciación) la base es gross.
+    // - En el resto (incluido promo de cheques) la base es TOTAL A PAGAR (netToPay).
     const base = hasRefiConcept ? gross : netToPay;
+
+    // Sin tener en cuenta aún la promo de cheques
     return +(base - totalNominalValues + totalChequeInterest).toFixed(2);
   }, [
     hasExactRefi,
     hasChequeAndDiscount,
-    hasChequePromo,
     saldo,
     hasRefiConcept,
     gross,
@@ -540,11 +540,16 @@ export default function ValueView({
     totalChequeInterest,
   ]);
 
-    const saldoUiConPromo = useMemo(
-    () => +(saldoUI + totalChequePromo).toFixed(2),
-    [saldoUI, totalChequePromo]
-  );
+  const saldoUiConPromo = useMemo(() => {
+    // Aplicamos la promo de cheques sobre el saldo UI “base”
+    const candidate = +(saldoUI + totalChequePromo).toFixed(2);
 
+    // Si con la promo la factura queda prácticamente saldada, mostramos 0
+    // (tolerancia $1 por redondeos)
+    if (Math.abs(candidate) < 1) return 0;
+
+    return candidate;
+  }, [saldoUI, totalChequePromo]);
 
   console.log({
     totalChequePromo,
@@ -1417,10 +1422,10 @@ export default function ValueView({
             highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
             copy={saldo}
           /> */}
-                 <RowSummary
+          <RowSummary
             label={
               <LabelWithTip
-                label="SALDO UI"
+                label="SALDO HOY"
                 tip={
                   "Saldo a pagar HOY (considerando también el descuento promo de cheques)."
                 }
@@ -1436,7 +1441,6 @@ export default function ValueView({
             }
             copy={saldoUiConPromo}
           />
-
         </div>
       )}
 
