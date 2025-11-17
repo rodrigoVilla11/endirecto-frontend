@@ -42,6 +42,7 @@ export default function ValueView({
   /** fecha del recibo (default: hoy) */
   receiptDate = new Date(),
   blockChequeInterest = false,
+  onSaldoUiChange,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -54,6 +55,7 @@ export default function ValueView({
   docsDaysMin?: number;
   receiptDate?: Date;
   blockChequeInterest?: boolean;
+  onSaldoUiChange?: (saldo: number) => void; // 👈 NUEVO
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -550,6 +552,10 @@ export default function ValueView({
 
     return candidate;
   }, [saldoUI, totalChequePromo]);
+
+  useEffect(() => {
+    onSaldoUiChange?.(saldoUiConPromo);
+  }, [saldoUiConPromo, onSaldoUiChange]);
 
   console.log({
     totalChequePromo,

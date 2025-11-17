@@ -61,6 +61,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
   const [showRefi, setShowRefi] = useState(false);
   const [openModalRefi, setOpenModalRefi] = useState(false);
+  const [saldoUiFromValues, setSaldoUiFromValues] = useState(0);
 
   const openCreateModal = useCallback(() => setOpenModalRefi(true), []);
   const closeCreateModal = useCallback(() => {
@@ -766,47 +767,47 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         values: valuesPayload,
       } as any;
       console.log("Payment payload:", payload);
-      // const created = await createPayment(payload).unwrap();
+      const created = await createPayment(payload).unwrap();
 
       // // ===== Datos para armar el texto =====
-      // const now = new Date();
+      const now = new Date();
 
-      // // Armamos el texto EXACTO
-      // const longDescription = buildPaymentNotificationFromPayment(created);
+      // Armamos el texto EXACTO
+      const longDescription = buildPaymentNotificationFromPayment(created);
 
-      // // ===== Notificación al cliente =====
-      // await addNotificationToCustomer({
-      //   customerId: String(selectedClientId),
-      //   notification: {
-      //     title: `PAGO REGISTRADO`,
-      //     type: "PAGO",
-      //     description: longDescription,
-      //     link: "/payments",
-      //     schedule_from: now,
-      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-      //   },
-      // }).unwrap();
+      // ===== Notificación al cliente =====
+      await addNotificationToCustomer({
+        customerId: String(selectedClientId),
+        notification: {
+          title: `PAGO REGISTRADO`,
+          type: "PAGO",
+          description: longDescription,
+          link: "/payments",
+          schedule_from: now,
+          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        },
+      }).unwrap();
 
-      // await addNotificationToUserById({
-      //   id: "67a60be545b75a39f99a485b",
-      //   notification: {
-      //     title: "PAGO REGISTRADO",
-      //     type: "PAGO",
-      //     description: `${longDescription}`,
-      //     link: "/payments",
-      //     schedule_from: now,
-      //     schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-      //     customer_id: String(selectedClientId),
-      //   },
-      // }).unwrap();
+      await addNotificationToUserById({
+        id: "67a60be545b75a39f99a485b",
+        notification: {
+          title: "PAGO REGISTRADO",
+          type: "PAGO",
+          description: `${longDescription}`,
+          link: "/payments",
+          schedule_from: now,
+          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          customer_id: String(selectedClientId),
+        },
+      }).unwrap();
 
-      // setIsConfirmModalOpen(false);
-      // setSubmittedPayment(true);
-      // setNewValues([]);
-      // setNewPayment([]);
-      // setSelectedRows([]);
-      // setComments("");
-      // onClose();
+      setIsConfirmModalOpen(false);
+      setSubmittedPayment(true);
+      setNewValues([]);
+      setNewPayment([]);
+      setSelectedRows([]);
+      setComments("");
+      onClose();
     } catch (e) {
       console.error("CreatePayment error:", e);
       alert(
@@ -1201,42 +1202,28 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     (v) => v.method === "cheque" && v.selectedReason === "Refinanciación"
   );
 
-  // Objetivo base para refi (como antes)
+  // Objetivo base para refi “clásica” (sin valores ya cargados)
   const targetForRefi =
     docAdjustmentSigned < 0 ? round2(totalDocsFinal) : round2(totalBase);
 
-  // Caso base: mismo cálculo de antes (sin promo de cheques)
   const diffBase = round2(targetForRefi - totalValues);
   const remainingBase = Math.max(0, diffBase);
 
-  // 🧮 Saldo "real" cuando hay PROMO de cheques:
-  //   saldoPromo = TOTAL A PAGAR (efect/transf) − (nominal − promo)
+  // 🧮 Saldo a refinanciar:
+  // - Si NO hay valores cargados → refi clásica, usamos remainingBase (como antes).
+  // - Si HAY valores (Refi. Saldo) → usamos el SALDO HOY que viene de ValueView.
   const remainingToRefi = useMemo(() => {
-    if (hasChequePromoForRefi && !hasRefiValues) {
-      const base = round2(totalDocsFinal); // TOTAL A PAGAR (efect/transf)
-      const efectivoHoy = round2(
-        totalNominalValuesForRefi - totalChequePromoForRefi
-      ); // lo que realmente entra hoy
-      const saldoPromo = round2(base - efectivoHoy);
-      return Math.max(0, saldoPromo);
+    if (newValues.length > 0) {
+      // SALDO HOY ya viene con promo cheques / CF / etc. integrado
+      return Math.max(0, round2(saldoUiFromValues));
     }
-
-    // Caso normal (refi común, sin promo de cheques)
     return remainingBase;
-  }, [
-    hasChequePromoForRefi,
-    hasRefiValues,
-    totalDocsFinal,
-    totalNominalValuesForRefi,
-    totalChequePromoForRefi,
-    remainingBase,
-  ]);
+  }, [newValues.length, saldoUiFromValues, remainingBase]);
 
   // ¿Algún comprobante tiene menos de 45 días de emisión?
   const hasAnyUnder45Days = computedDiscounts.some(
     (d) => typeof d.days === "number" && d.days < 45
   );
-
   const hasInvoiceToday = useMemo(
     () =>
       computedDiscounts.some(
@@ -1709,6 +1696,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   docsDaysMin={docsDaysMin}
                   receiptDate={receiptDateRef.current}
                   blockChequeInterest={blockChequeInterest}
+                  onSaldoUiChange={setSaldoUiFromValues}
                 />
               </div>
             )}
