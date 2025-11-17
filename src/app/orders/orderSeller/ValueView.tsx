@@ -137,6 +137,7 @@ export default function ValueView({
     chequeDateISO?: string;
   }) {
     if (!chequeDateISO) return 0;
+    if (blockChequeInterest) return 0;
 
     // ⚠️ Asegurate de usar la versión de toYMD que NO pierde el día por TZ
     const cd = toYMD(chequeDateISO); // cheque date (normalizado)

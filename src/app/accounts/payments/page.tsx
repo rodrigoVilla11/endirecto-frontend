@@ -1465,16 +1465,14 @@ function DetailsModal({
         `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
       );
     }
-    if (typeof discountAmtOriginal === "number") {
+    if (typeof appliedDiscount === "number") {
       lines.push(
-        `Desc/Costo Financiero por pago efect/transf: ${fmtMoney(Math.abs(discountAmtOriginal))}`
+        `Desc/Costo Financiero por pago efect/transf: ${fmtMoney(
+          Math.abs(appliedDiscount)
+        )}`
       );
     }
-    if (typeof net === "number") {
-      lines.push(`-----------------------------------`);
-      lines.push(`TOTAL A PAGAR (efect/transf): ${fmtMoney(net)}`);
-      lines.push(``);
-    }
+    lines.push(``);
 
     if (Array.isArray(payment?.values) && payment.values.length > 0) {
       lines.push(`COMPOSICION DEL PAGO:`);
@@ -1887,14 +1885,14 @@ function DetailsModal({
                     fmt={fmtMoney}
                   />
                 )}
-                {!showDiscountToValuesRow &&
-                  typeof appliedDiscount === "number" && (
-                    <AmountRow
-                      label="Desc/Cost F"
-                      value={appliedDiscount}
-                      fmt={fmtMoney}
-                    />
-                  )}
+
+                {typeof appliedDiscount === "number" && (
+                  <AmountRow
+                    label="Desc/Cost F"
+                    value={appliedDiscount}
+                    fmt={fmtMoney}
+                  />
+                )}
                 {hasCheques && typeof chequeInterest === "number" && (
                   <AmountRow
                     label="Cost F. Cheques"
