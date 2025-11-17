@@ -94,6 +94,8 @@ export default function ValueView({
     };
   });
 
+  console.log({newValues})
+
   const [digitsByRow, setDigitsByRow] = useState<Record<number, string>>({});
   // Solo dígitos
   const onlyDigits = (s: string) => (s || "").replace(/\D/g, "");

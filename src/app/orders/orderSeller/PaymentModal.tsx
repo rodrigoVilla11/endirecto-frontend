@@ -394,7 +394,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     if (gross > 0 && appliedAdjToValues !== 0) {
       const pctTxt = `${(docRate * 100).toFixed(2)}%`;
       lines.push(`Desc/Costo Financiero: ${daysWeighted || 0} - ${pctTxt}`);
-      lines.push(`Desc/Costo Financiero por pago efect/transf: ${fmtMoney(Math.abs(appliedAdjToValues))}`);
+      lines.push(
+        `Desc/Costo Financiero por pago efect/transf: ${fmtMoney(
+          Math.abs(appliedAdjToValues)
+        )}`
+      );
     }
     lines.push(`-------------------------------------------`);
 
@@ -694,10 +698,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const discountAmtWithChequePromo = round2(
         discountAmt + chequePromoDiscountTotal
       );
-      // Total Desc/CF = desc/rec aplicado + intereses cheques
+
+      const effectiveDiscountAppliedToValues = blockChequeInterest
+        ? 0
+        : discountAmtWithChequePromo;
+
       const totalDescCostF =
-        (typeof discountAmtWithChequePromo === "number"
-          ? discountAmtWithChequePromo
+        (typeof effectiveDiscountAppliedToValues === "number"
+          ? effectiveDiscountAppliedToValues
           : 0) +
         (typeof chequeInterestTotal === "number" ? chequeInterestTotal : 0);
 
@@ -714,7 +722,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const totals = {
         gross, // documentos base
         discount: docAdjTotal, // ajuste total documentos
-        discount_applied_to_values: discountAmtWithChequePromo, // ajuste aplicado a valores
+        discount_applied_to_values: effectiveDiscountAppliedToValues, // ajuste aplicado a valores
         net: round2(totalNetForUI), // docsFinal (header)
         values: round2(totalValues), // suma de valores (cheques ya netos)
         values_raw: valuesNominal, // nominales (cheques raw)
@@ -725,7 +733,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         diff: saldoDiff,
       };
 
-      console.log({ totals });
       // ——— Payload final ———
       const payload = {
         status: "pending",
@@ -757,7 +764,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         })),
         values: valuesPayload,
       } as any;
-
       // console.log("Payment payload:", payload);
       const created = await createPayment(payload).unwrap();
 
@@ -1143,7 +1149,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     ? remainingToRefi + totalAdjustmentSigned
     : remainingToRefi;
 
-    console.log({remainingToRefiWithSurchage, remainingToRefi,totalAdjustmentSigned})
+  console.log({
+    remainingToRefiWithSurchage,
+    remainingToRefi,
+    totalAdjustmentSigned,
+  });
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
     // saldo restante a refinanciar
@@ -1734,7 +1744,7 @@ type ModalCalculatorProps = {
   docsDaysMin?: number;
   docSurchargePending?: number;
   remainingToRefi?: number;
-   blockChequeInterest?: boolean
+  blockChequeInterest?: boolean;
 };
 
 function ModalCalculator({
@@ -1748,7 +1758,7 @@ function ModalCalculator({
   docsDaysMin,
   docSurchargePending,
   remainingToRefi,
-   blockChequeInterest=false
+  blockChequeInterest = false,
 }: ModalCalculatorProps) {
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
