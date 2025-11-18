@@ -63,6 +63,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [openModalRefi, setOpenModalRefi] = useState(false);
   const [saldoUiFromValues, setSaldoUiFromValues] = useState(0);
 
+ 
   const openCreateModal = useCallback(() => setOpenModalRefi(true), []);
   const closeCreateModal = useCallback(() => {
     setOpenModalRefi(false);
@@ -1775,7 +1776,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
             docSurchargePending={docSurchargePending}
-            remainingToRefi={remainingToRefiWithSurchage}
+            remainingToRefi={saldoUiFromValues}
             blockChequeInterest={blockChequeInterest}
           />
         </div>

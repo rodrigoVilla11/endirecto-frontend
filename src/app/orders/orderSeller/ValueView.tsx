@@ -487,8 +487,8 @@ export default function ValueView({
   const hasChequePromo = totalChequePromo > 0.005; // tolerancia centavos
   // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
-    () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
-    [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
+    () => totalChequeInterest + -docAdjustmentSigned,
+    [docAdjustmentSigned, totalChequeInterest]
   );
 
   const netToApply = useMemo(
@@ -510,12 +510,27 @@ export default function ValueView({
     [newValues]
   );
 
+  const hasRefi = useMemo(
+    () =>
+      newValues.some((v) =>
+        (v.selectedReason || "").toLowerCase().includes("refinanciación")
+      ),
+    [newValues]
+  );
+
   const hasChequeAndDiscount = hasCheques && hasDiscount;
 
   const hasRefiConcept = useMemo(
     () => hasExactRefi && hasDiscount,
     [hasExactRefi, hasDiscount]
   );
+
+  // 👉 Caso especial: cheque + refinanciación de saldo => forzar saldo contable
+  const shouldUseSaldoInPromo = useMemo(
+    () => hasRefi && hasCheques && hasDiscount,
+    [hasRefi, hasCheques,hasDiscount]
+  );
+
   // 👉 Saldo UI: normalmente usa netToPay, pero si hay una refinanciación
   // (saldo, completa, etc.) usa gross como base.
   const saldoUI = useMemo(() => {
@@ -542,31 +557,37 @@ export default function ValueView({
     totalChequeInterest,
   ]);
 
+  console.log({ shouldUseSaldoInPromo });
+
   const saldoUiConPromo = useMemo(() => {
-    // Aplicamos la promo de cheques sobre el saldo UI “base”
-    const candidate = +(saldoUI + totalChequePromo).toFixed(2);
+    // ⬅️ En refinanciación con cheques usamos el saldo contable,
+    // en el resto seguimos usando saldoUI como hasta ahora.
+    const base = shouldUseSaldoInPromo ? saldo : saldoUI;
+    const candidate = +base.toFixed(2);
 
     // Si con la promo la factura queda prácticamente saldada, mostramos 0
     // (tolerancia $1 por redondeos)
     if (Math.abs(candidate) < 1) return 0;
 
     return candidate;
-  }, [saldoUI, totalChequePromo]);
+  }, [shouldUseSaldoInPromo, saldo, saldoUI]);
 
   useEffect(() => {
-    onSaldoUiChange?.(saldoUiConPromo);
-  }, [saldoUiConPromo, onSaldoUiChange]);
+    onSaldoUiChange?.(saldoUI);
+  }, [saldoUI, onSaldoUiChange]);
 
   console.log({
     totalChequePromo,
     totalDescCostF,
     netToApply,
+    docAdjustmentSigned,
     totalNominalValues,
     saldo,
     gross,
     netToPay,
     saldoUI,
     totalChequeInterest,
+    saldoUiConPromo,
   });
   const isImage = (url?: string) =>
     !!url && !url.toLowerCase().endsWith(".pdf");
