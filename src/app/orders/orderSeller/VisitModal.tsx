@@ -217,6 +217,10 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
     }
   };
 
+  const handleRemoveSelectedLeaf = (path: string) => {
+    setSelectedLeafs((prev) => prev.filter((p) => p !== path));
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -317,7 +321,6 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             />
           </div>
 
-          {/* ✅ Comentarios predefinidos SIEMPRE visibles y obligatorios */}
           <div className="border-b border-zinc-800">
             <div className="px-4 pt-3 pb-2 flex items-center gap-2">
               <span className="text-white font-medium">
@@ -335,12 +338,36 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                   : "min. 1 requerido"}
               </span>
             </div>
+
             <div className="px-4 pb-3">
               <PredefinedCommentsTreeFilter
                 selectedLeafs={selectedLeafs}
                 onChange={setSelectedLeafs} // recibe SOLO hojas
               />
             </div>
+
+            {/* 🔽 NUEVO: listado de seleccionados */}
+            {selectedLeafs.length > 0 && (
+              <div className="px-4 pb-3 border-t border-zinc-800">
+                <p className="text-xs text-zinc-400 mb-1">Seleccionados:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedLeafs.map((path) => (
+                    <button
+                      key={path}
+                      type="button"
+                      onClick={() => handleRemoveSelectedLeaf(path)}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                      title={path}
+                    >
+                      <span className="truncate max-w-[220px]">{path}</span>
+                      <span className="text-zinc-400 hover:text-red-400">
+                        ✕
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Observación libre (opcional) */}
@@ -629,6 +656,16 @@ function PredefinedCommentsTreeFilter({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeafs]);
 
+  // 👉 NUEVO: toggle de una hoja puntual
+  const toggleLeaf = (path: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
   // emitir SOLO hojas
   useEffect(() => {
     const leafsOnly = Array.from(checked).filter(
@@ -639,17 +676,6 @@ function PredefinedCommentsTreeFilter({
     );
     onChange(leafsOnly);
   }, [checked, onChange]);
-
-  const toggleNode = (node: Node, prefix = "") => {
-    const leafs = gatherLeafPaths(node, prefix);
-    setChecked((prev) => {
-      const next = new Set(prev);
-      const anySelected = leafs.some((p) => next.has(p));
-      if (anySelected) leafs.forEach((p) => next.delete(p));
-      else leafs.forEach((p) => next.add(p));
-      return next;
-    });
-  };
 
   const expandAll = () => {
     const map: Record<string, boolean> = {};
@@ -696,7 +722,7 @@ function PredefinedCommentsTreeFilter({
             openMap={openMap}
             setOpenMap={setOpenMap}
             checked={checked}
-            onToggle={toggleNode}
+            onToggleLeaf={toggleLeaf} // 🔴 importante
           />
         ))}
       </div>
@@ -710,33 +736,29 @@ function TreeNodeUI({
   openMap,
   setOpenMap,
   checked,
-  onToggle,
+  onToggleLeaf,
 }: {
   node: Node;
   prefix: string;
   openMap: Record<string, boolean>;
   setOpenMap: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   checked: Set<string>;
-  onToggle: (node: Node, prefix?: string) => void;
+  onToggleLeaf: (path: string) => void;
 }) {
   const path = prefix ? `${prefix} > ${node.label}` : node.label;
   const hasChildren = !!node.children?.length;
-  const { checked: isChecked, indeterminate } = computeTriState(
-    node,
-    checked,
-    prefix
-  );
   const isOpen = !!openMap[path];
+  const isChecked = checked.has(path);
 
   const cbRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (cbRef.current)
-      cbRef.current.indeterminate = indeterminate && !isChecked;
-  }, [indeterminate, isChecked]);
+    if (cbRef.current) cbRef.current.indeterminate = false;
+  }, [isChecked]);
 
   return (
     <div className="pl-1">
       <div className="group flex items-center gap-2 py-1 pr-2 rounded hover:bg-zinc-800/60">
+        {/* Chevron para expandir/contraer si tiene hijos */}
         {hasChildren ? (
           <button
             type="button"
@@ -756,21 +778,40 @@ function TreeNodeUI({
           <span className="w-5" />
         )}
 
-        <input
-          ref={cbRef}
-          id={path}
-          type="checkbox"
-          className="accent-blue-500"
-          checked={isChecked}
-          onChange={() => onToggle(node, prefix)}
-          title={node.label}
-        />
-        <label
-          htmlFor={path}
-          className="cursor-pointer select-none text-sm text-zinc-200"
-        >
-          {node.label}
-        </label>
+        {/* Checkbox SOLO en hojas */}
+        {hasChildren ? (
+          // Nodo padre: sólo label clickeable para expandir
+          <button
+            type="button"
+            onClick={() =>
+              setOpenMap((m) => ({
+                ...m,
+                [path]: !isOpen,
+              }))
+            }
+            className="cursor-pointer select-none text-sm text-zinc-200 text-left flex-1"
+          >
+            {node.label}
+          </button>
+        ) : (
+          <>
+            <input
+              ref={cbRef}
+              id={path}
+              type="checkbox"
+              className="accent-blue-500"
+              checked={isChecked}
+              onChange={() => onToggleLeaf(path)}
+              title={node.label}
+            />
+            <label
+              htmlFor={path}
+              className="cursor-pointer select-none text-sm text-zinc-200"
+            >
+              {node.label}
+            </label>
+          </>
+        )}
       </div>
 
       {hasChildren && (
@@ -787,7 +828,7 @@ function TreeNodeUI({
               openMap={openMap}
               setOpenMap={setOpenMap}
               checked={checked}
-              onToggle={onToggle}
+              onToggleLeaf={onToggleLeaf}
             />
           ))}
         </div>
