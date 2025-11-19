@@ -20,6 +20,7 @@ import ConfirmDialog from "./PaymentModal/components/ConfirmDialog";
 import ModalCalculator from "./PaymentModal/components/ModalCalculator";
 import { usePaymentComputations } from "./PaymentModal/hooks/usePaymentComputations";
 import { useCreatePaymentHandler } from "./PaymentModal/hooks/useCreatePaymentHandler";
+import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -43,11 +44,132 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
   const { data: documentsGrace } = useGetDocumentsGraceDaysQuery();
   const [openModalRefi, setOpenModalRefi] = useState(false);
+  const [saldoUiFromValues, setSaldoUiFromValues] = useState(0);
 
   const openCreateModal = useCallback(() => setOpenModalRefi(true), []);
   const closeCreateModal = useCallback(() => {
     setOpenModalRefi(false);
   }, []);
+
+  const [checkInsituVisit] = useCheckInsituVisitMutation();
+
+  const [gps, setGPS] = useState("");
+  const [insitu, setInsitu] = useState<boolean | null>(null);
+
+  const [isLocating, setIsLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
+  const [permState, setPermState] = useState<
+    "granted" | "prompt" | "denied" | "unsupported" | null
+  >(null);
+  const didAutoLocateRef = useRef(false);
+
+  const retryAskLocation = () => {
+    if (permState === "denied") {
+      setLocError(
+        "El permiso de ubicación está bloqueado para este sitio. Habilitalo en Configuración del sitio y reintentá."
+      );
+      return;
+    }
+    handleGetLocation();
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocError("Geolocalización no soportada");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const gpsStr = `${latitude}, ${longitude}`;
+          setGPS(gpsStr);
+
+          if (!selectedClientId) {
+            setLocError("No hay cliente seleccionado");
+            setIsLocating(false);
+            return;
+          }
+
+          const response = await checkInsituVisit({
+            customerId: selectedClientId,
+            currentLat: latitude,
+            currentLon: longitude,
+          }).unwrap();
+
+          setInsitu(response.insitu);
+        } catch (err) {
+          console.error(err);
+          setLocError("No se pudo validar la ubicación");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        console.error(err);
+        setLocError(
+          err.code === 1
+            ? "Permiso de ubicación denegado"
+            : err.code === 3
+            ? "Tiempo de espera agotado"
+            : "No se pudo obtener tu ubicación"
+        );
+        setIsLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 10000,
+      }
+    );
+  };
+
+  // Auto-intento al abrir el modal usando Permissions API
+  useEffect(() => {
+    if (!isOpen) {
+      didAutoLocateRef.current = false;
+      return;
+    }
+
+    const hasPermissionsAPI =
+      typeof navigator !== "undefined" &&
+      "permissions" in navigator &&
+      // @ts-ignore
+      typeof navigator.permissions?.query === "function";
+
+    if (hasPermissionsAPI) {
+      // @ts-ignore
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then((p: any) => {
+          setPermState(p.state as any);
+
+          if (!didAutoLocateRef.current && p.state !== "denied") {
+            didAutoLocateRef.current = true;
+            handleGetLocation();
+          }
+
+          p.onchange = () => setPermState(p.state as any);
+        })
+        .catch(() => {
+          setPermState("unsupported");
+          if (!didAutoLocateRef.current) {
+            didAutoLocateRef.current = true;
+            handleGetLocation();
+          }
+        });
+    } else {
+      setPermState("unsupported");
+      if (!didAutoLocateRef.current) {
+        didAutoLocateRef.current = true;
+        handleGetLocation();
+      }
+    }
+  }, [isOpen]);
 
   type PaymentType = "pago_anticipado" | "cta_cte";
 
@@ -386,15 +508,74 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             <InfoRow label={t("paymentModal.date")} value={formattedDate} />
             <InfoRow
               label={
-                <div className="flex items-center gap-2">
-                  {t("paymentModal.gps")}{" "}
-                  <span className="text-red-500">📍</span>
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={handleGetLocation}
+                  title="Click para obtener ubicación"
+                >
+                  {t("paymentModal.gps")} 🌐
                 </div>
               }
               value={
-                <span className="text-yellow-500">
-                  {t("paymentModal.noInsitu")}
-                </span>
+                isLocating ? (
+                  <span className="flex items-center gap-2 text-zinc-300">
+                    <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    {t("paymentModal.waitingLocation") ||
+                      "Obteniendo ubicación..."}
+                  </span>
+                ) : locError ? (
+                  <span className="flex items-center gap-2">
+                    <span className="text-red-500">{locError}</span>
+                    <button
+                      type="button"
+                      onClick={retryAskLocation}
+                      className="text-xs px-2 py-0.5 rounded bg-zinc-200 text-zinc-900 hover:bg-white"
+                    >
+                      Reintentar
+                    </button>
+                    {permState === "denied" && (
+                      <details className="ml-2">
+                        <summary className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                          ¿Cómo habilitar?
+                        </summary>
+                        <div className="mt-1 text-xs text-zinc-300 max-w-[260px]">
+                          <p>
+                            • Chrome (desktop): clic en el candado → Permisos
+                            del sitio → Ubicación → Permitir, y recargá la
+                            página.
+                          </p>
+                          <p>
+                            • Android (Chrome): candado → Permisos → Ubicación →
+                            Permitir.
+                          </p>
+                          <p>
+                            • iOS (Safari): Ajustes → Safari → Ubicación →
+                            Preguntar/Permitir; luego recargá.
+                          </p>
+                        </div>
+                      </details>
+                    )}
+                  </span>
+                ) : insitu === null ? (
+                  <span className="text-gray-500">
+                    {t("paymentModal.waitingLocation") ||
+                      "Esperando ubicación..."}
+                  </span>
+                ) : insitu ? (
+                  <span className="text-green-500">
+                    {t("paymentModal.insitu") || "En cliente (in situ)"}
+                    {gps && (
+                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-red-500">
+                    {t("paymentModal.noInsitu") || "Fuera de cliente"}
+                    {gps && (
+                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                    )}
+                  </span>
+                )
               }
             />
 
@@ -691,7 +872,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             setNewValues={setNewValues}
             docsDaysMin={docsDaysMin}
             docSurchargePending={docSurchargePending}
-            remainingToRefi={remainingToRefiWithSurchage}
+            remainingToRefi={saldoUiFromValues}
             blockChequeInterest={blockChequeInterest}
           />
         </div>

@@ -3,9 +3,9 @@ import React from "react";
 interface CardProps {
   logo: React.ReactNode;
   title: any;
-  subtitle: string;
+  subtitle?: any;
   text?: any;
-  color?: string; // Prop para definir el color
+  color?: string; 
   className?: string;
 }
 
@@ -14,41 +14,47 @@ const Card: React.FC<CardProps> = ({
   title,
   subtitle,
   text,
-  color = "gray",  // valor por defecto
+  color = "gray",
   className = "",
 }) => {
-  // Si el color es "gray", usamos la clase text-gray-500;
-  // si es distinto, aplicamos inline style
-  const textColorClass = color === "gray" ? "text-gray-500" : "";
-  const textColorStyle = color !== "gray" ? { color } : {};
-
   return (
     <div
-      className={`w-80 h-40 p-6 bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer border-b-4 ${className}`}
+      className={`
+        w-72 h-36 bg-white rounded-xl border shadow-sm 
+        hover:shadow-md transition-all cursor-pointer 
+        flex flex-col justify-between p-4
+        border-b-8
+        ${className}
+      `}
       style={{ borderBottomColor: color }}
     >
-      <div className="space-y-4">
-        <div className="flex space-x-4 items-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
-            {logo}
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-semibold text-base text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500">{subtitle}</p>
-          </div>
+      {/* ICONO + TITULO */}
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-3xl">
+          {logo}
         </div>
 
-        <div className="h-1/2 flex justify-center items-center font-semibold text-lg text-gray-900">
-          {text && (
-            <p
-              className={`text-xs sm:text-sm text-center ${textColorClass}`}
-              style={textColorStyle}
-            >
-              {text}
+        <div className="flex flex-col">
+          <h3 className="text-base font-semibold text-gray-900 leading-tight">
+            {title}
+          </h3>
+
+          {subtitle && (
+            <p className="text-sm text-gray-600 mt-0.5 leading-tight">
+              {subtitle}
             </p>
           )}
         </div>
       </div>
+
+      {/* TEXTO INFERIOR */}
+      {text && (
+        <div className="w-full flex justify-center items-center pb-1">
+          <p className="text-center text-xs sm:text-sm text-gray-700 font-medium">
+            {text}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

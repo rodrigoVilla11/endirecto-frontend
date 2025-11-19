@@ -21,7 +21,7 @@ const CardShortcuts: React.FC<any> = ({ title, logo, logout = false }) => {
     <button
       onClick={logout ? handleLogout : undefined}
       className={`
-        h-16 w-[350px] sm:w-80
+        h-16 w-56
         flex items-center justify-between
         bg-white rounded-lg shadow-md
         p-4 hover:bg-gray-50 transition-colors

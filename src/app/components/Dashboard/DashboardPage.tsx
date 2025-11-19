@@ -210,6 +210,23 @@ const DashboardPage = () => {
       ? "yellow"
       : "red";
 
+  const parseObsNumber = (value: any): number => {
+    if (value == null) return 0;
+    const str = String(value).trim();
+    if (!str) return 0;
+    // limpia posibles separadores de miles/punto
+    const normalized = str.replace(/\./g, "").replace(",", ".");
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const purchasedAmount = parseObsNumber(data?.obs1); // COMPRADO
+  const purchaseGoal = parseObsNumber(data?.obs6); // OBJETIVO
+  const purchasePercent =
+    purchaseGoal > 0
+      ? Math.min(100, (purchasedAmount / purchaseGoal) * 100)
+      : 0;
+
   const itemsCard: CardItem[] = useMemo(
     () => [
       {
@@ -503,42 +520,6 @@ const DashboardPage = () => {
             ? "red"
             : "green",
       },
-      // {
-      //   logo: (
-      //     <IoNotificationsOutline
-      //       className={
-      //         ((selectedClientId
-      //           ? data?.notifications.filter((n: any) => !n.read).length
-      //           : userQuery.data?.notifications.filter((n: any) => !n.read)
-      //               .length) || 0) > 0
-      //           ? "text-red-500"
-      //           : "text-green-500"
-      //       }
-      //     />
-      //   ),
-      //   title: "Observations",
-      //   subtitle: "SUBTITLE",
-      //   text: selectedClientId
-      //     ? [
-      //         data?.obs1,
-      //         data?.obs2,
-      //         data?.obs3,
-      //         data?.obs4,
-      //         data?.obs5,
-      //         data?.obs6,
-      //       ]
-      //         .filter(Boolean)
-      //         .join(", ")
-      //     : "Debes seleccionar un cliente",
-      //   href: "/",
-      //   allowedRoles: [
-      //     "ADMINISTRADOR",
-      //     "OPERADOR",
-      //     "MARKETING",
-      //     "VENDEDOR",
-      //     "CUSTOMER",
-      //   ],
-      // },
     ],
     [
       totalCustomers?.totalCustomers,
@@ -548,6 +529,7 @@ const DashboardPage = () => {
       currentYearInvoicesData,
       selectedClientId,
       userQuery.data,
+      data,
     ]
   );
 
@@ -679,56 +661,109 @@ const DashboardPage = () => {
 
   // ------------------ Renderizado ------------------
   return (
-    <div className="gap-4">
+    <div className="min-h-screen bg-gray-100">
       <Header />
-      <div className="overflow-x-auto h-auto">
-        <div
-          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[250px]" : "min-w-[200px]"
-          }`}
-        >
-          {filteredItemsCard.map((item, index) => (
-            <Link
-              key={index}
-              prefetch={false}
-              href={item.href}
-              className="transform transition-transform duration-300 hover:scale-105"
-            >
-              <Card
-                title={item.title}
-                logo={item.logo}
-                subtitle={item.subtitle}
-                text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
-                color={item.color}
-              />
-            </Link>
-          ))}
-        </div>
-      </div>
-      <div className="overflow-x-auto h-auto">
-        <div
-          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[250px]" : "min-w-[220px]"
-          }`}
-        >
-          {filteredItemsShortcuts.map((item, index) => (
-            <Link
-              prefetch={false}
-              key={index}
-              href={item.href}
-              className="transform transition-transform duration-300 hover:scale-105"
-            >
-              <CardShortcuts
-                title={item.title}
-                logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
-                logout={item.logout}
-              />
-            </Link>
-          ))}
-        </div>
-      </div>
+
+      {/* CONTENEDOR PRINCIPAL */}
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 pb-10 space-y-6">
+        {/* BARRA DE OBJETIVO DE COMPRA */}
+        {selectedClientId && purchaseGoal > 0 && (
+          <section className="rounded-2xl bg-white shadow-sm border border-gray-100 px-5 py-4">
+            {/* Línea de textos */}
+            <div className="flex flex-col items-center gap-2 text-xs sm:text-sm sm:flex-row sm:justify-between">
+              <span>
+                Comprado:{" "}
+                <span className="font-semibold">
+                  {formatCurrency(purchasedAmount)}
+                </span>
+              </span>
+              <span className="text-center sm:text-right">
+                Objetivo de compra:{" "}
+                <span className="font-semibold">
+                  {formatCurrency(purchaseGoal)}
+                </span>
+              </span>
+            </div>
+
+            {/* Barra de progreso */}
+            <div className="mt-3 w-full">
+              <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
+                <div
+                  className="h-4"
+                  style={{
+                    width: `${purchasePercent.toFixed(0)}%`,
+                    background:
+                      "linear-gradient(90deg, #ef4444 0%, #facc15 50%, #22c55e 100%)",
+                  }}
+                />
+              </div>
+              <div className="mt-1 text-center text-xs font-semibold text-gray-700">
+                {purchasePercent.toFixed(0)}%
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* CARDS PRINCIPALES */}
+        <section>
+          <div
+            className={`
+      flex flex-col items-center gap-4
+      sm:grid sm:grid-cols-2 lg:grid-cols-3
+      ${isOpen ? "xl:grid-cols-3" : "xl:grid-cols-4"}
+    `}
+          >
+            {filteredItemsCard.map((item, index) => (
+              <Link
+                key={index}
+                prefetch={false}
+                href={item.href}
+                className="transform transition-transform duration-200 hover:scale-[1.02]"
+              >
+                <Card
+                  title={item.title}
+                  logo={item.logo}
+                  subtitle={item.subtitle}
+                  text={item.text}
+                  className="shadow-sm hover:shadow-md rounded-2xl border border-gray-100"
+                  color={item.color}
+                />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* SHORTCUTS */}
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+            Atajos rápidos
+          </h2>
+
+          <div
+            className={`
+      flex flex-col items-center gap-3
+      sm:grid sm:grid-cols-3 lg:grid-cols-4
+      ${isOpen ? "xl:grid-cols-4" : "xl:grid-cols-5"}
+    `}
+          >
+            {filteredItemsShortcuts.map((item, index) => (
+              <Link
+                prefetch={false}
+                key={index}
+                href={item.href}
+                className="transform transition-transform duration-200 hover:scale-[1.02]"
+              >
+                <CardShortcuts
+                  title={item.title}
+                  logo={item.logo}
+                  className="shadow-sm hover:shadow-md rounded-2xl border border-gray-100 bg-white"
+                  logout={item.logout}
+                />
+              </Link>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };
