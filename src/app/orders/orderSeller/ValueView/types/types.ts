@@ -1,4 +1,3 @@
-
 export type PaymentMethod = "efectivo" | "transferencia" | "cheque";
 
 export type ValueItem = {
@@ -43,4 +42,7 @@ export type PaymentTotals = {
   netEffectivePayment: number;
   totalDescCostF: number;
   saldoUI: number;
+  hasExactRefi: boolean;
+  hasSaldoRefi: boolean;
+  hasAnyRefi: boolean;
 };

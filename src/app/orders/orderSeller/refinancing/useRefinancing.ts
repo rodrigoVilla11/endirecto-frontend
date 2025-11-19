@@ -8,7 +8,8 @@ export function useRefinancing(
   totalDocsFinal: number,
   totalBase: number,
   docAdjustmentSigned: number,
-  totalValuesNominal: number, // <-- CAMBIO: Debe recibir nominal
+  netEffectivePayment: number,
+  totalValuesNominal: number, // NOMINAL
   annualInterestPct: number,
   blockChequeInterest: boolean
 ) {
@@ -28,10 +29,25 @@ export function useRefinancing(
         totalDocsFinal,
         totalBase,
         docAdjustmentSigned,
-        totalValuesNominal // <-- Pasamos nominal
+        totalValuesNominal,
+        netEffectivePayment
       ),
-    [totalDocsFinal, totalBase, docAdjustmentSigned, totalValuesNominal]
+    [
+      totalDocsFinal,
+      totalBase,
+      docAdjustmentSigned,
+      totalValuesNominal,
+      netEffectivePayment,
+    ]
   );
+
+  console.log("💰 Refinanciación (hook):", {
+    remainingAmount,
+    totalDocsFinal,
+    totalBase,
+    docAdjustmentSigned,
+    totalValuesNominal,
+  });
 
   const toggleVisibility = useCallback(() => {
     if (hasInvoiceToday) {

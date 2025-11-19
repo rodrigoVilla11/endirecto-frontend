@@ -22,7 +22,11 @@ import { PaymentRow } from "./ValueView/PaymentRow";
 import { PaymentSummary } from "./ValueView/PaymentSummary";
 
 // Utils
-import { currencyFormatter, parseMaskedCurrencyToNumber, round2 } from "./ValueView/utils/currencyUtils";
+import {
+  currencyFormatter,
+  parseMaskedCurrencyToNumber,
+  round2,
+} from "./ValueView/utils/currencyUtils";
 import { inferInvoiceIssueDate } from "./ValueView/utils/dateUtils";
 import { nominalOf } from "./ValueView/utils/chequeRules";
 
@@ -69,7 +73,16 @@ export default function ValueView({
 
   // Estado UI
   const [openRows, setOpenRows] = useState<Record<number, boolean>>({});
-  const [summaryOpenRows, setSummaryOpenRows] = useState<Record<number, boolean>>({});
+  const [summaryOpenRows, setSummaryOpenRows] = useState<
+    Record<number, boolean>
+  >({});
+
+  console.log("🔍 ValueView props:", {
+    totalBase,
+    gross,
+    netToPay,
+    docAdjustmentSigned,
+  });
 
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
@@ -108,7 +121,7 @@ export default function ValueView({
     netToPay,
   });
 
-  // Hook: Totales (ya no necesita totalNominalValues como parámetro)
+  // Hook: Totales
   const totals = usePaymentTotals({
     values: newValues,
     chequeInterest: chequeCalcs.chequeInterest,
@@ -116,8 +129,19 @@ export default function ValueView({
     docAdjustmentSigned,
     netToPay,
     gross,
+    totalBase, // <-- CRÍTICO: Debe estar pasándose
     hasChequePromo: chequePromo.hasChequePromo,
     hasCheques: chequePromo.hasCheques,
+  });
+
+  console.log("🔍 Debug totals:", {
+    totalBase,
+    gross,
+    netToPay,
+    docAdjustmentSigned,
+    hasSaldoRefi: totals.hasSaldoRefi,
+    netEffectivePayment: totals.netEffectivePayment,
+    saldoUI: totals.saldoUI,
   });
 
   // Refinanciación (debe recibir totalNominalValues, no totalValues)
@@ -127,8 +151,9 @@ export default function ValueView({
     totalBase,
     docAdjustmentSigned,
     totalNominalValues, // <-- CAMBIO: Pasar nominal en lugar de neto
+    totals.netEffectivePayment,
     annualInterestPct,
-    blockChequeInterest
+    blockChequeInterest,
   );
 
   // Auto-ajuste de saldo menor a $1
@@ -142,7 +167,12 @@ export default function ValueView({
       return;
     }
 
-    if (abs > 0 && abs < 1 && !autoFixAppliedRef.current && newValues.length > 0) {
+    if (
+      abs > 0 &&
+      abs < 1 &&
+      !autoFixAppliedRef.current &&
+      newValues.length > 0
+    ) {
       autoFixAppliedRef.current = true;
 
       const delta = round2(totals.saldoUI);
@@ -154,7 +184,9 @@ export default function ValueView({
 
         const newAmount = Math.max(0, round2((Number(v.amount) || 0) + delta));
 
-        const concept = (v.selectedReason || NO_CONCEPTO).includes("(ajuste redondeo)")
+        const concept = (v.selectedReason || NO_CONCEPTO).includes(
+          "(ajuste redondeo)"
+        )
           ? v.selectedReason
           : `${v.selectedReason || NO_CONCEPTO} (ajuste redondeo)`;
 
@@ -202,7 +234,7 @@ export default function ValueView({
 
   const handleMethodChange = (idx: number, method: PaymentMethod) => {
     const v = newValues[idx];
-    
+
     if (method !== "cheque") {
       patchRow(idx, { method, raw_amount: undefined });
       return;
@@ -218,10 +250,13 @@ export default function ValueView({
 
   const handleChequeDateChange = (idx: number, iso: string) => {
     const v = newValues[idx];
-    
+
     if (v.method === "cheque") {
       const raw = v.raw_amount ?? v.amount ?? "0";
-      const { neto } = chequeCalcs.computeChequeNeto(raw, { ...v, chequeDate: iso });
+      const { neto } = chequeCalcs.computeChequeNeto(raw, {
+        ...v,
+        chequeDate: iso,
+      });
       patchRow(idx, {
         chequeDate: iso,
         raw_amount: raw,
@@ -257,7 +292,7 @@ export default function ValueView({
         (res as any)?.url ??
         (res as any)?.data?.secure_url ??
         (res as any)?.data?.url;
-      
+
       if (!url) throw new Error("No se recibió URL del servidor.");
 
       patchRow(idx, {
@@ -330,7 +365,8 @@ export default function ValueView({
                 ? 0
                 : chequeCalcs.getChequeInterestPct(v)
               : 0;
-          const interest$ = v.method === "cheque" ? chequeCalcs.chequeInterest(v) : 0;
+          const interest$ =
+            v.method === "cheque" ? chequeCalcs.chequeInterest(v) : 0;
 
           return (
             <PaymentRow
