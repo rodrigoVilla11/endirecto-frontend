@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
-import { ValueItem } from "../orders/orderSeller/ValueView";
+import { ValueItem } from "../orders/orderSeller/ValueView/types/types";
 
 /* ===== Helpers fecha ===== */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
