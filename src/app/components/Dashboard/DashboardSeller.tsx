@@ -27,9 +27,13 @@ import {
   useSumExpiredAmountsQuery,
 } from "@/redux/services/documentsApi";
 import { useAuth } from "@/app/context/AuthContext";
-import { useGetBalancesSummaryQuery, useGetCustomerInformationByCustomerIdQuery } from "@/redux/services/customersInformations";
+import {
+  useGetBalancesSummaryQuery,
+  useGetCustomerInformationByCustomerIdQuery,
+} from "@/redux/services/customersInformations";
 import { useClient } from "@/app/context/ClientContext";
 import { useTranslation } from "react-i18next";
+import { FiTarget } from "react-icons/fi";
 
 const DashboardSeller = () => {
   const { t } = useTranslation();
@@ -40,10 +44,11 @@ const DashboardSeller = () => {
   const { data: countCustomersData } = useCountCustomersQuery({
     seller_id: userData?.seller_id,
   });
-  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery({
-    id: selectedClientId ?? undefined,
-  });
-
+  const { data, error, isLoading } = useGetCustomerInformationByCustomerIdQuery(
+    {
+      id: selectedClientId ?? undefined,
+    }
+  );
 
   const queryParams =
     selectedClientId && selectedClientId !== ""
@@ -54,26 +59,30 @@ const DashboardSeller = () => {
 
   const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
-  const formatedSumAmount = totalDebt?.documents_balance?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const formatedExpiredSumAmount = totalDebt?.documents_balance_expired?.toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-    // ------------------ Definición de Items para Cards ------------------
-    interface CardItem {
-      logo: React.ReactNode;
-      title: any;
-      subtitle?: any;
-      text?: any | undefined;
-      href: string;
-      allowedRoles: string[];
-      color?: string; // propiedad opcional
-      className?: string;
+  const formatedSumAmount = totalDebt?.documents_balance?.toLocaleString(
+    "es-ES",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }
+  );
+  const formatedExpiredSumAmount =
+    totalDebt?.documents_balance_expired?.toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // ------------------ Definición de Items para Cards ------------------
+  interface CardItem {
+    logo: React.ReactNode;
+    title: any;
+    subtitle?: any;
+    text?: any | undefined;
+    href: string;
+    allowedRoles: string[];
+    color?: string; // propiedad opcional
+    className?: string;
+  }
 
   const itemsCard: CardItem[] = [
     {
@@ -95,6 +104,13 @@ const DashboardSeller = () => {
       subtitle: countCustomersData,
       href: "/selectCustomer",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+    },
+    {
+      logo: <FiTarget />,
+      title: t("sellersTarget"),
+      subtitle: "",
+      href: "/sellersTarget",
+      allowedRoles: ["VENDEDOR"],
     },
     {
       logo: <MdTextSnippet />,
@@ -353,7 +369,7 @@ const DashboardSeller = () => {
         {t("hello", { username: userData?.username })}
       </div>
       <div className="overflow-x-auto h-auto">
-      <div
+        <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[200px]"
           }`}
@@ -369,14 +385,14 @@ const DashboardSeller = () => {
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-               className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
+                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
               />
             </Link>
           ))}
         </div>
       </div>
       <div className="overflow-x-auto h-auto">
-      <div
+        <div
           className={`flex flex-wrap justify-evenly gap-4 p-4 ${
             isOpen ? "min-w-[250px]" : "min-w-[220px]"
           }`}

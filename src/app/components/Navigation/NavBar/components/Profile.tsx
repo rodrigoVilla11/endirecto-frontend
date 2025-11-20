@@ -10,6 +10,7 @@ import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { SlLogout } from "react-icons/sl";
 import { useTranslation } from "react-i18next";
 import { MdPercent } from "react-icons/md";
+import { FiTarget } from "react-icons/fi";
 
 const Profile = ({ isMobile }: any) => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ const Profile = ({ isMobile }: any) => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isAdmin = (userData?.role || "").toUpperCase() === "ADMINISTRADOR";
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -106,11 +108,20 @@ const Profile = ({ isMobile }: any) => {
             >
               <IoPersonOutline /> {t("myProfile")}
             </li>
+
+            {isAdmin && (
+              <li
+                onClick={() => handleRedirect("/profile/sellers-target")}
+                className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
+              >
+                <FiTarget /> {t("sellersTarget")}
+              </li>
+            )}
             <li
               onClick={() => handleRedirect("/profile/brands-margin")}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1"
             >
-              <MdPercent  /> {t("brandMargins")}
+              <MdPercent /> {t("brandMargins")}
             </li>
             <li
               onClick={() => handleRedirect("/profile/items-margin")}

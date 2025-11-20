@@ -31,10 +31,16 @@ import {
 } from "@/redux/services/customersApi";
 import { useGetBalancesSummaryQuery } from "@/redux/services/customersInformations";
 import { useGetMonthlySalesQuery } from "@/redux/services/ordersApi";
-import { useGetMonthlyInvoicesQuery } from "@/redux/services/documentsApi";
+import {
+  useGetDocumentIdsBySellerQuery,
+  useGetMonthlyInvoicesQuery,
+  useSumAmountsByCustomerQuery,
+} from "@/redux/services/documentsApi";
 import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
 import { useTranslation } from "react-i18next";
+import { useGetSumsByIdsAndBrandQuery } from "@/redux/services/documentsDetailsApi";
+import { FiTarget } from "react-icons/fi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -220,8 +226,48 @@ const DashboardPage = () => {
     return Number.isFinite(n) ? n : 0;
   };
 
-  const purchasedAmount = parseObsNumber(data?.obs1); // COMPRADO
-  const purchaseGoal = parseObsNumber(data?.obs6); // OBJETIVO
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+  const lastDayOfMonth = new Date(currentYear, currentMonth, 0);
+
+  const startDateMonth = `${currentYear}-${String(currentMonth).padStart(
+    2,
+    "0"
+  )}-01`;
+  const endDateMonth = `${currentYear}-${String(currentMonth).padStart(
+    2,
+    "0"
+  )}-${String(lastDayOfMonth.getDate()).padStart(2, "0")}`;
+
+  // Query para obtener la suma de documentos del mes actual del cliente
+  const { data: monthlyPurchasedAmount } = useSumAmountsByCustomerQuery(
+    {
+      customer_id: selectedClientId!,
+      startDate: startDateMonth,
+      endDate: endDateMonth,
+    },
+    {
+      skip: !selectedClientId, // Solo ejecutar si hay un cliente seleccionado
+      refetchOnMountOrArgChange: false,
+    }
+  );
+
+  // const { data: documentIds } = useGetDocumentIdsBySellerQuery({
+  //   seller_id: "54",
+  //   startDate: "2025-11-01",
+  //   endDate: "2025-11-30",
+  // });
+  // console.log(documentIds);
+  // const { data: sums } = useGetSumsByIdsAndBrandQuery({
+  //   ids: documentIds ? documentIds : [""],
+  //   brand_id: "E",
+  // });
+
+  // console.log(sums?.totalRelativeQuantity);
+  // console.log(sums?.totalQuantity);
+  // console.log(sums?.totalAmount);
+  // Reemplazar el cálculo de purchasedAmount:
+  const purchasedAmount = monthlyPurchasedAmount || 0; // Usar el valor del endpoint
+  const purchaseGoal = parseObsNumber(data?.obs6); // OBJETIVO (este se mantiene igual)
   const purchasePercent =
     purchaseGoal > 0
       ? Math.min(100, (purchasedAmount / purchaseGoal) * 100)
@@ -252,6 +298,13 @@ const DashboardPage = () => {
         ),
         href: "/selectCustomer",
         allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
+      },
+      {
+        logo: <FiTarget />,
+        title: t("sellersTarget"),
+        subtitle: '',
+        href: "/sellersTarget",
+        allowedRoles: ["VENDEDOR"],
       },
       {
         logo: (

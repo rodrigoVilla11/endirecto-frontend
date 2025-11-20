@@ -1,5 +1,6 @@
 {
   "home": "Home",
+  "sellersTarget": "Sellers Target",
   "brands": "Brands",
   "tags": "Tags",
   "articles": "Articles",
@@ -956,7 +957,6 @@
     "numeroChequeRequerido": "N° required",
     "montoRequerido": "Amount required",
     "montoOriginalRequerido": "Amount required"
-
   },
   "adjustment": "Adjustments",
   "settings": "Settings",

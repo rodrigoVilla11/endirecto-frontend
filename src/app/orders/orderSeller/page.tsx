@@ -16,7 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
 import { useState } from "react";
-import VisitModal from "./VisitModal";
+import VisitModal from "../../VisitModal";
 import {
   useGetBalancesSummaryQuery,
   useGetCustomerInformationByCustomerIdQuery,

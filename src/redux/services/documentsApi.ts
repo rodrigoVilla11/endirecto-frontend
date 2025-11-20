@@ -173,6 +173,31 @@ export const documentsApi = createApi({
         return 0;
       },
     }),
+    sumAmountsByCustomer: builder.query<
+      number,
+      {
+        customer_id: string;
+        startDate: string;
+        endDate: string;
+      }
+    >({
+      query: ({ customer_id, startDate, endDate }) => {
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+          customer_id,
+          startDate,
+          endDate,
+        });
+        return `/documents/sum-by-customer?${params.toString()}`;
+      },
+      transformResponse: (response: { totalAmount?: number | string }) => {
+        const totalAmount = response?.totalAmount;
+        if (totalAmount && !isNaN(parseFloat(totalAmount.toString()))) {
+          return parseFloat(totalAmount.toString());
+        }
+        return 0;
+      },
+    }),
     // Nuevo endpoint para obtener la facturación mensual (invoices)
     getMonthlyInvoices: builder.query<
       InvoiceMonthly[],
@@ -212,7 +237,29 @@ export const documentsApi = createApi({
         }));
       },
     }),
-     exportDocuments: builder.query<
+    getDocumentIdsBySeller: builder.query<
+      string[], // 👈 Cambiado a string[]
+      {
+        seller_id: string;
+        startDate: string;
+        endDate: string;
+      }
+    >({
+      query: ({ seller_id, startDate, endDate }) => {
+        const params = new URLSearchParams({
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+          seller_id,
+          startDate,
+          endDate,
+        });
+        return `/documents/ids-by-seller?${params.toString()}`;
+      },
+      transformResponse: (response: { ids?: string[] }) => {
+        // 👈 Actualizado
+        return response?.ids || [];
+      },
+    }),
+    exportDocuments: builder.query<
       Blob,
       {
         query?: string;
@@ -220,7 +267,7 @@ export const documentsApi = createApi({
         endDate?: string;
         expirationStatus?: string;
         customer_id?: string;
-        sort?: string;       // ej: "date:desc"
+        sort?: string; // ej: "date:desc"
         type?: string;
         seller_id?: string;
       }
@@ -266,5 +313,7 @@ export const {
   useSumExpiredAmountsQuery,
   useSumAmountsQuery,
   useGetMonthlyInvoicesQuery,
-  useLazyExportDocumentsQuery
+  useLazyExportDocumentsQuery,
+  useSumAmountsByCustomerQuery,
+  useGetDocumentIdsBySellerQuery,
 } = documentsApi;
