@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { diffFromTodayToDate } from "@/lib/dateUtils";
-import { ValueItem } from "../orders/orderSeller/ValueView/types/types";
+import { ValueItem } from "../orders/orderSeller/ValueView";
 
 /* ===== Helpers fecha ===== */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -10,7 +10,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const toYMD = (dOrStr: string | Date): Date => {
   if (typeof dOrStr === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dOrStr)) {
     const [y, m, d] = dOrStr.split("-").map(Number);
-    return new Date(y, (m ?? 1) - 1, d ?? 1);
+    return new Date(y, (m ?? 1) - 1, d ?? 1); // fecha local sin shift TZ
   }
   const d = new Date(dOrStr);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -26,6 +26,10 @@ function addDaysLocalISO(dateISO: string, days: number) {
   return toISO(d1);
 }
 
+function inferInvoiceIssueDate(receipt: Date, minDays?: number) {
+  if (typeof minDays !== "number" || !isFinite(minDays)) return undefined;
+  return new Date(toYMD(new Date(receipt.getTime() - minDays * MS_PER_DAY)));
+}
 const addDays = (d: Date, n: number) => {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   x.setDate(x.getDate() + n);
@@ -43,25 +47,90 @@ const dailyRateFromAnnual = (annualInterestPct: number) => {
   return normalized / 100 / 365; // fracción diaria
 };
 
-/* ===== Días gravados: simplificado para refinanciación ===== */
+/* ===== Reglas iguales a ValueView ===== */
+
+/** Días gravados según umbral 45d desde la emisión.
+ * - Si `refinanciacion` => siempre días del cheque (al día = 0).
+ * - Si sin emisión estimada => 0 (política conservadora).
+ * - Si cheque <= emisión+45 => 0.
+ * - Si recibo >= emisión+45 => días del cheque.
+ * - Si el umbral cae entre recibo y cheque => desde umbral hasta cheque.
+ */
 function chargeableDaysFor({
   chequeDateISO,
   receiptDate,
+  invoiceIssueDateApprox,
   refinanciacion,
 }: {
   chequeDateISO?: string;
   receiptDate: Date;
+  invoiceIssueDateApprox?: Date;
   refinanciacion?: boolean;
 }) {
   if (!chequeDateISO) return 0;
   const cd = toYMD(chequeDateISO);
   const rd = toYMD(receiptDate);
   const daysCheque = clampNonNegInt((cd.getTime() - rd.getTime()) / MS_PER_DAY);
-  if (refinanciacion) return daysCheque;
-  return daysCheque;
+
+  // if (refinanciacion) return daysCheque;
+
+  const issue = invoiceIssueDateApprox;
+  if (!issue) return 0;
+
+  const threshold45 = addDays(issue, 45);
+
+  if (cd.getTime() <= threshold45.getTime()) return 0; // cobro en/antes del día 45
+
+  if (rd.getTime() >= threshold45.getTime()) return daysCheque;
+
+  return clampNonNegInt((cd.getTime() - threshold45.getTime()) / MS_PER_DAY);
 }
 
-/* ===== Tipos ===== */
+const clampInt = (n?: number) =>
+  typeof n === "number" && isFinite(n) ? Math.max(0, Math.round(n)) : undefined;
+
+/** Promos igual que en ValueView:
+ * A) 0–7 (incl) + cheque ≤30d desde emisión → 13%
+ * B) 7–15 (incl) + cheque “al día” (±1) → 13%
+ * C) 16–30 (incl) + cheque “al día” (±1) → 10%
+ */
+function getChequePromoRate({
+  invoiceAgeAtReceiptDaysMin,
+  invoiceIssueDateApprox,
+  receiptDate,
+  chequeDateISO,
+}: {
+  invoiceAgeAtReceiptDaysMin?: number;
+  invoiceIssueDateApprox?: Date;
+  receiptDate: Date;
+  chequeDateISO?: string;
+}) {
+  if (!chequeDateISO) return 0;
+  const cd = toYMD(chequeDateISO);
+  const rd = toYMD(receiptDate);
+  const age = clampInt(invoiceAgeAtReceiptDaysMin);
+
+  const isSameDayLoose = Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY;
+
+  if (typeof age === "number") {
+    // A
+    if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
+      const daysFromIssueToCheque = Math.round(
+        (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
+      );
+      if (daysFromIssueToCheque <= 30) return 0.13;
+    }
+    // B
+    if (age >= 7 && age <= 15 && isSameDayLoose) return 0.13;
+    // C
+    if (age >= 16 && age <= 30 && isSameDayLoose) return 0.1;
+  }
+  return 0;
+}
+
+/** Base nominal para promo: raw si existe (>0), si no, neto */
+const promoBaseOf = (raw: number, net: number) => (raw > 0 ? raw : net);
+// 1) Tipos auxiliares
 type PlanChequeItem = {
   dateISO: string;
   daysTotal: number;
@@ -69,85 +138,149 @@ type PlanChequeItem = {
   periodPct: number;
   raw: number;
   net: number;
+  promoRate: number;
+  promoAmount: number;
 };
 
 type PlanResult = {
   cheques: PlanChequeItem[];
+  invoiceIssueDateApprox?: Date;
+  // NUEVO: RECARGO DOCS
+  docSurchargeDays: number; // días > 45 (si hay)
+  docSurchargeRate: number; // fracción (ej: 0.035 para 3.5%)
+  docSurchargeAmount: number; // monto aplicado al PV
+  targetNetWithDocSurcharge: number; // PV ajustado por recargo
 };
 
-/* ===== Cálculo compuesto (idéntico al Excel) ===== */
-function computeEqualRawChequesExcelStyle(params: {
+/* ===== Plan con BRUTO igual y reglas de ValueView ===== */
+function computeEqualRawChequesWithRules(params: {
   targetNet: number;
   chequeDatesISO: string[];
   annualInterestPct: number;
+  docsDaysMin?: number;
   receiptDate: Date;
   refinanciacion?: boolean;
-  blockChequeInterest?: boolean;
+  /** NEW: bloquear costo financiero de cheques (según pliego) */
+  blockChequeInterest?: boolean; // NEW
 }): PlanResult {
   const {
     targetNet,
     chequeDatesISO,
     annualInterestPct,
+    docsDaysMin,
     receiptDate,
     refinanciacion,
-    blockChequeInterest = false,
+    blockChequeInterest = false, // NEW
   } = params;
 
   const daily = dailyRateFromAnnual(annualInterestPct);
-  const iMonth = daily * 30;
+  const invoiceIssueDateApprox = inferInvoiceIssueDate(
+    receiptDate,
+    docsDaysMin
+  );
 
-  // Factores compuestos
-  const compoundFactors = chequeDatesISO.map((_, idx) => {
-    const k = idx + 1;
-    return 1 / Math.pow(1 + iMonth, k);
-  });
+  // NUEVO: RECARGO DOCS (lo dejamos informativo como ya tenías)
+  const docSurchargeDays = Math.max(0, (docsDaysMin ?? 0) - 45);
+  const docSurchargeRate = docSurchargeDays > 0 ? daily * docSurchargeDays : 0;
+  const docSurchargeAmount =
+    Math.round(targetNet * docSurchargeRate * 100) / 100;
+  const targetNetWithDocSurcharge = targetNet;
 
-  const effectiveFactors = blockChequeInterest
-    ? compoundFactors.map(() => 1)
-    : compoundFactors;
+  if (targetNet <= 0 || chequeDatesISO.length === 0) {
+    return {
+      cheques: [],
+      invoiceIssueDateApprox,
+      docSurchargeDays,
+      docSurchargeRate,
+      docSurchargeAmount,
+      targetNetWithDocSurcharge,
+    };
+  }
 
-  const sumFactors = effectiveFactors.reduce((a, b) => a + b, 0);
-  const raw = +(targetNet / (sumFactors || 1)).toFixed(2);
+  const factors = chequeDatesISO.map((iso) => {
+    const daysTotal = diffFromTodayToDate(iso) || 0;
 
-  const cheques: PlanChequeItem[] = chequeDatesISO.map((iso, idx) => {
-    const cd = toYMD(iso);
-    const rd = toYMD(receiptDate);
-    const daysTotal = clampNonNegInt(
-      (cd.getTime() - rd.getTime()) / MS_PER_DAY
-    );
-    const daysCharged = chargeableDaysFor({
+    // === NEW: si blockChequeInterest => SIN días gravados, SIN interés, factor 1
+    const daysChargedRaw = chargeableDaysFor({
       chequeDateISO: iso,
       receiptDate,
+      invoiceIssueDateApprox,
       refinanciacion,
     });
-    const k = idx + 1;
-    const periodPct = blockChequeInterest ? 0 : iMonth * 100 * k;
-    const net = Math.max(0, +(raw * effectiveFactors[idx]).toFixed(2));
+    const daysCharged = blockChequeInterest ? 0 : daysChargedRaw; // NEW
+    const interestPct = blockChequeInterest ? 0 : daily * daysCharged; // NEW
+    const factor = blockChequeInterest ? 1 : Math.max(0, 1 - interestPct); // NEW
 
-    return { dateISO: iso, daysTotal, daysCharged, periodPct, raw, net };
+    const promoRate = getChequePromoRate({
+      invoiceAgeAtReceiptDaysMin: docsDaysMin,
+      invoiceIssueDateApprox,
+      receiptDate,
+      chequeDateISO: iso,
+    });
+
+    return { iso, daysTotal, daysCharged, interestPct, factor, promoRate };
   });
 
-  return { cheques };
+  const sumFactors = factors.reduce((a, f) => a + f.factor, 0) || 1;
+  const raw = Math.round((targetNet / sumFactors) * 100) / 100;
+
+  const cheques: PlanChequeItem[] = factors.map((f) => {
+    const net = Math.max(0, +(raw * f.factor).toFixed(2)); // con block: net = raw
+    const promoAmount = +(promoBaseOf(raw, net) * f.promoRate).toFixed(2);
+    return {
+      dateISO: f.iso,
+      daysTotal: f.daysTotal,
+      daysCharged: f.daysCharged,
+      periodPct: f.interestPct * 100,
+      raw,
+      net,
+      promoRate: f.promoRate,
+      promoAmount,
+    };
+  });
+
+  return {
+    cheques,
+    invoiceIssueDateApprox,
+    docSurchargeDays,
+    docSurchargeRate,
+    docSurchargeAmount,
+    targetNetWithDocSurcharge,
+  };
 }
 
-/* ===== Componente principal ===== */
+/* ====== UI ====== */
 export default function PlanCalculator({
   title = "Cálculo de pagos a plazo (30/60/90)",
+  graceDays, // solo para display, la lógica real usa 45d desde emisión como en ValueView
   initialTotal,
   onProposeCheques,
   annualInterestPct,
+  copy,
   newValues,
   setNewValues,
+  /** Reglas extra para igualar a ValueView */
+  docsDaysMin,
   receiptDate = new Date(),
   refinanciacion = true,
   blockChequeInterest = false,
-}: {
+}: // por defecto es plan de refinanciación
+{
   title?: string;
+  graceDays?: number;
   initialTotal?: number;
   annualInterestPct: number;
-  onProposeCheques?: (plan: any) => void;
+  onProposeCheques?: (plan: {
+    schedule: Array<{ k: number; dateISO: string; amount: number }>;
+    months: number;
+    presentValue: number;
+    annualInterestPct: number;
+    graceDays?: number;
+  }) => void;
+  copy?: boolean;
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
+  docsDaysMin?: number;
   receiptDate?: Date;
   refinanciacion?: boolean;
   blockChequeInterest?: boolean;
@@ -155,7 +288,7 @@ export default function PlanCalculator({
   const [months, setMonths] = useState<number>(3);
   const [startISO, setStartISO] = useState<string>(() => toISO(new Date()));
   const [total, setTotal] = useState<string>("");
-
+  // Prefill del total cuando viene del padre
   useEffect(() => {
     if (
       typeof initialTotal === "number" &&
@@ -187,12 +320,23 @@ export default function PlanCalculator({
     [startISO, months]
   );
 
-  const { cheques: schedule } = useMemo<PlanResult>(
+  // Plan con las mismas reglas que ValueView
+  // 3) En tu useMemo, tipá el resultado y destrucurá sin warnings
+  const {
+    cheques: schedule,
+    invoiceIssueDateApprox,
+    // NUEVO: RECARGO DOCS
+    docSurchargeDays,
+    docSurchargeRate,
+    docSurchargeAmount,
+    targetNetWithDocSurcharge,
+  } = useMemo<PlanResult>(
     () =>
-      computeEqualRawChequesExcelStyle({
+      computeEqualRawChequesWithRules({
         targetNet: PV,
         chequeDatesISO: chequeDates,
         annualInterestPct,
+        docsDaysMin,
         receiptDate,
         refinanciacion,
         blockChequeInterest,
@@ -201,42 +345,38 @@ export default function PlanCalculator({
       PV,
       chequeDates,
       annualInterestPct,
+      docsDaysMin,
       receiptDate,
       refinanciacion,
       blockChequeInterest,
     ]
   );
 
-  const totalNominal = schedule.reduce((sum, it) => sum + it.raw, 0);
-  const totalNet = schedule.reduce((sum, it) => sum + it.net, 0);
-  const interes = totalNominal - PV;
+  const totalNominal = schedule.reduce((sum: any, it: any) => sum + it.raw, 0);
+  const totalNet = schedule.reduce((sum: any, it: any) => sum + it.net, 0);
+  const promoTotal = schedule.reduce((s: any, x: any) => s + x.promoAmount, 0);
 
+  // Inserta cheques en newValues respetando la regla de "Refinanciación" (trata días como daysCheque)
   const pushPlanToValues = () => {
     if (schedule.length === 0 || PV <= 0) return;
 
     setNewValues((prev) => {
       const next = [...prev];
-
-      schedule.forEach((it, i) => {
-        const raw = +it.raw.toFixed(2); // bruto
-        const net = +it.net.toFixed(2); // neto
-        const cf = +(raw - net).toFixed(2); // 👈 costo financiero de ese cheque
-
+      schedule.forEach((it: any, i: any) => {
         next.push({
-          amount: net.toFixed(2), // neto imputable
-          raw_amount: raw.toFixed(2), // bruto
-          selectedReason: `Refinanciación saldo ${i + 1}/${schedule.length}`,
+          amount: it.net.toFixed(2), // NETO imputable
+          raw_amount: it.raw.toFixed(2), // BRUTO para CF
+          selectedReason: `Refinanciación saldo ${i + 1}/${schedule.length}`, // activa lógica de refinanciación en ValueView
           method: "cheque",
           bank: "",
           chequeDate: it.dateISO,
           chequeNumber: "",
-          cf, // 👈 acá se lo pasamos al ValueItem
         });
       });
-
       return next;
     });
   };
+  console.log(schedule, invoiceIssueDateApprox);
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 sm:pr-3">
@@ -244,7 +384,15 @@ export default function PlanCalculator({
         <h4 className="text-white font-semibold">{title}</h4>
         <div className="text-xs text-white/80">
           Máx. 6 meses · cuotas iguales · Tasa anual:{" "}
-          <span className="font-semibold">{annualInterestPct}%</span>
+          <span className="font-semibold">{annualInterestPct}%</span> · Umbral
+          CF: <span className="font-semibold">45 días desde emisión</span>
+          {typeof graceDays === "number" ? (
+            <>
+              {" "}
+              · Gracia (display):{" "}
+              <span className="font-semibold">{graceDays}</span> días
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -263,7 +411,7 @@ export default function PlanCalculator({
 
         <div>
           <label className="block text-xs text-white/80 mb-1">
-            Importe total (ya con recargos)
+            Importe total (NETO)
           </label>
           <input
             type="number"
@@ -303,12 +451,33 @@ export default function PlanCalculator({
         </div>
       </div>
 
+      {/* MÉTRICAS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Metric label="CHEQUES" value={String(schedule.length)} highlight />
         <Metric label="BRUTO TOTAL" value={fmt.format(totalNominal)} />
-        <Metric label="INTERÉS" value={fmt.format(interes)} />
-        <Metric label="TOTAL A PAGAR" value={fmt.format(totalNominal)} />
+        <Metric label="INTERÉS" value={fmt.format(totalNominal - totalNet)} />
+        <Metric label="PROMO (INFO)" value={fmt.format(promoTotal)} />
       </div>
+
+      {blockChequeInterest && (
+        <div className="text-xs mt-1 px-2 py-1 rounded bg-emerald-600/15 border border-emerald-600/30 text-emerald-300 inline-block">
+          Sin recargo de cheques (según pliego)
+        </div>
+      )}
+
+      {/* NUEVO: mostrar recargo si corresponde */}
+      {docSurchargeDays > 0 && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <div className="text-sm text-red-200">
+            <strong>Recargo por documentos:</strong> {docSurchargeDays} días
+            sobre 45 ⇒ {(docSurchargeRate * 100).toFixed(2)}%{" · "}
+            Monto: <strong>{fmt.format(docSurchargeAmount)}</strong>
+            {" · "}
+            Objetivo ajustado:{" "}
+            <strong>{fmt.format(PV + docSurchargeAmount)}</strong>
+          </div>
+        </div>
+      )}
 
       {/* CRONOGRAMA */}
       <div className="rounded border border-zinc-800 overflow-hidden">
@@ -316,20 +485,21 @@ export default function PlanCalculator({
           Cronograma de cheques
         </div>
 
-        <div className="hidden md:grid grid-cols-6 px-3 py-2 text-xs text-white/60 bg-zinc-800/30">
+        <div className="hidden md:grid grid-cols-7 px-3 py-2 text-xs text-white/60 bg-zinc-800/30">
           <span>#</span>
           <span>Fecha</span>
           <span>Días total</span>
           <span>Días gravados</span>
           <span className="text-right">Bruto</span>
           <span className="text-right">% período</span>
+          <span className="text-right">Promo</span>
         </div>
 
         <div className="divide-y divide-zinc-800">
-          {schedule.map((it, idx) => (
+          {schedule.map((it: any, idx: any) => (
             <div
               key={idx}
-              className="grid grid-cols-1 md:grid-cols-6 px-3 py-2 text-sm hover:bg-zinc-800/30 transition-colors"
+              className="grid grid-cols-1 md:grid-cols-7 px-3 py-2 text-sm hover:bg-zinc-800/30 transition-colors"
             >
               <div className="font-medium text-white">#{idx + 1}</div>
               <div className="text-white/90">{it.dateISO}</div>
@@ -346,6 +516,13 @@ export default function PlanCalculator({
               <div className="text-right text-white/90">
                 {it.periodPct.toFixed(2)}%
               </div>
+              <div className="text-right text-emerald-400">
+                {it.promoRate > 0
+                  ? `${(it.promoRate * 100).toFixed(2)}% · ${fmt.format(
+                      it.promoAmount
+                    )}`
+                  : "—"}
+              </div>
             </div>
           ))}
           {schedule.length === 0 && (
@@ -355,6 +532,39 @@ export default function PlanCalculator({
           )}
         </div>
       </div>
+
+      {/* Info emisión/umbral */}
+      <div className="text-xs text-zinc-400">
+        {invoiceIssueDateApprox ? (
+          <>
+            Emisión estimada:{" "}
+            <span className="text-white/80">
+              {invoiceIssueDateApprox.toLocaleDateString("es-AR")}
+            </span>{" "}
+            · Umbral 45d:{" "}
+            <span className="text-white/80">
+              {addDays(invoiceIssueDateApprox, 45).toLocaleDateString("es-AR")}
+            </span>
+          </>
+        ) : (
+          <>No se puede estimar emisión (falta `docsDaysMin`).</>
+        )}
+      </div>
+
+      {/* AVISO DE DIFERENCIA */}
+      {schedule.length > 0 && Math.abs(totalNet - PV) >= 0.01 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-500 text-lg">⚠️</span>
+            <div className="text-sm text-amber-200">
+              <strong>Atención:</strong> Diferencia de{" "}
+              {fmt.format(Math.abs(totalNet - PV))}
+              detectada (los netos se calculan solo con CF; las promos se
+              aplican luego como en ValueView).
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <button
@@ -371,6 +581,7 @@ export default function PlanCalculator({
           Restablecer
         </button>
 
+        {/* Inserta plan directo en newValues */}
         <button
           type="button"
           className={`px-4 py-2 rounded font-medium transition-colors ${
@@ -380,6 +591,11 @@ export default function PlanCalculator({
           }`}
           onClick={pushPlanToValues}
           disabled={schedule.length === 0 || PV <= 0}
+          title={
+            PV > 0
+              ? "Insertar estos cheques en el pago"
+              : "Complete el importe total"
+          }
         >
           Usar plan ({schedule.length} cheques)
         </button>

@@ -93,6 +93,8 @@ export interface Payment {
   customer: { id: string; name: string };
   currency: string; // "ARS"
   date: string; // ISO string
+  gps?: string;
+  insitu?: boolean;
   type: PaymentType; // "pago_anticipado" | "cta_cte"
   totals: PaymentTotals;
   /** compat: igual a totals.net */
