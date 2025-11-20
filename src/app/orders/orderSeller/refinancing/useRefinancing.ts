@@ -41,13 +41,6 @@ export function useRefinancing(
     ]
   );
 
-  console.log("💰 Refinanciación (hook):", {
-    remainingAmount,
-    totalDocsFinal,
-    totalBase,
-    docAdjustmentSigned,
-    totalValuesNominal,
-  });
 
   const toggleVisibility = useCallback(() => {
     if (hasInvoiceToday) {

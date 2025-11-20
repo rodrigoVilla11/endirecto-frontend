@@ -47,6 +47,7 @@ export interface ValueViewProps {
   totalBase?: number;
   onOpenCalculator?: () => void;
   showCalculatorButton?: boolean;
+  onSaldoChange?: (saldo: number) => void;
 }
 
 export default function ValueView({
@@ -66,6 +67,7 @@ export default function ValueView({
   totalBase = 0,
   onOpenCalculator,
   showCalculatorButton = false,
+  onSaldoChange,
 }: ValueViewProps) {
   const { t } = useTranslation();
   const NO_CONCEPTO = t("document.noConcepto") || "Sin Concepto";
@@ -76,13 +78,6 @@ export default function ValueView({
   const [summaryOpenRows, setSummaryOpenRows] = useState<
     Record<number, boolean>
   >({});
-
-  console.log("🔍 ValueView props:", {
-    totalBase,
-    gross,
-    netToPay,
-    docAdjustmentSigned,
-  });
 
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
@@ -134,16 +129,6 @@ export default function ValueView({
     hasCheques: chequePromo.hasCheques,
   });
 
-  console.log("🔍 Debug totals:", {
-    totalBase,
-    gross,
-    netToPay,
-    docAdjustmentSigned,
-    hasSaldoRefi: totals.hasSaldoRefi,
-    netEffectivePayment: totals.netEffectivePayment,
-    saldoUI: totals.saldoUI,
-  });
-
   // Refinanciación (debe recibir totalNominalValues, no totalValues)
   const refinancing = useRefinancing(
     computedDiscounts,
@@ -153,7 +138,7 @@ export default function ValueView({
     totalNominalValues, // <-- CAMBIO: Pasar nominal en lugar de neto
     totals.netEffectivePayment,
     annualInterestPct,
-    blockChequeInterest,
+    blockChequeInterest
   );
 
   // Auto-ajuste de saldo menor a $1
@@ -321,6 +306,12 @@ export default function ValueView({
       });
     }
   };
+
+  useEffect(() => {
+    if (onSaldoChange) {
+      onSaldoChange(totals.saldoUI);
+    }
+  }, [totals.saldoUI, onSaldoChange]);
 
   const toggleRow = (i: number) =>
     setOpenRows((prev) => ({ ...prev, [i]: !prev[i] }));

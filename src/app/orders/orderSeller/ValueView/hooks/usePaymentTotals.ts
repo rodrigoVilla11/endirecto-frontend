@@ -88,6 +88,31 @@ export function usePaymentTotals({
   // Cualquier tipo de refinanciación
   const hasAnyRefi = hasExactRefi || hasSaldoRefi;
 
+  // 👇 NUEVO: Calcular descuento SOLO sobre pagos no-refi
+  const effectiveDiscount = useMemo(() => {
+    if (docAdjustmentSigned <= 0) return 0; // No hay descuento
+    if (!hasSaldoRefi) return docAdjustmentSigned; // Sin refi, descuento completo
+
+    // Con refinanciación de saldo: descuento SOLO sobre efectivo y cheques normales
+    const nonRefiNominal = values
+      .filter((v) => {
+        if (v.method === "cheque") {
+          const reason = (v.selectedReason || "").toLowerCase();
+          return !reason.includes("refinanciación");
+        }
+        return true; // efectivo/transferencia
+      })
+      .reduce((acc, v) => acc + nominalOf(v), 0);
+
+    // Descuento proporcional
+    if (totalBase > 0) {
+      const discountRate = docAdjustmentSigned / totalBase;
+      return +(nonRefiNominal * discountRate).toFixed(2);
+    }
+
+    return 0;
+  }, [docAdjustmentSigned, hasSaldoRefi, values, totalBase]);
+
   // Detectar cheques + descuento
   const hasChequeAndDiscount = hasCheques && hasDiscount;
 
@@ -100,12 +125,10 @@ export function usePaymentTotals({
     ).toFixed(2);
   }, [totalNominalValues, totalChequeInterest, totalChequePromo]);
 
-  // Total combinado de ajustes (docs + CF - promo)
   const totalDescCostF = useMemo(() => {
-    const docAdj = -docAdjustmentSigned; // invertir signo para UI
+    const docAdj = -effectiveDiscount; // 👈 -(-$10.000) = +$10.000
     return +(docAdj + totalChequeInterest - totalChequePromo).toFixed(2);
-  }, [docAdjustmentSigned, totalChequeInterest, totalChequePromo]);
-
+  }, [effectiveDiscount, totalChequeInterest, totalChequePromo]);
   // Variable auxiliar: indica si el pago alcanza el neto
   const reachesNetToPay = useMemo(() => {
     const EPS = 1;
@@ -113,61 +136,169 @@ export function usePaymentTotals({
   }, [totalNominalValues, netToPay]);
 
   // Saldo UI: lógica corregida para todos los casos
-  // Saldo UI: lógica corregida para todos los casos
   const saldoUI = useMemo(() => {
+    console.log("🔍 CÁLCULO SALDO UI - Inputs:", {
+      hasExactRefi,
+      hasSaldoRefi,
+      hasChequeAndDiscount,
+      hasCheques,
+      reachesNetToPay,
+      docAdjustmentSigned,
+      gross,
+      netToPay,
+      totalBase,
+      netEffectivePayment,
+      totalNominalValues,
+      totalChequeInterest,
+      totalChequePromo,
+      effectiveDiscount,
+    });
+
     // CASO 1: Refinanciación completa (concepto "Refinanciación")
     if (hasExactRefi) {
-      // Si hay DESCUENTO: usar totalBase (SIN descuento)
+      console.log("📌 CASO 1: Refinanciación completa");
+
       if (docAdjustmentSigned > 0) {
-        return +(totalBase - netEffectivePayment).toFixed(2);
+        const result = +(totalBase - netEffectivePayment).toFixed(2);
+        console.log("  ➜ Con DESCUENTO:", {
+          totalBase,
+          netEffectivePayment,
+          saldo: result,
+        });
+        return result;
       }
 
-      // ✅ Si hay RECARGO: restar el recargo del saldo
-      // porque el netEffectivePayment YA incluye el recargo al haber sido calculado
       if (docAdjustmentSigned < 0) {
-        // Usar gross pero restar el recargo porque ya está en netEffectivePayment
-        const saldoSinRecargo = gross - docAdjustmentSigned; // docAdj es negativo, así que suma = resta
-        return +(saldoSinRecargo - netEffectivePayment).toFixed(2);
+        const saldoSinRecargo = gross - docAdjustmentSigned;
+        const result = +(saldoSinRecargo - netEffectivePayment).toFixed(2);
+        console.log("  ➜ Con RECARGO:", {
+          gross,
+          docAdjustmentSigned,
+          saldoSinRecargo,
+          netEffectivePayment,
+          saldo: result,
+        });
+        return result;
       }
 
-      // Sin ajuste: usar gross
-      return +(gross - netEffectivePayment).toFixed(2);
+      const result = +(gross - netEffectivePayment).toFixed(2);
+      console.log("  ➜ Sin ajuste:", {
+        gross,
+        netEffectivePayment,
+        saldo: result,
+      });
+      return result;
     }
     // CASO 2: Refinanciación de saldo (concepto "Refinanciación saldo x/y")
     if (hasSaldoRefi) {
-      // ✅ AJUSTE: Cuando hay descuento, hay que RESTAR el descuento del saldo
-      // porque el saldo mostrado incluye el descuento, pero al refinanciar se pierde
+      console.log("📌 CASO 2: Refinanciación de saldo");
+
+      // Separar pagos: NO-refi vs refi
+      const nonRefiValues = values.filter((v) => {
+        if (v.method === "cheque") {
+          const reason = (v.selectedReason || "").toLowerCase();
+          return !reason.includes("refinanciación");
+        }
+        return true; // efectivo/transferencia
+      });
+
+      const refiCheques = values.filter((v) => {
+        if (v.method !== "cheque") return false;
+        const reason = (v.selectedReason || "").toLowerCase();
+        return reason.includes("refinanciación saldo");
+      });
+
+      // Poder de pago de NO-refi (efectivo + cheques normales)
+      const nonRefiEffective = nonRefiValues
+        .filter((v) => v.method !== "cheque")
+        .reduce((acc, v) => acc + nominalOf(v), 0);
+
+      const nonRefiChequesNet = nonRefiValues
+        .filter((v) => v.method === "cheque")
+        .reduce((acc, v) => {
+          const nom = nominalOf(v);
+          const cf = chequeInterest(v);
+          return acc + (nom - cf);
+        }, 0);
+
+      const nonRefiPower = nonRefiEffective + nonRefiChequesNet;
+
+      // 👇 CAMBIO CLAVE: Para cheques de refi, usar el NETO (lo que realmente aportan)
+      const refiPower = refiCheques.reduce((acc, v) => {
+        const nom = nominalOf(v); // bruto
+        const cf = chequeInterest(v); // costo financiero
+        return acc + (nom - cf); // neto que aportan
+      }, 0);
+
       if (docAdjustmentSigned > 0) {
-        // Calcular el saldo sin descuento
-        const saldoSinDescuento = netToPay - docAdjustmentSigned;
-        return +(saldoSinDescuento - netEffectivePayment).toFixed(2);
+        // Con descuento: comparar contra NETO (no contra saldo sin descuento)
+        // porque los cheques de refi YA tienen su CF descontado
+        const result = +(netToPay - nonRefiPower - refiPower).toFixed(2);
+        console.log("  ➜ Con DESCUENTO:", {
+          netToPay,
+          docAdjustmentSigned,
+          nonRefiPower,
+          refiPower,
+          totalPower: nonRefiPower + refiPower,
+          efectivo: nonRefiEffective,
+          chequesNormales: nonRefiChequesNet,
+          saldo: result,
+        });
+        return result;
       }
 
-      // Con recargo o sin ajuste: usar netToPay normal
-      return +(netToPay - netEffectivePayment).toFixed(2);
+      const result = +(netToPay - nonRefiPower - refiPower).toFixed(2);
+      console.log("  ➜ Sin descuento/con recargo:", {
+        netToPay,
+        nonRefiPower,
+        refiPower,
+        totalPower: nonRefiPower + refiPower,
+        saldo: result,
+      });
+      return result;
     }
 
     // CASO 3: Cheques + Descuento + Pago completo (sin refinanciación)
-    // Aplica promo, base = gross
     if (hasChequeAndDiscount && reachesNetToPay) {
-      return +(gross - netEffectivePayment).toFixed(2);
+      console.log("📌 CASO 3: Cheques + Descuento + Pago completo");
+      const result = +(gross - netEffectivePayment).toFixed(2);
+      console.log("  ➜", {
+        gross,
+        netEffectivePayment,
+        saldo: result,
+      });
+      return result;
     }
 
     // CASO 4: Solo cheques (sin descuento o pago parcial)
-    // NO aplica promo, base = gross, pago sin promo
     if (hasCheques) {
+      console.log("📌 CASO 4: Solo cheques");
       const netWithoutPromo = totalNominalValues - totalChequeInterest;
-      return +(gross - netWithoutPromo).toFixed(2);
+      const result = +(gross - netWithoutPromo).toFixed(2);
+      console.log("  ➜", {
+        gross,
+        totalNominalValues,
+        totalChequeInterest,
+        netWithoutPromo,
+        saldo: result,
+      });
+      return result;
     }
 
     // CASO 5: Pagos en efectivo/transferencia
-    // Si el pago completa el netToPay -> Saldo = 0
-    // Si es parcial -> Saldo = netToPay - pago
     if (reachesNetToPay) {
-      return 0; // Pago completo
+      console.log("📌 CASO 5: Pago completo en efectivo");
+      return 0;
     }
 
-    return +(netToPay - totalNominalValues).toFixed(2);
+    console.log("📌 CASO 5: Pago parcial en efectivo");
+    const result = +(netToPay - totalNominalValues).toFixed(2);
+    console.log("  ➜", {
+      netToPay,
+      totalNominalValues,
+      saldo: result,
+    });
+    return result;
   }, [
     hasExactRefi,
     hasSaldoRefi,

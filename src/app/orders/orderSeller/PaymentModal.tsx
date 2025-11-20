@@ -393,6 +393,40 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     setPayTotalDocMode(Math.abs(amt - docsFinal) <= EPS);
   }, [newValues, totalDocsFinal]);
 
+  const effectiveDiscountForValues = useMemo(() => {
+    if (docAdjustmentSigned <= 0) return 0;
+
+    const hasRefiSaldo = newValues.some(
+      (v) =>
+        v.method === "cheque" &&
+        (v.selectedReason || "").toLowerCase().includes("refinanciación saldo")
+    );
+
+    if (!hasRefiSaldo) return docAdjustmentSigned; // Sin refi, descuento completo
+
+    // Con refinanciación de saldo: descuento SOLO sobre efectivo y cheques normales
+    const nonRefiNominal = newValues
+      .filter((v) => {
+        if (v.method === "cheque") {
+          const reason = (v.selectedReason || "").toLowerCase();
+          return !reason.includes("refinanciación");
+        }
+        return true; // efectivo/transferencia
+      })
+      .reduce((acc, v) => {
+        const raw = v.method === "cheque" ? v.raw_amount : v.amount;
+        return acc + parseFloat(raw || "0");
+      }, 0);
+
+    // Descuento proporcional
+    if (totalBase > 0) {
+      const discountRate = docAdjustmentSigned / totalBase;
+      return round2(nonRefiNominal * discountRate);
+    }
+
+    return 0;
+  }, [docAdjustmentSigned, newValues, totalBase]);
+
   const hasRefiValues = newValues.some(
     (v) => v.method === "cheque" && v.selectedReason === "Refinanciación"
   );
@@ -459,18 +493,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     }
     // 8. Saldo a refinanciar
     const remaining = Math.max(0, round2(baseToRefi - totalPreviousPower));
-
-    console.log("💰 Refinanciación:", {
-      tipo: hasNonRefiPayments ? "SALDO" : "COMPLETA",
-      base: baseToRefi,
-      totalBase,
-      totalDocsFinal,
-      docAdjustmentSigned,
-      efectivo: { nominal: cashNominal, poder: cashPower },
-      cheques: { neto: chequeNeto },
-      totalPreviousPower,
-      remaining,
-    });
 
     return {
       remainingToRefi: remaining,
@@ -769,15 +791,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   annualInterestPct={annualInterestPct}
                   netToPay={round2(totalDocsFinal)}
                   gross={totalBase}
-                  docAdjustmentSigned={
-                    showSobrePago
-                      ? docAdjustmentSigned < 0
-                        ? -totalAdjustmentSigned // recargo → negativo
-                        : hasRefiValues
-                        ? 0
-                        : -totalAdjustmentSigned // descuento → 0 si refi, si no positivo
-                      : docAdjustmentSigned
-                  }
+                  docAdjustmentSigned={effectiveDiscountForValues}
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={
                     blockChequeInterest
@@ -794,6 +808,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   totalBase={totalBase}
                   onOpenCalculator={openCreateModal}
                   showCalculatorButton={newValues.length > 0}
+                  onSaldoChange={setSaldoUiFromValues}
                 />
               </div>
             )}
