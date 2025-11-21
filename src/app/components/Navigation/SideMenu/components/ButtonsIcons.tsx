@@ -87,7 +87,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon }) => {
       <div
         className={`flex items-center gap-3 cursor-pointer px-3 py-3 rounded-l-lg transition-all duration-200 hover:bg-zinc-800 ${
           isActive
-            ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white"
+            ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black"
             : "text-gray-400"
         } ${!isOpen && "justify-center"}`}
         onClick={handleClick}
@@ -118,7 +118,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon }) => {
               <div
                 key={index}
                 className={`text-sm px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-zinc-800 ${
-                  isSubActive ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white" : "text-gray-400"
+                  isSubActive ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black" : "text-gray-400"
                 }`}
                 onClick={(event) => {
                   event.stopPropagation();

@@ -84,11 +84,11 @@ const LoginPage = () => {
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border-2 border-white/50">
           {/* Header con gradiente */}
-          <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 relative h-32 pt-6 pl-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
+          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 relative h-32 pt-6 pl-8">
+            <h1 className="text-3xl font-bold text-black mb-2">
               {t("signIn")}
             </h1>
-            <p className="text-white/90 text-sm">Bienvenido de vuelta 👋</p>
+            <p className="text-black/90 text-sm">Bienvenido de vuelta 👋</p>
 
             {/* Logo flotante */}
             <div className="absolute -bottom-10 left-8 bg-white rounded-2xl h-20 w-20 flex justify-center items-center shadow-xl border-4 border-white">
@@ -192,7 +192,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-4 px-4 rounded-2xl font-bold text-lg hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all focus:outline-none focus:ring-4 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-red-500 via-white to-blue-500 text-black py-4 px-4 rounded-2xl font-bold text-lg hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all focus:outline-none focus:ring-4 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -209,7 +209,7 @@ const LoginPage = () => {
           <div className="pb-8 pt-4 text-center border-t-2 border-gray-100 mx-8">
             <a
               href="#"
-              className="text-sm font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all"
+              className="text-sm font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all"
             >
               🔑 {t("forgotPassword")}
             </a>
@@ -218,7 +218,7 @@ const LoginPage = () => {
 
         {/* Copyright */}
         <p className="text-center mt-6 text-sm text-gray-600 font-medium">
-          © 2024 DMA. Todos los derechos reservados.
+          © 2025 DMA. Todos los derechos reservados.
         </p>
       </div>
     </div>

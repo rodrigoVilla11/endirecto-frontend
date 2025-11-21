@@ -58,7 +58,7 @@ const SliderBrands = () => {
   return (
     <div className="w-full py-16 bg-gradient-to-br from-white to-gray-50" id="brands">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+        <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
           🏷️ {t("ourBrands") || "Nuestras Marcas"}
         </h2>
         <Swiper

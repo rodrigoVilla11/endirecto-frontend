@@ -85,10 +85,10 @@ const AddToCart: React.FC<AddToCartProps> = ({
         }}
       />
       <button
-        className={`${isMobile ? 'p-2' : 'p-3'} rounded-full transition-all text-white shadow-md ${
+        className={`${isMobile ? 'p-2' : 'p-3'} rounded-full transition-all text-black shadow-md ${
           disabled
             ? "bg-gray-400 cursor-not-allowed"
-            : "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:shadow-lg hover:scale-110"
+            : "bg-gradient-to-r from-red-500 via-white to-blue-500 hover:shadow-lg hover:scale-110"
         }`}
         onClick={handleAddToCart}
         aria-label={t("addToCart")}

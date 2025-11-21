@@ -714,7 +714,7 @@ const DashboardPage = () => {
 
   // ------------------ Renderizado ------------------
   return (
-    <div className="min-h-screen bg-gray-100  bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+    <div className="min-h-screen bg-gray-100  bg-gradient-to-r from-red-500 via-white to-blue-500">
       <Header />
 
       {/* CONTENEDOR PRINCIPAL */}
@@ -809,7 +809,6 @@ const DashboardPage = () => {
                 <CardShortcuts
                   title={item.title}
                   logo={item.logo}
-                  className="shadow-sm hover:shadow-md rounded-2xl border border-gray-100 bg-white"
                   logout={item.logout}
                 />
               </Link>

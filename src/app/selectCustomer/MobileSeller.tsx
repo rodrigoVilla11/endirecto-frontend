@@ -64,7 +64,7 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
               }`}
             >
               {/* Avatar */}
-              <div className="rounded-full h-12 w-12 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white flex justify-center items-center text-lg font-bold flex-shrink-0 shadow-md">
+              <div className="rounded-full h-12 w-12 bg-gradient-to-r from-red-500 via-white to-blue-500 text-black flex justify-center items-center text-lg font-bold flex-shrink-0 shadow-md">
                 {customer.name.charAt(0).toUpperCase()}
               </div>
 
@@ -139,7 +139,7 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
             {/* Header del modal */}
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full h-14 w-14 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white flex justify-center items-center text-xl font-bold shadow-lg">
+                <div className="rounded-full h-14 w-14 bg-gradient-to-r from-red-500 via-white to-blue-500 text-black flex justify-center items-center text-xl font-bold shadow-lg">
                   {selectedCustomer.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -152,7 +152,7 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
                 </div>
               </div>
               <button
-                className="p-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:opacity-90 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110"
+                className="p-3 bg-gradient-to-r from-red-500 via-white to-blue-500 hover:opacity-90 rounded-full text-black shadow-lg transition-all duration-200 hover:scale-110"
                 onClick={() => handleSelectCustomer(selectedCustomer.id)}
                 aria-label="Select customer"
               >

@@ -40,7 +40,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
       {isVisible && (
         <div className="w-80 lg:w-96 h-fit sticky top-24 bg-white rounded-3xl shadow-2xl border-2 border-gray-200 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-6 flex justify-between items-center">
+          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <Filter className="w-6 h-6 text-white" />
               <h2 className="text-xl font-bold text-white">
@@ -113,7 +113,7 @@ const FilterBox = ({ isVisible, onClose }: any) => {
 
           {/* Footer con contador */}
           {activeFilters.length > 0 && (
-            <div className="p-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 border-t-2 border-white">
+            <div className="p-4 bg-gradient-to-r from-red-500 via-white to-blue-500 border-t-2 border-white">
               <div className="flex items-center justify-between text-white">
                 <span className="text-sm font-semibold">
                   {t("activeFiltersCount") || "Filtros activos"}

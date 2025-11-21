@@ -73,7 +73,7 @@ const Buttons = () => {
   return (
     <>
       {isMobile ? (
-        <div className="flex items-center justify-between text-sm text-white gap-6">
+        <div className="flex items-center justify-between text-sm text-black gap-6">
           <button 
             className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full" 
             onClick={handleSearchToggle}
@@ -89,14 +89,14 @@ const Buttons = () => {
             onClick={() => setMenuOpen(!isMenuOpen)}
             className="p-2 hover:bg-white/20 rounded-full transition-all"
           >
-            <IoMenu className="text-white text-3xl" />
+            <IoMenu className="text-black text-3xl" />
           </button>
           
           {isMenuOpen && (
             <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm">
               <div className="absolute right-0 top-0 h-full w-3/4 bg-gradient-to-br from-zinc-900 to-zinc-800 shadow-2xl">
                 {/* Header del menú */}
-                <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-6 flex justify-between items-center">
+                <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center">
                   <button 
                     onClick={handleLanguageToggle} 
                     className="text-2xl hover:scale-110 transition-transform bg-white/20 p-2 rounded-full"
@@ -119,14 +119,14 @@ const Buttons = () => {
                   </button>
                   <button
                     onClick={() => setMenuOpen(false)}
-                    className="text-3xl text-white hover:bg-white/20 p-2 rounded-full transition-all"
+                    className="text-3xl text-black hover:bg-white/20 p-2 rounded-full transition-all"
                   >
                     <IoClose />
                   </button>
                 </div>
 
                 {/* Links del menú */}
-                <div className="flex flex-col gap-2 p-6 text-white">
+                <div className="flex flex-col gap-2 p-6 text-black">
                   <a 
                     href="/" 
                     onClick={(e) => handleRedirect("/")}
@@ -193,7 +193,7 @@ const Buttons = () => {
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-between text-sm text-white gap-8 font-semibold">
+        <div className="flex items-center justify-between text-sm text-black gap-8 font-semibold">
           <a 
             href="/" 
             onClick={(e) => handleRedirect("/")}

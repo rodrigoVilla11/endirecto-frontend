@@ -263,12 +263,12 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     >
       {/* Header del modal */}
       <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-40 pb-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+        <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
           {t("articleDetails")}
         </h2>
         <button
           onClick={closeModal}
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:opacity-90 text-white rounded-full h-8 w-8 flex justify-center items-center transition-all shadow-md hover:shadow-lg"
+          className="bg-gradient-to-r from-red-500 via-white to-blue-500 hover:opacity-90 text-black rounded-full h-8 w-8 flex justify-center items-center transition-all shadow-md hover:shadow-lg"
           aria-label={t("close")}
         >
           <IoMdClose className="text-lg" />

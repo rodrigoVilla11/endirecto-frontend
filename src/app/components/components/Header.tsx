@@ -23,7 +23,7 @@ const Header = ({ headerBody }: any) => {
           <div className="flex items-center gap-2">
             <p className="font-semibold text-gray-700 text-sm">
               {headerBody.secondSection.title}
-              <span className="font-bold pl-2 text-xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+              <span className="font-bold pl-2 text-xl text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-white to-blue-500">
                 {headerBody.secondSection.amount}
               </span>
             </p>

@@ -36,7 +36,7 @@ const SliderTags = () => {
       id="tags"
     >
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+        <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
           🎯 {t("featuredCategories") || "Categorías Destacadas"}
         </h2>
         <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-2 lg:grid-cols-4"} gap-6`}>

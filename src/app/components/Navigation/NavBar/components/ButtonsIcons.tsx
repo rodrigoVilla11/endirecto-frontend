@@ -234,8 +234,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Header con gradiente */}
-                    <div className="p-6 flex justify-between items-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
-                      <h3 className="font-bold text-xl flex items-center text-white">
+                    <div className="p-6 flex justify-between items-center bg-gradient-to-r from-red-500 via-white to-blue-500">
+                      <h3 className="font-bold text-xl flex items-center text-black">
                         <Bell className="w-6 h-6 mr-3" />
                         {i18n.t("notifications")}
                       </h3>
@@ -344,7 +344,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                   className="absolute top-full right-0 mt-4 w-96 bg-white text-gray-800 shadow-2xl rounded-3xl overflow-hidden z-50 border-2 border-gray-200"
                 >
                   {/* Header con gradiente */}
-                  <div className="p-6 flex justify-between items-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+                  <div className="p-6 flex justify-between items-center bg-gradient-to-r from-red-500 via-white to-blue-500">
                     <h3 className="font-bold text-xl flex items-center text-white">
                       <Bell className="w-6 h-6 mr-3" />
                       {i18n.t("notifications")}

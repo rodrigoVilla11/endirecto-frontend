@@ -138,7 +138,7 @@ const Articles: React.FC<ArticlesProps> = ({
           />
         </div>
         <div className="mt-6 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 animate-loading-bar rounded-full"></div>
+          <div className="h-full bg-gradient-to-r from-red-500 via-white to-blue-500 animate-loading-bar rounded-full"></div>
         </div>
         <p className="mt-4 text-sm font-medium text-gray-600 animate-pulse">
           Cargando artículos...

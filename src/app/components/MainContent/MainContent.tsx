@@ -13,7 +13,7 @@ const MainContent = ({ children }: { children: React.ReactNode }) => {
     <div
       className={`${
         isMobile ? (isSelectCustomers ? "mt-12" : "mt-12") : "mt-16"
-      } sm:mt-12 transition-all duration-300 flex-1 overflow-auto no-scrollbar bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500`}
+      } sm:mt-12 transition-all duration-300 flex-1 overflow-auto no-scrollbar bg-gradient-to-r from-red-500 via-white to-blue-500`}
     >
       {children}
     </div>

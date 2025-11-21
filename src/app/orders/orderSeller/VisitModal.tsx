@@ -230,7 +230,7 @@ return (
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-red-500 via-white to-blue-500">
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose} 

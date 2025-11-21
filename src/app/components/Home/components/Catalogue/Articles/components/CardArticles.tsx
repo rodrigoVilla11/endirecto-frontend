@@ -89,7 +89,7 @@ const CardArticle = ({ article, showPurchasePrice }: any) => {
           {showPurchasePrice && article.price && (
             <div className="mb-4">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
                   ${article.price.toLocaleString('es-AR')}
                 </span>
                 {article.originalPrice && (

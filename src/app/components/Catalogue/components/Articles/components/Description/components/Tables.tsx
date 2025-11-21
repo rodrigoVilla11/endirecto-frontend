@@ -55,7 +55,7 @@ const Tables = ({ article }: any) => {
             key={button.id}
             className={`flex-1 flex justify-center items-center py-3 transition-all duration-200 ${
               activeTable === button.id
-                ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-md"
+                ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-md"
                 : "text-gray-600 hover:bg-gray-200"
             }`}
             onClick={() => setActiveTable(button.id)}

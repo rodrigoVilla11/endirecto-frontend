@@ -127,7 +127,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-gray-700 text-center">
           <p className="text-gray-400 text-sm">
-            © 2024 <span className="font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">DMA</span>. {t("footer.rights") || "Todos los derechos reservados."}
+            © 2025 <span className="font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">DMA</span>. {t("footer.rights") || "Todos los derechos reservados."}
           </p>
         </div>
       </div>

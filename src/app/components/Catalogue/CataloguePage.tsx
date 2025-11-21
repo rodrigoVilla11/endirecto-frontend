@@ -111,7 +111,7 @@ const CataloguePage = () => {
           isSidebarVisible && (
             <div className="fixed inset-0 z-40 bg-black/50 flex items-end">
               <div className="w-full bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
-                <div className="sticky top-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-4 flex justify-between items-center rounded-t-3xl z-10">
+                <div className="sticky top-0 bg-gradient-to-r from-red-500 via-white to-blue-500 p-4 flex justify-between items-center rounded-t-3xl z-10">
                   <h2 className="text-lg font-bold text-white uppercase">
                     Filtros
                   </h2>

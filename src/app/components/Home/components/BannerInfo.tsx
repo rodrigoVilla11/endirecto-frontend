@@ -40,7 +40,7 @@ const BannerInfo = () => {
   ];
 
   return (
-    <div className={`w-full py-20 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 relative overflow-hidden`}>
+    <div className={`w-full py-20 bg-gradient-to-br from-red-500 via-white to-blue-500 relative overflow-hidden`}>
       {/* Elementos decorativos */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
@@ -58,7 +58,7 @@ const BannerInfo = () => {
                 <div className={`p-4 rounded-2xl bg-white bg-opacity-10`}>
                   {stat.icon}
                 </div>
-                <p className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+                <p className="text-6xl font-bold bg-gradient-to-r from-red-500  to-blue-500 bg-clip-text text-transparent">
                   {stat.value}
                 </p>
                 <p className="text-gray-600 font-bold text-lg uppercase tracking-wide">

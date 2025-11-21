@@ -1443,7 +1443,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-red-500 via-white to-blue-500">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -1594,7 +1594,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 onClick={() => setActiveTab(tabKey)}
                 className={`p-4 text-sm font-bold transition-all ${
                   activeTab === tabKey
-                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                    ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                     : "bg-zinc-950  text-white hover:bg-gray-200"
                 }`}
               >
@@ -1639,7 +1639,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "cta_cte"
-                        ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                     onClick={() => setPaymentTypeUI("cta_cte")}
@@ -1650,7 +1650,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "pago_anticipado"
-                        ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     } ${
                       hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""

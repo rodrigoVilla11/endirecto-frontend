@@ -54,7 +54,7 @@ export default function Table({
       >
         {/* Header de la card con gradiente */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-purple-100 bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-red-500 via-white to-blue-500 px-3 py-1 text-xs font-bold text-black shadow-sm">
             {row.key ?? t("na")}
           </span>
 
@@ -100,9 +100,9 @@ export default function Table({
 
           {/* caret con gradiente */}
           <div className="mt-3 flex items-center justify-center">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 shadow-md">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 via-white to-blue-500 shadow-md">
               <AiFillCaretDown
-                className={`text-white text-sm transition-transform ${
+                className={`text-black text-sm transition-transform ${
                   isExpanded ? "rotate-180" : ""
                 }`}
               />
@@ -143,7 +143,7 @@ export default function Table({
 
   const renderDesktopTable = () => (
     <table className="min-w-full table-auto lg:table-fixed">
-      <thead className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 sticky top-0 z-10">
+      <thead className="bg-gradient-to-r from-red-500 via-white to-blue-500 sticky top-0 z-10">
         <tr>
           {headers.map((header) => {
             const isCurrentSort = sortField === header.key;
@@ -154,7 +154,7 @@ export default function Table({
               return (
                 <th
                   key={header.key}
-                  className="px-4 py-4 text-xs font-bold text-white uppercase tracking-wider text-center"
+                  className="px-4 py-4 text-xs font-bold text-black uppercase tracking-wider text-center"
                 >
                   <div
                     className="flex justify-center items-center cursor-pointer select-none hover:opacity-80 transition-opacity"
@@ -172,7 +172,7 @@ export default function Table({
             return (
               <th
                 key={header.key}
-                className="px-4 py-4 text-xs font-bold text-white uppercase tracking-wider text-center"
+                className="px-4 py-4 text-xs font-bold text-black uppercase tracking-wider text-center"
               >
                 <div className="flex justify-center items-center select-none">
                   {header.component || header.name}

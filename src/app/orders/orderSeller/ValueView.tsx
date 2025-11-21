@@ -667,7 +667,7 @@ export default function ValueView({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+        <h4 className="text-xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
           Pagos
         </h4>
       </div>

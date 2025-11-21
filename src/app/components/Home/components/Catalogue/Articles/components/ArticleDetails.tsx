@@ -9,7 +9,7 @@ const ArticleDetails = ({ closeModal, article }: any) => {
   return (
     <div className="bg-white rounded-3xl overflow-hidden max-w-6xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
       {/* Header con gradiente */}
-      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-6 flex justify-between items-center sticky top-0 z-10 shadow-lg">
+      <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center sticky top-0 z-10 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-xl">
             <Package className="w-6 h-6 text-white" />
@@ -62,7 +62,7 @@ const ArticleDetails = ({ closeModal, article }: any) => {
                 {article.price && (
                   <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+                      <span className="text-3xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
                         ${article.price.toLocaleString('es-AR')}
                       </span>
                       {article.originalPrice && (

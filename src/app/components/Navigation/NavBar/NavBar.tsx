@@ -16,7 +16,7 @@ const NavBar = () => {
   const isSelectCustomers = pathname === "/selectCustomer";
 
   return (
-    <nav className="w-full fixed z-40 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+    <nav className="w-full fixed z-40 bg-gradient-to-r from-red-500 via-white to-blue-500">
       {/* Desktop */}
       {!isMobile ? (
         <div className="h-16 flex items-center justify-between px-4 gap-4">

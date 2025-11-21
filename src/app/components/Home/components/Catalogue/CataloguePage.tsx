@@ -52,7 +52,7 @@ const CataloguePage = () => {
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
             🛍️ {t("catalogueHeader") || "Catálogo"}
           </h1>
         </div>
@@ -75,7 +75,7 @@ const CataloguePage = () => {
                   onClick={toggleFilterBox}
                   className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-xl ${
                     isFilterBoxVisible
-                      ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white"
+                      ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black"
                       : "bg-white text-gray-700 border-2 border-gray-300 hover:border-purple-500"
                   }`}
                 >

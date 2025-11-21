@@ -118,7 +118,7 @@ export default function CustomerDashboard() {
       <div className="min-h-screen p-4 mt-4">
         <div className="max-w-2xl mx-auto">
           {/* Main Card with Gradient Border */}
-          <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-[2px] rounded-3xl">
+          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-[2px] rounded-3xl">
             <div className="bg-zinc-950 rounded-3xl p-6 space-y-6">
               {/* Customer Header */}
               <h1 className="text-2xl font-bold text-white text-center">
