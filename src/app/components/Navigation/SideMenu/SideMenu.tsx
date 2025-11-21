@@ -117,14 +117,6 @@ const SideMenu = () => {
           path: "/data/payment-conditions",
         },
         { name: t("stock"), path: "/data/stock" },
-        // {
-        //   name: t("branches"),
-        //   path: "/data/branches",
-        // },
-        // {
-        //   name: t("transports"),
-        //   path: "/data/transports",
-        // },
         {
           name: t("sellers"),
           path: "/data/sellers",
@@ -221,10 +213,6 @@ const SideMenu = () => {
           name: t("collectionsSummaries"),
           path: "/collections/summaries",
         },
-        // {
-        //   name: t("collectionsUnsummaries"),
-        //   path: "/collections/unsummaries",
-        // },
       ],
     },
     {
@@ -417,7 +405,6 @@ const SideMenu = () => {
       : icons;
   }, [role, selectedClientId, icons, t]);
 
-  // Referencia al contenedor del menú para detectar clics fuera
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -446,13 +433,11 @@ const SideMenu = () => {
       ref={menuRef}
       className={`${
         isOpen
-          ? `fixed inset-0 w-full h-auto z-50 ${
-              isMobile ? "bg-zinc-900" : "bg-header-color"
-            } px-8 sm:relative sm:inset-auto sm:w-68 sm:h-auto sm:z-auto`
-          : "hidden sm:flex sm:w-20 sm:items-center sm:bg-header-color sm:opacity-100"
-      } py-4 flex flex-col justify-start gap-6 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${
-        isSelectCustomers ? "mt-20" : "mt-28"
-      } pt-4`}
+          ? `fixed inset-0 w-full h-full z-50 bg-zinc-950 px-4 sm:relative sm:inset-auto sm:w-72 sm:h-auto sm:z-auto sm:bg-zinc-950`
+          : "hidden sm:flex sm:w-16 sm:items-center sm:bg-zinc-950 sm:opacity-100"
+      } py-3 flex flex-col justify-start gap-2 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${
+        isSelectCustomers ? "mt-16" : "mt-16"
+      } pt-2`}
     >
       {filteredIcons.map((icon: any, index: any) => (
         <ButtonsIcons key={index} icon={icon} />

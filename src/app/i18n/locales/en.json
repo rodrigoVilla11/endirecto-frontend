@@ -181,7 +181,10 @@
     "address": "Av. Hipólito Yrigoyen 1659, Alta Gracia, Córdoba - X5186",
     "phone": "3547 47-7974",
     "email": "pedidos@distribuidoradma.com.ar",
-    "schedule": "Monday to Friday 9:00 to 13:00 and 14:00 to 18:00"
+    "schedule": "Monday to Friday 9:00 to 13:00 and 14:00 to 18:00",
+    "contactTitle": "Contact",
+    "description": "Your trusted partner in industrial solutions.",
+    "rights": "All rights reserved."
   },
   "customers": "Customers",
   "loadingBrands": "Loading brands...",
@@ -1478,5 +1481,11 @@
   "all": "All",
   "commentsFilter": "Comments Filter",
   "filterByComments": "Predefined Comments",
-  "finance": "Finances"
+  "finance": "Finances",
+  "ourBrands": "Our Brands",
+  "featuredCategories": "Featured Categories",
+  "featuredProducts": "Featured Products",
+  "catalogueView": "Catalogue",
+  "listView": "List",
+  "activeFilters": "Active Filters"
 }

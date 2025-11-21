@@ -27,8 +27,8 @@ const TablePrices = ({ article }: any) => {
   let priceNoIva = priceEntryNoIva ? priceEntryNoIva.price : "N/A";
 
   if (bonus?.percentage_1 && typeof priceNoIva === "number") {
-    const discount = (priceNoIva * bonus.percentage_1) / 100; // Calcular el descuento
-    priceNoIva -= discount; // Aplicar el descuento al precio
+    const discount = (priceNoIva * bonus.percentage_1) / 100;
+    priceNoIva -= discount;
   }
 
   const formatPrice = (price: any) => {
@@ -88,7 +88,6 @@ const TablePrices = ({ article }: any) => {
   };
 
   const finalMargin = calculateMargin(priceNoIva, totalMargin);
-
   const priceWithMarginAndVAT = calculatePriceWithMarginAndVAT(
     priceNoIva,
     totalMargin,
@@ -98,45 +97,50 @@ const TablePrices = ({ article }: any) => {
   const [integerPart, decimalPart] = formatPrice(priceWithMarginAndVAT);
   const [integerPartMargin, decimalPartMargin] = formatPrice(finalMargin);
 
+  const priceRows = [
+    { label: t("iva"), value: "21,00%", highlight: false },
+    { label: t("bonuses"), value: `${bonus?.percentage_1 || 0},00%`, highlight: false },
+    { 
+      label: t("netPrice"), 
+      value: `$ ${integerPartNoIva},${decimalPartNoIva}`, 
+      highlight: true 
+    },
+    { 
+      label: t("margin"), 
+      value: `${margin || 0},00% ${marginItem ? `+ ${marginItem},00%` : ''}`, 
+      highlight: false 
+    },
+    { 
+      label: t("marginValue"), 
+      value: `$ ${integerPartMargin},${decimalPartMargin}`, 
+      highlight: false 
+    },
+    { 
+      label: t("suggestedPriceWithIVA"), 
+      value: `$ ${integerPart},${decimalPart}`, 
+      highlight: true 
+    },
+  ];
+
   return (
-    <div className="text-xs">
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("iva")}</p>
-        <p className="font-light">21,00%</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("bonuses")}</p>
-        <p className="font-light max-w-40">{bonus?.percentage_1},00%</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between bg-red-400">
-        <p className="font-bold">{t("netPrice")}</p>
-        <p className="font-light max-w-40">
-          $ {integerPartNoIva},{decimalPartNoIva}
-        </p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("margin")}</p>
-        <p className="font-light max-w-40">
-          {margin},00% {marginItem ? `${marginItem},00%` : ""}
-        </p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("marginValue")}</p>
-        <p className="font-light max-w-40">$ {integerPartMargin},{decimalPartMargin}</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("suggestedPriceWithIVA")}</p>
-        <p className="font-light max-w-40">
-          $ {integerPart},{decimalPart}
-        </p>
-      </div>
-      <hr />
+    <div className="space-y-2">
+      {priceRows.map((row, index) => (
+        <div key={index}>
+          <div className={`flex justify-between items-center p-3 rounded-lg transition-all duration-200 ${
+            row.highlight 
+              ? 'bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100 font-bold' 
+              : 'hover:bg-gray-50'
+          }`}>
+            <p className="font-semibold text-gray-700 text-sm">{row.label}</p>
+            <p className={`text-sm ${row.highlight ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+              {row.value}
+            </p>
+          </div>
+          {index < priceRows.length - 1 && (
+            <hr className="border-gray-200" />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

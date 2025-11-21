@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import FilterBox from "./components/FilterBox/FilterBox";
-import { FaFilter } from "react-icons/fa";
 import Articles from "./components/Articles/Articles";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import Modal from "../components/Modal";
@@ -13,6 +12,8 @@ import { useGetMarketingByFilterQuery } from "@/redux/services/marketingApi";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useTranslation } from "react-i18next";
+import { FaFilter } from "react-icons/fa";
+import SidebarFilters from "./components/FilterBox/SideBarFilters";
 
 const CataloguePage = () => {
   const { t } = useTranslation();
@@ -51,20 +52,25 @@ const CataloguePage = () => {
   const router = useRouter();
   const { isMobile } = useMobile();
 
-  const [isFilterBoxVisible, setFilterBoxVisible] = useState(!isMobile);
-  const [showArticles, setShowArticles] = useState<"catalogue" | "list">("catalogue");
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isSidebarVisible, setSidebarVisible] = useState(false);
 
   useEffect(() => {
     if (!selectedClientId) {
       router.push("/selectCustomer");
     } else {
       const visualizationLimit = marketing?.[0]?.popups?.visualization || 0;
-      const currentVisualizationCount = parseInt(sessionStorage.getItem("popupVisualizationCount") || "0", 10);
+      const currentVisualizationCount = parseInt(
+        sessionStorage.getItem("popupVisualizationCount") || "0",
+        10
+      );
 
       if (currentVisualizationCount < visualizationLimit) {
         setModalVisible(true);
-        sessionStorage.setItem("popupVisualizationCount", (currentVisualizationCount + 1).toString());
+        sessionStorage.setItem(
+          "popupVisualizationCount",
+          (currentVisualizationCount + 1).toString()
+        );
       }
     }
   }, [selectedClientId, router, marketing]);
@@ -77,87 +83,90 @@ const CataloguePage = () => {
 
   if (error) return <p>{t("loading")}</p>;
 
-  const toggleFilterBox = () => {
-    setFilterBoxVisible((prevState) => !prevState);
-  };
-
-  const toggleShowArticles = (type: "catalogue" | "list") => {
-    setShowArticles(type);
-  };
-
   const closeModal = () => {
     setModalVisible(false);
   };
 
-  return (
-    <div className="gap-4 p-2 w-full overflow-x-hidden">
-      {/* 🔹 Sección del título y conteo de artículos */}
-      <div className="flex justify-end items-end p-4">
-        <p className="text-xs text-gray-600 font-semibold pt-8 sm:pt-0">
-          {data?.totalItems || 0} {t("articles")}
-        </p>
-      </div>
+  const toggleSidebar = () => {
+    setSidebarVisible(!isSidebarVisible);
+  };
 
-      {/* 🔹 Contenedor para móviles: los botones arriba en mobile */}
+  return (
+    <div className="min-h-screen p-4 mt-4">
+      {/* Botón flotante para abrir sidebar en mobile */}
       {isMobile && (
-        <div className="flex justify-start items-center w-full mb-2 p-2 bg-gray-100 rounded-md gap-4">
-          <button
-            onClick={toggleFilterBox}
-            className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-              isFilterBoxVisible ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-            } rounded`}
-          >
-            <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
-            {t("filters")}
-          </button>
-        </div>
+        <button
+          onClick={toggleSidebar}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-zinc-950 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
+        >
+          <FaFilter className="text-xl" />
+        </button>
       )}
 
-      {/* 🔹 Ajuste de ancho para evitar scroll horizontal */}
-      <div className="flex gap-2 w-full sm:w-auto">
-        <FilterBox isVisible={isFilterBoxVisible} onClose={() => setFilterBoxVisible(false)} />
-
-        <div className="w-full flex flex-col">
-          {/* 🔹 Contenedor para pantallas grandes: botones en su lugar */}
-          {!isMobile && (
-            <div className="flex justify-between items-end w-full">
-              <div className="flex justify-center gap-2 px-2">
-                <button
-                  onClick={toggleFilterBox}
-                  className={`p-2 flex items-center justify-center text-xs font-semibold gap-2 h-8 ${
-                    isFilterBoxVisible ? "bg-primary text-white" : "bg-white text-primary border border-primary"
-                  } rounded`}
-                >
-                  <FaFilter className={isFilterBoxVisible ? "text-white" : "text-primary"} />
-                  {t("filters")}
-                </button>
+      <div className="flex gap-4">
+        {/* Sidebar vertical - desktop siempre visible, mobile modal */}
+        {!isMobile ? (
+          <SidebarFilters />
+        ) : (
+          isSidebarVisible && (
+            <div className="fixed inset-0 z-40 bg-black/50 flex items-end">
+              <div className="w-full bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
+                <div className="sticky top-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-4 flex justify-between items-center rounded-t-3xl z-10">
+                  <h2 className="text-lg font-bold text-white uppercase">
+                    Filtros
+                  </h2>
+                  <button
+                    onClick={toggleSidebar}
+                    className="text-white text-2xl hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="p-4">
+                  <SidebarFilters />
+                </div>
               </div>
             </div>
-          )}
+          )
+        )}
 
-          {/* Mostrar spinner hasta tener los artículos */}
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-          ) : (
-            <Articles
-              brand={brand}
-              item={item}
-              vehicleBrand={vehicleBrand}
-              stock={stock}
-              tags={tags}
-              order={order}
-              cart={cart}
-              showPurchasePrice={showPurchasePrice}
-              showArticles={showArticles}
-              query={search}
-            />
-          )}
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col gap-4">
+          {/* Barra de filtros horizontal - visible en desktop y mobile */}
+          <FilterBox
+            isVisible={true}
+            onClose={() => {}}
+            totalResults={data?.totalItems || 0}
+          />
 
-          <Modal isOpen={isModalVisible} onClose={closeModal}>
-            <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect} />
-          </Modal>
+          {/* Artículos */}
+          <div className="w-full">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+              </div>
+            ) : (
+              <Articles
+                brand={brand}
+                item={item}
+                vehicleBrand={vehicleBrand}
+                stock={stock}
+                tags={tags}
+                order={order}
+                cart={cart}
+                showPurchasePrice={showPurchasePrice}
+                showArticles="catalogue"
+                query={search}
+              />
+            )}
+
+            <Modal isOpen={isModalVisible} onClose={closeModal}>
+              <PopUpModal
+                closeModal={closeModal}
+                handleRedirect={handleRedirect}
+              />
+            </Modal>
+          </div>
         </div>
       </div>
     </div>

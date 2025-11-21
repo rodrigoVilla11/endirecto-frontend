@@ -8,17 +8,17 @@ import i18n from "i18next";
 import Search from "../../NavBar/components/Search";
 import ReactCountryFlag from "react-country-flag";
 import { IoMenu, IoClose } from "react-icons/io5";
+import { Home, Tag, FileText, Mail, LayoutDashboard, LogIn } from "lucide-react";
 
 const Buttons = () => {
   const router = useRouter();
-  const { t } = useTranslation(); // Hook de traducción
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
 
-  // Sincronizamos el estado con el idioma actual de i18n al montar el componente
   useEffect(() => {
     setCurrentLanguage(i18n.language);
   }, []);
@@ -61,96 +61,128 @@ const Buttons = () => {
 
   const handleSearchToggle = () => {
     setSearchOpen(!isSearchOpen);
-    if (isMenuOpen) setMenuOpen(false); // Cierra el menú si está abierto
+    if (isMenuOpen) setMenuOpen(false);
   };
 
-  // Función para alternar el idioma y cambiar la bandera
   const handleLanguageToggle = () => {
     const newLanguage = currentLanguage === "en" ? "es" : "en";
     setCurrentLanguage(newLanguage);
     i18n.changeLanguage(newLanguage);
   };
 
-
   return (
     <>
       {isMobile ? (
         <div className="flex items-center justify-between text-sm text-white gap-6">
-          <button className="text-xl" onClick={handleSearchToggle}>
+          <button 
+            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full" 
+            onClick={handleSearchToggle}
+          >
             <BiSearchAlt />
           </button>
           {isSearchOpen && (
-            <div className="w-full flex justify-center sm:my-2 absolute top-16 p-4 right-0 sm:static bg-header-color">
+            <div className="w-full flex justify-center absolute top-24 p-4 right-0 bg-white shadow-2xl rounded-b-3xl border-t-4 border-purple-500">
               <Search />
             </div>
           )}
-          <button onClick={() => setMenuOpen(!isMenuOpen)}>
-            <IoMenu className="text-white text-2xl" />
+          <button 
+            onClick={() => setMenuOpen(!isMenuOpen)}
+            className="p-2 hover:bg-white/20 rounded-full transition-all"
+          >
+            <IoMenu className="text-white text-3xl" />
           </button>
+          
           {isMenuOpen && (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
-              <div className="absolute right-0 top-0 h-full w-3/4 bg-header-color p-6">
-                <div className="flex justify-between items-center mb-8">
-                  {/* Botón de bandera con funcionalidad i18n */}
-                  <button onClick={handleLanguageToggle} className="text-xl">
+            <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm">
+              <div className="absolute right-0 top-0 h-full w-3/4 bg-gradient-to-br from-zinc-900 to-zinc-800 shadow-2xl">
+                {/* Header del menú */}
+                <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-6 flex justify-between items-center">
+                  <button 
+                    onClick={handleLanguageToggle} 
+                    className="text-2xl hover:scale-110 transition-transform bg-white/20 p-2 rounded-full"
+                  >
                     {currentLanguage === "en" ? (
                       <ReactCountryFlag
                         countryCode="US"
                         svg
-                        style={{ width: "1em", height: "1em" }}
+                        style={{ width: "1.5em", height: "1.5em" }}
                         title="Estados Unidos"
                       />
                     ) : (
                       <ReactCountryFlag
                         countryCode="AR"
                         svg
-                        style={{ width: "1em", height: "1em" }}
+                        style={{ width: "1.5em", height: "1.5em" }}
                         title="Argentina"
                       />
                     )}
                   </button>
                   <button
                     onClick={() => setMenuOpen(false)}
-                    className="text-2xl text-white"
+                    className="text-3xl text-white hover:bg-white/20 p-2 rounded-full transition-all"
                   >
                     <IoClose />
                   </button>
                 </div>
-                <div className="flex flex-col gap-6 text-white">
-                  <a href="/" onClick={(e) => handleRedirect("/")}>
+
+                {/* Links del menú */}
+                <div className="flex flex-col gap-2 p-6 text-white">
+                  <a 
+                    href="/" 
+                    onClick={(e) => handleRedirect("/")}
+                    className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
+                  >
+                    <Home className="w-5 h-5" />
                     {t("home")}
                   </a>
-                  <a href="#brands" onClick={(e) => handleScroll(e, "brands")}>
+                  <a 
+                    href="#brands" 
+                    onClick={(e) => handleScroll(e, "brands")}
+                    className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
+                  >
+                    <Tag className="w-5 h-5" />
                     {t("brands")}
                   </a>
-                  <a href="#tags" onClick={(e) => handleScroll(e, "tags")}>
+                  <a 
+                    href="#tags" 
+                    onClick={(e) => handleScroll(e, "tags")}
+                    className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
+                  >
+                    <Tag className="w-5 h-5" />
                     {t("tags")}
                   </a>
                   <a
                     href="#articles"
                     onClick={(e) => handleScroll(e, "articles")}
+                    className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
+                    <FileText className="w-5 h-5" />
                     {t("articles")}
                   </a>
                   <a
                     href="#contact"
                     onClick={(e) => handleScroll(e, "contact")}
+                    className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
+                    <Mail className="w-5 h-5" />
                     {t("contact")}
                   </a>
-                  <div className="border-t pt-6 mt-6">
+                  
+                  <div className="border-t-2 border-zinc-700 pt-6 mt-6">
                     {isAuthenticated ? (
                       <button
                         onClick={() => handleRedirect("/dashboard")}
-                        className="w-full text-left"
+                        className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 transition-all font-bold shadow-lg"
                       >
+                        <LayoutDashboard className="w-5 h-5" />
                         {t("dashboard")}
                       </button>
                     ) : (
                       <button
                         onClick={() => handleRedirect("/login")}
-                        className="w-full text-left"
+                        className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 transition-all font-bold shadow-lg"
                       >
+                        <LogIn className="w-5 h-5" />
                         {t("signIn")}
                       </button>
                     )}
@@ -161,50 +193,84 @@ const Buttons = () => {
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-between text-sm text-white gap-6">
-          <a href="/" onClick={(e) => handleRedirect("/")}>
+        <div className="flex items-center justify-between text-sm text-white gap-8 font-semibold">
+          <a 
+            href="/" 
+            onClick={(e) => handleRedirect("/")}
+            className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
+          >
             {t("home")}
           </a>
-          <a href="#brands" onClick={(e) => handleScroll(e, "brands")}>
+          <a 
+            href="#brands" 
+            onClick={(e) => handleScroll(e, "brands")}
+            className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
+          >
             {t("brands")}
           </a>
-          <a href="#tags" onClick={(e) => handleScroll(e, "tags")}>
+          <a 
+            href="#tags" 
+            onClick={(e) => handleScroll(e, "tags")}
+            className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
+          >
             {t("tags")}
           </a>
-          <a href="#articles" onClick={(e) => handleScroll(e, "articles")}>
+          <a 
+            href="#articles" 
+            onClick={(e) => handleScroll(e, "articles")}
+            className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
+          >
             {t("articles")}
           </a>
-          <a href="#contact" onClick={(e) => handleScroll(e, "contact")}>
+          <a 
+            href="#contact" 
+            onClick={(e) => handleScroll(e, "contact")}
+            className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
+          >
             {t("contact")}
           </a>
-          {/* Botón de bandera para versión desktop */}
-          <button onClick={handleLanguageToggle} className="text-xl">
+          
+          <button 
+            onClick={handleLanguageToggle} 
+            className="text-xl hover:scale-110 transition-transform bg-white/20 p-2 rounded-full"
+          >
             {currentLanguage === "es" ? (
               <ReactCountryFlag
                 countryCode="AR"
                 svg
-                style={{ width: "1em", height: "1em" }}
+                style={{ width: "1.2em", height: "1.2em" }}
                 title="Argentina"
               />
             ) : (
               <ReactCountryFlag
                 countryCode="US"
                 svg
-                style={{ width: "1em", height: "1em" }}
+                style={{ width: "1.2em", height: "1.2em" }}
                 title="Estados Unidos"
               />
             )}
           </button>
+          
           {isAuthenticated ? (
-            <button onClick={() => handleRedirect("/dashboard")}>
+            <button 
+              onClick={() => handleRedirect("/dashboard")}
+              className="px-6 py-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all hover:scale-105 font-bold"
+            >
               {t("dashboard")}
             </button>
           ) : (
-            <button onClick={() => handleRedirect("/login")}>
+            <button 
+              onClick={() => handleRedirect("/login")}
+              className="px-6 py-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all hover:scale-105 font-bold"
+            >
               {t("signIn")}
             </button>
           )}
-          <button className="text-xl" onClick={handleSearchToggle}>
+          
+          <button 
+            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full" 
+            onClick={handleSearchToggle}
+          >
             <BiSearchAlt />
           </button>
         </div>

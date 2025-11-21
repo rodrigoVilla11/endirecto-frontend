@@ -527,7 +527,7 @@ const SelectCustomer = () => {
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className={`gap-4 ${isMobile ? "bg-primary" : ""}`}>
+      <div className={`gap-4 ${isMobile ? "bg-primary" : ""} mt-4`}>
         <h3 className={`text-bold p-2 ${isMobile ? "text-white" : ""}`}>
           {t("selectCustomerTitle")}
         </h3>

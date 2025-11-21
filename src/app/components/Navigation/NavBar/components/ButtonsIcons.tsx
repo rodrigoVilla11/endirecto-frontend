@@ -44,7 +44,6 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   useEffect(() => {
     setCurrentLanguage(i18n.language);
 
-    // Detectar cambios en fullscreen
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -162,9 +161,9 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   };
 
   return (
-    <div className="w-60 flex items-center justify-end gap-4 sm:justify-evenly text-2xl text-white relative">
+    <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4 w-60 justify-evenly'} text-xl sm:text-2xl text-white relative`}>
       {!isMobile && (
-        <button onClick={handleLanguageToggle} className="cursor-pointer">
+        <button onClick={handleLanguageToggle} className="cursor-pointer hover:scale-110 transition-transform">
           {currentLanguage === "en" ? (
             <ReactCountryFlag
               countryCode="US"
@@ -184,7 +183,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       )}
       {!isMobile && (
         <MdFullscreen
-          className="cursor-pointer"
+          className="cursor-pointer hover:scale-110 transition-transform"
           onClick={toggleFullscreen}
           title={
             isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"
@@ -194,11 +193,11 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       {selectedClientId && (
         <div className="relative">
           <MdShoppingCart
-            className={`cursor-pointer ${animateCart ? "animate-bounce" : ""}`}
+            className={`cursor-pointer hover:scale-110 transition-transform ${animateCart ? "animate-bounce" : ""}`}
             onClick={() => handleRedirect("/shopping-cart")}
           />
           {cartItemCount > 0 && (
-            <span className="absolute top-4 left-3 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg">
               {cartItemCount}
             </span>
           )}
@@ -206,11 +205,11 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       )}
       <div className="relative">
         <MdNotifications
-          className="cursor-pointer"
+          className="cursor-pointer hover:scale-110 transition-transform"
           onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
         />
         {notifications.filter((n) => !n.read).length > 0 && (
-          <span className="absolute top-4 left-3 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse">
             {notifications.filter((n) => !n.read).length}
           </span>
         )}
@@ -219,54 +218,85 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
             <>
               {isMobile ? (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                  onClick={() => setIsNotificationsMenuOpen(false)}
                 >
-                  <div className="w-[90vw] max-w-md bg-white text-gray-800 shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
-                    <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-primary">
-                      <h3 className="font-bold text-lg flex items-center text-white">
+                  <motion.div
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-[90vw] max-w-md bg-white text-gray-800 shadow-2xl rounded-3xl overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header con gradiente */}
+                    <div className="p-6 flex justify-between items-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+                      <h3 className="font-bold text-xl flex items-center text-white">
                         <Bell className="w-6 h-6 mr-3" />
                         {i18n.t("notifications")}
                       </h3>
                       <button
                         onClick={() => setIsNotificationsMenuOpen(false)}
-                        className="text-white hover:text-gray-200 transition-colors focus:outline-none"
+                        className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                         aria-label="Close notifications"
                       >
                         <X className="w-6 h-6" />
                       </button>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
+
+                    {/* Contenido de notificaciones */}
+                    <div className="max-h-96 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
                       <AnimatePresence>
                         {sortedNotifications.slice(0, 5).length > 0 ? (
-                          <motion.ul className="divide-y divide-gray-100">
+                          <motion.ul className="divide-y divide-gray-200">
                             {sortedNotifications
                               .slice(0, 5)
-                              .map((notification: any) => (
+                              .map((notification: any, index: number) => (
                                 <motion.li
                                   key={notification._id}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -20 }}
-                                  transition={{ duration: 0.2 }}
-                                  className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: 20 }}
+                                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                                  className={`p-5 cursor-pointer transition-all duration-200 ${
                                     !notification.read
-                                      ? "bg-yellow-100"
-                                      : "hover:bg-gray-50"
+                                      ? "bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 border-l-4 border-orange-400"
+                                      : "hover:bg-gray-100"
                                   }`}
                                   onClick={() =>
                                     handleNotificationClick(notification)
                                   }
                                 >
-                                  <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                    {notification.title}
-                                  </p>
-                                  <p className="text-gray-600 text-xs whitespace-pre-line leading-relaxed break-words line-clamp-5">
-                                    {notification.description}
-                                  </p>
+                                  <div className="flex items-start gap-3">
+                                    <div className={`mt-1 p-2 rounded-full ${
+                                      !notification.read 
+                                        ? "bg-orange-500" 
+                                        : "bg-gray-300"
+                                    }`}>
+                                      <Bell className={`w-4 h-4 ${
+                                        !notification.read 
+                                          ? "text-white" 
+                                          : "text-gray-600"
+                                      }`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-bold text-gray-900 mb-1 text-sm">
+                                        {notification.title}
+                                      </p>
+                                      <p className="text-gray-600 text-xs leading-relaxed break-words line-clamp-3">
+                                        {notification.description}
+                                      </p>
+                                      {!notification.read && (
+                                        <span className="inline-block mt-2 text-[10px] px-2 py-1 bg-orange-500 text-white rounded-full font-bold">
+                                          NUEVA
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </motion.li>
                               ))}
                           </motion.ul>
@@ -275,79 +305,108 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="p-12 text-center text-gray-500"
+                            className="p-12 text-center"
                           >
-                            <Bell className="w-16 h-16 mx-auto mb-6 text-gray-300" />
-                            <p className="text-xs font-medium">
+                            <div className="inline-block p-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
+                              <Bell className="w-12 h-12 text-gray-400" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-700 mb-2">
                               {i18n.t("no_notifications")}
                             </p>
-                            <p className="text-xs mt-2 text-gray-400">
+                            <p className="text-xs text-gray-500">
                               {i18n.t("notify_notifications")}
                             </p>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
-                    <div className="p-6 bg-gray-50">
-                      <button
-                        onClick={handleMarkAllAsRead}
-                        className="text-xs w-full px-6 py-3 bg-primary text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center"
-                      >
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        {i18n.t("mark_all_as_read")}
-                      </button>
-                    </div>
-                  </div>
+
+                    {/* Footer con botón */}
+                    {sortedNotifications.length > 0 && (
+                      <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl hover:from-emerald-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-bold text-sm"
+                        >
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          {i18n.t("mark_all_as_read")}
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
                 </motion.div>
               ) : (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full right-0 mt-4 w-96 bg-white text-gray-800 shadow-2xl rounded-2xl overflow-hidden z-50 border border-gray-100"
+                  className="absolute top-full right-0 mt-4 w-96 bg-white text-gray-800 shadow-2xl rounded-3xl overflow-hidden z-50 border-2 border-gray-200"
                 >
-                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-primary">
-                    <h3 className="font-bold text-lg flex items-center text-white">
+                  {/* Header con gradiente */}
+                  <div className="p-6 flex justify-between items-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+                    <h3 className="font-bold text-xl flex items-center text-white">
                       <Bell className="w-6 h-6 mr-3" />
                       {i18n.t("notifications")}
                     </h3>
                     <button
                       onClick={() => setIsNotificationsMenuOpen(false)}
-                      className="text-white hover:text-gray-200 transition-colors focus:outline-none"
+                      className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                       aria-label="Close notifications"
                     >
                       <X className="w-6 h-6" />
                     </button>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
+
+                  {/* Contenido de notificaciones */}
+                  <div className="max-h-96 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
                     <AnimatePresence>
                       {sortedNotifications.slice(0, 5).length > 0 ? (
-                        <motion.ul className="divide-y divide-gray-100">
+                        <motion.ul className="divide-y divide-gray-200">
                           {sortedNotifications
                             .slice(0, 5)
-                            .map((notification: any) => (
+                            .map((notification: any, index: number) => (
                               <motion.li
                                 key={notification._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.2 }}
-                                className={`p-6 cursor-pointer transition-all duration-200 ease-in-out ${
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.2, delay: index * 0.05 }}
+                                className={`p-5 cursor-pointer transition-all duration-200 ${
                                   !notification.read
-                                    ? "bg-yellow-100"
-                                    : "hover:bg-gray-50"
+                                    ? "bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 border-l-4 border-orange-400"
+                                    : "hover:bg-gray-100"
                                 }`}
                                 onClick={() =>
                                   handleNotificationClick(notification)
                                 }
                               >
-                                <p className="font-semibold text-gray-800 mb-2 text-xs">
-                                  {notification.title}
-                                </p>
-                                <p className="text-gray-600 text-xs whitespace-pre-line leading-relaxed break-words line-clamp-5">
-                                  {notification.description}
-                                </p>
+                                <div className="flex items-start gap-3">
+                                  <div className={`mt-1 p-2 rounded-full ${
+                                    !notification.read 
+                                      ? "bg-orange-500" 
+                                      : "bg-gray-300"
+                                  }`}>
+                                    <Bell className={`w-4 h-4 ${
+                                      !notification.read 
+                                        ? "text-white" 
+                                        : "text-gray-600"
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-gray-900 mb-1 text-sm">
+                                      {notification.title}
+                                    </p>
+                                    <p className="text-gray-600 text-xs leading-relaxed break-words line-clamp-3">
+                                      {notification.description}
+                                    </p>
+                                    {!notification.read && (
+                                      <span className="inline-block mt-2 text-[10px] px-2 py-1 bg-orange-500 text-white rounded-full font-bold">
+                                        NUEVA
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </motion.li>
                             ))}
                         </motion.ul>
@@ -356,35 +415,43 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="p-12 text-center text-gray-500"
+                          className="p-12 text-center"
                         >
-                          <Bell className="w-16 h-16 mx-auto mb-6 text-gray-300" />
-                          <p className="text-xs font-medium">
+                          <div className="inline-block p-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
+                            <Bell className="w-12 h-12 text-gray-400" />
+                          </div>
+                          <p className="text-sm font-bold text-gray-700 mb-2">
                             {i18n.t("no_notifications")}
                           </p>
-                          <p className="text-xs mt-2 text-gray-400">
+                          <p className="text-xs text-gray-500">
                             {i18n.t("notify_notifications")}
                           </p>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                  <div className="p-6 bg-gray-50">
-                    <button
-                      onClick={handleMarkAllAsRead}
-                      className="text-xs w-full px-6 py-3 bg-primary text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center"
-                    >
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      {i18n.t("mark_all_as_read")}
-                    </button>
-                  </div>
+
+                  {/* Footer con botón */}
+                  {sortedNotifications.length > 0 && (
+                    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl hover:from-emerald-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-bold text-sm"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        {i18n.t("mark_all_as_read")}
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </>
           )}
         </AnimatePresence>
       </div>
-      <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer" />
+      {!isMobile && (
+        <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer hover:scale-110 transition-transform" />
+      )}
       {showTick && (
         <div
           className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-green-500 text-5xl animate-pulse"

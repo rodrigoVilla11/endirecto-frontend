@@ -646,17 +646,43 @@ export default function ValueView({
     }
   }, [saldo, newValues.length, setNewValues]);
 
+  const getMethodColor = (method: string) => {
+    const colors: { [key: string]: string } = {
+      efectivo: "from-green-500 to-emerald-600",
+      transferencia: "from-blue-500 to-cyan-600",
+      cheque: "from-yellow-500 to-orange-600",
+    };
+    return colors[method] || "from-gray-500 to-gray-600";
+  };
+
+  const getMethodIcon = (method: string) => {
+    const icons: { [key: string]: string } = {
+      efectivo: "💵",
+      transferencia: "🏦",
+      cheque: "📝",
+    };
+    return icons[method] || "💳";
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-white font-medium">Pagos</h4>
+        <h4 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          Pagos
+        </h4>
       </div>
 
       {newValues.length === 0 && (
-        <div className="text-zinc-400 text-sm">No hay pagos cargados.</div>
+        <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
+          <div className="text-6xl mb-4">💳</div>
+          <p className="text-gray-600 font-medium">No hay pagos cargados.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Agrega un pago para continuar
+          </p>
+        </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         {newValues.map((v, idx) => {
           const showBank =
             v.method === "transferencia" || v.method === "cheque";
@@ -671,13 +697,11 @@ export default function ValueView({
             v.method === "cheque"
               ? blockChequeInterest
                 ? 0
-                : dailyRate * daysGrav // NEW: muestra 0%
+                : dailyRate * daysGrav
               : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
-
           const shownAmountInput =
             v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
-
           const hasRowError =
             rowErrors[idx].amount ||
             rowErrors[idx].bank ||
@@ -687,81 +711,96 @@ export default function ValueView({
           return (
             <div
               key={idx}
-              className={`rounded-lg bg-zinc-800/50 p-2 md:p-3 transition-colors
-          ${hasRowError ? "border border-red-500" : "border border-zinc-700"}`}
+              className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 ${
+                hasRowError
+                  ? "ring-2 ring-red-500 ring-offset-2"
+                  : "hover:shadow-xl"
+              }`}
             >
               {/* CABECERA */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                {/* Medio de pago */}
-                <div className="w-full md:w-72">
-                  <label className="block text-[11px] text-zinc-400 mb-1">
-                    <LabelWithTip
-                      label="Medio de pago"
-                      tip={EXPLAIN.medioPago}
-                    />
-                  </label>
-                  <select
-                    value={v.method}
-                    onChange={(e) =>
-                      handleMethodChange(
-                        idx,
-                        e.target.value as PaymentMethod,
-                        v
-                      )
-                    }
-                    className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-2 py-1"
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia</option>
-                    <option value="cheque">Cheque</option>
-                  </select>
-                </div>
+              <div
+                className={`bg-gradient-to-r ${getMethodColor(
+                  v.method
+                )} px-6 py-4`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center gap-3">
+                  {/* Método de pago */}
+                  <div className="flex-1 flex items-center gap-3">
+                    <span className="text-3xl">{getMethodIcon(v.method)}</span>
+                    <div className="flex-1">
+                      <label className="block text-xs text-white/80 mb-1 font-semibold">
+                        Medio de pago
+                      </label>
+                      <select
+                        value={v.method}
+                        onChange={(e) =>
+                          handleMethodChange(
+                            idx,
+                            e.target.value as PaymentMethod,
+                            v
+                          )
+                        }
+                        className="w-full rounded-xl border-0 bg-white/20 backdrop-blur-sm text-white font-bold px-4 py-2 focus:ring-2 focus:ring-white/50 focus:outline-none"
+                      >
+                        <option value="efectivo" className="text-gray-900">
+                          💵 Efectivo
+                        </option>
+                        <option value="transferencia" className="text-gray-900">
+                          🏦 Transferencia
+                        </option>
+                        <option value="cheque" className="text-gray-900">
+                          📝 Cheque
+                        </option>
+                      </select>
+                    </div>
+                  </div>
 
-                {/* errores / expandir / eliminar */}
-                <div className="flex items-center gap-2 md:ml-auto">
-                  {hasRowError && (
-                    <span className="text-[12px] text-red-400">
-                      Faltan datos en este pago
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => toggleRow(idx)}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded
-                ${
-                  isOpen(idx)
-                    ? "bg-zinc-700 text-white"
-                    : "bg-zinc-700/60 text-zinc-200"
-                }
-                hover:bg-zinc-600 transition`}
-                  >
-                    <svg
-                      viewBox="0 0 20 20"
-                      className={`w-4 h-4 transition-transform ${
-                        isOpen(idx) ? "rotate-180" : ""
+                  {/* Acciones */}
+                  <div className="flex items-center gap-2">
+                    {hasRowError && (
+                      <span className="text-xs bg-red-500 text-white px-3 py-1 rounded-full font-semibold">
+                        ⚠️ Datos incompletos
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleRow(idx)}
+                      className={`p-2 rounded-full transition-all ${
+                        isOpen(idx)
+                          ? "bg-white/30 text-white"
+                          : "bg-white/10 text-white/80 hover:bg-white/20"
                       }`}
-                      fill="currentColor"
                     >
-                      <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
-                    </svg>
-                  </button>
+                      <svg
+                        viewBox="0 0 20 20"
+                        className={`w-5 h-5 transition-transform duration-300 ${
+                          isOpen(idx) ? "rotate-180" : ""
+                        }`}
+                        fill="currentColor"
+                      >
+                        <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
+                      </svg>
+                    </button>
 
-                  <button
-                    onClick={() => removeRow(idx)}
-                    className="px-3 py-1.5 rounded bg-zinc-700 text-white hover:bg-zinc-600"
-                  >
-                    Eliminar
-                  </button>
+                    <button
+                      onClick={() => removeRow(idx)}
+                      className="px-4 py-2 rounded-full bg-red-500/20 backdrop-blur-sm text-white hover:bg-red-500/30 transition-colors font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {isOpen(idx) && (
-                <div className="mt-3 space-y-3">
+                <div className="bg-white p-6 space-y-4">
                   {/* Monto */}
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-sm text-gray-700 mb-2 font-bold">
                       <LabelWithTip
-                        label={v.method === "cheque" ? "Monto Bruto" : "Monto"}
+                        label={
+                          v.method === "cheque" ? "💰 Monto Bruto" : "💰 Monto"
+                        }
                         tip={
                           v.method === "cheque"
                             ? EXPLAIN.chequeMontoOriginal
@@ -769,7 +808,6 @@ export default function ValueView({
                         }
                       />
                     </label>
-
                     <input
                       ref={inputRef}
                       type="text"
@@ -784,7 +822,6 @@ export default function ValueView({
                       }
                       onFocus={() => {
                         startEdit(idx, v);
-                        // Llevar cursor al final del texto enmascarado
                         requestAnimationFrame(() => {
                           const masked = formatDigitsAsCurrencyAR(
                             digitsByRow[idx] || ""
@@ -800,7 +837,6 @@ export default function ValueView({
                         const el = inputRef.current;
                         const key = e.key;
 
-                        // Mientras edito, manejo todo yo
                         if (!isEditing[idx]) return;
 
                         if (key === "Enter") {
@@ -810,7 +846,6 @@ export default function ValueView({
                         }
                         if (key === "Escape") {
                           e.preventDefault();
-                          // cancelar edición
                           setIsEditing((E) => ({ ...E, [idx]: false }));
                           setDraftText((d) => {
                             const c = { ...d };
@@ -825,7 +860,6 @@ export default function ValueView({
                           return;
                         }
 
-                        // Backspace: borro el último dígito
                         if (key === "Backspace") {
                           e.preventDefault();
                           const prev = digitsByRow[idx] ?? "";
@@ -834,7 +868,6 @@ export default function ValueView({
                           return;
                         }
 
-                        // Aceptar solo dígitos
                         if (/^\d$/.test(key)) {
                           e.preventDefault();
                           const prev = digitsByRow[idx] ?? "";
@@ -843,34 +876,25 @@ export default function ValueView({
                           return;
                         }
 
-                        // Bloqueo todo lo demás (., , , flechas siguen funcionando)
-                        if (
-                          key.length === 1 && // caracteres imprimibles
-                          !/^\d$/.test(key)
-                        ) {
+                        if (key.length === 1 && !/^\d$/.test(key)) {
                           e.preventDefault();
                         }
                       }}
-                      onChange={() => {
-                        // No dejamos que el navegador cambie el texto por su cuenta;
-                        // todo lo manejamos en onKeyDown + applyMaskedEdit.
-                      }}
+                      onChange={() => {}}
                       onBlur={() => endEdit(idx, v)}
-                      className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-    ${
-      rowErrors[idx].amount
-        ? "bg-zinc-700 border border-red-500"
-        : "bg-zinc-700 border border-transparent"
-    }`}
+                      className={`w-full px-4 py-3 rounded-xl text-gray-900 font-bold text-lg outline-none transition-all ${
+                        rowErrors[idx].amount
+                          ? "bg-red-50 border-2 border-red-500 focus:ring-2 focus:ring-red-500"
+                          : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                      }`}
                     />
                   </div>
-
-                  {/* Solo cheques: N° de cheque */}
+                  {/* N° de cheque */}
                   {v.method === "cheque" && (
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-sm text-gray-700 mb-2 font-bold">
                         <LabelWithTip
-                          label={t("document.numeroCheque") || "N° de cheque"}
+                          label="🔢 N° de cheque"
                           tip={EXPLAIN.numeroCheque}
                         />
                       </label>
@@ -885,22 +909,21 @@ export default function ValueView({
                               .slice(0, 20),
                           })
                         }
-                        className={`w-full px-2 py-1 rounded text-white outline-none tabular-nums
-            ${
-              rowErrors[idx].chequeNumber
-                ? "bg-zinc-700 border border-red-500"
-                : "bg-zinc-700 border border-transparent"
-            }`}
+                        className={`w-full px-4 py-3 rounded-xl text-gray-900 font-medium outline-none transition-all ${
+                          rowErrors[idx].chequeNumber
+                            ? "bg-red-50 border-2 border-red-500"
+                            : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                        }`}
                       />
                     </div>
                   )}
 
-                  {/* Solo cheques: Fecha de cobro */}
+                  {/* Fecha de cobro */}
                   {v.method === "cheque" && (
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-sm text-gray-700 mb-2 font-bold">
                         <LabelWithTip
-                          label={t("document.fechaCobro") || "Fecha de cobro"}
+                          label="📅 Fecha de cobro"
                           tip={EXPLAIN.fechaCobro}
                         />
                       </label>
@@ -911,57 +934,32 @@ export default function ValueView({
                         onChange={(e) =>
                           handleChequeDateChange(idx, e.target.value, v)
                         }
-                        className={`w-full px-2 py-1 rounded text-white outline-none
-    ${
-      rowErrors[idx].chequeDate
-        ? "bg-zinc-700 border border-red-500"
-        : "bg-zinc-700 border border-transparent"
-    }`}
+                        className={`w-full px-4 py-3 rounded-xl text-gray-900 font-medium outline-none transition-all ${
+                          rowErrors[idx].chequeDate
+                            ? "bg-red-50 border-2 border-red-500"
+                            : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                        }`}
                       />
-
-                      <div className="mt-1 text-[10px] text-zinc-500">
+                      <div className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3">
                         <Tip
                           text={`${EXPLAIN.chequeDiasTotales} • ${EXPLAIN.chequeGracia}`}
                         >
-                          Días totales: {daysTotal} · Gracia:{" "}
-                          {chequeGraceDays ?? 45}
+                          📊 Días totales:{" "}
+                          <span className="font-bold">{daysTotal}</span> ·
+                          Gracia:{" "}
+                          <span className="font-bold">
+                            {chequeGraceDays ?? 45}
+                          </span>
                         </Tip>
                       </div>
                     </div>
                   )}
 
-                  {/* Solo cheques: Valor neto (read-only) */}
-                  {/* {v.method === "cheque" && (
-                    <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
-                        <LabelWithTip
-                          label="Monto neto"
-                          tip="Monto que se imputa después de descontar el costo financiero (se recalcula al cambiar monto/fecha)."
-                        />
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={currencyFmt.format(toNum(v.amount))}
-                        className="w-full px-2 py-1 rounded bg-zinc-800 text-white outline-none tabular-nums border border-zinc-700"
-                        title={currencyFmt.format(toNum(v.amount))}
-                      />
-                      <div className="mt-1 text-[10px] text-zinc-500">
-                        Neto = Monto Bruto − Costo Financiero (%) •{" "}
-                        {currencyFmt.format(toNum(v.raw_amount ?? v.amount))} −{" "}
-                        {currencyFmt.format(interest$)}
-                      </div>
-                    </div>
-                  )} */}
-
-                  {/* Banco (si corresponde) */}
+                  {/* Banco */}
                   {showBank && (
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
-                        <LabelWithTip
-                          label={t("document.banco") || "Banco"}
-                          tip={EXPLAIN.banco}
-                        />
+                      <label className="block text-sm text-gray-700 mb-2 font-bold">
+                        <LabelWithTip label="🏦 Banco" tip={EXPLAIN.banco} />
                       </label>
                       <input
                         type="text"
@@ -970,40 +968,36 @@ export default function ValueView({
                         onChange={(e) =>
                           patchRow(idx, { bank: e.target.value })
                         }
-                        className={`w-full px-2 py-1 rounded text-white outline-none
-            ${
-              rowErrors[idx].bank
-                ? "bg-zinc-700 border border-red-500"
-                : "bg-zinc-700 border border-transparent"
-            }`}
+                        className={`w-full px-4 py-3 rounded-xl text-gray-900 font-medium outline-none transition-all ${
+                          rowErrors[idx].bank
+                            ? "bg-red-50 border-2 border-red-500"
+                            : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                        }`}
                       />
                     </div>
                   )}
 
                   {/* Comprobante (si corresponde) */}
                   {showBank && (
-                    <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/40">
-                      <div className="flex items-center justify-between">
-                        <LabelWithTip
-                          label="Comprobante"
-                          tip="Adjuntá el comprobante de este pago (imagen o PDF). Máx. 15 MB."
-                        />
-                        <div className="text-xs text-zinc-500">
-                          {v.receiptOriginalName
-                            ? v.receiptOriginalName
-                            : "Sin adjuntar"}
-                        </div>
+                    <div className="border-2 border-gray-200 rounded-2xl p-5 bg-gradient-to-br from-gray-50 to-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-bold text-gray-700">
+                          📎 Comprobante
+                        </span>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {v.receiptOriginalName || "Sin adjuntar"}
+                        </span>
                       </div>
 
-                      <div className="mt-2 flex flex-col sm:flex-row gap-3 sm:items-center">
-                        <label className="inline-flex w-max cursor-pointer rounded px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-sm">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                        <label className="inline-flex cursor-pointer rounded-xl px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-sm transition-all">
                           {v.receiptUrl
                             ? isUploading
-                              ? "Subiendo..."
-                              : "Reemplazar"
+                              ? "⏳ Subiendo..."
+                              : "🔄 Reemplazar"
                             : isUploading
-                            ? "Subiendo..."
-                            : "Adjuntar"}
+                            ? "⏳ Subiendo..."
+                            : "📤 Adjuntar"}
                           <input
                             type="file"
                             accept="image/*,application/pdf"
@@ -1060,10 +1054,10 @@ export default function ValueView({
                           <button
                             type="button"
                             onClick={() => clearReceipt(idx)}
-                            className="inline-flex w-max rounded px-3 py-1.5 border border-red-500 text-red-400 hover:bg-red-500/10 text-sm"
+                            className="inline-flex rounded-xl px-4 py-2 bg-red-100 border-2 border-red-500 text-red-600 hover:bg-red-200 font-bold text-sm transition-all"
                             disabled={isUploading}
                           >
-                            Quitar
+                            🗑️ Quitar
                           </button>
                         )}
 
@@ -1102,11 +1096,14 @@ export default function ValueView({
 
                   {/* Concepto */}
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
-                      <LabelWithTip label="Concepto" tip={EXPLAIN.concepto} />
+                    <label className="block text-sm text-gray-700 mb-2 font-bold">
+                      <LabelWithTip
+                        label="📝 Concepto"
+                        tip={EXPLAIN.concepto}
+                      />
                     </label>
                     <textarea
-                      rows={1}
+                      rows={2}
                       placeholder="Ej: Pago factura 001-0000123"
                       value={v.selectedReason}
                       onChange={(e) => {
@@ -1115,118 +1112,123 @@ export default function ValueView({
                           selectedReason: val.trim() === "" ? NO_CONCEPTO : val,
                         });
                       }}
-                      className="w-full px-2 py-1 rounded bg-zinc-700 text-white outline-none resize-y"
+                      className="w-full px-4 py-3 rounded-xl bg-gray-100 border-2 border-transparent text-gray-900 font-medium outline-none resize-y focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
                     />
                   </div>
 
                   {/* Resumen por ítem (una fila por item, expandible) */}
-                  <div className="rounded-lg border border-zinc-700 bg-zinc-800/60 p-3">
-                    {/* encabezado con valor neto + toggle */}
-                    <div className="flex items-center gap-3 justify-center">
-                      {/* <div className="flex-1 flex justify-between text-sm">
-                        <span className="text-zinc-300 font-medium">
-                          Valor Neto
-                        </span>
-                        <span className="text-white font-medium tabular-nums">
-                          {currencyFmt.format(toNum(v.amount))}
-                        </span>
-                      </div> */}
-
-                      {/* botón toggle detalle (solo tiene sentido para cheques) */}
-                      {v.method === "cheque" && (
+                  {/* Resumen por ítem */}
+                  {v.method === "cheque" && (
+                    <div className="rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-5">
+                      <div className="flex items-center justify-center gap-3">
                         <button
                           type="button"
                           onClick={() => toggleSummary(idx)}
-                          className={`inline-flex items-center gap-1 text-xs rounded px-2 py-1 border 
-          ${
-            isSummaryOpen(idx)
-              ? "border-zinc-500 text-zinc-200 bg-zinc-700"
-              : "border-zinc-700 text-zinc-300 bg-zinc-800 hover:bg-zinc-700/60"
-          }`}
+                          className={`inline-flex items-center gap-2 text-sm rounded-xl px-4 py-2 font-bold transition-all ${
+                            isSummaryOpen(idx)
+                              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
+                              : "bg-white text-gray-700 border-2 border-gray-300 hover:border-purple-500"
+                          }`}
                         >
-                          {isSummaryOpen(idx) ? "Ocultar" : "Ver detalle"}
+                          {isSummaryOpen(idx)
+                            ? "👁️ Ocultar detalle"
+                            : "👁️‍🗨️ Ver detalle"}
                           <svg
                             viewBox="0 0 20 20"
-                            className={`w-3.5 h-3.5 transition-transform ${
+                            className={`w-4 h-4 transition-transform duration-300 ${
                               isSummaryOpen(idx) ? "rotate-180" : ""
                             }`}
                             fill="currentColor"
-                            aria-hidden="true"
                           >
                             <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.17l3.71-2.94a.75.75 0 0 1 .94 1.17l-4.24 3.36a.75.75 0 0 1-.94 0L5.21 8.4a.75.75 0 0 1 .02-1.19z" />
                           </svg>
                         </button>
+                      </div>
+
+                      {/* detalle expandible */}
+                      {isSummaryOpen(idx) && (
+                        <div className="mt-4 space-y-3 text-sm">
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              💵 Valor Bruto
+                            </span>
+                            <span className="text-gray-900 font-bold tabular-nums">
+                              {currencyFmt.format(
+                                toNum(v.raw_amount || v.amount)
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              📅 Días
+                            </span>
+                            <span className="text-gray-900 font-bold tabular-nums">
+                              {Number.isFinite(daysTotal) ? daysTotal : "—"}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              📊 Porcentaje
+                            </span>
+                            <span className="text-red-600 font-bold tabular-nums">
+                              {fmtPctSigned(pctInt)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              💸 Costo financiero
+                            </span>
+                            <span className="text-red-600 font-bold tabular-nums">
+                              {currencyFmt.format(interest$)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              🎁 Promo
+                            </span>
+                            <span className="text-green-600 font-bold tabular-nums">
+                              {(chequePromoItems[idx].rate * 100).toFixed(2)}%
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                            <span className="text-gray-700 font-semibold">
+                              ✨ Descuento Promo
+                            </span>
+                            <span className="text-green-600 font-bold tabular-nums">
+                              {currencyFmt.format(chequePromoItems[idx].amount)}
+                            </span>
+                          </div>
+                        </div>
                       )}
                     </div>
-
-                    {/* detalle expandible (una fila por item) */}
-                    {v.method === "cheque" && isSummaryOpen(idx) && (
-                      <div className="mt-3 space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">Valor Bruto</span>
-                          <span className="text-white tabular-nums">
-                            {currencyFmt.format(
-                              toNum(v.raw_amount || v.amount)
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">Días</span>
-                          <span className="text-white tabular-nums">
-                            {Number.isFinite(daysTotal) ? daysTotal : "—"}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">%</span>
-                          <span className="text-rose-400 tabular-nums">
-                            {fmtPctSigned(pctInt)}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">
-                            Costo financiero
-                          </span>
-                          <span className="text-rose-400 tabular-nums">
-                            {currencyFmt.format(interest$)}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">Promo</span>
-                          <span className="text-emerald-400 tabular-nums">
-                            {(chequePromoItems[idx].rate * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-300">Descuento Promo</span>
-                          <span className="text-emerald-400 tabular-nums">
-                            {currencyFmt.format(chequePromoItems[idx].amount)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-center">
         <button
           onClick={addRow}
-          className="px-3 py-2 rounded bg-emerald-500 text-black font-medium hover:brightness-95 active:scale-95"
+          className="px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all shadow-lg text-sm"
         >
-          + Agregar pago
+          ➕ Agregar pago
         </button>
       </div>
 
       {/* ===== Resumen inferior ===== */}
       {newValues.length > 0 && (
-        <div className="mt-4 space-y-1 text-sm">
+        <div className="mt-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border-2 border-gray-200 space-y-3">
+          <h5 className="text-lg font-bold text-gray-900 mb-4">
+            📊 Resumen de Pagos
+          </h5>
+
           <RowSummary
             label={
               <LabelWithTip
@@ -1237,7 +1239,6 @@ export default function ValueView({
             value={currencyFmt.format(totalNominalValues)}
           />
 
-          {/* ÚNICO ajuste mostrado: el de documentos (igual que en PaymentModal) */}
           <RowSummary
             label={
               <LabelWithTip
@@ -1285,13 +1286,6 @@ export default function ValueView({
             </>
           )}
 
-          {/* <RowSummary
-            label={<LabelWithTip label="SALDO NOMINAL" tip={EXPLAIN.saldo} />}
-            value={currencyFmt.format(saldo)}
-            highlight={saldo === 0 ? "ok" : saldo < 0 ? "bad" : "warn"}
-            copy={saldo}
-          /> */}
-
           <RowSummary
             label={
               <LabelWithTip
@@ -1307,9 +1301,12 @@ export default function ValueView({
       )}
 
       {hasErrors && (
-        <div className="mt-3 text-sm text-red-400">
-          {t("document.hayErroresEnValores") ||
-            "Hay errores en los pagos cargados"}
+        <div className="mt-4 bg-red-50 border-2 border-red-500 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-2xl">⚠️</span>
+          <span className="text-sm text-red-700 font-bold">
+            {t("document.hayErroresEnValores") ||
+              "Hay errores en los pagos cargados"}
+          </span>
         </div>
       )}
     </div>
@@ -1336,31 +1333,41 @@ function RowSummary({
 }) {
   const color =
     highlight === "ok"
-      ? "text-emerald-500"
+      ? "text-green-600"
       : highlight === "bad"
-      ? "text-red-500"
+      ? "text-red-600"
       : highlight === "warn"
-      ? "text-amber-400"
-      : "text-white";
+      ? "text-orange-600"
+      : "text-gray-900";
+
+  const bgColor =
+    highlight === "ok"
+      ? "bg-green-50"
+      : highlight === "bad"
+      ? "bg-red-50"
+      : highlight === "warn"
+      ? "bg-orange-50"
+      : "bg-white";
+
   return (
-    <div className="flex justify-between">
-      <span className={`text-zinc-300 ${bold ? "font-semibold" : ""}`}>
+    <div className={`flex justify-between items-center p-3 rounded-xl ${bgColor} transition-colors`}>
+      <span className={`text-gray-700 ${bold ? "font-bold" : "font-semibold"} text-sm`}>
         {label}
       </span>
-      <div>
+      <div className="flex items-center gap-2">
         <span
-          className={`${color} tabular-nums ${bold ? "font-semibold" : ""}`}
+          className={`${color} tabular-nums ${bold ? "font-bold" : "font-semibold"} text-sm`}
         >
           {value}
         </span>
-        {copy && copy > 0 && (
+        {copy !== undefined && copy > 0 && (
           <button
             type="button"
             onClick={() => {
               navigator.clipboard.writeText(copy.toFixed(2));
             }}
-            className="ml-2 text-xs text-zinc-400 hover:text-emerald-400 transition-colors"
-            title="Copiar saldo"
+            className="p-1 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-all"
+            title="Copiar valor"
           >
             📋
           </button>
@@ -1370,7 +1377,7 @@ function RowSummary({
   );
 }
 
-function InfoIcon({ className = "w-3.5 h-3.5" }) {
+function InfoIcon({ className = "w-4 h-4" }) {
   return (
     <svg
       viewBox="0 0 20 20"
@@ -1383,8 +1390,7 @@ function InfoIcon({ className = "w-3.5 h-3.5" }) {
   );
 }
 
-/** Tooltip simple, accesible y sin dependencias */
-/** Tooltip simple, accesible y sin dependencias (con clamp a viewport) */
+/** Tooltip mejorado con diseño moderno */
 function Tip({
   text,
   children,
@@ -1396,12 +1402,12 @@ function Tip({
 }) {
   const pos =
     side === "top"
-      ? "bottom-full mb-1 left-1/2"
+      ? "bottom-full mb-2 left-1/2"
       : side === "bottom"
-      ? "top-full mt-1 left-1/2"
+      ? "top-full mt-2 left-1/2"
       : side === "left"
-      ? "right-full mr-1 top-1/2"
-      : "left-full ml-1 top-1/2";
+      ? "right-full mr-2 top-1/2"
+      : "left-full ml-2 top-1/2";
 
   const tipRef = React.useRef<HTMLSpanElement>(null);
   const wrapRef = React.useRef<HTMLSpanElement>(null);
@@ -1410,7 +1416,6 @@ function Tip({
     const tip = tipRef.current;
     if (!tip) return;
 
-    // Reset al estado centrado antes de medir
     tip.style.transform =
       side === "left" || side === "right"
         ? "translateY(-50%)"
@@ -1418,22 +1423,17 @@ function Tip({
 
     const r = tip.getBoundingClientRect();
     const vw = window.innerWidth;
-    const margin = 8; // px
+    const margin = 8;
 
     if (side === "top" || side === "bottom") {
-      // Si se sale por izquierda, empujamos a la derecha (valores +)
-      // Si se sale por derecha, empujamos a la izquierda (valores -)
       let push = 0;
       if (r.left < margin) push = margin - r.left;
       if (r.right > vw - margin) push = -(r.right - (vw - margin));
 
       if (push !== 0) {
-        // Ajustamos el translateX (-50% + push px)
         tip.style.transform = `translateX(calc(-50% + ${push}px))`;
       }
     } else {
-      // Para left/right, clamp vertical si hace falta (opcional)
-      // Aquí suele no ser problema, pero lo dejamos por simetría
       const vh = window.innerHeight;
       let pushY = 0;
       if (r.top < margin) pushY = margin - r.top;
@@ -1457,12 +1457,13 @@ function Tip({
         ref={tipRef}
         role="tooltip"
         className={`
-          pointer-events-none absolute ${pos} z-10
-          min-w-[16rem] max-w-[min(32rem,calc(100vw-1rem))]
-          rounded-md border border-zinc-700 bg-zinc-900
-          px-3 py-1.5 text-sm text-zinc-200
-          text-left whitespace-normal break-words
-          opacity-0 shadow-lg transition-opacity duration-150
+          pointer-events-none absolute ${pos} z-50
+          min-w-[18rem] max-w-[min(32rem,calc(100vw-1rem))]
+          rounded-xl border-2 border-gray-200
+          bg-gradient-to-br from-white to-gray-50
+          px-4 py-3 text-sm text-gray-700
+          text-left whitespace-normal break-words leading-relaxed
+          opacity-0 shadow-2xl transition-all duration-200
           group-hover:opacity-100 group-focus-within:opacity-100
           ${
             side === "left" || side === "right"
@@ -1470,15 +1471,27 @@ function Tip({
               : "-translate-x-1/2"
           }
         `}
-        title={text} // fallback nativo
+        title={text}
       >
-        {text}
+        <div className="font-medium">{text}</div>
+        {/* Flecha decorativa */}
+        <span
+          className={`absolute w-3 h-3 bg-white border-gray-200 rotate-45 ${
+            side === "top"
+              ? "bottom-[-7px] left-1/2 -translate-x-1/2 border-b-2 border-r-2"
+              : side === "bottom"
+              ? "top-[-7px] left-1/2 -translate-x-1/2 border-t-2 border-l-2"
+              : side === "left"
+              ? "right-[-7px] top-1/2 -translate-y-1/2 border-t-2 border-r-2"
+              : "left-[-7px] top-1/2 -translate-y-1/2 border-b-2 border-l-2"
+          }`}
+        />
       </span>
     </span>
   );
 }
 
-/** Etiqueta con ícono + tooltip */
+/** Etiqueta con ícono + tooltip mejorado */
 function LabelWithTip({
   label,
   tip,
@@ -1493,16 +1506,15 @@ function LabelWithTip({
   return (
     <Tip text={tip} side={side}>
       <span
-        className={`inline-flex items-center gap-1 cursor-help ${className}`}
-        tabIndex={0} // 👈 permite mostrar tooltip al focus (teclado)
+        className={`inline-flex items-center gap-1.5 cursor-help group ${className}`}
+        tabIndex={0}
       >
-        <span>{label}</span>
-        <InfoIcon className="w-3.5 h-3.5 text-zinc-400" aria-hidden="true" />
+        <span className="font-semibold">{label}</span>
+        <InfoIcon className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" aria-hidden="true" />
       </span>
     </Tip>
   );
 }
-
 /* ===== Textos de ayuda ===== */
 const EXPLAIN = {
   totalPagado:

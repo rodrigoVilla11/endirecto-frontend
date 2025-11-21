@@ -6,6 +6,7 @@ import { useGetCustomerByIdQuery } from '@/redux/services/customersApi';
 import { useGetArticlesQuery } from '@/redux/services/articlesApi';
 import CardArticles from './components/CardArticles';
 import ListArticle from './components/ListArticle';
+import { useMobile } from '@/app/context/ResponsiveContext';
 
 interface ArticlesProps {
   brand?: string;
@@ -32,23 +33,19 @@ const Articles: React.FC<ArticlesProps> = ({
   showArticles = "catalogue",
   query,
 }) => {
-  // Estados para paginación y artículos
+  const { isMobile } = useMobile();
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Referencia para el IntersectionObserver
   const observerRef = useRef<IntersectionObserver | null>(null);
-  // Guarda el string resultante de los filtros para detectar cambios
   const filtersStringRef = useRef<string>('');
 
-  // Obtención de filtros desde el contexto y props
   const { engine, model, year } = useFilters();
   const filters = useMemo(() => {
     const f: Record<string, any> = {};
     if (brand) f.brand = brand;
     if (item) f.item = item;
-    // Solo agregamos vehicle_brand si tiene contenido (no es una cadena vacía)
     if (vehicleBrand && vehicleBrand.trim() !== "") {
       f.vehicle_brand = vehicleBrand;
     }
@@ -74,12 +71,10 @@ const Articles: React.FC<ArticlesProps> = ({
   ]);
   const filtersString = useMemo(() => JSON.stringify(filters), [filters]);
 
-  // Obtención del cliente y sus datos
   const { selectedClientId: clientId } = useClient();
   const { data: customer } = useGetCustomerByIdQuery({ id: clientId || "" });
   const priceListId = customer?.price_list_id;
 
-  // Consulta de artículos usando el priceListId y los filtros
   const { data: articlesData, isFetching } = useGetArticlesQuery(
     {
       page,
@@ -90,7 +85,6 @@ const Articles: React.FC<ArticlesProps> = ({
     { skip: !priceListId }
   );
 
-  // Reinicia la lista de artículos y la página cuando los filtros cambian
   useEffect(() => {
     if (filtersStringRef.current !== filtersString) {
       setPage(1);
@@ -99,7 +93,6 @@ const Articles: React.FC<ArticlesProps> = ({
     }
   }, [filtersString]);
 
-  // Agrega nuevos artículos evitando duplicados (por id)
   useEffect(() => {
     if (articlesData && articlesData.articles) {
       setItems(prevItems => {
@@ -112,7 +105,6 @@ const Articles: React.FC<ArticlesProps> = ({
     }
   }, [articlesData]);
 
-  // Callback ref para el IntersectionObserver (scroll infinito)
   const lastArticleRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isFetching) return;
@@ -120,7 +112,6 @@ const Articles: React.FC<ArticlesProps> = ({
 
       observerRef.current = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting) {
-          // Si se han cargado 20 artículos, se asume que hay más para paginar
           if (articlesData && articlesData.articles && articlesData.articles.length === 20) {
             setIsLoadingMore(true);
             setPage(prevPage => prevPage + 1);
@@ -133,44 +124,68 @@ const Articles: React.FC<ArticlesProps> = ({
     [isFetching, articlesData]
   );
 
-  // Pantalla de carga inicial (cover full screen) para la primera página
+  // Pantalla de carga inicial
   if (page === 1 && isFetching && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <Image src="/dma.png" alt="Logo" width={150} height={150} />
-        <div className="mt-4 w-1/2 h-2 bg-gray-300">
-          <div className="h-full bg-blue-500 animate-pulse"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
+        <div className="relative">
+          <Image 
+            src="/dma.png" 
+            alt="Logo" 
+            width={isMobile ? 120 : 150} 
+            height={isMobile ? 120 : 150}
+            className="animate-pulse"
+          />
         </div>
+        <div className="mt-6 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 animate-loading-bar rounded-full"></div>
+        </div>
+        <p className="mt-4 text-sm font-medium text-gray-600 animate-pulse">
+          Cargando artículos...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 h-[calc(120vh-150px)] overflow-y-auto">
+    <div className={`${isMobile ? 'p-2' : 'p-4'} min-h-screen`}>
       {items.length === 0 && !isFetching ? (
-        <div className="text-center text-gray-600">No se encontraron artículos</div>
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+          <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+            <div className="text-6xl mb-4">📦</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              No se encontraron artículos
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Intenta ajustar los filtros de búsqueda
+            </p>
+          </div>
+        </div>
       ) : (
         <>
           {showArticles === "catalogue" ? (
-            <div className="grid gap-4 p-2 w-full grid-cols-[repeat(auto-fit,_minmax(120px,_1fr))] sm:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))] place-items-center">
+            <div className={`grid gap-3 md:gap-4 ${
+              isMobile 
+                ? 'grid-cols-2' 
+                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            }`}>
               {items.map((article, index) => {
-                // Asigna el ref al último artículo para activar el scroll infinito
                 if (index === items.length - 1) {
                   return (
-                    <div key={article.id} ref={lastArticleRef}>
+                    <div key={article.id} ref={lastArticleRef} className="w-full">
                       <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
                     </div>
                   );
                 }
                 return (
-                  <div key={article.id}>
+                  <div key={article.id} className="w-full">
                     <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {items.map((article, index) => {
                 if (index === items.length - 1) {
                   return (
@@ -187,10 +202,20 @@ const Articles: React.FC<ArticlesProps> = ({
               })}
             </div>
           )}
-          {/* Indicador de carga para paginación (spinner) */}
+          
+          {/* Indicador de carga para scroll infinito */}
           {isFetching && page > 1 && (
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-6 mb-6">
               <Spinner />
+            </div>
+          )}
+
+          {/* Indicador de fin de resultados */}
+          {!isFetching && (articlesData?.articles?.length ?? 0) < 20 && items.length > 0 && (
+            <div className="flex justify-center mt-8 mb-4">
+              <div className="bg-gray-100 text-gray-600 px-6 py-3 rounded-full text-sm font-medium">
+                ✓ Todos los artículos cargados
+              </div>
             </div>
           )}
         </>
@@ -202,7 +227,11 @@ const Articles: React.FC<ArticlesProps> = ({
 export default Articles;
 
 const Spinner = () => (
-  <div className="flex justify-center items-center p-4">
-    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+  <div className="flex flex-col items-center gap-3">
+    <div className="relative w-12 h-12">
+      <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+      <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin"></div>
+    </div>
+    <p className="text-sm text-gray-600 font-medium">Cargando más artículos...</p>
   </div>
 );

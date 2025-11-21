@@ -206,7 +206,10 @@
     "address": "Av. Hipólito Yrigoyen 1659, Alta Gracia, Córdoba - X5186",
     "phone": "3547 47-7974",
     "email": "pedidos@distribuidoradma.com.ar",
-    "schedule": "Lunes a Viernes 9:00 a 13:00 y 14:00 a 18:00"
+    "schedule": "Lunes a Viernes 9:00 a 13:00 y 14:00 a 18:00",
+    "contactTitle": "Contacto",
+    "description": "Distribuidora Mayorista de Autopiezas.",
+    "rights": "Todos los derechos reservados."
   },
   "customers": "Clientes",
   "loadingBrands": "Cargando marcas...",
@@ -1488,5 +1491,11 @@
   "daysTotal": "Días totales",
   "grace": "Gracia",
   "daysCharged": "Días Gravados",
-  "annualRate": "Tasa anual"
+  "annualRate": "Tasa anual",
+  "ourBrands": "Nuestras Marcas",
+  "featuredCategories": "Categorías Destacadas",
+  "featuredProducts": "Productos Destacados",
+  "catalogueView": "Catálogo",
+  "listView": "Lista",
+  "activeFilters": "Filtros activos"
 }

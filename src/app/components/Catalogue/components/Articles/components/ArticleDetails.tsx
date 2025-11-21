@@ -17,6 +17,8 @@ import {
 import { useArticleId } from "@/app/context/AritlceIdContext";
 import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useTranslation } from "react-i18next";
+import { useMobile } from "@/app/context/ResponsiveContext";
+import Tag from "@/app/components/Home/components/Catalogue/Articles/components/Tag";
 
 interface FormState {
   id: string;
@@ -32,11 +34,11 @@ interface ArticleDetailsProps {
 
 const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetailsProps) => {
   const { t } = useTranslation();
+  const { isMobile } = useMobile();
   const [quantity, setQuantity] = useState(1);
   const { selectedClientId } = useClient();
   const { articleId } = useArticleId();
 
-  // Customer query
   const {
     data: customer,
     error: customerError,
@@ -47,7 +49,6 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     { skip: !selectedClientId }
   );
 
-  // Article query (solo si no hay article prop)
   const {
     data: fallbackArticles,
     isLoading: isArticleLoading,
@@ -66,20 +67,17 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
 
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
-  // Resolver el artículo
   const resolvedArticle = useMemo(() => {
     if (article) return article;
     return fallbackArticles?.articles?.[0] || null;
   }, [article, fallbackArticles]);
 
-  // Estado del formulario
   const [form, setForm] = useState<FormState>({
     id: customer?.id || "",
     favourites: customer?.favourites || [],
     shopping_cart: customer?.shopping_cart || [],
   });
 
-  // Actualizar form cuando cambia customer
   useEffect(() => {
     if (customer) {
       setForm({
@@ -90,7 +88,6 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     }
   }, [customer]);
 
-  // Handlers optimizados
   const toggleFavourite = useCallback(async () => {
     if (!resolvedArticle || !form.id) return;
     
@@ -99,14 +96,12 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
       ? form.favourites.filter((id) => id !== resolvedArticle.id)
       : [...form.favourites, resolvedArticle.id];
 
-    // Actualización optimista
     setForm(prev => ({ ...prev, favourites: updatedFavourites }));
 
     try {
       await updateCustomer({ id: form.id, favourites: updatedFavourites }).unwrap();
       refetch();
     } catch (error) {
-      // Revertir en caso de error
       console.error("Error updating favourites:", error);
       refetch();
     }
@@ -120,13 +115,11 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
       newShoppingCart.push(resolvedArticle.id);
     }
 
-    // Actualización optimista
     setForm(prev => ({ ...prev, shopping_cart: newShoppingCart }));
 
     try {
       await updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).unwrap();
       refetch();
-      // Reset quantity después de agregar
       setQuantity(1);
     } catch (error) {
       console.error("Error updating shopping cart:", error);
@@ -138,98 +131,151 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     setQuantity(Math.max(1, value));
   }, []);
 
-  // Loading state
   const isLoading = isCustomerLoading || (!article && isArticleLoading);
   
-  // Verificar si es favorito
   const isFavourite = useMemo(() => 
     resolvedArticle && form.favourites.includes(resolvedArticle.id),
     [resolvedArticle, form.favourites]
   );
 
-  // Renderizado del contenido
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col justify-center items-center h-96 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-2xl">
+          <div className="relative w-16 h-16 mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin"></div>
+          </div>
+          <p className="text-sm font-medium text-gray-600">{t("loading")}...</p>
         </div>
       );
     }
 
     if (customerError || articleError) {
       return (
-        <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">{t("errorLoadingData")}</p>
+        <div className="flex flex-col justify-center items-center h-96 bg-red-50 rounded-2xl p-8">
+          <div className="text-6xl mb-4">⚠️</div>
+          <p className="text-red-600 font-semibold">{t("errorLoadingData")}</p>
         </div>
       );
     }
 
     if (!resolvedArticle) {
       return (
-        <div className="flex justify-center items-center h-96">
-          <p className="text-gray-500">{t("noArticleSelected")}</p>
+        <div className="flex flex-col justify-center items-center h-96 bg-gray-50 rounded-2xl p-8">
+          <div className="text-6xl mb-4">📦</div>
+          <p className="text-gray-500 font-medium">{t("noArticleSelected")}</p>
         </div>
       );
     }
 
     return (
-      <div className="flex gap-4 flex-col sm:justify-center sm:items-start items-center sm:flex-row">
-        <div className="h-auto w-64 bg-white rounded-sm border border-gray-200 flex flex-col justify-between pb-2">
-          <div className="flex justify-end">
-            <ArticleMenu
-              onAddToFavourites={toggleFavourite}
-              isFavourite={isFavourite}
-              article={resolvedArticle}
-            />
+      <div className={`flex gap-6 ${isMobile ? 'flex-col' : 'flex-col lg:flex-row'} items-start`}>
+        {/* Card del artículo */}
+        <div className={`${isMobile ? 'w-full' : 'w-full lg:w-96'} bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden`}>
+          {/* Header con iconos y tag */}
+          <div className="relative">
+            <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-start">
+              {/* Indicador de stock */}
+              <div className="flex-shrink-0">
+                <StripeStock articleId={resolvedArticle.id} />
+              </div>
+
+              {/* Iconos del menú */}
+              <div className="flex items-center gap-1">
+                <ArticleMenu
+                  onAddToFavourites={toggleFavourite}
+                  isFavourite={isFavourite}
+                  article={resolvedArticle}
+                />
+              </div>
+            </div>
+
+            {/* Tag */}
+            {resolvedArticle.tag && (
+              <div className="absolute top-10 left-3 z-20">
+                <Tag tag={resolvedArticle.tag} />
+              </div>
+            )}
+
+            {/* Imagen */}
+            <div className="bg-white pt-12 px-4">
+              <ArticleImage img={resolvedArticle.images || [""]} />
+            </div>
           </div>
-          <ArticleImage img={resolvedArticle.images || [""]} />
-          <StripeStock articleId={resolvedArticle.id} />
-          <div className="p-3 bg-gray-50">
+
+          {/* Información del producto */}
+          <div className="p-6 space-y-4 flex-1">
             <ArticleName
               name={resolvedArticle.name}
               id={resolvedArticle.id}
               code={resolvedArticle.supplier_code}
             />
-            <div className="pb-3">
-              {showPurchasePrice && (
+
+            {showPurchasePrice && (
+              <>
                 <CostPrice
                   article={resolvedArticle}
                   selectedClientId={selectedClientId}
                 />
-              )}
-              <hr className="my-3" />
-              <SuggestedPrice article={resolvedArticle} />
-            </div>
+                <div className="border-t border-gray-200" />
+              </>
+            )}
+
+            <SuggestedPrice 
+              article={resolvedArticle}
+              showPurchasePrice={showPurchasePrice}
+            />
           </div>
-          <AddToCart
-            articleId={resolvedArticle.id}
-            onAddToCart={toggleShoppingCart}
-            quantity={quantity}
-            setQuantity={handleQuantityChange}
-            disabled={isUpdating}
+
+          {/* Sección de agregar al carrito */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200">
+            <AddToCart
+              articleId={resolvedArticle.id}
+              onAddToCart={toggleShoppingCart}
+              quantity={quantity}
+              setQuantity={handleQuantityChange}
+              disabled={isUpdating}
+            />
+          </div>
+
+          {/* Barra de stock inferior */}
+          <div className="w-full">
+            <StripeStock articleId={resolvedArticle.id} isBar />
+          </div>
+        </div>
+
+        {/* Descripción */}
+        <div className={`${isMobile ? 'w-full' : 'flex-1'} bg-white rounded-2xl shadow-xl border border-gray-200 p-6`}>
+          <Description 
+            article={resolvedArticle} 
+            description={resolvedArticle.description} 
           />
         </div>
-        <Description 
-          article={resolvedArticle} 
-          description={resolvedArticle.description} 
-        />
       </div>
     );
   };
 
   return (
-    <div className="z-50 min-h-[400px]" onClick={(e) => e.stopPropagation()}>
-      <div className="flex justify-between mb-4">
-        <h2 className="text-base font-bold">{t("articleDetails")}</h2>
+    <div 
+      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header del modal */}
+      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-40 pb-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          {t("articleDetails")}
+        </h2>
         <button
           onClick={closeModal}
-          className="bg-gray-300 hover:bg-gray-400 rounded-full h-6 w-6 flex justify-center items-center transition-colors"
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:opacity-90 text-white rounded-full h-8 w-8 flex justify-center items-center transition-all shadow-md hover:shadow-lg"
           aria-label={t("close")}
         >
-          <IoMdClose />
+          <IoMdClose className="text-lg" />
         </button>
       </div>
+      
+      {/* Contenido */}
       {renderContent()}
     </div>
   );

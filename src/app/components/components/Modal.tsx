@@ -12,7 +12,6 @@ const Modal = ({ isOpen, onClose, children }: any) => {
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    // Cerrar sólo si el mousedown y el mouseup fueron en el overlay
     if (mdOnOverlay.current && e.target === overlayRef.current) {
       onClose();
     }
@@ -22,18 +21,20 @@ const Modal = ({ isOpen, onClose, children }: any) => {
   return ReactDOM.createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-50 "
+      className="fixed inset-0 flex items-center justify-center z-[60] bg-black/70 backdrop-blur-sm p-4"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
       <div
-        className="relative bg-white p-4 rounded-lg shadow-lg w-[90%] h-full sm:w-auto sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto"
-        onMouseDown={(e) => e.stopPropagation()} // <- clave extra
+        className="relative bg-transparent w-full h-full sm:w-auto sm:h-auto sm:max-w-7xl sm:max-h-[95vh] overflow-hidden"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        {children}
+        <div className="w-full h-full overflow-y-auto hide-scrollbar">
+          {children}
+        </div>
       </div>
     </div>,
     document.body

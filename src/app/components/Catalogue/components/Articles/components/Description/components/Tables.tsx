@@ -28,68 +28,48 @@ const Tables = ({ article }: any) => {
       case "equivalences":
         return <TableEquivalences articleId={article.id} />;
       default:
-        return <TableInfo />;
+        return <TableInfo article={article} />;
     }
   };
 
+  const buttons = [
+    { id: "info", icon: <FaInfo />, label: t("infoButton") },
+    { id: "prices", icon: <MdAttachMoney />, label: t("pricesButton") },
+    { id: "technical", icon: <GrDocumentText />, label: t("technicalDetailsButton") },
+  ];
+
+  // Agregar botones condicionales
+  if (Array.isArray(article.article_vehicles) && article.article_vehicles.length > 0) {
+    buttons.push({ id: "vehicle", icon: <FaCar />, label: t("vehicleButton") });
+  }
+  if (Array.isArray(article.article_equivalence) && article.article_equivalence.length > 0) {
+    buttons.push({ id: "equivalences", icon: <GoTag />, label: t("equivalencesButton") });
+  }
+
   return (
-    <div className="w-68 border border-gray-200 rounded-sm m-2">
-      <div className="flex h-8 w-full justify-evenly">
-        <button
-          className={`w-1/4 flex justify-center items-center rounded-sm ${
-            activeTable === "info" ? "bg-gray-300" : ""
-          }`}
-          onClick={() => setActiveTable("info")}
-          title={t("infoButton")}
-        >
-          <FaInfo />
-        </button>
-        <button
-          className={`w-1/4 flex justify-center items-center rounded-sm ${
-            activeTable === "prices" ? "bg-gray-300" : ""
-          }`}
-          onClick={() => setActiveTable("prices")}
-          title={t("pricesButton")}
-        >
-          <MdAttachMoney />
-        </button>
-
-        <button
-          className={`w-1/4 flex justify-center items-center rounded-sm ${
-            activeTable === "technical" ? "bg-gray-300" : ""
-          }`}
-          onClick={() => setActiveTable("technical")}
-          title={t("technicalDetailsButton")}
-        >
-          <GrDocumentText />
-        </button>
-
-        {Array.isArray(article.article_vehicles) &&
-          article.article_vehicles.length > 0 && (
-            <button
-              className={`w-1/4 flex justify-center items-center rounded-sm ${
-                activeTable === "vehicle" ? "bg-gray-300" : ""
-              }`}
-              onClick={() => setActiveTable("vehicle")}
-              title={t("vehicleButton")}
-            >
-              <FaCar />
-            </button>
-          )}
-        {Array.isArray(article.article_equivalence) &&
-          article.article_equivalence.length > 0 && (
-            <button
-              className={`w-1/4 flex justify-center items-center rounded-sm ${
-                activeTable === "equivalences" ? "bg-gray-300" : ""
-              }`}
-              onClick={() => setActiveTable("equivalences")}
-              title={t("equivalencesButton")}
-            >
-              <GoTag />
-            </button>
-          )}
+    <div className="w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Botones de navegación */}
+      <div className="flex bg-gradient-to-r from-gray-100 to-gray-50 border-b border-gray-200">
+        {buttons.map((button) => (
+          <button
+            key={button.id}
+            className={`flex-1 flex justify-center items-center py-3 transition-all duration-200 ${
+              activeTable === button.id
+                ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-md"
+                : "text-gray-600 hover:bg-gray-200"
+            }`}
+            onClick={() => setActiveTable(button.id)}
+            title={button.label}
+          >
+            <span className="text-lg">{button.icon}</span>
+          </button>
+        ))}
       </div>
-      <div className="p-4">{renderTable()}</div>
+
+      {/* Contenido de la tabla */}
+      <div className="p-6 bg-white min-h-[200px]">
+        {renderTable()}
+      </div>
     </div>
   );
 };

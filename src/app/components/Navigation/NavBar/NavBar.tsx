@@ -1,5 +1,5 @@
+"use client";
 import React from "react";
-import { useLocation } from "react-router-dom";
 import Search from "./components/Search";
 import ButtonSideMenu from "./components/ButtonSideMenu";
 import Logo from "./components/Logo";
@@ -7,49 +7,62 @@ import SliderLogos from "./components/SliderLogos";
 import ButtonsIcons from "./components/ButtonsIcons";
 import Profile from "./components/Profile";
 import { usePathname } from "next/navigation";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const NavBar = () => {
-  const isMobile = window.innerWidth < 640;
+  const { isMobile } = useMobile();
   const pathname = usePathname();
 
   const isSelectCustomers = pathname === "/selectCustomer";
 
   return (
-    <nav
-      className={`w-full ${
-        isMobile ? (isSelectCustomers ? "h-20" : "h-28") : "h-16"
-      } ${
-        isMobile ? "bg-zinc-900" : "bg-header-color"
-      } fixed z-40 flex justify-between px-4`}
-    >
-      {isMobile ? (
-        <div className="w-full flex items-start justify-center sm:justify-between gap-4 mt-4 sm:mt-0">
-          <div className="flex items-center gap-4">
-            <ButtonSideMenu />
-            <ButtonsIcons isMobile={isMobile} />
-            <Profile isMobile={isMobile} />
-          </div>
-          {isMobile && !isSelectCustomers && (
-            <div className="w-full flex justify-center sm:my-2 absolute bottom-2 sm:static">
-              <Search />
-            </div>
-          )}
-        </div>
-      ) : (
-        <>
+    <nav className="w-full fixed z-40 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
+      {/* Desktop */}
+      {!isMobile ? (
+        <div className="h-16 flex items-center justify-between px-4 gap-4">
+          {/* Left Section */}
           <div className="flex items-center gap-4">
             <Logo />
             <ButtonSideMenu />
-            {!isSelectCustomers && <Search />}
+            {!isSelectCustomers && (
+              <div className="w-96">
+                <Search />
+              </div>
+            )}
           </div>
-          <div className="flex items-center">
+
+          {/* Center Section */}
+          <div className="flex items-center flex-1 justify-center">
             <SliderLogos />
           </div>
+
+          {/* Right Section */}
           <div className="flex items-center gap-4">
             <ButtonsIcons isMobile={isMobile} />
             <Profile isMobile={isMobile} />
           </div>
-        </>
+        </div>
+      ) : (
+        /* Mobile */
+        <div className="h-16 flex items-center justify-between px-3 gap-3">
+          {/* Left: Menu Button */}
+          <div className="flex-shrink-0">
+            <ButtonSideMenu />
+          </div>
+
+          {/* Center: Search (only if not selectCustomers) */}
+          {!isSelectCustomers && (
+            <div className="flex-1 min-w-0 mx-2">
+              <Search />
+            </div>
+          )}
+
+          {/* Right: Icons */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <ButtonsIcons isMobile={isMobile} />
+            <Profile isMobile={isMobile} />
+          </div>
+        </div>
       )}
     </nav>
   );

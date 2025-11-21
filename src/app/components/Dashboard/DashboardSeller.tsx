@@ -364,7 +364,7 @@ const DashboardSeller = () => {
     : itemsCard;
 
   return (
-    <div className="gap-4 bg-black">
+    <div className="gap-4">
       <div className="mt-2 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
         {t("hello", { username: userData?.username })}
       </div>

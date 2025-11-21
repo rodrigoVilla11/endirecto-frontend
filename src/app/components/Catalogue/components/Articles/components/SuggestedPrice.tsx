@@ -4,14 +4,15 @@ import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPri
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomersBrandsByBrandAndCustomerIdQuery } from "@/redux/services/customersBrandsApi";
-import { useGetArticlesQuery } from "@/redux/services/articlesApi";
 import { useGetArticleBonusByItemIdQuery } from "@/redux/services/articlesBonusesApi";
 import { useGetCustomersItemsByItemAndCustomerIdQuery } from "@/redux/services/customersItemsApi";
 import { useTranslation } from "react-i18next";
 import { skipToken } from "@reduxjs/toolkit/query";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
   const { t } = useTranslation();
+  const { isMobile } = useMobile();
   const encodedId = encodeURIComponent(article?.id);
 
   const { selectedClientId } = useClient();
@@ -21,10 +22,8 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
 
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
-  // Consultas de datos
 
   const articleIdForBonus = article?.item_id;
-  
 
   const { data: bonus } = useGetArticleBonusByItemIdQuery(
     articleIdForBonus ? { id: articleIdForBonus } : skipToken
@@ -41,34 +40,28 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
     customer: selectedClientId || "",
   });
 
-  // Obtener el margen de la marca
   let margin: number | undefined;
   if (Array.isArray(brandMargin) && brandMargin.length > 0) {
     margin = brandMargin[0]?.margin;
   }
 
-  // Obtener el margen del artículo
   let marginItem: number | undefined;
   if (Array.isArray(itemMargin) && itemMargin.length > 0) {
     marginItem = itemMargin[0]?.margin;
   }
 
-  // Obtener el precio base
   const priceEntry = data?.find(
     (item) => item.price_list_id === customer?.price_list_id
   );
   let price = priceEntry ? priceEntry.price : 0;
 
-  // Aplicar descuento si existe
   if (bonus?.percentage_1 && typeof price === "number") {
     const discount = (price * bonus.percentage_1) / 100;
     price -= discount;
   }
 
-  // Calcular el margen total (sumando margin y marginItem)
   const totalMargin = (margin || 0) + (marginItem || 0);
 
-  // Función para calcular el precio con margen y luego IVA
   const calculatePriceWithMarginAndVAT = (
     price: number,
     margin: number,
@@ -104,8 +97,12 @@ const SuggestedPrice = ({ article, showPurchasePrice, onlyPrice }: any) => {
 
   return (
     <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center`}>
-      {!onlyPrice && <p className="text-gray-500 text-xs">{t("suggestedPrice")}</p>}
-      <p className="font-semibold text-gray-700">
+      {!onlyPrice && (
+        <p className={`text-gray-500 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+          {isMobile ? 'Precio Sugerido' : t("suggestedPrice")}
+        </p>
+      )}
+      <p className={`font-bold text-gray-900 ${isMobile ? 'text-base' : 'text-lg'}`}>
         ${integerPart || "0"}
         {decimalPart && <span className="text-xs">,{decimalPart}</span>}
       </p>

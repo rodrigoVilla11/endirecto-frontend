@@ -4,15 +4,19 @@ import { useTranslation } from "react-i18next";
 import { IoPricetagOutline } from "react-icons/io5";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 
-type Priority = "HIGH" | "MEDIUM" | "LOW" | string;
+type Priority = "ALTA" | "MEDIA" | "BAJA" | "HIGH" | "MEDIUM" | "LOW" | string;
 
 interface InstanceModel {
   id?: string;
   _id?: string;
   type?: string;
+  title?: string;
   notes?: string;
+  description?: string;
+  note?: string;
   priority?: Priority;
   status?: string;
+  date?: string | Date;
   created_at?: string | Date;
   createdAt?: string | Date;
 }
@@ -21,124 +25,107 @@ interface InstanceProps {
   instances: InstanceModel;
 }
 
-const priorityStyles: Record<Priority, { dot: string; border: string; badge: string; text: string }> = {
-  HIGH: {
-    dot: "bg-red-500",
-    border: "border-red-400",
-    badge: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
-    text: "text-red-700",
-  },
-  MEDIUM: {
-    dot: "bg-amber-500",
-    border: "border-amber-400",
-    badge: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
-    text: "text-amber-700",
-  },
-  LOW: {
-    dot: "bg-emerald-500",
-    border: "border-emerald-400",
-    badge: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
-    text: "text-emerald-700",
-  },
-};
-
 const Instance: React.FC<InstanceProps> = ({ instances }) => {
   const { t } = useTranslation();
 
-  const p = (instances.priority ?? "LOW") as Priority;
-  const styles = priorityStyles[p] ?? priorityStyles.LOW;
+  // Normalizar prioridad
+  const normalizePriority = (priority?: string): string => {
+    const p = priority?.toUpperCase();
+    if (p === "HIGH" || p === "ALTA") return "ALTA";
+    if (p === "MEDIUM" || p === "MEDIA") return "MEDIA";
+    if (p === "LOW" || p === "BAJA") return "BAJA";
+    return "MEDIA";
+  };
 
-  const created = useMemo(() => {
-    const raw = (instances.created_at ?? instances.createdAt) as string | Date | undefined;
-    if (!raw) return null;
-    const date = new Date(raw);
-    if (isNaN(date.getTime())) return null;
-    // Render corto y claro; si querés, podés internacionalizarlo según locale
-    return date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
+  const priority = normalizePriority(instances.priority);
+
+  // Función para determinar el color según el tipo
+  const getTypeColor = (type?: string): string => {
+    const types: { [key: string]: string } = {
+      "llamada de cobranza": "bg-red-500",
+      llamada: "bg-red-500",
+      "mensaje de whatsapp": "bg-green-500",
+      whatsapp: "bg-green-500",
+      "envío de resumen de cuenta": "bg-green-500",
+      email: "bg-blue-500",
+      "reclamo de pago": "bg-yellow-500",
+      visita: "bg-yellow-500",
+      default: "bg-purple-500",
+    };
+    return types[type?.toLowerCase() || ""] || types.default;
+  };
+
+  // Función para formatear la fecha
+  const formatDate = (date?: string | Date): string => {
+    if (!date) return "N/A";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "N/A";
+    return d.toLocaleDateString("es-ES", {
       day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
-  }, [instances.created_at, instances.createdAt]);
+  };
+
+  const typeColor = getTypeColor(instances?.type);
+  const displayDate = formatDate(instances?.date || instances?.created_at || instances?.createdAt);
+  const displayNote = instances?.notes || instances?.description || instances?.note || t("noNotes");
+  const displayTitle = instances?.title || instances?.type || t("instance");
+
+  // Obtener el color del texto de prioridad
+  const getPriorityTextColor = (p: string): string => {
+    if (p === "ALTA") return "text-red-400";
+    if (p === "MEDIA") return "text-yellow-400";
+    return "text-green-400";
+  };
 
   return (
     <article
-      className={`group relative rounded-xl border ${styles.border} bg-white shadow-sm hover:shadow-md transition-shadow`}
+      className="bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl"
       role="listitem"
-      aria-label={t("instance") as string}
     >
-      {/* Borde lateral de prioridad */}
-      <div
-        className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${styles.dot}`}
-        aria-hidden="true"
-      />
+      {/* Header con color según tipo */}
+      <div className={`${typeColor} px-6 py-3`}>
+        <h3 className="font-bold text-white text-base">
+          {displayTitle}
+        </h3>
+      </div>
 
-      <div className="px-4 py-3 md:px-5 md:py-4">
-        {/* Header: título + badges */}
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <HiOutlineClipboardDocumentList className="text-gray-400" />
-            <h3 className="truncate font-semibold text-gray-900">
-              {t("instance")}
-            </h3>
-          </div>
+      {/* Body */}
+      <div className="p-6 space-y-3">
+        {/* Prioridad */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-white text-sm">PRIORIDAD:</span>
+          <span className={`text-sm font-bold uppercase ${getPriorityTextColor(priority)}`}>
+            {priority}
+          </span>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {/* Prioridad */}
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${styles.badge}`}
-              title={`${t("priority")}: ${p}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
-              {t(`priority.${p.toLowerCase?.() ?? "low"}`, p)}
-            </span>
+        {/* Fecha */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-white text-sm">FECHA:</span>
+          <span className="text-gray-300 text-sm">
+            {displayDate}
+          </span>
+        </div>
 
-            {/* Tipo */}
-            {instances.type && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200"
-                title={`${t("type")}: ${instances.type}`}
-              >
-                <IoPricetagOutline />
-                {instances.type}
-              </span>
-            )}
-          </div>
-        </header>
-
-        {/* Notas */}
-        <div className="mt-2 text-sm text-gray-700">
-          <p
-            className="line-clamp-2 md:line-clamp-3"
-            title={instances.notes || ""}
-          >
-            <span className="font-medium text-gray-900">{t("notes")}:</span>{" "}
-            {instances.notes || t("none")}
+        {/* Nota */}
+        <div className="flex items-start gap-2">
+          <span className="font-bold text-white text-sm flex-shrink-0">NOTA:</span>
+          <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
+            {displayNote}
           </p>
         </div>
 
-        {/* Footer: metadata */}
-        <footer className="mt-3 flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-3">
-            {instances.status && (
-              <span className="rounded-md bg-gray-50 px-2 py-0.5 ring-1 ring-inset ring-gray-200">
-                {t("status")}: <span className="font-medium">{instances.status}</span>
-              </span>
-            )}
-            {created && (
-              <span className="rounded-md bg-gray-50 px-2 py-0.5 ring-1 ring-inset ring-gray-200">
-                {t("createdAt")}: <time dateTime={created}>{created}</time>
-              </span>
-            )}
+        {/* Estado (opcional) */}
+        {instances.status && (
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-700">
+            <span className="font-bold text-white text-sm">ESTADO:</span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-gray-300 border border-gray-600">
+              {instances.status}
+            </span>
           </div>
-
-          {/* Acciones (placeholder para futuros handlers) */}
-          <div className="invisible gap-2 group-hover:visible">
-            {/* Ejemplo: botones fantasma para mantener el layout preparado */}
-            {/* <button className="text-gray-600 hover:text-gray-900 underline text-xs">{t("view")}</button>
-            <button className="text-gray-600 hover:text-gray-900 underline text-xs">{t("edit")}</button> */}
-          </div>
-        </footer>
+        )}
       </div>
     </article>
   );

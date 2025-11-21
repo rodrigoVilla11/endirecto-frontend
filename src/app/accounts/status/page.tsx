@@ -432,7 +432,7 @@ export default function Page() {
         "CUSTOMER",
       ]}
     >
-      <div className="space-y-4">
+      <div className="space-y-4 mt-4">
         <Header
           headerBody={{
             buttons: [

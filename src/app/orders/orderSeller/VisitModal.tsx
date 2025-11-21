@@ -223,28 +223,31 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/90 z-50" onClick={onClose}>
+return (
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50" onClick={onClose}>
       <div
-        className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto"
+        className="h-full flex flex-col bg-zinc-900 max-w-4xl mx-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-zinc-800">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="text-white">
+            <button 
+              onClick={onClose} 
+              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors text-2xl"
+            >
               ←
             </button>
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-2xl font-bold text-white">
               {t("visitModal.headerTitle")}
             </h2>
           </div>
-          <button className="text-white">ℹ️</button>
+          <button className="text-3xl">ℹ️</button>
         </div>
 
         <div className="flex-1 overflow-auto">
           {/* Info */}
-          <div className="border-b border-zinc-800">
+          <div className="bg-zinc-800/50 border-b-2 border-zinc-700">
             <InfoRow
               label={t("visitModal.info.date")}
               value={currentDateTime}
@@ -252,7 +255,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             <InfoRow
               label={
                 <div
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 cursor-pointer"
                   onClick={handleGetLocation}
                 >
                   {t("visitModal.info.gps")} 🌐
@@ -262,58 +265,47 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                 isLocating ? (
                   <span className="flex items-center gap-2 text-zinc-300">
                     <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    {t("visitModal.info.waitingLocation") ||
-                      "Obteniendo ubicación..."}
+                    {t("visitModal.info.waitingLocation") || "Obteniendo ubicación..."}
                   </span>
                 ) : locError ? (
-                  <span className="flex items-center gap-2">
-                    <span className="text-red-500">{locError}</span>
+                  <span className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <span className="text-red-400 font-semibold">{locError}</span>
                     <button
                       type="button"
                       onClick={retryAskLocation}
-                      className="text-xs px-2 py-0.5 rounded bg-zinc-200 text-zinc-900 hover:bg-white"
+                      className="text-xs px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 font-bold"
                     >
                       Reintentar
                     </button>
                     {permState === "denied" && (
-                      <details className="ml-2">
-                        <summary className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                      <details className="mt-2 sm:mt-0 sm:ml-2">
+                        <summary className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer font-semibold">
                           ¿Cómo habilitar?
                         </summary>
-                        <div className="mt-1 text-xs text-zinc-300 max-w-[260px]">
-                          <p>
-                            • Chrome (desktop): clic en el candado → Permisos
-                            del sitio → Ubicación → Permitir, y recargá la
-                            página.
-                          </p>
-                          <p>
-                            • Android (Chrome): candado → Permisos → Ubicación →
-                            Permitir.
-                          </p>
-                          <p>
-                            • iOS (Safari): Ajustes → Safari → Ubicación →
-                            Preguntar/Permitir; luego recargá.
-                          </p>
+                        <div className="mt-2 text-xs text-zinc-300 max-w-md bg-zinc-800 p-3 rounded-lg border border-zinc-700">
+                          <p className="mb-2">• <strong>Chrome (desktop):</strong> clic en el candado → Permisos del sitio → Ubicación → Permitir, y recargá la página.</p>
+                          <p className="mb-2">• <strong>Android (Chrome):</strong> candado → Permisos → Ubicación → Permitir.</p>
+                          <p>• <strong>iOS (Safari):</strong> Ajustes → Safari → Ubicación → Preguntar/Permitir; luego recargá.</p>
                         </div>
                       </details>
                     )}
                   </span>
                 ) : insitu === null ? (
-                  <span className="text-gray-500">
+                  <span className="text-zinc-400 font-medium">
                     {t("visitModal.info.waitingLocation")}
                   </span>
                 ) : insitu ? (
-                  <span className="text-green-500">
+                  <span className="text-emerald-400 font-bold">
                     {t("visitModal.info.insitu")}
                     {gps && (
-                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                      <span className="ml-2 text-xs text-zinc-500">{gps}</span>
                     )}
                   </span>
                 ) : (
-                  <span className="text-red-500">
+                  <span className="text-red-400 font-bold">
                     {t("visitModal.info.notInsitu")}
                     {gps && (
-                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                      <span className="ml-2 text-xs text-zinc-500">{gps}</span>
                     )}
                   </span>
                 )
@@ -321,46 +313,47 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             />
           </div>
 
-          <div className="border-b border-zinc-800">
-            <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-              <span className="text-white font-medium">
-                {t("filterByComments") || "Comentarios predefinidos"}
+          {/* Comentarios predefinidos */}
+          <div className="border-b-2 border-zinc-700 bg-zinc-900">
+            <div className="px-6 pt-6 pb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-white font-bold text-lg">
+                💬 {t("filterByComments") || "Comentarios predefinidos"}
               </span>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
+                className={`inline-flex items-center text-xs px-3 py-1.5 rounded-full font-bold ${
                   selectedLeafs.length
-                    ? "bg-emerald-200 text-emerald-900"
-                    : "bg-red-200 text-red-900"
+                    ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50"
+                    : "bg-red-500/20 text-red-400 border-2 border-red-500/50"
                 }`}
               >
                 {selectedLeafs.length
-                  ? `${selectedLeafs.length} seleccionados`
-                  : "min. 1 requerido"}
+                  ? `✅ ${selectedLeafs.length} seleccionados`
+                  : "⚠️ min. 1 requerido"}
               </span>
             </div>
 
-            <div className="px-4 pb-3">
+            <div className="px-6 pb-6">
               <PredefinedCommentsTreeFilter
                 selectedLeafs={selectedLeafs}
-                onChange={setSelectedLeafs} // recibe SOLO hojas
+                onChange={setSelectedLeafs}
               />
             </div>
 
-            {/* 🔽 NUEVO: listado de seleccionados */}
+            {/* Listado de seleccionados */}
             {selectedLeafs.length > 0 && (
-              <div className="px-4 pb-3 border-t border-zinc-800">
-                <p className="text-xs text-zinc-400 mb-1">Seleccionados:</p>
+              <div className="px-6 pb-6 border-t-2 border-zinc-800">
+                <p className="text-xs text-zinc-400 mb-3 font-semibold mt-4">📌 Seleccionados:</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedLeafs.map((path) => (
                     <button
                       key={path}
                       type="button"
                       onClick={() => handleRemoveSelectedLeaf(path)}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                      className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 border border-purple-400 transition-all font-medium"
                       title={path}
                     >
                       <span className="truncate max-w-[220px]">{path}</span>
-                      <span className="text-zinc-400 hover:text-red-400">
+                      <span className="text-red-300 hover:text-red-100 font-bold">
                         ✕
                       </span>
                     </button>
@@ -370,53 +363,53 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             )}
           </div>
 
-          {/* Observación libre (opcional) */}
-          <div className="p-4">
-            <label className="block text-white mb-2">
-              {t("visitModal.observations.label") || "Observación (opcional)"}
+          {/* Observación libre */}
+          <div className="p-6 bg-zinc-900">
+            <label className="block text-white font-bold mb-3 text-lg">
+              📝 {t("visitModal.observations.label") || "Observación (opcional)"}
             </label>
             <textarea
               value={observations}
               onChange={(e) => setObservations(e.target.value)}
-              className="w-full h-32 p-3 bg-zinc-800 text-white rounded-md border border-zinc-700 focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full h-32 p-4 bg-zinc-800 text-white rounded-xl border-2 border-zinc-700 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 resize-none font-medium transition-all placeholder:text-zinc-500"
               placeholder={
                 t("visitModal.observations.placeholder") ||
                 "Agregar detalle opcional…"
               }
             />
             {selectedLeafs.length === 0 && (
-              <p className="mt-2 text-xs text-red-400">
-                Debés seleccionar al menos un comentario.
+              <p className="mt-3 text-sm text-red-400 font-semibold bg-red-500/20 p-3 rounded-lg border-2 border-red-500/50">
+                ⚠️ Debés seleccionar al menos un comentario.
               </p>
             )}
           </div>
         </div>
 
         {/* Submit */}
-        <div className="relative group">
+        <div className="relative group p-6 border-t-2 border-zinc-700 bg-zinc-800/50">
           <button
             ref={submitBtnRef}
             onClick={handleSubmit}
             disabled={isButtonDisabled}
-            className={`w-full py-3 rounded-md font-medium transition-colors duration-300 ${
+            className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all ${
               isButtonDisabled
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600 text-white"
+                ? "bg-zinc-700 text-zinc-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white hover:shadow-xl"
             }`}
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 {t("visitModal.loading")}
               </span>
             ) : submitted ? (
-              <span className="text-green-300 font-bold text-lg">✓</span>
+              <span className="text-white font-bold text-2xl">✓</span>
             ) : (
-              t("visitModal.send")
+              `✅ ${t("visitModal.send")}`
             )}
           </button>
           {selectedLeafs.length === 0 && !isSubmitting && (
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-3 py-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-sm px-4 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 font-medium border border-zinc-700">
               Seleccioná al menos un comentario
             </div>
           )}
@@ -432,14 +425,14 @@ interface InfoRowProps {
 }
 function InfoRow({ label, value }: InfoRowProps) {
   return (
-    <div className="p-4 flex justify-between items-center border-b border-zinc-800">
-      <span className="text-zinc-400">{label}</span>
-      <span className="text-white">{value}</span>
+    <div className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-zinc-700">
+      <span className="text-zinc-400 font-semibold">{label}</span>
+      <span className="text-white font-medium">{value}</span>
     </div>
   );
 }
 
-/* ===================== ÁRBOL DE COMENTARIOS (solo hojas) ===================== */
+/* ===================== ÁRBOL DE COMENTARIOS ===================== */
 
 type Node = { label: string; children?: Node[] };
 
@@ -610,15 +603,6 @@ function gatherAllPaths(node: Node, prefix = ""): string[] {
   if (!node.children?.length) return [path];
   return [path, ...node.children.flatMap((c) => gatherAllPaths(c, path))];
 }
-function computeTriState(node: Node, checked: Set<string>, prefix = "") {
-  const leafs = gatherLeafPaths(node, prefix);
-  const selected = leafs.filter((p) => checked.has(p)).length;
-  const all = leafs.length;
-  return {
-    checked: all > 0 && selected === all,
-    indeterminate: selected > 0 && selected < all,
-  };
-}
 
 function PredefinedCommentsTreeFilter({
   selectedLeafs,
@@ -628,9 +612,8 @@ function PredefinedCommentsTreeFilter({
   onChange: (leafs: string[]) => void;
 }) {
   const [checked, setChecked] = useState<Set<string>>(new Set(selectedLeafs));
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({}); // colapsado por defecto
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
 
-  // abrir ramas con selección inicial (solo una vez)
   useEffect(() => {
     const next: Record<string, boolean> = {};
     const mark = (n: Node, prefix = "") => {
@@ -646,7 +629,6 @@ function PredefinedCommentsTreeFilter({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // sincronizar si cambian desde afuera
   useEffect(() => {
     const curr = Array.from(checked).sort();
     const next = [...selectedLeafs].sort();
@@ -656,7 +638,6 @@ function PredefinedCommentsTreeFilter({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeafs]);
 
-  // 👉 NUEVO: toggle de una hoja puntual
   const toggleLeaf = (path: string) => {
     setChecked((prev) => {
       const next = new Set(prev);
@@ -666,7 +647,6 @@ function PredefinedCommentsTreeFilter({
     });
   };
 
-  // emitir SOLO hojas
   useEffect(() => {
     const leafsOnly = Array.from(checked).filter(
       (path) =>
@@ -691,29 +671,29 @@ function PredefinedCommentsTreeFilter({
   const clear = () => setChecked(new Set());
 
   return (
-    <div className="rounded-md bg-zinc-900/40">
-      <div className="flex items-center gap-2 py-2">
+    <div className="rounded-2xl bg-zinc-800/50 p-4 border-2 border-zinc-700">
+      <div className="flex flex-wrap items-center gap-2 pb-4 border-b-2 border-zinc-700">
         <button
           onClick={expandAll}
-          className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+          className="text-xs px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 font-bold transition-all"
         >
-          Expandir todo
+          ➕ Expandir todo
         </button>
         <button
           onClick={collapseAll}
-          className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+          className="text-xs px-3 py-2 rounded-lg bg-zinc-600 text-white hover:bg-zinc-500 font-bold transition-all"
         >
-          Contraer todo
+          ➖ Contraer todo
         </button>
         <button
           onClick={clear}
-          className="ml-auto text-xs px-2 py-1 rounded bg-red-600/80 text-white hover:bg-red-600"
+          className="ml-auto text-xs px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-bold transition-all"
         >
-          Limpiar selección
+          🗑️ Limpiar selección
         </button>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1 mt-4">
         {PREDEFINED_TREE.map((node) => (
           <TreeNodeUI
             key={node.label}
@@ -722,7 +702,7 @@ function PredefinedCommentsTreeFilter({
             openMap={openMap}
             setOpenMap={setOpenMap}
             checked={checked}
-            onToggleLeaf={toggleLeaf} // 🔴 importante
+            onToggleLeaf={toggleLeaf}
           />
         ))}
       </div>
@@ -757,17 +737,16 @@ function TreeNodeUI({
 
   return (
     <div className="pl-1">
-      <div className="group flex items-center gap-2 py-1 pr-2 rounded hover:bg-zinc-800/60">
-        {/* Chevron para expandir/contraer si tiene hijos */}
+      <div className="group flex items-center gap-2 py-2 pr-2 rounded-lg hover:bg-zinc-700/50 transition-colors">
         {hasChildren ? (
           <button
             type="button"
             aria-label={isOpen ? "Contraer" : "Expandir"}
             onClick={() => setOpenMap((m) => ({ ...m, [path]: !isOpen }))}
-            className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-white"
+            className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-purple-400 transition-colors"
           >
             <span
-              className={`inline-block transform transition-transform ${
+              className={`inline-block transform transition-transform font-bold ${
                 isOpen ? "rotate-90" : ""
               }`}
             >
@@ -778,9 +757,7 @@ function TreeNodeUI({
           <span className="w-5" />
         )}
 
-        {/* Checkbox SOLO en hojas */}
         {hasChildren ? (
-          // Nodo padre: sólo label clickeable para expandir
           <button
             type="button"
             onClick={() =>
@@ -789,7 +766,7 @@ function TreeNodeUI({
                 [path]: !isOpen,
               }))
             }
-            className="cursor-pointer select-none text-sm text-zinc-200 text-left flex-1"
+            className="cursor-pointer select-none text-sm text-zinc-200 hover:text-purple-400 text-left flex-1 font-semibold transition-colors"
           >
             {node.label}
           </button>
@@ -799,14 +776,14 @@ function TreeNodeUI({
               ref={cbRef}
               id={path}
               type="checkbox"
-              className="accent-blue-500"
+              className="w-4 h-4 rounded border-2 border-zinc-600 bg-zinc-700 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
               checked={isChecked}
               onChange={() => onToggleLeaf(path)}
               title={node.label}
             />
             <label
               htmlFor={path}
-              className="cursor-pointer select-none text-sm text-zinc-200"
+              className="cursor-pointer select-none text-sm text-zinc-300 hover:text-purple-400 font-medium transition-colors"
             >
               {node.label}
             </label>
@@ -816,7 +793,7 @@ function TreeNodeUI({
 
       {hasChildren && (
         <div
-          className={`ml-6 border-l border-zinc-700/60 pl-3 overflow-hidden transition-all duration-200 ${
+          className={`ml-6 border-l-2 border-zinc-700 pl-3 overflow-hidden transition-all duration-200 ${
             isOpen ? "max-h-[999px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >

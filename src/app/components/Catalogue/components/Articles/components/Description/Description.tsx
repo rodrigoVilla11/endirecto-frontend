@@ -6,11 +6,19 @@ const Description = ({ article, description }: any) => {
   const { t } = useTranslation();
 
   return (
-    <div className="w-80">
-      <h3 className="font-bold">{t("description")}</h3>
-      <p className="font-light max-w-full break-words overflow-hidden max-h-36 text-sm">
-        {description}
-      </p>
+    <div className="w-full space-y-4">
+      {/* Descripción */}
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <span className="text-purple-500">📝</span>
+          {t("description")}
+        </h3>
+        <p className="text-sm text-gray-700 leading-relaxed max-h-36 overflow-y-auto hide-scrollbar">
+          {description || t("noDescription")}
+        </p>
+      </div>
+
+      {/* Tablas */}
       <Tables article={article} />
     </div>
   );

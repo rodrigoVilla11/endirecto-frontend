@@ -714,14 +714,14 @@ const DashboardPage = () => {
 
   // ------------------ Renderizado ------------------
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100  bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
       <Header />
 
       {/* CONTENEDOR PRINCIPAL */}
       <main className="mx-auto px-4 sm:px-6 lg:px-8 pb-10 space-y-6">
         {/* BARRA DE OBJETIVO DE COMPRA */}
         {selectedClientId && purchaseGoal > 0 && (
-          <section className="rounded-2xl bg-white shadow-sm border border-gray-100 px-5 py-4">
+          <section className="rounded-2xl shadow-sm border border-gray-100 px-5 py-4">
             {/* Línea de textos */}
             <div className="flex flex-col items-center gap-2 text-xs sm:text-sm sm:flex-row sm:justify-between">
               <span>

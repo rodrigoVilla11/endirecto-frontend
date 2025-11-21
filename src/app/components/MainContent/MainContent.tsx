@@ -12,8 +12,8 @@ const MainContent = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className={`${
-        isMobile ? (isSelectCustomers ? "mt-20" : "mt-24") : "mt-12"
-      } sm:mt-12 transition-all duration-300 flex-1 overflow-auto no-scrollbar`}
+        isMobile ? (isSelectCustomers ? "mt-12" : "mt-12") : "mt-16"
+      } sm:mt-12 transition-all duration-300 flex-1 overflow-auto no-scrollbar bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500`}
     >
       {children}
     </div>

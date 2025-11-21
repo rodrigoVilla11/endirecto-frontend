@@ -7,16 +7,16 @@ import {
   Package,
   DollarSign,
   MapPin,
-  AlertCircle,
-  Archive,
+  X,
   FileText,
-  AlertTriangle,
-  Link,
+  ShoppingCart,
+  MessageSquare,
+  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import PaymentModal from "./PaymentModal";
 import { useState } from "react";
-import VisitModal from "../../VisitModal";
+import VisitModal from "./VisitModal";
 import {
   useGetBalancesSummaryQuery,
   useGetCustomerInformationByCustomerIdQuery,
@@ -100,156 +100,167 @@ export default function CustomerDashboard() {
     Math.max(min, Math.min(max, v));
 
   const salesTarget = Number(customer.obs6) || 0;
-  const salesSold =  320_000;
+  const salesSold = 320_000;
 
   const pct = salesTarget > 0 ? clamp((salesSold / salesTarget) * 100) : 0;
 
   const category = customer.obs5 || "";
   const visitDay = customer.obs4 || "";
 
+  // DATOS HARDCODEADOS (avisar cuáles son):
+  const monthlyOrders = 2; // HARDCODEADO - Total de pedidos mensuales
+  const notificationsCount = 0; // HARDCODEADO - Cantidad de notificaciones
+
   return (
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div
-        className={`min-h-screen ${isMobile ? "bg-zinc-900" : ""} p-4 mt-10`}
-      >
-        <div className="max-w-md mx-auto space-y-4">
-          {/* Customer Header */}
-          <h1
-            className={`text-xl font-bold ${isMobile ? "text-white" : ""} mb-6`}
-          >
-            {customer.id} - {customer.name}
-          </h1>
+      <div className="min-h-screen p-4 mt-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Main Card with Gradient Border */}
+          <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-[2px] rounded-3xl">
+            <div className="bg-zinc-950 rounded-3xl p-6 space-y-6">
+              {/* Customer Header */}
+              <h1 className="text-2xl font-bold text-white text-center">
+                {customer.id} - {customer.name}
+              </h1>
 
-          {/* Action Cards Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <ActionCard
-              icon={<Package className="h-6 w-6 text-red-500" />}
-              title={t("customerDashboard.newOrder")}
-              onClick={handleNewOrder}
-            />
-            <ActionCard
-              icon={<DollarSign className="h-6 w-6 text-red-500" />}
-              title={t("customerDashboard.newPayment")}
-              onClick={() => setIsPaymentModalOpen(true)}
-            />
+              {/* Action Cards Grid */}
+              <div className="grid grid-cols-4 gap-3">
+                <ActionCard
+                  icon={<Package className="h-8 w-8 text-orange-400" />}
+                  title="NUEVO PEDIDO"
+                  onClick={handleNewOrder}
+                />
+                <ActionCard
+                  icon={<DollarSign className="h-8 w-8 text-green-400" />}
+                  title="NUEVO PAGO"
+                  onClick={() => setIsPaymentModalOpen(true)}
+                />
+                <ActionCard
+                  icon={<MapPin className="h-8 w-8 text-red-400" />}
+                  title="NUEVA VISITA"
+                  onClick={() => setIsVisitModalOpen(true)}
+                />
+                <ActionCard
+                  icon={<X className="h-8 w-8 text-red-500" />}
+                  title="NO VENTA"
+                  onClick={() => {}}
+                  disabled
+                />
 
-            <PaymentModal
-              isOpen={isPaymentModalOpen}
-              onClose={() => setIsPaymentModalOpen(false)}
-            />
-            <ActionCard
-              icon={<MapPin className="h-6 w-6 text-red-500" />}
-              title={t("customerDashboard.newVisit")}
-              onClick={() => setIsVisitModalOpen(true)}
-            />
-            <VisitModal
-              isOpen={isVisitModalOpen}
-              onClose={() => setIsVisitModalOpen(false)}
-            />
+                <PaymentModal
+                  isOpen={isPaymentModalOpen}
+                  onClose={() => setIsPaymentModalOpen(false)}
+                />
+                <VisitModal
+                  isOpen={isVisitModalOpen}
+                  onClose={() => setIsVisitModalOpen(false)}
+                />
+              </div>
+
+              {/* Info Section */}
+              {(customer.obs4 || customer.obs5 || customer.obs6) && (
+                <div className="bg-zinc-800 rounded-2xl p-6 space-y-4">
+                  {/* Info Grid */}
+                  <div className="space-y-3">
+                    <InfoRow
+                      label="Categoría"
+                      value={category || "A"} // HARDCODEADO: "A" si no hay categoría
+                    />
+                    <InfoRow
+                      label="Día de visita"
+                      value={visitDay || "LUNES"} // HARDCODEADO: "LUNES" si no hay día
+                    />
+                    <InfoRow
+                      label="Objetivo de venta"
+                      value={formatCurrency(salesTarget)}
+                    />
+                    <InfoRow label="Vendido" value={formatCurrency(salesSold)} />
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-10 bg-white rounded-full overflow-hidden relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-end pr-4">
+                      <span className="text-lg font-bold text-zinc-900">
+                        {Math.round(pct)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Account Status */}
+              <section
+                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                onClick={() => router.push("/accounts/status")}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <FileText className="h-7 w-7 text-white" />
+                  <h2 className="text-xl font-bold text-white">
+                    Estado de cuenta
+                  </h2>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold text-white">
+                    ${formatedSumAmount}
+                  </p>
+                  <p className="text-base text-red-400">
+                    Vencido: ${formatedExpiredSumAmount}
+                  </p>
+                </div>
+              </section>
+
+              {/* Monthly Orders */}
+              <section
+                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                onClick={() => router.push("/orders/orders")}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <ShoppingCart className="h-7 w-7 text-white" />
+                  <h2 className="text-xl font-bold text-white">
+                    Pedidos mensuales
+                  </h2>
+                </div>
+                <p className="text-lg text-gray-300">Total: {monthlyOrders}</p>
+              </section>
+
+              {/* CRM */}
+              <section
+                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                onClick={() => router.push("/reclaims")}
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-7 w-7 text-white" />
+                  <h2 className="text-xl font-bold text-white">CRM</h2>
+                </div>
+              </section>
+
+              {/* Notifications */}
+              <section
+                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                onClick={() => router.push("/notifications")}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Bell className="h-7 w-7 text-white" />
+                    {notificationsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {notificationsCount}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Notificaciones
+                  </h2>
+                </div>
+              </section>
+            </div>
           </div>
-
-          {(customer.obs4 || customer.obs5 || customer.obs6) && (
-            <>
-              <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
-                <div className="mb-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-300">
-                      Objetivo de venta
-                    </span>
-                    <span className="text-xs font-semibold bg-zinc-200 text-zinc-900 rounded-md px-2 py-1">
-                      {formatCurrency(salesTarget)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-300">Vendido</span>
-                    <span className="text-xs font-semibold bg-zinc-200 text-zinc-900 rounded-md px-2 py-1">
-                      {formatCurrency(salesSold)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Barra de progreso estilo “rojo→verde” */}
-                <div className="w-full h-6 bg-zinc-600/70 rounded-full overflow-hidden relative">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-green-500"
-                    style={{ width: `${pct}%` }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-white drop-shadow-sm">
-                      {Math.round(pct)}%
-                    </span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-zinc-300">Categoría</span>
-                  <span className="text-xs font-bold bg-zinc-200 text-zinc-900 rounded-md px-3 py-1">
-                    {category}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-300">Día de visita</span>
-                  <span className="text-xs font-extrabold bg-zinc-200 text-zinc-900 rounded-md px-3 py-1">
-                    {visitDay}
-                  </span>
-                </div>
-              </section>
-            </>
-          )}
-
-          {/* Catalog Section */}
-          <section
-            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
-            onClick={() => router.push("/catalogue")}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Archive className="h-6 w-6 text-zinc-400" />
-              <h2 className="text-lg font-semibold text-white">
-                {t("customerDashboard.catalog")}
-              </h2>
-            </div>
-            <p className="text-sm text-zinc-300">
-              {t("customerDashboard.catalogDescription")}
-            </p>
-          </section>
-
-          {/* Account Status */}
-          <section
-            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
-            onClick={() => router.push("/accounts/status")}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <FileText className="h-6 w-6 text-emerald-500" />
-              <h2 className="text-lg font-semibold text-white">
-                {t("customerDashboard.accountStatus")}
-              </h2>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">
-                $ {formatedSumAmount}
-              </p>
-              <p className="text-sm text-zinc-300">
-                {t("customerDashboard.expired")} $ {formatedExpiredSumAmount}
-              </p>
-            </div>
-          </section>
-
-          {/* Pending Claims */}
-          <section
-            className="bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-lg p-4"
-            onClick={() => router.push("/reclaims")}
-          >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-6 w-6 text-zinc-400" />
-              <h2 className="text-lg font-semibold text-white">
-                {t("customerDashboard.pendingClaims")}
-              </h2>
-            </div>
-          </section>
         </div>
       </div>
     </PrivateRoute>
@@ -260,22 +271,39 @@ interface ActionCardProps {
   icon: React.ReactNode;
   title: string;
   onClick: () => void;
-  className?: string;
+  disabled?: boolean;
 }
 
-function ActionCard({ icon, title, onClick, className = "" }: ActionCardProps) {
+function ActionCard({ icon, title, onClick, disabled }: ActionCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-2 p-4 
-        bg-gradient-to-b from-zinc-700 to-zinc-800
-        rounded-lg transition-colors hover:from-zinc-600 hover:to-zinc-700
-        ${className}`}
+      disabled={disabled}
+      className="flex flex-col items-center justify-center gap-2 p-4 bg-zinc-700 rounded-2xl transition-all hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <div className="rounded-full bg-white/10 p-3">{icon}</div>
-      <span className="text-sm font-medium text-white text-center">
+      <div className="rounded-xl bg-zinc-800 p-3">{icon}</div>
+      <span className="text-xs font-bold text-white text-center leading-tight">
         {title}
       </span>
     </button>
+  );
+}
+
+interface InfoRowProps {
+  label: string;
+  value: string;
+}
+
+function InfoRow({ label, value }: InfoRowProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-base text-white flex items-center gap-2">
+        <span className="w-2 h-2 bg-white rounded-full" />
+        {label}
+      </span>
+      <span className="text-base font-bold bg-white text-zinc-900 rounded-lg px-4 py-2">
+        {value}
+      </span>
+    </div>
   );
 }

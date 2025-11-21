@@ -280,168 +280,232 @@ export function DocumentsView({
   /* ===================== Render ===================== */
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-3">
       {data && (
-        <div key={data.id} className="bg-gray-900 rounded-lg overflow-hidden">
+        <div
+          key={data.id}
+          className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 ${
+            selected
+              ? "ring-2 ring-purple-500 shadow-purple-200"
+              : "hover:shadow-xl"
+          }`}
+        >
           {/* Fila principal */}
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <input
-                type="checkbox"
-                checked={selectedRows.includes(data.id)}
-                onChange={(e) =>
-                  handleCheckboxChange(data.id, e.target.checked)
-                }
-                className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-              />
-              <button
-                onClick={() => toggleRow(data.id)}
-                className="text-gray-400 hover:text-gray-300"
-              >
-                {expandedRows.includes(data.id) ? (
-                  <ChevronDown className="w-5 h-5" />
-                ) : (
-                  <ChevronRight className="w-5 h-5" />
-                )}
-              </button>
-              <div className="flex flex-col">
-                <span className="text-gray-200 font-medium">{docNumber}</span>
-                <span className="text-sm text-gray-400">
-                  {formatDateDDMMYYYY(invoiceDateStr || "")} -{" "}
-                  {t("document.vto")}{" "}
-                  {formatDateDDMMYYYY(expirationDateStr || "")}
+          <div
+            className={`px-4 py-4 flex items-center gap-3 transition-colors ${
+              selected
+                ? "bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100"
+                : "bg-white hover:bg-gray-50"
+            }`}
+          >
+            {/* Checkbox */}
+            <input
+              type="checkbox"
+              checked={selectedRows.includes(data.id)}
+              onChange={(e) => handleCheckboxChange(data.id, e.target.checked)}
+              className="w-5 h-5 rounded-lg border-2 border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer flex-shrink-0"
+            />
+
+            {/* Botón expandir */}
+            <button
+              onClick={() => toggleRow(data.id)}
+              className={`p-2 rounded-lg transition-all flex-shrink-0 ${
+                expandedRows.includes(data.id)
+                  ? "bg-purple-100 text-purple-600"
+                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              }`}
+            >
+              {expandedRows.includes(data.id) ? (
+                <ChevronDown className="w-5 h-5" />
+              ) : (
+                <ChevronRight className="w-5 h-5" />
+              )}
+            </button>
+
+            {/* Información del documento */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-gray-900 font-bold text-base truncate">
+                    📄 {docNumber}
+                  </span>
+                  <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                    {formatDateDDMMYYYY(invoiceDateStr || "")} •{" "}
+                    {t("document.vto")}{" "}
+                    {formatDateDDMMYYYY(expirationDateStr || "")}
+                  </span>
+                </div>
+                <span className="text-gray-900 font-bold text-base sm:text-lg whitespace-nowrap">
+                   {formatPriceWithCurrency(amount)}
                 </span>
               </div>
             </div>
-            <span className="text-gray-200 font-medium">
-              {formatPriceWithCurrency(amount)}
-            </span>
           </div>
 
           {/* Detalle expandido */}
           {expandedRows.includes(data.id) && (
-            <div className="px-4 py-3 bg-gray-800 border-t border-gray-700">
-              <div className="flex flex-col gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {t("document.comprobante")}
+            <div className="px-4 py-5 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
+              <div className="space-y-4">
+                {/* Información básica en grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-white rounded-xl gap-1">
+                    <span className="text-gray-600 font-semibold text-xs sm:text-sm">
+                      📋 {t("document.comprobante")}
                     </span>
-                    <span className="text-gray-200">{docNumber}</span>
+                    <span className="text-gray-900 font-bold text-sm truncate">
+                      {docNumber}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {t("document.condicionPago")}
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-white rounded-xl gap-1">
+                    <span className="text-gray-600 font-semibold text-xs sm:text-sm">
+                      💳 {t("document.condicionPago")}
                     </span>
-                    <span className="text-gray-200">
+                    <span className="text-gray-900 font-medium text-sm text-left break-words">
                       {paymentConditionName}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {t("document.importe")}
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-white rounded-xl gap-1">
+                    <span className="text-gray-600 font-semibold text-xs sm:text-sm">
+                      💰 {t("document.importe")}
                     </span>
-                    <span className="text-gray-200">
-                      {formatPriceWithCurrency(amount)}
+                    <span className="text-gray-900 font-bold text-sm">
+                       {formatPriceWithCurrency(amount)}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-white rounded-xl gap-1">
+                    <span className="text-gray-600 font-semibold text-xs sm:text-sm">
+                      📊 {t("document.saldo") || "Saldo"}
+                    </span>
+                    <span className="text-gray-900 font-bold text-sm">
+                       {formatPriceWithCurrency(balance)}
                     </span>
                   </div>
                 </div>
 
-                {/* Saldo actual */}
-                <div className="flex justify-between">
-                  <span className="text-gray-400">
-                    {t("document.saldo") || "Saldo"}
+                {/* Días desde emisión */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-blue-50 rounded-xl border-2 border-blue-200 gap-2">
+                  <span className="text-blue-700 font-bold text-sm">
+                    📅 {t("document.diasDesdeEmision") || "Días desde emisión"}
                   </span>
-                  <span className="text-gray-200">
-                    {formatPriceWithCurrency(balance)}
+                  <span className="text-blue-900 font-bold text-base sm:text-lg">
+                    {Number.isFinite(days_since_invoice)
+                      ? `${days_since_invoice} días`
+                      : "—"}
                   </span>
                 </div>
 
-                {/* Días / Ajuste / Final */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      {t("document.diasDesdeEmision") || "Días desde emisión"}
-                    </span>
-                    <span className="text-gray-200">
-                      {Number.isFinite(days_since_invoice)
-                        ? days_since_invoice
-                        : "—"}
-                    </span>
+                {/* Checkbox 10% manual */}
+                {eligibleManual10 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-yellow-50 rounded-xl border-2 border-yellow-300 gap-3">
+                    <label className="text-yellow-700 font-bold text-sm flex items-center gap-2">
+                      <span>🎁</span>
+                      Aplicar 10% (30–37 días)
+                    </label>
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded-lg border-2 border-yellow-400 text-yellow-600 focus:ring-2 focus:ring-yellow-500 cursor-pointer"
+                      checked={manualTenApplied}
+                      onChange={(e) =>
+                        setGraceDiscount((prev) => ({
+                          ...prev,
+                          [data.id]: e.target.checked,
+                        }))
+                      }
+                    />
                   </div>
+                )}
 
-                  {/* Checkbox 10% manual — solo visible si es elegible */}
-                  {eligibleManual10 && (
-                    <div className="flex items-center justify-between">
-                      <label className="text-gray-400 flex-1">
-                        Aplicar 10% (30–37 días)
-                      </label>
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        checked={manualTenApplied}
-                        onChange={(e) =>
-                          setGraceDiscount((prev) => ({
-                            ...prev,
-                            [data.id]: e.target.checked,
-                          }))
-                        }
-                      />
+                {/* Ajustes (Descuento o Recargo) */}
+                {(isDesc || hasSurcharge) && (
+                  <div className="space-y-3">
+                    <div
+                      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded-xl border-2 gap-2 ${
+                        isDesc
+                          ? "bg-green-50 border-green-300"
+                          : "bg-red-50 border-red-300"
+                      }`}
+                    >
+                      <span
+                        className={`font-bold text-sm ${
+                          isDesc ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {isDesc
+                          ? "✨ " + t("document.descuento")
+                          : "⚠️ " + t("document.recargo")}
+                      </span>
+                      <span
+                        className={`font-bold text-base sm:text-lg ${
+                          isDesc ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {adjPct.toFixed(2)}%
+                      </span>
                     </div>
-                  )}
 
-                  {(isDesc || hasSurcharge) && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">
-                          {isDesc
-                            ? t("document.descuento")
-                            : t("document.recargo")}
-                        </span>
-                        <span
-                          className={`font-medium ${
-                            isDesc ? "text-emerald-500" : "text-rose-400"
-                          }`}
-                        >
-                          {adjPct.toFixed(2)}%
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">
-                          {isDesc
-                            ? t("document.importeDescuento") || "Importe desc."
-                            : t("document.importeRecargo") || "Importe rec."}
-                        </span>
-                        <span
-                          className={`text-gray-200 ${
-                            isDesc ? "text-emerald-500" : "text-rose-400"
-                          }`}
-                        >
-                          {isDesc ? "-" : "+"}
-                          {formatPriceWithCurrency(adjAmount)}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between font-medium">
-                        <span className="text-gray-400">
-                          {isDesc
-                            ? t("document.finalConDescuento") || "Final c/desc."
-                            : t("document.finalConRecargo") || "Final c/rec."}
-                        </span>
-                        <span className="text-gray-200">
-                          {formatPriceWithCurrency(finalAmount)}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {bannerNote ? (
-                    <div className="text-xs text-amber-400 mt-1">
-                      {bannerNote}
+                    <div
+                      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded-xl gap-2 ${
+                        isDesc ? "bg-green-50" : "bg-red-50"
+                      }`}
+                    >
+                      <span
+                        className={`font-semibold text-sm ${
+                          isDesc ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {isDesc
+                          ? t("document.importeDescuento") || "Importe desc."
+                          : t("document.importeRecargo") || "Importe rec."}
+                      </span>
+                      <span
+                        className={`font-bold text-sm ${
+                          isDesc ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {isDesc ? "-" : "+"}${" "}
+                        {formatPriceWithCurrency(adjAmount)}
+                      </span>
                     </div>
-                  ) : null}
-                </div>
+
+                    <div
+                      className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded-xl border-2 gap-2 ${
+                        isDesc
+                          ? "bg-gradient-to-r from-green-100 to-emerald-100 border-green-400"
+                          : "bg-gradient-to-r from-red-100 to-rose-100 border-red-400"
+                      }`}
+                    >
+                      <span
+                        className={`font-bold text-sm ${
+                          isDesc ? "text-green-800" : "text-red-800"
+                        }`}
+                      >
+                        💵{" "}
+                        {isDesc
+                          ? t("document.finalConDescuento") || "Final c/desc."
+                          : t("document.finalConRecargo") || "Final c/rec."}
+                      </span>
+                      <span
+                        className={`font-bold text-lg sm:text-xl ${
+                          isDesc ? "text-green-900" : "text-red-900"
+                        }`}
+                      >
+                        $ {formatPriceWithCurrency(finalAmount)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner de nota */}
+                {bannerNote && (
+                  <div className="p-3 bg-yellow-100 border-2 border-yellow-300 rounded-xl">
+                    <p className="text-xs sm:text-sm text-yellow-800 font-medium text-center break-words">
+                      ℹ️ {bannerNote}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -17,6 +17,7 @@ import {
 import ArticleDetails from "./ArticleDetails";
 import { useArticleId } from "@/app/context/AritlceIdContext";
 import Tag from "@/app/components/Home/components/Catalogue/Articles/components/Tag";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 interface FormState {
   id: string;
@@ -25,12 +26,12 @@ interface FormState {
 }
 
 const CardArticles = ({ article, showPurchasePrice }: any) => {
-  // Keeping all the existing state and hooks
   const [isModalOpen, setModalOpen] = useState(false);
   const { selectedClientId } = useClient();
   const [quantity, setQuantity] = useState(1);
   const { articleId, setArticleId } = useArticleId();
   const [modalArticle, setModalArticle] = useState(null);
+  const { isMobile } = useMobile();
 
   const {
     data: customer,
@@ -48,7 +49,6 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
     shopping_cart: [],
   });
 
-  // Keeping all the existing useEffects and functions
   useEffect(() => {
     if (customer) {
       setForm({
@@ -102,60 +102,72 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
   const isFavourite = form.favourites.includes(article.id);
   const closeModal = () => setModalOpen(false);
   const handleOpenModal = (article: any) => {
-    setArticleId(article.id); // si lo seguís usando en otros lugares
-    setModalArticle(article); // este lo pasás al modal
+    setArticleId(article.id);
+    setModalArticle(article);
     setModalOpen(true);
   };
-  
 
   return (
     <div>
-      <div className="relative flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 w-36 sm:w-52">
-        {/* Menu Icons */}
-        <div className="absolute top-2 right-2 z-30">
-          <ArticleMenu
-            onAddToFavourites={toggleFavourite}
-            isFavourite={isFavourite}
-            article={article}
-          />
-        </div>
-         {article.foundEquivalence && (
-          <div className="absolute top-44 left-2 bg-gray-300 text-black text-xs font-bold px-1 py-0.5 rounded z-20">
-            EQUIVALENCIA
-          </div>
-        )}
-        {/* Main Content */}
-        <div
-          onClick={() => handleOpenModal(article)}
-          className="cursor-pointer"
-        >
-          {/* Tag and Image Section */}
-          <div className="relative">
-            <div className="absolute w-full h-full flex justify-start items-start z-20 opacity-75">
-              <Tag tag={article.tag} />
-            </div>
-            <div className="aspect-square w-full">
-              <ArticleImage img={article.images} />
-            </div>
+      <div className={`relative flex flex-col bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 ${
+        isMobile ? 'w-full' : 'w-full max-w-sm'
+      }`}>
+        {/* Header con iconos */}
+        <div className="absolute top-2 left-2 right-2 z-30 flex justify-between items-start">
+          {/* Indicador de stock circular a la izquierda */}
+          <div className="flex-shrink-0">
             <StripeStock articleId={article.id} />
           </div>
 
-          {/* Product Info Section */}
-          <div className="p-3 bg-gray-50">
+          {/* Iconos a la derecha */}
+          <div className="flex items-center gap-1">
+            <ArticleMenu
+              onAddToFavourites={toggleFavourite}
+              isFavourite={isFavourite}
+              article={article}
+            />
+          </div>
+        </div>
+
+        {/* Tag en la esquina superior izquierda */}
+        {article.tag && (
+          <div className="absolute top-8 left-2 z-20">
+            <Tag tag={article.tag} />
+          </div>
+        )}
+
+        {/* Indicador de equivalencia */}
+        {article.foundEquivalence && (
+          <div className="absolute bottom-32 left-2 bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-full z-20">
+            EQUIVALENCIA
+          </div>
+        )}
+
+        {/* Contenido principal */}
+        <div onClick={() => handleOpenModal(article)} className="cursor-pointer">
+          {/* Imagen */}
+          <div className="relative bg-white pt-8 px-2">
+            <ArticleImage img={article.images} />
+          </div>
+
+          {/* Información del producto */}
+          <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-2`}>
             <ArticleName
               name={article.name}
               id={article.id}
               code={article.supplier_code}
             />
+
             {showPurchasePrice && (
               <>
                 <CostPrice
                   article={article}
                   selectedClientId={selectedClientId}
                 />
-                <div className="my-2 border-t border-gray-200" />
+                <div className="border-t border-gray-200" />
               </>
             )}
+
             <SuggestedPrice
               article={article}
               showPurchasePrice={showPurchasePrice}
@@ -163,8 +175,8 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
           </div>
         </div>
 
-        {/* Add to Cart Section */}
-        <div className="p-3 border-t border-gray-100">
+        {/* Sección de agregar al carrito */}
+        <div className={`${isMobile ? 'p-2' : 'p-4'} bg-gray-50 border-t border-gray-200`}>
           <AddToCart
             articleId={article.id}
             onAddToCart={toggleShoppingCart}
@@ -172,11 +184,20 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
             setQuantity={setQuantity}
           />
         </div>
+
+        {/* Barra de stock en la parte inferior */}
+        <div className="w-full">
+          <StripeStock articleId={article.id} isBar />
+        </div>
       </div>
 
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <ArticleDetails closeModal={closeModal} article={modalArticle} showPurchasePrice={showPurchasePrice}/>
+        <ArticleDetails
+          closeModal={closeModal}
+          article={modalArticle}
+          showPurchasePrice={showPurchasePrice}
+        />
       </Modal>
     </div>
   );

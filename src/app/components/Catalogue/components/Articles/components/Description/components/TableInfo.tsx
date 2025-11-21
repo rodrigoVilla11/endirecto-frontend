@@ -4,38 +4,35 @@ import { useTranslation } from "react-i18next";
 const TableInfo = ({ article }: any) => {
   const { t } = useTranslation();
 
-  return (
-    <div className="text-xs">
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("code")}</p>
-        <p className="font-light">{article.id}</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("supplierCode")}</p>
-        <p className="font-light">{article.supplier_code}</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("brand")}</p>
-        <p className="font-light">{article.brand || t("notAvailable")}</p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("item")}</p>
-        <p className="font-light max-w-40">
-          {article.item || t("notAvailable")}
-        </p>
-      </div>
-      <hr />
-      <div className="hover:bg-gray-300 p-1 rounded-sm flex justify-between">
-        <p className="font-bold">{t("description")}</p>
-        <p className="font-light max-w-40 break-words overflow-y-auto max-h-36 hide-scrollbar">
-          {article.description}
-        </p>
-      </div>
+  const infoRows = [
+    { label: t("code"), value: article.id },
+    { label: t("supplierCode"), value: article.supplier_code },
+    { label: t("brand"), value: article.brand || t("notAvailable") },
+    { label: t("item"), value: article.item || t("notAvailable") },
+    { 
+      label: t("description"), 
+      value: article.description,
+      isLong: true 
+    },
+  ];
 
-      <hr />
+  return (
+    <div className="space-y-2">
+      {infoRows.map((row, index) => (
+        <div key={index}>
+          <div className="flex justify-between items-start p-3 rounded-lg hover:bg-gradient-to-r hover:from-pink-50 hover:via-purple-50 hover:to-blue-50 transition-all duration-200">
+            <p className="font-bold text-gray-700 text-sm">{row.label}</p>
+            <p className={`font-normal text-gray-600 text-sm text-right ${
+              row.isLong ? 'max-w-xs break-words overflow-y-auto max-h-24 hide-scrollbar' : 'max-w-xs'
+            }`}>
+              {row.value}
+            </p>
+          </div>
+          {index < infoRows.length - 1 && (
+            <hr className="border-gray-200" />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

@@ -17,21 +17,21 @@ const Search = () => {
   };
 
   return (
-    <div className="h-8 w-[80%] sm:w-[100%] flex items-center border border-gray-300 rounded-3xl p-2 bg-white shadow-md">
-      <div className="relative flex items-center flex-grow">
-        <BiSearchAlt className="absolute left-1 text-2xl text-gray-400" />
+    <div className="h-10 w-full flex items-center border border-gray-200 rounded-full px-4 bg-white shadow-sm">
+      <BiSearchAlt className="text-xl text-gray-400 flex-shrink-0" />
+      <div className="relative flex items-center flex-1 ml-2">
         <input
           data-ignore-click
           type="text"
           value={searchQuery}
           onChange={handleSearch}
-          className="h-6 rounded-3xl pl-8 border-none focus:ring-0 outline-none text-xs font-semibold"
-          placeholder="Buscá lo que estás necesitando..."
+          className="w-full h-full bg-transparent border-none focus:ring-0 outline-none text-sm text-gray-700 placeholder-gray-400"
+          placeholder="Busca lo que estás necesitando..."
         />
         {searchQuery && (
           <BiX
             onClick={clearSearch}
-            className="absolute right-1 text-2xl text-gray-400 cursor-pointer"
+            className="text-2xl text-gray-400 cursor-pointer hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
           />
         )}
         <ArticleSearchResults

@@ -72,10 +72,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   >(null);
   const didAutoLocateRef = useRef(false);
   const [insituVisit] = useCheckInsituVisitMutation();
-   const [form, setForm] = useState({
-      gps: "",
-      insitu: false,
-    });
+  const [form, setForm] = useState({
+    gps: "",
+    insitu: false,
+  });
 
   const retryAskLocation = () => {
     if (permState === "denied") {
@@ -1435,35 +1435,39 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/90 z-50"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
       onClick={!isConfirmModalOpen ? onClose : undefined}
     >
       <div
-        className="h-full flex flex-col bg-zinc-900 max-w-md mx-auto"
+        className="h-full flex flex-col bg-zinc-950 max-w-4xl mx-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-zinc-800">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="text-white">
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+            >
               ←
             </button>
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-2xl font-bold text-white">
               {t("paymentModal.headerTitle")}
             </h2>
           </div>
-          <span className="text-white">📄</span>
+          <span className="text-3xl">📄</span>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          <div className="border-b border-zinc-800">
+          {/* Info Section */}
+          <div className="bg-zinc-950 ">
             <InfoRow label={t("paymentModal.date")} value={formattedDate} />
 
-             <InfoRow
+            <InfoRow
               label={
                 <div
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 cursor-pointer"
                   onClick={handleGetLocation}
                 >
                   {t("visitModal.info.gps")} 🌐
@@ -1471,39 +1475,41 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
               value={
                 isLocating ? (
-                  <span className="flex items-center gap-2 text-zinc-300">
+                  <span className="flex items-center gap-2 text-gray-600">
                     <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     {t("visitModal.info.waitingLocation") ||
                       "Obteniendo ubicación..."}
                   </span>
                 ) : locError ? (
-                  <span className="flex items-center gap-2">
-                    <span className="text-red-500">{locError}</span>
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span className="text-red-600 font-semibold">
+                      {locError}
+                    </span>
                     <button
                       type="button"
                       onClick={retryAskLocation}
-                      className="text-xs px-2 py-0.5 rounded bg-zinc-200 text-zinc-900 hover:bg-white"
+                      className="text-xs px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 font-bold"
                     >
                       Reintentar
                     </button>
                     {permState === "denied" && (
                       <details className="ml-2">
-                        <summary className="text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                        <summary className="text-xs text-gray-600 hover:text-gray-900 cursor-pointer font-semibold">
                           ¿Cómo habilitar?
                         </summary>
-                        <div className="mt-1 text-xs text-zinc-300 max-w-[260px]">
-                          <p>
-                            • Chrome (desktop): clic en el candado → Permisos
-                            del sitio → Ubicación → Permitir, y recargá la
-                            página.
+                        <div className="mt-2 text-xs text-gray-700 max-w-md bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="mb-2">
+                            • <strong>Chrome (desktop):</strong> clic en el
+                            candado → Permisos del sitio → Ubicación → Permitir,
+                            y recargá la página.
+                          </p>
+                          <p className="mb-2">
+                            • <strong>Android (Chrome):</strong> candado →
+                            Permisos → Ubicación → Permitir.
                           </p>
                           <p>
-                            • Android (Chrome): candado → Permisos → Ubicación →
-                            Permitir.
-                          </p>
-                          <p>
-                            • iOS (Safari): Ajustes → Safari → Ubicación →
-                            Preguntar/Permitir; luego recargá.
+                            • <strong>iOS (Safari):</strong> Ajustes → Safari →
+                            Ubicación → Preguntar/Permitir; luego recargá.
                           </p>
                         </div>
                       </details>
@@ -1514,33 +1520,31 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     {t("visitModal.info.waitingLocation")}
                   </span>
                 ) : insitu ? (
-                  <span className="text-green-500">
+                  <span className="text-green-600 font-bold">
                     {t("visitModal.info.insitu")}
                     {gps && (
-                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                      <span className="ml-2 text-xs text-gray-500">{gps}</span>
                     )}
                   </span>
                 ) : (
-                  <span className="text-red-500">
+                  <span className="text-red-600 font-bold">
                     {t("visitModal.info.notInsitu")}
                     {gps && (
-                      <span className="ml-2 text-xs text-zinc-400">{gps}</span>
+                      <span className="ml-2 text-xs text-gray-500">{gps}</span>
                     )}
                   </span>
                 )
               }
             />
 
-
             {/* SUBTOTAL */}
-            <InfoRow label="Total facturas" value={formattedTotalGross} />
-            {/* <InfoRow label="Pagos" value={formattedTotalValues} /> */}
+            <InfoRow label="💰 Total facturas" value={formattedTotalGross} />
 
-            {/* 3) Desc/Rec financiero ($ en pesos con signo) */}
+            {/* Desc/Rec financiero */}
             <InfoRow
               label={
                 <LabelWithTip
-                  label="Desc/Costo financiero"
+                  label="📊 Desc/Costo financiero"
                   tip={
                     showSobrePago
                       ? "Ajuste aplicado SOBRE EL PAGO cargado (prorrateado)."
@@ -1549,17 +1553,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 />
               }
               value={
-                <div className="text-right">
+                <div className="text-right font-bold">
                   {(() => {
                     const signedRaw = showSobrePago
                       ? docAdjustmentSigned < 0
-                        ? totalAdjustmentSigned // recargo prorrateado
+                        ? totalAdjustmentSigned
                         : hasRefiValues
                         ? 0
-                        : totalAdjustmentSigned // descuento: 0 si refi, si no prorrateado
+                        : totalAdjustmentSigned
                       : docAdjustmentSigned;
 
-                    // Normalizamos para UI: "desc" se muestra con signo "−" y en verde
                     const isDiscount = showSobrePago
                       ? signedRaw < 0
                       : signedRaw >= 0;
@@ -1568,9 +1571,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     const text = `${isDiscount ? "−" : "+"}${currencyFmt.format(
                       displayAbs
                     )}`;
-                    const cls = isDiscount
-                      ? "text-emerald-400"
-                      : "text-red-400";
+                    const cls = isDiscount ? "text-green-600" : "text-red-600";
 
                     return <div className={cls}>{text}</div>;
                   })()}
@@ -1578,39 +1579,23 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               }
             />
 
-            {/* <InfoRow
-              label="Total a pagar a la fecha"
-              value={currencyFmt.format(totalFinal)}
-            /> */}
             <InfoRow
-              label="TOTAL A PAGAR (efect/transf)"
+              label="💵 TOTAL A PAGAR (efect/transf)"
               value={currencyFmt.format(round2(totalDocsFinal))}
+              valueClassName="font-bold text-lg text-white"
             />
-
-            {/* Valores y Diferencia (igual que antes) */}
-            {/* <InfoRow
-              label="Saldo"
-              value={formattedDiff}
-              valueClassName={
-                diff === 0
-                  ? "text-emerald-500"
-                  : diff > 0
-                  ? "text-amber-400"
-                  : "text-red-500"
-              }
-            /> */}
           </div>
 
           {/* Tabs */}
-          <div className="grid grid-cols-3">
+          <div className="grid grid-cols-3 bg-zinc-950 ">
             {tabsOrder.map((tabKey) => (
               <button
                 key={tabKey}
                 onClick={() => setActiveTab(tabKey)}
-                className={`p-4 text-sm font-medium ${
+                className={`p-4 text-sm font-bold transition-all ${
                   activeTab === tabKey
-                    ? "bg-white text-black"
-                    : "bg-zinc-900 text-white"
+                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                    : "bg-zinc-950  text-white hover:bg-gray-200"
                 }`}
               >
                 {t(`paymentModal.tabs.${tabKey}`)}
@@ -1619,9 +1604,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           </div>
 
           {/* Tab Content */}
-          <div className="p-4">
+          <div className="p-6 bg-zinc-950 ">
             {activeTab === "documents" && (
-              <div className="text-white">
+              <div className="space-y-4">
                 {data &&
                   "documents" in data &&
                   (data as any).documents.map((item: any) => (
@@ -1648,25 +1633,25 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             )}
 
             {activeTab === "values" && (
-              <div className="text-white space-y-4">
+              <div className="space-y-4">
                 {/* Selector de condición */}
-                <div className="flex gap-2">
+                <div className="flex gap-3 flex-wrap">
                   <button
-                    className={`px-3 py-2 rounded ${
+                    className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "cta_cte"
-                        ? "bg-white text-black"
-                        : "bg-zinc-700 text-white"
+                        ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                     onClick={() => setPaymentTypeUI("cta_cte")}
                   >
-                    Cuenta corriente
+                    💳 Cuenta corriente
                   </button>
 
                   <button
-                    className={`px-3 py-2 rounded ${
+                    className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "pago_anticipado"
-                        ? "bg-white text-black"
-                        : "bg-zinc-700 text-white"
+                        ? "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-lg"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     } ${
                       hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""
                     }`}
@@ -1680,120 +1665,129 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         : "Pago anticipado"
                     }
                   >
-                    Pago anticipado
+                    💵 Pago anticipado
                   </button>
                 </div>
 
-                {/* Botón para PAGAR TOTAL (descuento aplicado al comprobante) */}
-                <button
-                  className="mt-1 px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
-                  onClick={() => {
-                    const method: PaymentMethod = "efectivo";
-                    const amount = round2(totalDocsFinal);
-
-                    const base: ValueItem = {
-                      amount: amount.toString(),
-                      selectedReason: PAY_TOTAL_REASON,
-                      method,
-                    };
-
-                    setPayTotalDocMode(true); // 👈 activamos modo total por doc
-
-                    setNewValues((prev) => {
-                      const idx = prev.findIndex(
-                        (v) => v.selectedReason === base.selectedReason
-                      );
-                      if (idx >= 0) {
-                        const clone = [...prev];
-                        clone[idx] = base;
-                        return clone;
-                      }
-                      return [base, ...prev];
-                    });
-                  }}
-                  disabled={computedDiscounts.length === 0}
-                >
-                  Pagar total
-                </button>
-                {newValues.length > 0 ? (
+                {/* Botones de acción */}
+                <div className="flex gap-3 flex-wrap">
                   <button
-                    className="mx-4 mt-1 px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                     onClick={() => {
-                      if (hasInvoiceToday) {
-                        alert(
-                          "No se puede refinanciar saldo cuando hay una factura de hoy."
+                      const method: PaymentMethod = "efectivo";
+                      const amount = round2(totalDocsFinal);
+
+                      const base: ValueItem = {
+                        amount: amount.toString(),
+                        selectedReason: PAY_TOTAL_REASON,
+                        method,
+                      };
+
+                      setPayTotalDocMode(true);
+
+                      setNewValues((prev) => {
+                        const idx = prev.findIndex(
+                          (v) => v.selectedReason === base.selectedReason
                         );
-                        return;
-                      }
-                      openCreateModal();
+                        if (idx >= 0) {
+                          const clone = [...prev];
+                          clone[idx] = base;
+                          return clone;
+                        }
+                        return [base, ...prev];
+                      });
                     }}
-                    disabled={computedDiscounts.length === 0 || hasInvoiceToday}
-                    title={
-                      hasInvoiceToday
-                        ? "No disponible: hay una factura de hoy"
-                        : "Armar plan en 30/60/90 con cheques iguales"
-                    }
+                    disabled={computedDiscounts.length === 0}
                   >
-                    {openModalRefi ? "Cerrar refinanciación" : "Refi. Saldo"}
+                    ✅ Pagar total
                   </button>
-                ) : (
-                  <button
-                    className="mx-4 mt-1 px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
-                    onClick={() => {
-                      if (hasInvoiceToday) {
-                        alert(
-                          "No se puede refinanciar saldo cuando hay una factura de hoy."
-                        );
-                        return;
+
+                  {newValues.length > 0 ? (
+                    <button
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-bold hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      onClick={() => {
+                        if (hasInvoiceToday) {
+                          alert(
+                            "No se puede refinanciar saldo cuando hay una factura de hoy."
+                          );
+                          return;
+                        }
+                        openCreateModal();
+                      }}
+                      disabled={
+                        computedDiscounts.length === 0 || hasInvoiceToday
                       }
-                      setShowRefi((s) => !s);
-                    }}
-                    disabled={computedDiscounts.length === 0 || hasInvoiceToday}
-                    title={
-                      hasInvoiceToday
-                        ? "No disponible: hay una factura de hoy"
-                        : "Armar plan en 30/60/90 con cheques iguales"
-                    }
-                  >
-                    {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
-                  </button>
-                )}
+                      title={
+                        hasInvoiceToday
+                          ? "No disponible: hay una factura de hoy"
+                          : "Armar plan en 30/60/90 con cheques iguales"
+                      }
+                    >
+                      📊{" "}
+                      {openModalRefi ? "Cerrar refinanciación" : "Refi. Saldo"}
+                    </button>
+                  ) : (
+                    <button
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      onClick={() => {
+                        if (hasInvoiceToday) {
+                          alert(
+                            "No se puede refinanciar saldo cuando hay una factura de hoy."
+                          );
+                          return;
+                        }
+                        setShowRefi((s) => !s);
+                      }}
+                      disabled={
+                        computedDiscounts.length === 0 || hasInvoiceToday
+                      }
+                      title={
+                        hasInvoiceToday
+                          ? "No disponible: hay una factura de hoy"
+                          : "Armar plan en 30/60/90 con cheques iguales"
+                      }
+                    >
+                      🔄 {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
+                    </button>
+                  )}
+                </div>
 
                 {showRefi && (
-                  <div className="mt-4 rounded-lg border border-zinc-800 p-4 bg-zinc-900/50 space-y-3">
-                    <div className="text-sm text-zinc-300">
-                      Saldo a refinanciar:{" "}
-                      <b>{currencyFmt.format(remainingToRefi)}</b>
+                  <div className="mt-4 rounded-2xl border-2 border-gray-200 p-6 bg-zinc-950  space-y-4">
+                    <div className="text-sm text-gray-700 font-semibold bg-white p-3 rounded-xl">
+                      💰 Saldo a refinanciar:{" "}
+                      <span className="text-purple-600 font-bold">
+                        {currencyFmt.format(remainingToRefi)}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() => proposeChequesPreset([30])}
                       >
                         1 cheque (30 días)
                       </button>
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() => proposeChequesPreset([30, 60])}
                       >
                         2 cheques (30/60)
                       </button>
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() => proposeChequesPreset([30, 60, 90])}
                       >
                         3 cheques (30/60/90)
                       </button>
-
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() => proposeChequesPreset([30, 60, 90, 120])}
                       >
                         4 cheques (30/60/90/120)
                       </button>
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() =>
                           proposeChequesPreset([30, 60, 90, 120, 150])
                         }
@@ -1801,7 +1795,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         5 cheques (30/60/90/120/150)
                       </button>
                       <button
-                        className="px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700"
+                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
                         onClick={() =>
                           proposeChequesPreset([30, 60, 90, 120, 150, 180])
                         }
@@ -1810,10 +1804,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       </button>
                     </div>
 
-                    <p className="text-xs text-zinc-400">
-                      Cada cheque se calcula para que el <i>neto imputable</i>{" "}
-                      total coincida con el saldo a refinanciar. Se respeta la
-                      tasa anual y los días de gracia configurados.
+                    <p className="text-xs text-gray-600 bg-white p-3 rounded-lg border border-gray-200">
+                      ℹ️ Cada cheque se calcula para que el{" "}
+                      <i>neto imputable</i> total coincida con el saldo a
+                      refinanciar. Se respeta la tasa anual y los días de gracia
+                      configurados.
                     </p>
                   </div>
                 )}
@@ -1828,16 +1823,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   docAdjustmentSigned={
                     showSobrePago
                       ? docAdjustmentSigned < 0
-                        ? -totalAdjustmentSigned // recargo → negativo
+                        ? -totalAdjustmentSigned
                         : hasRefiValues
                         ? 0
-                        : -totalAdjustmentSigned // descuento → 0 si refi, si no positivo
+                        : -totalAdjustmentSigned
                       : docAdjustmentSigned
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={
                     blockChequeInterest
-                      ? 100000 // 👈 fuerza días_cobrados = 0 en la UI
+                      ? 100000
                       : checkGrace?.value
                       ? checkGrace.value
                       : 10
@@ -1850,7 +1845,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             )}
 
             {activeTab === "comments" && (
-              <div className="text-white">
+              <div>
                 <CommentsView comments={comments} setComments={setComments} />
               </div>
             )}
@@ -1858,7 +1853,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 mt-auto border-t border-zinc-800">
+        <div className="p-6 mt-auto bg-zinc-950 ">
           <button
             onClick={() => {
               if (!canSend) {
@@ -1872,8 +1867,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               setIsConfirmModalOpen(true);
             }}
             disabled={!canSend}
-            className={`w-full bg-blue-500 text-white py-3 rounded-md font-medium ${
-              !canSend ? "opacity-60 cursor-not-allowed" : ""
+            className={`w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg transition-all hover:from-green-600 hover:to-emerald-700 hover:shadow-xl ${
+              !canSend ? "opacity-50 cursor-not-allowed" : ""
             }`}
             title={
               !canSend
@@ -1883,19 +1878,19 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 : undefined
             }
           >
-            {t("paymentModal.send")}
+            ✅ {t("paymentModal.send")}
           </button>
         </div>
       </div>
 
-      {/* Confirm Modal (sin cambios funcionales) */}
+      {/* Confirm Modal */}
       {isConfirmModalOpen && (
         <ConfirmDialog
           open={isConfirmModalOpen}
           onCancel={() => setIsConfirmModalOpen(false)}
           onConfirm={handleCreatePayment}
           isLoading={isCreating || isSubmittingPayment}
-          canConfirm={canSend} // 👈 ahora exige valores + validez
+          canConfirm={canSend}
           invalidReason={
             newValues.length === 0
               ? "Agregá al menos un pago (valor)."
@@ -1903,7 +1898,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           }
           title="Confirmar envío"
         >
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             ¿Querés confirmar la creación del pago?
           </p>
         </ConfirmDialog>
@@ -2033,7 +2028,7 @@ function ModalCalculator({
       {/* Dialog: bloquea la propagación para no cerrar al clickear adentro */}
       <div
         ref={dialogRef}
-        className="relative z-[101] w-full max-w-3xl mx-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl outline-none ring-1 ring-black/5 "
+        className="relative z-[101] w-full max-w-3xl mx-4 rounded-2xl bg-neutral-900 shadow-2xl outline-none ring-1 ring-black/5 "
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
@@ -2042,7 +2037,7 @@ function ModalCalculator({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex items-center justify-center rounded-xl px-3 py-1 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+            className="inline-flex items-center justify-center rounded-xl px-3 py-1 text-sm hover:bg-white/10"
             aria-label="Cerrar"
           >
             ✕
@@ -2102,7 +2097,7 @@ function ConfirmDialog({
     <div className="fixed inset-0 z-[120] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
       <div
-        className="relative w-full max-w-lg rounded-xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-xl bg-zinc-900 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

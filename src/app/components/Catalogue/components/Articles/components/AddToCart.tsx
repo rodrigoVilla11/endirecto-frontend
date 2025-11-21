@@ -3,13 +3,14 @@ import { useGetStockByArticleIdQuery } from "@/redux/services/stockApi";
 import { FaShoppingCart, FaCheck } from "react-icons/fa";
 import { useAuth } from "@/app/context/AuthContext";
 import { useTranslation } from "react-i18next";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 interface AddToCartProps {
   articleId: string;
   onAddToCart: (quantity: number) => void;
   quantity: number;
   setQuantity: (quantity: number) => void;
-  disabled?: boolean; // Nueva prop opcional
+  disabled?: boolean;
 }
 
 const AddToCart: React.FC<AddToCartProps> = ({
@@ -17,29 +18,19 @@ const AddToCart: React.FC<AddToCartProps> = ({
   onAddToCart,
   quantity,
   setQuantity,
-  disabled = false, // Valor por defecto
+  disabled = false,
 }) => {
   const { t } = useTranslation();
+  const { isMobile } = useMobile();
   const encodedId = encodeURIComponent(articleId);
   const { data } = useGetStockByArticleIdQuery({
     articleId: encodedId,
   });
   const { role } = useAuth();
 
-  const stockMessage = data?.quantity
-    ? t("stockAvailable", { quantity: data.quantity })
-    : t("noStock");
-
-  const stockColor =
-    data?.quantity && data.quantity !== "0" ? "text-green-600" : "text-red-500";
-
-  // Estado local para el input como string
   const [inputValue, setInputValue] = useState("");
-
-  // Estado local para mostrar el tick de confirmación
   const [showTick, setShowTick] = useState(false);
 
-  // Sincronizamos el input local con el valor numérico recibido
   useEffect(() => {
     if (quantity === 1) {
       setInputValue("");
@@ -48,9 +39,8 @@ const AddToCart: React.FC<AddToCartProps> = ({
     }
   }, [quantity]);
 
-  // Función para actualizar la cantidad
   const updateQuantity = (value: string) => {
-    if (disabled) return; // No actualizar si está disabled
+    if (disabled) return;
     
     setInputValue(value);
     const parsed = Number(value);
@@ -60,14 +50,13 @@ const AddToCart: React.FC<AddToCartProps> = ({
   };
 
   const handleAddToCart = () => {
-    if (disabled) return; // No ejecutar si está disabled
+    if (disabled) return;
     
     const qty = inputValue.trim() === "" ? 1 : Number(inputValue);
     const validQty = Math.max(1, qty);
     setQuantity(validQty);
     onAddToCart(validQty);
     
-    // Mostrar tick de confirmación
     setShowTick(true);
     setTimeout(() => {
       setShowTick(false);
@@ -75,47 +64,42 @@ const AddToCart: React.FC<AddToCartProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 w-full">
-      {role !== "CUSTOMER" && (
-        <p className={`text-xs font-semibold ${stockColor}`}>{stockMessage}</p>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={inputValue}
-          onChange={(e) => updateQuantity(e.target.value)}
-          placeholder="1"
-          className={`border rounded w-12 p-1 text-center text-sm ${
-            disabled 
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-              : "bg-white text-gray-900"
-          }`}
-          min="1"
-          disabled={disabled}
-          onBlur={() => {
-            if (!disabled && inputValue.trim() === "") {
-              setInputValue("");
-              setQuantity(1);
-            }
-          }}
-        />
-        <button
-          className={`p-2 rounded-full transition-colors text-white ${
-            disabled
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-primary hover:bg-primary/90"
-          }`}
-          onClick={handleAddToCart}
-          aria-label={t("addToCart")}
-          disabled={disabled}
-        >
-          {showTick ? (
-            <FaCheck className="w-4 h-4" />
-          ) : (
-            <FaShoppingCart className="w-4 h-4" />
-          )}
-        </button>
-      </div>
+    <div className="flex items-center justify-center gap-2 w-full">
+      <input
+        type="number"
+        value={inputValue}
+        onChange={(e) => updateQuantity(e.target.value)}
+        placeholder="1"
+        className={`border-2 rounded-lg ${isMobile ? 'w-12 px-2 py-1.5 text-xs' : 'w-16 px-3 py-2 text-sm'} text-center font-medium ${
+          disabled 
+            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" 
+            : "bg-white text-gray-900 border-gray-300 focus:border-purple-500 focus:outline-none"
+        }`}
+        min="1"
+        disabled={disabled}
+        onBlur={() => {
+          if (!disabled && inputValue.trim() === "") {
+            setInputValue("");
+            setQuantity(1);
+          }
+        }}
+      />
+      <button
+        className={`${isMobile ? 'p-2' : 'p-3'} rounded-full transition-all text-white shadow-md ${
+          disabled
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:shadow-lg hover:scale-110"
+        }`}
+        onClick={handleAddToCart}
+        aria-label={t("addToCart")}
+        disabled={disabled}
+      >
+        {showTick ? (
+          <FaCheck className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+        ) : (
+          <FaShoppingCart className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+        )}
+      </button>
     </div>
   );
 };
