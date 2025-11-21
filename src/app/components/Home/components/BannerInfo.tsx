@@ -58,7 +58,7 @@ const BannerInfo = () => {
                 <div className={`p-4 rounded-2xl bg-white bg-opacity-10`}>
                   {stat.icon}
                 </div>
-                <p className="text-6xl font-bold bg-gradient-to-r from-red-500  to-blue-500 bg-clip-text text-transparent">
+                <p className="text-6xl font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
                   {stat.value}
                 </p>
                 <p className="text-gray-600 font-bold text-lg uppercase tracking-wide">

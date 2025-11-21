@@ -258,7 +258,7 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
 
   return (
     <div 
-      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar" 
+      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white p-4 rounded-xl" 
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header del modal */}
