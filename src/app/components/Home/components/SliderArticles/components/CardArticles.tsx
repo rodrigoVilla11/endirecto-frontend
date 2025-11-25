@@ -114,7 +114,6 @@ const CardArticles = ({ article }: any) => {
       {isAuthenticated && (
         <StripeStock
           articleId={article.id}
-          customClass="text-center text-yellow-700 bg-yellow-300 font-semibold text-sm py-1"
         />
       )}
 
