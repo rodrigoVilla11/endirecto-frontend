@@ -232,7 +232,7 @@ const SalesTargetsPage = () => {
     <PrivateRoute requiredRoles={["VENDEDOR", "ADMINISTRADOR"]}>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-6 mt-4">
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white rounded-b-3xl shadow-2xl p-4 mb-4 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 text-black rounded-b-3xl shadow-2xl p-4 mb-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
 
