@@ -37,7 +37,7 @@ const SidebarFilters = () => {
   };
 
   return (
-    <div className="w-full md:w-80 bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl shadow-xl p-4 space-y-4 max-h-full overflow-y-auto">
+    <div className="w-full md:w-80 h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl shadow-xl p-4 space-y-4 max-h-full overflow-y-auto">
       {/* Ordenar por */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700 uppercase">

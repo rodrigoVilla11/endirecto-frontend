@@ -30,31 +30,34 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
   } = useFilters();
   const { isMobile } = useMobile();
 
-  if (!isVisible) return null;
-
-  // === QUERIES (igual que en VehicleFilter) ===
+  // === QUERIES (hooks SIEMPRE al tope, sin condicionales) ===
   const { data: brandsData = [], isLoading: isLoadingBrands } =
-    useGetArticleVehicleBrandsQuery(null);
+    useGetArticleVehicleBrandsQuery(null, {
+      skip: !isVisible, // opcional, para no pedir si está cerrado
+    });
 
   const { data: modelsData = [], isLoading: isLoadingModels } =
     useGetArticleVehicleModelsQuery(
       { brand: vehicleBrand },
-      { skip: !vehicleBrand }
+      { skip: !isVisible || !vehicleBrand }
     );
 
   const { data: enginesData = [], isLoading: isLoadingEngines } =
     useGetArticleVehicleEnginesQuery(
       { brand: vehicleBrand },
-      { skip: !vehicleBrand }
+      { skip: !isVisible || !vehicleBrand }
     );
 
   const { data: yearsData = [], isLoading: isLoadingYears } =
     useGetArticleVehicleYearsQuery(
       { brand: vehicleBrand, model },
-      { skip: !vehicleBrand || !model }
+      { skip: !isVisible || !vehicleBrand || !model }
     );
 
-  // === HANDLERS (igual lógica que en VehicleFilter) ===
+  // ⬇️ recien ahora el early return
+  if (!isVisible) return null;
+
+  // === HANDLERS ===
   const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setVehicleBrand(value);
@@ -127,9 +130,7 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
               onChange={handleBrandChange}
               disabled={isLoadingBrands}
               className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                isLoadingBrands
-                  ? "bg-gray-100 cursor-not-allowed opacity-60"
-                  : ""
+                isLoadingBrands ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
               }`}
             >
               <option value="">
