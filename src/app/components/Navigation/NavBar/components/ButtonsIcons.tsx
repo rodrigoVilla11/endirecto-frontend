@@ -209,7 +209,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
           onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
         />
         {notifications.filter((n) => !n.read).length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse">
+          <span onClick={() => setIsNotificationsMenuOpen((prev) => !prev)} className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse">
             {notifications.filter((n) => !n.read).length}
           </span>
         )}

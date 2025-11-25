@@ -93,8 +93,8 @@ const Buttons = () => {
           </button>
           
           {isMenuOpen && (
-            <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm">
-              <div className="absolute right-0 top-0 h-full w-3/4 bg-gradient-to-br from-zinc-900 to-zinc-800 shadow-2xl">
+            <div className="fixed inset-0 z-50 bg-white backdrop-blur-sm">
+              <div className="absolute right-0 top-0 h-full w-3/4 bg-gradient-to-r from-red-500 via-white to-blue-500 shadow-2xl">
                 {/* Header del menú */}
                 <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center">
                   <button 
