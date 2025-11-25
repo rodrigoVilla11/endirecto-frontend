@@ -32,7 +32,11 @@ interface ArticleDetailsProps {
   showPurchasePrice: boolean;
 }
 
-const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetailsProps) => {
+const ArticleDetails = ({
+  closeModal,
+  showPurchasePrice,
+  article,
+}: ArticleDetailsProps) => {
   const { t } = useTranslation();
   const { isMobile } = useMobile();
   const [quantity, setQuantity] = useState(1);
@@ -65,7 +69,8 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
     }
   );
 
-  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdating }] =
+    useUpdateCustomerMutation();
 
   const resolvedArticle = useMemo(() => {
     if (article) return article;
@@ -90,13 +95,13 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
 
   const toggleFavourite = useCallback(async () => {
     if (!resolvedArticle || !form.id) return;
-    
+
     const isFavourite = form.favourites.includes(resolvedArticle.id);
     const updatedFavourites = isFavourite
       ? form.favourites.filter((id) => id !== resolvedArticle.id)
       : [...form.favourites, resolvedArticle.id];
 
-    setForm(prev => ({ ...prev, favourites: updatedFavourites }));
+    setForm((prev) => ({ ...prev, favourites: updatedFavourites }));
 
     try {
       await updateCustomer({ id: form.id, favourites: updatedFavourites }).unwrap();
@@ -109,16 +114,19 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
 
   const toggleShoppingCart = useCallback(async () => {
     if (!resolvedArticle || quantity < 1 || !form.id) return;
-    
+
     const newShoppingCart = [...form.shopping_cart];
     for (let i = 0; i < quantity; i++) {
       newShoppingCart.push(resolvedArticle.id);
     }
 
-    setForm(prev => ({ ...prev, shopping_cart: newShoppingCart }));
+    setForm((prev) => ({ ...prev, shopping_cart: newShoppingCart }));
 
     try {
-      await updateCustomer({ id: form.id, shopping_cart: newShoppingCart }).unwrap();
+      await updateCustomer({
+        id: form.id,
+        shopping_cart: newShoppingCart,
+      }).unwrap();
       refetch();
       setQuantity(1);
     } catch (error) {
@@ -132,9 +140,9 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
   }, []);
 
   const isLoading = isCustomerLoading || (!article && isArticleLoading);
-  
-  const isFavourite = useMemo(() => 
-    resolvedArticle && form.favourites.includes(resolvedArticle.id),
+
+  const isFavourite = useMemo(
+    () => resolvedArticle && form.favourites.includes(resolvedArticle.id),
     [resolvedArticle, form.favourites]
   );
 
@@ -143,10 +151,12 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
       return (
         <div className="flex flex-col justify-center items-center h-96 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-2xl">
           <div className="relative w-16 h-16 mb-4">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin" />
           </div>
-          <p className="text-sm font-medium text-gray-600">{t("loading")}...</p>
+          <p className="text-sm font-medium text-gray-600">
+            {t("loading")}...
+          </p>
         </div>
       );
     }
@@ -155,7 +165,9 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
       return (
         <div className="flex flex-col justify-center items-center h-96 bg-red-50 rounded-2xl p-8">
           <div className="text-6xl mb-4">⚠️</div>
-          <p className="text-red-600 font-semibold">{t("errorLoadingData")}</p>
+          <p className="text-red-600 font-semibold">
+            {t("errorLoadingData")}
+          </p>
         </div>
       );
     }
@@ -164,15 +176,17 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
       return (
         <div className="flex flex-col justify-center items-center h-96 bg-gray-50 rounded-2xl p-8">
           <div className="text-6xl mb-4">📦</div>
-          <p className="text-gray-500 font-medium">{t("noArticleSelected")}</p>
+          <p className="text-gray-500 font-medium">
+            {t("noArticleSelected")}
+          </p>
         </div>
       );
     }
 
     return (
-      <div className={`flex gap-6 ${isMobile ? 'flex-col' : 'flex-col lg:flex-row'} items-start`}>
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch">
         {/* Card del artículo */}
-        <div className={`${isMobile ? 'w-full' : 'w-full lg:w-96'} bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden`}>
+        <div className="w-full lg:max-w-md xl:max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
           {/* Header con iconos y tag */}
           <div className="relative">
             <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-start">
@@ -185,7 +199,7 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
               <div className="flex items-center gap-1">
                 <ArticleMenu
                   onAddToFavourites={toggleFavourite}
-                  isFavourite={isFavourite}
+                  isFavourite={!!isFavourite}
                   article={resolvedArticle}
                 />
               </div>
@@ -199,33 +213,37 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
             )}
 
             {/* Imagen */}
-            <div className="bg-white pt-12 px-4">
-              <ArticleImage img={resolvedArticle.images || [""]} />
+            <div className="bg-white pt-12 px-4 pb-4">
+              <div className="h-56 flex items-center justify-center">
+                <ArticleImage img={resolvedArticle.images || [""]} />
+              </div>
             </div>
           </div>
 
           {/* Información del producto */}
-          <div className="p-6 space-y-4 flex-1">
-            <ArticleName
-              name={resolvedArticle.name}
-              id={resolvedArticle.id}
-              code={resolvedArticle.supplier_code}
-            />
+          <div className="px-6 pb-4 space-y-4 flex-1 flex flex-col justify-between">
+            <div className="space-y-4">
+              <ArticleName
+                name={resolvedArticle.name}
+                id={resolvedArticle.id}
+                code={resolvedArticle.supplier_code}
+              />
 
-            {showPurchasePrice && (
-              <>
-                <CostPrice
-                  article={resolvedArticle}
-                  selectedClientId={selectedClientId}
-                />
-                <div className="border-t border-gray-200" />
-              </>
-            )}
+              {showPurchasePrice && (
+                <>
+                  <CostPrice
+                    article={resolvedArticle}
+                    selectedClientId={selectedClientId}
+                  />
+                  <div className="border-t border-gray-200" />
+                </>
+              )}
 
-            <SuggestedPrice 
-              article={resolvedArticle}
-              showPurchasePrice={showPurchasePrice}
-            />
+              <SuggestedPrice
+                article={resolvedArticle}
+                showPurchasePrice={showPurchasePrice}
+              />
+            </div>
           </div>
 
           {/* Sección de agregar al carrito */}
@@ -246,10 +264,10 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
         </div>
 
         {/* Descripción */}
-        <div className={`${isMobile ? 'w-full' : 'flex-1'} bg-white rounded-2xl shadow-xl border border-gray-200 p-6`}>
-          <Description 
-            article={resolvedArticle} 
-            description={resolvedArticle.description} 
+        <div className="flex-1 bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+          <Description
+            article={resolvedArticle}
+            description={resolvedArticle.description}
           />
         </div>
       </div>
@@ -257,8 +275,8 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
   };
 
   return (
-    <div 
-      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white p-4 rounded-xl" 
+    <div
+      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white p-4 sm:p-6 rounded-xl"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header del modal */}
@@ -274,7 +292,7 @@ const ArticleDetails = ({ closeModal, showPurchasePrice, article }: ArticleDetai
           <IoMdClose className="text-lg" />
         </button>
       </div>
-      
+
       {/* Contenido */}
       {renderContent()}
     </div>

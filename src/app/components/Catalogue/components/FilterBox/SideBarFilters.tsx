@@ -87,7 +87,7 @@ const SidebarFilters = () => {
       {/* Marcas */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700 uppercase">
-          MARCAS
+          {t("brands")}
         </label>
         <Brands onChange={setBrand} brand={brand} />
       </div>
@@ -95,7 +95,7 @@ const SidebarFilters = () => {
       {/* Categoría */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700 uppercase">
-          CATEGORÍA
+          {t("items")}
         </label>
         <Items onChange={setItem} item={item} />
       </div>

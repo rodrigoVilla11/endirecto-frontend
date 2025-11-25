@@ -27,12 +27,6 @@ const Brands = ({ onChange, brand }: any) => {
   return (
     <div className="text-xs font-semibold">
       <div className="mb-4">
-        <label
-          className="block text-gray-700 font-bold mb-2"
-          htmlFor="brands"
-        >
-          {t("brands")}
-        </label>
         <div className="relative flex gap-1 justify-center items-center">
           <select
             id="brands"

@@ -85,7 +85,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon }) => {
     <div ref={containerRef} className="flex flex-col gap-1 text-white w-full">
       {/* Categoría principal */}
       <div
-        className={`flex items-center gap-3 cursor-pointer pl-3 py-3 rounded-l-lg transition-all duration-200 hover:bg-white hover:text-black ${
+        className={`flex items-center gap-3 cursor-pointer px-3 py-3 rounded-l-lg transition-all duration-200 hover:bg-white hover:text-black ${
           isActive
             ? "bg-red-500 text-black"
             : "text-white"

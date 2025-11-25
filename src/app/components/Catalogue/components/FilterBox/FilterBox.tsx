@@ -3,6 +3,12 @@ import React from "react";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useTranslation } from "react-i18next";
+import {
+  useGetArticleVehicleBrandsQuery,
+  useGetArticleVehicleModelsQuery,
+  useGetArticleVehicleEnginesQuery,
+  useGetArticleVehicleYearsQuery,
+} from "@/redux/services/articlesVehicles";
 
 interface FilterBoxProps {
   isVisible: boolean;
@@ -26,37 +32,113 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
 
   if (!isVisible) return null;
 
-  // DATOS HARDCODEADOS - Opciones de ejemplo
-  const brands = ["FORD", "CHEVROLET", "VOLKSWAGEN", "FIAT", "RENAULT"];
-  const models = ["FOCUS", "FIESTA", "MONDEO", "RANGER"];
-  const engines = ["1.6", "2.0", "2.5", "3.0"];
-  const years = ["2020", "2021", "2022", "2023", "2024"];
+  // === QUERIES (igual que en VehicleFilter) ===
+  const { data: brandsData = [], isLoading: isLoadingBrands } =
+    useGetArticleVehicleBrandsQuery(null);
+
+  const { data: modelsData = [], isLoading: isLoadingModels } =
+    useGetArticleVehicleModelsQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+
+  const { data: enginesData = [], isLoading: isLoadingEngines } =
+    useGetArticleVehicleEnginesQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+
+  const { data: yearsData = [], isLoading: isLoadingYears } =
+    useGetArticleVehicleYearsQuery(
+      { brand: vehicleBrand, model },
+      { skip: !vehicleBrand || !model }
+    );
+
+  // === HANDLERS (igual lógica que en VehicleFilter) ===
+  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setVehicleBrand(value);
+    setModel("");
+    setEngine("");
+    setYear("");
+  };
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setModel(value);
+    setYear("");
+  };
+
+  const handleEngineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setEngine(value);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setYear(value);
+  };
+
+  const handleClearFilters = () => {
+    setVehicleBrand("");
+    setModel("");
+    setEngine("");
+    setYear("");
+  };
+
+  const hasActiveFilters = !!(vehicleBrand || model || engine || year);
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl p-3 md:p-4 shadow-lg">
       <div className="flex flex-col gap-3">
-        {/* Primera fila: Título y contador */}
-        <div className="flex items-center justify-between">
+        {/* Primera fila: Título, contador y limpiar */}
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs md:text-sm font-bold text-gray-700 uppercase whitespace-nowrap">
-            FILTRAR
+            {t("vehicleFilters") || "FILTRAR POR VEHICULO"}
           </span>
-          <span className="text-xs md:text-sm font-semibold text-gray-600 whitespace-nowrap">
-            {totalResults.toLocaleString()} resultados
-          </span>
+
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="text-[10px] md:text-xs font-semibold text-blue-600 hover:text-blue-800"
+              >
+                {t("clearFilters") || "Limpiar filtros"}
+              </button>
+            )}
+
+            <span className="text-xs md:text-sm font-semibold text-gray-600 whitespace-nowrap">
+              {t("results", { count: totalResults })}
+            </span>
+          </div>
         </div>
 
         {/* Segunda fila: Selectores */}
-        <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} gap-2 md:gap-3`}>
+        <div
+          className={`grid ${
+            isMobile ? "grid-cols-2" : "grid-cols-4"
+          } gap-2 md:gap-3`}
+        >
           {/* Marca de vehículo */}
           <div>
             <select
               value={vehicleBrand}
-              onChange={(e) => setVehicleBrand(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={handleBrandChange}
+              disabled={isLoadingBrands}
+              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                isLoadingBrands
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : ""
+              }`}
             >
-              <option value="">MARCA</option>
-              {brands.map((b) => (
-                <option key={b} value={b}>
+              <option value="">
+                {isLoadingBrands
+                  ? t("loading") || "Cargando..."
+                  : t("vehicleBrands") || "MARCA"}
+              </option>
+              {brandsData.map((b, idx) => (
+                <option key={`${b}-${idx}`} value={b}>
                   {b}
                 </option>
               ))}
@@ -67,12 +149,21 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
           <div>
             <select
               value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={handleModelChange}
+              disabled={!vehicleBrand || isLoadingModels}
+              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                !vehicleBrand || isLoadingModels
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : ""
+              }`}
             >
-              <option value="">MODELO</option>
-              {models.map((m) => (
-                <option key={m} value={m}>
+              <option value="">
+                {isLoadingModels
+                  ? t("loading") || "Cargando..."
+                  : t("vehicleModels") || "MODELO"}
+              </option>
+              {modelsData.map((m, idx) => (
+                <option key={`${m}-${idx}`} value={m}>
                   {m}
                 </option>
               ))}
@@ -83,12 +174,21 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
           <div>
             <select
               value={engine}
-              onChange={(e) => setEngine(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={handleEngineChange}
+              disabled={!vehicleBrand || isLoadingEngines}
+              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                !vehicleBrand || isLoadingEngines
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : ""
+              }`}
             >
-              <option value="">MOTOR</option>
-              {engines.map((e) => (
-                <option key={e} value={e}>
+              <option value="">
+                {isLoadingEngines
+                  ? t("loading") || "Cargando..."
+                  : t("vehicleEngines") || "MOTOR"}
+              </option>
+              {enginesData.map((e, idx) => (
+                <option key={`${e}-${idx}`} value={e}>
                   {e}
                 </option>
               ))}
@@ -99,12 +199,21 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
           <div>
             <select
               value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={handleYearChange}
+              disabled={!vehicleBrand || !model || isLoadingYears}
+              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                !vehicleBrand || !model || isLoadingYears
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : ""
+              }`}
             >
-              <option value="">AÑO</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
+              <option value="">
+                {isLoadingYears
+                  ? t("loading") || "Cargando..."
+                  : t("vehicleYears") || "AÑO"}
+              </option>
+              {yearsData.map((y, idx) => (
+                <option key={`${y}-${idx}`} value={y}>
                   {y}
                 </option>
               ))}
