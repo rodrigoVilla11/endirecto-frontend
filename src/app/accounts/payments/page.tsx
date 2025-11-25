@@ -487,14 +487,9 @@ const PaymentsChargedPage = () => {
         (s: number, v: any) => s + valueGross(v),
         0
       );
-      const saldo = Number((brutoPago - cobradoPago).toFixed(2));
 
       doc.text(
-        `Bruto: ${currencyFmt.format(
-          brutoPago
-        )}   ·   Cobrado (bruto): ${currencyFmt.format(
-          cobradoPago
-        )}   ·   Dif: ${currencyFmt.format(saldo)}`,
+        `Cobrado (bruto): ${currencyFmt.format(cobradoPago)}}`,
         margin.left,
         yAfter + 12
       );
@@ -1483,12 +1478,24 @@ function DetailsModal({
           const dTxt = whenRaw
             ? (() => {
                 try {
-                  return format(new Date(whenRaw), "dd/MM/yy");
+                  const d =
+                    typeof whenRaw === "string" || typeof whenRaw === "number"
+                      ? new Date(whenRaw)
+                      : whenRaw instanceof Date
+                      ? whenRaw
+                      : new Date();
+
+                  const dd = String(d.getUTCDate()).padStart(2, "0");
+                  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+                  const yy = String(d.getUTCFullYear()).toString().slice(-2);
+
+                  return `${dd}/${mm}/${yy}`;
                 } catch {
                   return "—";
                 }
               })()
             : "—";
+
           const nominal =
             typeof v?.raw_amount === "number" ? v.raw_amount : undefined;
 

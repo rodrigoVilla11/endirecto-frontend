@@ -298,9 +298,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             : dateLike instanceof Date
             ? dateLike
             : new Date();
-        const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const yy = String(d.getFullYear()).slice(-2);
+
+        // ⚠️ Usar SIEMPRE UTC para evitar el -1 día por timezone
+        const dd = String(d.getUTCDate()).padStart(2, "0");
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const yy = String(d.getUTCFullYear()).slice(-2);
+
         return `${dd}/${mm}/${yy}`;
       } catch {
         return "—";

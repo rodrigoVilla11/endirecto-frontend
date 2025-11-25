@@ -174,36 +174,56 @@ export function DocumentsView({
   );
   const balance = isNaN(balanceRaw) ? 0 : balanceRaw;
 
+  // 🚫 Bloquea TODO tipo de ajuste (desc/recargo/costo financiero)
+  // para condiciones: "segun pliego", "cuenta corriente", "no especificado", etc.
+  const adjustmentsBlocked = noDiscountBlocked;
+
   // Regla base
   let { rate, note } = getDiscountRule(
     days_since_invoice,
     paymentType,
     paymentConditionName
   );
+
   // Si aplica el 10% manual, pisa la regla
   if (eligibleManual10 && manualTenApplied) {
     rate = 0.1;
     note = "Descuento 10% (30–37 días activado)";
   }
 
-  const isDesc = rate > 0;
+  // Si los ajustes están bloqueados, el rate efectivo es 0 (solo para cálculo)
+  if (adjustmentsBlocked) {
+    rate = 0;
+  }
 
-  const surcharge = getOverdueSurcharge(days_since_invoice);
+  const isDesc = !adjustmentsBlocked && rate > 0;
+
+  const surcharge = adjustmentsBlocked
+    ? { pct: 0, amount: 0, days: 0 }
+    : getOverdueSurcharge(days_since_invoice);
+
   // si hay 10% manual, no aplicamos recargo
   const hasSurcharge =
-    !isDesc && surcharge.pct > 0 && !(eligibleManual10 && manualTenApplied);
+    !adjustmentsBlocked &&
+    !isDesc &&
+    surcharge.pct > 0 &&
+    !(eligibleManual10 && manualTenApplied);
 
   const adjPct = (isDesc ? rate : hasSurcharge ? surcharge.pct : 0) * 100;
   const adjAmount =
     balance * Math.abs(isDesc ? rate : hasSurcharge ? surcharge.pct : 0);
 
-  const finalAmount = isDesc
+  const finalAmount = adjustmentsBlocked
+    ? balance
+    : isDesc
     ? balance - adjAmount
     : hasSurcharge
     ? balance + adjAmount
     : balance;
+
   const selected = selectedRows.includes(data?.id ?? "");
   const prevFinalRef = useRef<number>(finalAmount);
+
   useEffect(() => {
     if (!data?.id) return;
     const prev = prevFinalRef.current ?? 0;
@@ -222,7 +242,10 @@ export function DocumentsView({
     // actualizamos el "último" final para el próximo delta
     prevFinalRef.current = curr;
   }, [finalAmount, selected, data?.id, setFinalAmount]);
-  const bannerNote = isDesc
+
+  const bannerNote = adjustmentsBlocked
+    ? null
+    : isDesc
     ? null
     : hasSurcharge
     ? `Costo Financiero por ${surcharge.days} días`
@@ -336,7 +359,7 @@ export function DocumentsView({
                   </span>
                 </div>
                 <span className="text-gray-900 font-bold text-base sm:text-lg whitespace-nowrap">
-                   {formatPriceWithCurrency(amount)}
+                  {formatPriceWithCurrency(amount)}
                 </span>
               </div>
             </div>
@@ -371,7 +394,7 @@ export function DocumentsView({
                       💰 {t("document.importe")}
                     </span>
                     <span className="text-gray-900 font-bold text-sm">
-                       {formatPriceWithCurrency(amount)}
+                      {formatPriceWithCurrency(amount)}
                     </span>
                   </div>
 
@@ -380,7 +403,7 @@ export function DocumentsView({
                       📊 {t("document.saldo") || "Saldo"}
                     </span>
                     <span className="text-gray-900 font-bold text-sm">
-                       {formatPriceWithCurrency(balance)}
+                      {formatPriceWithCurrency(balance)}
                     </span>
                   </div>
                 </div>
@@ -419,7 +442,7 @@ export function DocumentsView({
                 )}
 
                 {/* Ajustes (Descuento o Recargo) */}
-                {(isDesc || hasSurcharge) && (
+                {!adjustmentsBlocked && (isDesc || hasSurcharge) && (
                   <div className="space-y-3">
                     <div
                       className={`flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded-xl border-2 gap-2 ${
@@ -484,7 +507,8 @@ export function DocumentsView({
                       >
                         💵{" "}
                         {isDesc
-                          ? t("document.finalConDescuento") || "Final c/desc."
+                          ? t("document.finalConDescuento") ||
+                            "Final c/desc."
                           : t("document.finalConRecargo") || "Final c/rec."}
                       </span>
                       <span
@@ -499,7 +523,7 @@ export function DocumentsView({
                 )}
 
                 {/* Banner de nota */}
-                {bannerNote && (
+                {!adjustmentsBlocked && bannerNote && (
                   <div className="p-3 bg-yellow-100 border-2 border-yellow-300 rounded-xl">
                     <p className="text-xs sm:text-sm text-yellow-800 font-medium text-center break-words">
                       ℹ️ {bannerNote}
