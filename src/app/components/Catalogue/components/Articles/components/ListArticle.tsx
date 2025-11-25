@@ -134,7 +134,6 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
         </p>
         <StripeStock
           articleId={article.id}
-          className="text-xs font-medium text-red-500"
         />
       </div>
 
