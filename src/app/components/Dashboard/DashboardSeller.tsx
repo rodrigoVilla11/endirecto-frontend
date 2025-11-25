@@ -406,7 +406,6 @@ const DashboardSeller = () => {
               <CardShortcuts
                 title={item.title}
                 logo={item.logo}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200 w-[calc(50%-1rem)]"
               />
             </Link>
           ))}
