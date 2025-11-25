@@ -73,6 +73,10 @@ const SalesTargetsPage = () => {
   }>({});
   const [isLoadingBrandData, setIsLoadingBrandData] = useState(false);
 
+  // 👉 Helper para saber si la marca trabaja con cantidad relativa
+  const isRelativeBrand = (brandId: string) =>
+    ["E", "ELF", "EM"].includes(brandId);
+
   // Filtrar marcas con objetivo
   const brandsWithTargets =
     brands?.filter((brand) => {
@@ -110,7 +114,10 @@ const SalesTargetsPage = () => {
               },
             };
           } catch (error) {
-            console.error(`Error al obtener datos para marca ${brand.name}:`, error);
+            console.error(
+              `Error al obtener datos para marca ${brand.name}:`,
+              error
+            );
             return {
               brandId: brand.id,
               data: {
@@ -188,16 +195,22 @@ const SalesTargetsPage = () => {
     }));
   };
 
-  // Calcular totales generales usando totalRelativeQuantity
+  // Calcular totales generales usando la métrica correcta por marca
   const totalTarget = brandsWithTargets.reduce((sum, brand) => {
     const target = parseFloat(seller?.target?.[brand.id] || "0");
     return sum + target;
   }, 0);
 
-  const totalSold = Object.values(brandSales).reduce(
-    (sum, sale) => sum + sale.totalRelativeQuantity,
-    0
-  );
+  const totalSold = brandsWithTargets.reduce((sum, brand) => {
+    const sales = brandSales[brand.id];
+    if (!sales) return sum;
+
+    const usedUnits = isRelativeBrand(brand.id)
+      ? sales.totalRelativeQuantity
+      : sales.totalQuantity;
+
+    return sum + usedUnits;
+  }, 0);
 
   const totalPercentage = calculatePercentage(totalSold, totalTarget);
 
@@ -205,9 +218,7 @@ const SalesTargetsPage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <Loader2 className="w-12 h-12 text-purple-500 animate-spin mb-3" />
-        <p className="text-lg font-bold text-gray-700">
-          Cargando datos...
-        </p>
+        <p className="text-lg font-bold text-gray-700">Cargando datos...</p>
       </div>
     );
   }
@@ -219,7 +230,9 @@ const SalesTargetsPage = () => {
           <AlertCircle className="w-10 h-10 text-red-500 flex-shrink-0" />
           <div>
             <h3 className="text-lg font-bold text-red-700">Error</h3>
-            <p className="text-sm text-red-600">No se encontró ID de vendedor</p>
+            <p className="text-sm text-red-600">
+              No se encontró ID de vendedor
+            </p>
           </div>
         </div>
       </div>
@@ -243,24 +256,18 @@ const SalesTargetsPage = () => {
                 <Target className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">
-                  {userQuery.data?.username}
-                </h1>
+                <h1 className="text-xl font-bold">{userQuery.data?.username}</h1>
                 <p className="text-white/80 text-xs">ID: {seller?.id}</p>
               </div>
             </div>
 
-            <h2 className="text-lg font-bold mb-4">
-              📊 Objetivos de Venta
-            </h2>
+            <h2 className="text-lg font-bold mb-4">📊 Objetivos de Venta</h2>
 
             {/* Indicador de carga */}
             {isLoadingBrandData && (
               <div className="bg-white/20 backdrop-blur-lg rounded-xl p-3 mb-3 flex items-center gap-2 animate-pulse">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm font-semibold">
-                  Cargando datos...
-                </span>
+                <span className="text-sm font-semibold">Cargando datos...</span>
               </div>
             )}
 
@@ -313,8 +320,12 @@ const SalesTargetsPage = () => {
               {/* Mensaje motivacional */}
               <div className="text-center text-xs">
                 {totalPercentage >= 100 && "🎉 ¡Objetivo cumplido!"}
-                {totalPercentage >= 80 && totalPercentage < 100 && "💪 ¡Casi lo logras!"}
-                {totalPercentage >= 50 && totalPercentage < 80 && "📈 ¡Buen progreso!"}
+                {totalPercentage >= 80 &&
+                  totalPercentage < 100 &&
+                  "💪 ¡Casi lo logras!"}
+                {totalPercentage >= 50 &&
+                  totalPercentage < 80 &&
+                  "📈 ¡Buen progreso!"}
                 {totalPercentage < 50 && "🚀 ¡Vamos! Aún hay tiempo"}
               </div>
             </div>
@@ -327,9 +338,7 @@ const SalesTargetsPage = () => {
             <div className="p-1.5 bg-white rounded-lg shadow-md">
               <Package className="w-5 h-5 text-purple-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">
-              Por Marcas
-            </h3>
+            <h3 className="text-lg font-bold text-gray-800">Por Marcas</h3>
           </div>
 
           {brandsWithTargets.map((brand) => {
@@ -339,13 +348,17 @@ const SalesTargetsPage = () => {
               totalQuantity: 0,
               totalRelativeQuantity: 0,
             };
-            const percentage = calculatePercentage(
-              sales.totalRelativeQuantity,
-              target
-            );
+
+            // 👉 Métrica que se usa para objetivo / progreso
+            const usedUnits = isRelativeBrand(brand.id)
+              ? sales.totalRelativeQuantity
+              : sales.totalQuantity;
+
+            const percentage = calculatePercentage(usedUnits, target);
             const isExpanded = expandedBrands[brand.id];
             const hasData = brandSales[brand.id] !== undefined;
             const brandStatus = getStatusColor(percentage);
+            const missingUnits = Math.max(0, target - usedUnits);
 
             return (
               <div
@@ -379,8 +392,10 @@ const SalesTargetsPage = () => {
                     <div className="text-right ml-2">
                       {hasData ? (
                         <>
-                          <div className={`text-2xl font-bold ${brandStatus.text}`}>
-                            {formatNumber(sales.totalRelativeQuantity)}
+                          <div
+                            className={`text-2xl font-bold ${brandStatus.text}`}
+                          >
+                            {formatNumber(usedUnits)}
                           </div>
                           <div className="text-xs text-gray-500 font-semibold whitespace-nowrap">
                             de {formatNumber(target)}
@@ -445,16 +460,16 @@ const SalesTargetsPage = () => {
                         <div className="text-right">
                           <span
                             className={`font-bold text-sm block ${
-                              target - sales.totalRelativeQuantity > 0
+                              missingUnits > 0
                                 ? "text-orange-600"
                                 : "text-green-600"
                             }`}
                           >
-                            {target - sales.totalRelativeQuantity > 0
-                              ? formatNumber(target - sales.totalRelativeQuantity)
+                            {missingUnits > 0
+                              ? formatNumber(missingUnits)
                               : "✓"}
                           </span>
-                          {target - sales.totalRelativeQuantity > 0 && (
+                          {missingUnits > 0 && (
                             <span className="text-xs text-gray-500">
                               unidades
                             </span>
