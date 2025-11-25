@@ -184,7 +184,7 @@ const ArticleDetails = ({
     }
 
     return (
-      <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch p-4">
         {/* Card del artículo */}
         <div className="w-full lg:max-w-md xl:max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
           {/* Header con iconos y tag */}
@@ -276,12 +276,12 @@ const ArticleDetails = ({
 
   return (
     <div
-      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white p-4 sm:p-6 rounded-xl"
+      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white rounded-xl"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header del modal */}
-      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-40 pb-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
+      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-40 p-4 pb-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
           {t("articleDetails")}
         </h2>
         <button
