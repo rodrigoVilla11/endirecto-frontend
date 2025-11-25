@@ -256,7 +256,9 @@ const SalesTargetsPage = () => {
                 <Target className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">{userQuery.data?.username}</h1>
+                <h1 className="text-xl font-bold">
+                  {userQuery.data?.username}
+                </h1>
                 <p className="text-white/80 text-xs">ID: {seller?.id}</p>
               </div>
             </div>
@@ -401,7 +403,7 @@ const SalesTargetsPage = () => {
                             de {formatNumber(target)}
                           </div>
                           <div className="text-xs text-gray-400">
-                            Cant. Relativa
+                            {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
                           </div>
                         </>
                       ) : (
@@ -449,7 +451,11 @@ const SalesTargetsPage = () => {
                             {formatNumber(target)}
                           </span>
                           <span className="text-xs text-gray-500">
-                            Cant. Relativa
+                            <span className="text-xs text-gray-500">
+                              {isRelativeBrand(brand.id)
+                                ? "Litros"
+                                : "unidades"}
+                            </span>
                           </span>
                         </div>
                       </div>
@@ -471,7 +477,9 @@ const SalesTargetsPage = () => {
                           </span>
                           {missingUnits > 0 && (
                             <span className="text-xs text-gray-500">
-                              unidades
+                              {isRelativeBrand(brand.id)
+                                ? "Litros"
+                                : "unidades"}
                             </span>
                           )}
                         </div>
@@ -506,9 +514,7 @@ const SalesTargetsPage = () => {
                         onClick={() => toggleBrand(brand.id)}
                         className="w-full flex items-center justify-center gap-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 py-2 rounded-lg transition-all font-semibold text-sm"
                       >
-                        <span>
-                          {isExpanded ? "Ver menos" : "Ver detalles"}
-                        </span>
+                        <span>{isExpanded ? "Ver menos" : "Ver detalles"}</span>
                         {isExpanded ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (

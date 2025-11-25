@@ -7,34 +7,45 @@ import { IoMdMenu } from "react-icons/io";
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import {
   useGetSellersQuery,
-  useUpdateSellerTargetBrandMutation
+  useUpdateSellerTargetBrandMutation,
 } from "@/redux/services/sellersApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 import Table from "@/app/components/components/Table";
 import { useTranslation } from "react-i18next";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 const Page = () => {
   const { t } = useTranslation();
   const [selectedSellerId, setSelectedSellerId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+
   const { data: sellersData, isLoading: isLoadingSellers } =
     useGetSellersQuery(null);
   const { data: brands, isLoading: isLoadingBrands } = useGetBrandsQuery(null);
-const [updateTargetBrand, { isLoading: isUpdating }] = useUpdateSellerTargetBrandMutation();
+  const [updateTargetBrand, { isLoading: isUpdating }] =
+    useUpdateSellerTargetBrandMutation();
 
-  // Estado para controlar la animación de "guardado" por cada registro
   const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>(
     {}
   );
 
-  // Estado para los targets editados
   const [editedTargets, setEditedTargets] = useState<{
     [sellerId: string]: { [brandId: string]: string };
   }>({});
 
   const sellers = sellersData || [];
+  const users = usersData || [];
+
   const selectedSeller = sellers.find((s) => s.id === selectedSellerId);
+
+  // 👇 helper para mostrar bien el label del vendedor
+  const getSellerLabel = (seller: any) => {
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   const tableHeader = [
     { name: "Marca", key: "brand", important: true },
@@ -51,12 +62,12 @@ const [updateTargetBrand, { isLoading: isUpdating }] = useUpdateSellerTargetBran
             value={selectedSellerId}
             onChange={(e) => setSelectedSellerId(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md"
-            disabled={isLoadingSellers}
+            disabled={isLoadingSellers || isLoadingUsers}
           >
             <option value="">Seleccionar Vendedor</option>
             {sellers.map((seller) => (
               <option key={seller.id} value={seller.id}>
-                {seller.name} ({seller.id})
+                {getSellerLabel(seller)}
               </option>
             ))}
           </select>
@@ -104,40 +115,31 @@ const [updateTargetBrand, { isLoading: isUpdating }] = useUpdateSellerTargetBran
     }));
   };
 
+  const handleSave = async (brandId: string) => {
+    if (!selectedSellerId) return;
 
-const handleSave = async (brandId: string) => {
-  if (!selectedSellerId) return;
+    const updatedValue = editedTargets[selectedSellerId]?.[brandId] || "0";
 
-  const updatedValue = editedTargets[selectedSellerId]?.[brandId] || "0";
-  
-  try {
-    const result = await updateTargetBrand({
-      id: selectedSellerId,
-      brand_id: brandId,
-      value: updatedValue,
-    }).unwrap();
+    try {
+      const result = await updateTargetBrand({
+        id: selectedSellerId,
+        brand_id: brandId,
+        value: updatedValue,
+      }).unwrap();
 
-    console.log("Respuesta exitosa:", result);
+      console.log("Respuesta exitosa:", result);
 
-    // Activa la animación para este registro
-    setSavedStatus((prev) => ({ ...prev, [brandId]: true }));
-    
-    setTimeout(() => {
-      setSavedStatus((prev) => ({ ...prev, [brandId]: false }));
-    }, 2000);
-  } catch (error: any) {
-    console.error("Error al actualizar:", error);
-    alert(`Error al guardar el objetivo: ${error.data?.message || error.message}`);
-  }
-};
-  const formatCurrency = (value: string) => {
-    const num = parseFloat(value || "0");
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
+      setSavedStatus((prev) => ({ ...prev, [brandId]: true }));
+
+      setTimeout(() => {
+        setSavedStatus((prev) => ({ ...prev, [brandId]: false }));
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error al actualizar:", error);
+      alert(
+        `Error al guardar el objetivo: ${error.data?.message || error.message}`
+      );
+    }
   };
 
   // Filtrar marcas según búsqueda
@@ -176,9 +178,7 @@ const handleSave = async (brandId: string) => {
               </div>
             ),
             currentTarget: (
-              <div className="text-center font-semibold">
-                {formatCurrency(currentTarget)}
-              </div>
+              <div className="text-center font-semibold">{currentTarget}</div>
             ),
             newTarget: (
               <div className="flex items-center justify-center space-x-2">
@@ -205,9 +205,13 @@ const handleSave = async (brandId: string) => {
         })
       : [];
 
-  if (isLoadingSellers || isLoadingBrands) {
+  if (isLoadingSellers || isLoadingBrands || isLoadingUsers) {
     return <div className="p-4">Cargando...</div>;
   }
+
+  // usuario asociado al vendedor seleccionado (para el cartel)
+  const selectedUser =
+    selectedSeller && users.find((u: any) => u.seller_id === selectedSeller.id);
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR"]}>
@@ -224,7 +228,10 @@ const handleSave = async (brandId: string) => {
             <div className="px-4 py-2 bg-blue-50 border-l-4 border-blue-500">
               <p className="text-sm text-gray-700">
                 Configurando objetivos para:{" "}
-                <span className="font-bold">{selectedSeller?.name}</span>
+                <span className="font-bold">
+                  {selectedUser?.username || selectedSeller?.name} (
+                  {selectedSeller?.id})
+                </span>
               </p>
             </div>
             <Table headers={tableHeader} data={tableData} />
