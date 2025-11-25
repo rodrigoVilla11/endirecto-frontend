@@ -39,7 +39,6 @@ import {
 import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
 import { useTranslation } from "react-i18next";
-import { useGetSumsByIdsAndBrandQuery } from "@/redux/services/documentsDetailsApi";
 import { FiTarget } from "react-icons/fi";
 
 const ITEMS_PER_PAGE = 15;
