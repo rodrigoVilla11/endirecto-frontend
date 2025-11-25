@@ -167,7 +167,7 @@ const Articles: React.FC<ArticlesProps> = ({
             <div className={`grid gap-3 md:gap-4 ${
               isMobile 
                 ? 'grid-cols-2' 
-                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'
             }`}>
               {items.map((article, index) => {
                 if (index === items.length - 1) {

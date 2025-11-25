@@ -92,7 +92,7 @@ const Profile = ({ isMobile }: any) => {
 
           {/* Nombre de usuario y flecha (sólo en escritorio) */}
           {!isMobile && (
-            <div className="flex items-center text-black text-xs font-light">
+            <div className="flex items-center text-white text-xs font-light">
               <p>{selectedClientId ? data?.name : userData?.username}</p>
               <IoIosArrowDown className="ml-1" />
             </div>

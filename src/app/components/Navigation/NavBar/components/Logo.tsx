@@ -27,7 +27,7 @@ const Logo = () => {
           isMobile 
             ? "h-8 w-auto" 
             : isOpen 
-              ? "h-24 w-full object-contain px-4" 
+              ? "h-14 w-full object-contain px-4" 
               : "h-10 w-auto"
         } transition-all duration-300 object-contain`}
       />
