@@ -1447,12 +1447,57 @@ function DetailsModal({
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {
     const lines: string[] = [];
+    const documents: any[] = Array.isArray(payment?.documents)
+      ? payment.documents
+      : [];
     lines.push(`Fecha: ${fecha.replace(" ", " ")}`);
     lines.push(`ID Pago: ${idPago}`);
     lines.push(`Cliente: ${clienteLabel}`);
     lines.push(`Vendedor: ${sellerLabel}`);
     lines.push(`Usuario: ${username}`);
     lines.push(``);
+
+    lines.push(`DOCUMENTOS:`);
+
+    if (documents.length === 0) {
+      lines.push(`Sin documentos aplicados`);
+    } else {
+      documents.forEach((doc, idx) => {
+        const docNumber = doc?.number || `#${idx + 1}`;
+        const docBase = typeof doc?.base === "number" ? doc.base : 0;
+        const docDiscount =
+          typeof doc?.discount_amount === "number" ? doc.discount_amount : 0;
+        const docFinal =
+          typeof doc?.final_amount === "number" ? doc.final_amount : docBase;
+        const docDays =
+          typeof doc?.days_used === "number"
+            ? doc.days_used
+            : typeof doc?.days === "number"
+            ? doc.days
+            : undefined;
+
+        lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
+
+        if (docDiscount !== 0) {
+          const label = docDiscount > 0 ? "Desc" : "Rec";
+          const pct =
+            docBase > 0
+              ? `${((Math.abs(docDiscount) / docBase) * 100).toFixed(2)}%`
+              : "";
+          const daysText = typeof docDays === "number" ? `${docDays}d` : "";
+          lines.push(`    ${label}: ${daysText} ${pct ? `- ${pct}` : ""}`);
+          lines.push(`    ${label}: ${fmtMoney(Math.abs(docDiscount))}`);
+        }
+
+        lines.push(`    Neto: ${fmtMoney(docFinal)}`);
+
+        if (idx < documents.length - 1) {
+          lines.push(""); // línea en blanco entre documentos
+        }
+      });
+    }
+
+    lines.push(`-------------------------------------------`);
 
     if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
     if (typeof daysUsed === "number" && discountRateTxt) {

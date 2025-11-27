@@ -173,15 +173,17 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const [grace, setGrace] = useState<number>();
   function computeChequeMeta(v: ValueItem) {
-    const days_totals = daysBetweenToday(v.chequeDate);
-    const days_total = days_totals + 1;
+    const days_total = daysBetweenToday(v.chequeDate) + 1; // ✅ Sin +1
+    const isRefi = v.selectedReason?.toLowerCase().includes("refinanciación");
+    const grace =
+      (Number.isFinite(v.overrideGraceDays)
+        ? (v.overrideGraceDays as number)
+        : isRefi
+        ? 0 // ✅ Refinanciación: 0 días
+        : checkGrace?.value) ?? 45;
 
-    // 👇 prioridad al override por ítem; si no, usa el setting global
-    const grace = Number.isFinite(v.overrideGraceDays as any)
-      ? (v.overrideGraceDays as number)
-      : checkGrace?.value ?? 45;
     setGrace(grace);
-    const days_charged = Math.max(0, days_total - grace);
+    const days_charged = days_total - grace;
 
     const annualNorm = normalizeAnnualPct(annualInterestPct);
     const daily = annualNorm / 100 / 365;
@@ -198,7 +200,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       interest_pct,
       interest_amount,
       net_amount,
-      // 👇 útil si querés inspeccionarlo luego
       grace_days_used: grace,
     };
   }
@@ -278,6 +279,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const canSend = isValuesValid && newValues.length > 0;
 
   /** Notificación basada SOLO en el JSON de payment (sin cálculos) */
+  /** Notificación basada SOLO en el JSON de payment (sin cálculos) */
   function buildPaymentNotificationFromPayment(payment: any): string {
     // ===== Helpers =====
     const fmtMoney = (n?: number) =>
@@ -299,7 +301,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             ? dateLike
             : new Date();
 
-        // ⚠️ Usar SIEMPRE UTC para evitar el -1 día por timezone
         const dd = String(d.getUTCDate()).padStart(2, "0");
         const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
         const yy = String(d.getUTCFullYear()).slice(-2);
@@ -336,48 +337,49 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const gross = Number(totals?.gross) || 0; // Documentos base
     const docsAdjTotal = Number(totals?.discount) || 0; // +desc / -rec total docs
     const docsFinal = Number(totals?.net) || r2(gross - docsAdjTotal);
-    const valuesRawBackend = Number(totals?.values_raw) || 0; // suma nominal
-    const chequeInterest = Number(totals?.cheque_interest) || 0;
 
-    // Si no vino values_raw, lo reconstruimos (nominal cheques = raw, otros = amount)
-    const valuesRaw =
-      valuesRawBackend ||
-      values.reduce((acc, v) => {
-        const m = String(v?.method || "").toLowerCase();
-        if (m === "cheque") {
-          const raw =
-            typeof v?.raw_amount === "number"
-              ? v.raw_amount
-              : typeof v?.cheque?.net_amount === "number"
-              ? r2((v.cheque.net_amount || 0) + (v.cheque.interest_amount || 0))
-              : Number(v?.amount) || 0;
-          return acc + raw;
-        }
-        return acc + (Number(v?.amount) || 0);
-      }, 0);
+    // ===== VALORES: reconstruir nominal correctamente =====
+    const valuesRaw = values.reduce((acc, v) => {
+      const m = String(v?.method || "").toLowerCase();
+      if (m === "cheque") {
+        // Prioridad: raw_amount del valor > reconstruir desde cheque
+        const raw =
+          typeof v?.raw_amount === "number"
+            ? v.raw_amount
+            : typeof v?.cheque?.net_amount === "number"
+            ? r2((v.cheque.net_amount || 0) + (v.cheque.interest_amount || 0))
+            : Number(v?.amount) || 0;
+        return acc + raw;
+      }
+      return acc + (Number(v?.amount) || 0);
+    }, 0);
 
-    // ===== Desc/Cost F. aplicado a valores — con fallback para RECARGO + cheques =====
-    // Backend ideal: totals.discount_applied_to_values
+    // ===== Costo Financiero de CHEQUES (suma) =====
+    const chequeInterest = values.reduce((acc, v) => {
+      if (String(v?.method || "").toLowerCase() !== "cheque") return acc;
+      const intAmt = Number(v?.cheque?.interest_amount) || 0;
+      return acc + intAmt;
+    }, 0);
+
+    // ===== Descuento/Recargo aplicado a VALORES =====
     let appliedAdjToValues = Number(totals?.discount_applied_to_values) || 0;
 
+    // Fallback si viene en 0: detectar contexto de recargo con cheques
     const hasCheques = values.some(
       (v) => String(v?.method || "").toLowerCase() === "cheque"
     );
     const isSurcharge = docsAdjTotal < 0; // recargo en docs
-    // En recargo, si el neto aportado por los valores alcanza el bruto de docs,
-    // el ajuste aplicado a valores debe ser el recargo total (abs(discount)).
-    const netFromValues = r2(valuesRaw - Math.abs(chequeInterest)); // nominal - CF cheques
+    const netFromValues = r2(valuesRaw - Math.abs(chequeInterest));
     const reachesGross =
       Math.round(netFromValues * 100) >= Math.round(gross * 100);
 
     if (appliedAdjToValues === 0 && isSurcharge && hasCheques && reachesGross) {
-      // fallback: usar el recargo total de documentos como ajuste sobre valores
       appliedAdjToValues = Math.abs(docsAdjTotal);
     }
 
-    // ===== Acumulados y derivados (seguimos la “plantilla oficial”) =====
+    // ===== Totales derivados =====
     const totalDescCF = r2(appliedAdjToValues + chequeInterest);
-    const netToApply = r2(valuesRaw - totalDescCF); // = "Neto a aplicar Factura"
+    const netToApply = r2(valuesRaw - totalDescCF);
     const saldoDiff = r2(gross - netToApply);
 
     // ===== Días y % para cabecera =====
@@ -417,13 +419,59 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     lines.push(`Usuario: ${usuario}`);
     lines.push("");
 
-    // Documentos
-    lines.push(`Documentos: ${fmtMoney(gross)}`);
+    // ===== 🆕 DOCUMENTOS: Mostrar cada uno por separado =====
+    lines.push(`DOCUMENTOS:`);
+
+    if (documents.length === 0) {
+      lines.push(`Sin documentos aplicados`);
+    } else {
+      documents.forEach((doc, idx) => {
+        const docNumber = doc?.number || `#${idx + 1}`;
+        const docBase = typeof doc?.base === "number" ? doc.base : 0;
+        const docDiscount =
+          typeof doc?.discount_amount === "number" ? doc.discount_amount : 0;
+        const docFinal =
+          typeof doc?.final_amount === "number" ? doc.final_amount : docBase;
+        const docDays =
+          typeof doc?.days_used === "number"
+            ? doc.days_used
+            : typeof doc?.days === "number"
+            ? doc.days
+            : undefined;
+
+        lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
+
+        if (docDiscount !== 0) {
+          const label = docDiscount > 0 ? "Desc" : "Rec";
+          const pct =
+            docBase > 0
+              ? `${((Math.abs(docDiscount) / docBase) * 100).toFixed(2)}%`
+              : "";
+          const daysText = typeof docDays === "number" ? `${docDays}d` : "";
+          lines.push(`    ${label}: ${daysText} ${pct ? `- ${pct}` : ""}`);
+          lines.push(`    ${label}: ${fmtMoney(Math.abs(docDiscount))}`);
+        }
+
+        lines.push(`    Neto: ${fmtMoney(docFinal)}`);
+
+        if (idx < documents.length - 1) {
+          lines.push(""); // línea en blanco entre documentos
+        }
+      });
+    }
+
+    lines.push(`-------------------------------------------`);
+
+    // Total global de documentos
+    lines.push(`TOTAL Documentos: ${fmtMoney(gross)}`);
+
     if (gross > 0 && docsAdjTotal !== 0) {
       const pctTxt = `${(docRate * 100).toFixed(2)}%`;
-      lines.push(`Desc/Costo Financiero: ${daysWeighted || 0} - ${pctTxt}`);
-      lines.push(`Desc/Costo Financiero: ${fmtMoney(Math.abs(docsAdjTotal))}`);
+      const label = docsAdjTotal > 0 ? "Descuento Total" : "Recargo Total";
+      lines.push(`${label}: ${daysWeighted || 0}d - ${pctTxt}`);
+      lines.push(`${label}: ${fmtMoney(Math.abs(docsAdjTotal))}`);
     }
+
     lines.push(`TOTAL A PAGAR (efect/transf): ${fmtMoney(docsFinal)}`);
     lines.push(`-------------------------------------------`);
 
@@ -434,7 +482,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       if (method === "cheque") {
         const ch = v?.cheque || {};
         const dTxt = ch?.collection_date ? ddmmyy(ch.collection_date) : "—";
-        // nominal
+
+        // ✅ Nominal: raw_amount del valor (ya viene correcto del payload)
         const nominal =
           typeof v?.raw_amount === "number"
             ? v.raw_amount
@@ -443,16 +492,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             : Number(v?.amount) || 0;
 
         lines.push(`Cheque ${dTxt}: ${fmtMoney(nominal)}`);
+
         const daysCharged =
           typeof ch?.days_charged === "number" ? ch.days_charged : undefined;
         const pct =
           typeof ch?.interest_pct === "number"
             ? `${(ch.interest_pct * 100).toFixed(2)}%`
             : undefined;
+
         if (typeof daysCharged === "number" || pct) {
-          lines.push(`Costo Financiero: ${daysCharged ?? "—"} - ${pct ?? "—"}`);
+          lines.push(
+            `Costo Financiero: ${daysCharged ?? "—"}d - ${pct ?? "—"}`
+          );
         }
-        lines.push(`Costo Financiero: ${fmtMoney(ch?.interest_amount || 0)}`);
+
+        // ✅ Costo financiero: usar el campo del cheque
+        const cfAmt =
+          typeof ch?.interest_amount === "number" ? ch.interest_amount : 0;
+        lines.push(`Costo Financiero: ${fmtMoney(cfAmt)}`);
         lines.push(`-------------------------------------------`);
       } else {
         const label = method === "transferencia" ? "Transferencia" : "Efectivo";
@@ -461,21 +518,28 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       }
     });
 
-    // Totales finales (plantilla oficial)
+    // Totales finales
     lines.push(`Total Pagado (Nominal): ${fmtMoney(valuesRaw)}`);
-    lines.push(`Desc/Cost F.: ${fmtMoney(appliedAdjToValues)}`);
-    if (chequeInterest) {
+
+    if (appliedAdjToValues !== 0) {
+      const label =
+        appliedAdjToValues > 0 ? "Descuento aplicado" : "Recargo aplicado";
+      lines.push(`${label}: ${fmtMoney(Math.abs(appliedAdjToValues))}`);
+    }
+
+    if (chequeInterest > 0) {
       lines.push(`Cost F. Cheques: ${fmtMoney(chequeInterest)}`);
     }
-    if (totalDescCF) {
-      lines.push(`Total Desc/Cost F.: ${fmtMoney(totalDescCF)}`);
+
+    if (totalDescCF !== 0) {
+      lines.push(`Total Desc/Cost F.: ${fmtMoney(Math.abs(totalDescCF))}`);
     }
+
     lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
-    lines.push(`SALDO: ${fmtMoney(saldoDiff)}`);
+    lines.push(`SALDO: ${fmtMoney(Math.abs(saldoDiff))}`);
 
     return lines.join("\n");
   }
-
   // ——— helpers fecha ———
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
   const toYMD = (d: Date) =>
@@ -1834,11 +1898,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={
-                    blockChequeInterest
-                      ? 100000
-                      : checkGrace?.value
-                      ? checkGrace.value
-                      : 10
+                    blockChequeInterest ? 100000 : checkGrace?.value ?? 45 // ✅ CAMBIAR: usar 45 en vez de 10
                   }
                   docsDaysMin={docsDaysMin}
                   receiptDate={receiptDateRef.current}
