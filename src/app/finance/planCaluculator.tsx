@@ -376,7 +376,6 @@ export default function PlanCalculator({
       return next;
     });
   };
-  console.log(schedule, invoiceIssueDateApprox);
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 sm:pr-3">

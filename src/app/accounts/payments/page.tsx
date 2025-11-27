@@ -1385,6 +1385,7 @@ function DetailsModal({
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
   const saldoDiff = (payment?.totals as any)?.diff;
 
+  console.log(payment)
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
       ? valuesNominal - Math.abs(chequeInterest)
@@ -1479,7 +1480,7 @@ function DetailsModal({
         lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
 
         if (docDiscount !== 0) {
-          const label = docDiscount > 0 ? "Desc" : "Rec";
+          const label = docDiscount > 0 ? "Desc" : "Cost. F";
           const pct =
             docBase > 0
               ? `${((Math.abs(docDiscount) / docBase) * 100).toFixed(2)}%`

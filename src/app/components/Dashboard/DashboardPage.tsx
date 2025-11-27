@@ -250,20 +250,6 @@ const DashboardPage = () => {
     }
   );
 
-  // const { data: documentIds } = useGetDocumentIdsBySellerQuery({
-  //   seller_id: "54",
-  //   startDate: "2025-11-01",
-  //   endDate: "2025-11-30",
-  // });
-  // console.log(documentIds);
-  // const { data: sums } = useGetSumsByIdsAndBrandQuery({
-  //   ids: documentIds ? documentIds : [""],
-  //   brand_id: "E",
-  // });
-
-  // console.log(sums?.totalRelativeQuantity);
-  // console.log(sums?.totalQuantity);
-  // console.log(sums?.totalAmount);
   // Reemplazar el cálculo de purchasedAmount:
   const purchasedAmount = monthlyPurchasedAmount || 0; // Usar el valor del endpoint
   const purchaseGoal = parseObsNumber(data?.obs6); // OBJETIVO (este se mantiene igual)

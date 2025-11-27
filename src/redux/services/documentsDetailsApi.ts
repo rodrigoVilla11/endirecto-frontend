@@ -55,7 +55,6 @@ export const documentsDetailsApi = createApi({
         },
       }),
       transformResponse: (response: any) => {
-        console.log("Respuesta del backend:", response);
         return {
           brand_id: response?.brand_id || "",
           documentCount: response?.documentCount || 0,

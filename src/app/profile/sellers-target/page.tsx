@@ -127,7 +127,6 @@ const Page = () => {
         value: updatedValue,
       }).unwrap();
 
-      console.log("Respuesta exitosa:", result);
 
       setSavedStatus((prev) => ({ ...prev, [brandId]: true }));
 

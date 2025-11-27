@@ -442,7 +442,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
 
         if (docDiscount !== 0) {
-          const label = docDiscount > 0 ? "Desc" : "Rec";
+          const label = docDiscount > 0 ? "Desc" : "Cost. F";
           const pct =
             docBase > 0
               ? `${((Math.abs(docDiscount) / docBase) * 100).toFixed(2)}%`
@@ -1346,7 +1346,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       }
 
       accNet += net;
-      console.log({ raw, net });
       cheques.push({
         method: "cheque",
         selectedReason: "Refinanciación",
