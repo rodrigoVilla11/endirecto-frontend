@@ -153,15 +153,15 @@ type PlanResult = {
 };
 
 /* ===== Plan con BRUTO igual y reglas de ValueView ===== */
+/* ===== Plan con cheques iguales en BRUTO ===== */
 function computeEqualRawChequesWithRules(params: {
-  targetNet: number;
+  targetNet: number; // Monto a refinanciar (NETO)
   chequeDatesISO: string[];
   annualInterestPct: number;
   docsDaysMin?: number;
   receiptDate: Date;
   refinanciacion?: boolean;
-  /** NEW: bloquear costo financiero de cheques (según pliego) */
-  blockChequeInterest?: boolean; // NEW
+  blockChequeInterest?: boolean;
 }): PlanResult {
   const {
     targetNet,
@@ -170,46 +170,74 @@ function computeEqualRawChequesWithRules(params: {
     docsDaysMin,
     receiptDate,
     refinanciacion,
-    blockChequeInterest = false, // NEW
+    blockChequeInterest = false,
   } = params;
 
+  const n = chequeDatesISO.length;
   const daily = dailyRateFromAnnual(annualInterestPct);
   const invoiceIssueDateApprox = inferInvoiceIssueDate(
     receiptDate,
     docsDaysMin
   );
 
-  // NUEVO: RECARGO DOCS (lo dejamos informativo como ya tenías)
+  // === RECARGO POR DOCUMENTOS (lo dejamos igual, sólo informativo) ===
   const docSurchargeDays = Math.max(0, (docsDaysMin ?? 0) - 45);
   const docSurchargeRate = docSurchargeDays > 0 ? daily * docSurchargeDays : 0;
   const docSurchargeAmount =
     Math.round(targetNet * docSurchargeRate * 100) / 100;
-  const targetNetWithDocSurcharge = targetNet;
 
-  if (targetNet <= 0 || chequeDatesISO.length === 0) {
+  if (targetNet <= 0 || n === 0) {
     return {
       cheques: [],
       invoiceIssueDateApprox,
       docSurchargeDays,
       docSurchargeRate,
       docSurchargeAmount,
-      targetNetWithDocSurcharge,
+      targetNetWithDocSurcharge: targetNet,
     };
   }
 
-  const factors = chequeDatesISO.map((iso) => {
+  // === NUEVA LÓGICA: costo financiero total y cheques iguales ===
+  // Tasa mensual (la misma que mostrás en "TASA MENSUAL")
+  const monthlyRate = daily * 30; // fracción mensual, ej: 0.0452 = 4,52 %
+
+  // Idea: el 1er cheque (a 30 días) no genera CF, los siguientes sí → (n - 1)
+  const monthsCharged = Math.max(n - 1, 0);
+
+  const totalInterest = +(targetNet * monthlyRate * monthsCharged).toFixed(2); // Costo financiero total
+  const totalGross = +(targetNet + totalInterest).toFixed(2); // Total a pagar en cheques
+
+  // Repartimos NETO y BRUTO en partes iguales (ajustando el último por redondeo)
+  const baseNet = +(targetNet / n).toFixed(2);
+  const baseGross = +(totalGross / n).toFixed(2);
+
+  let accNet = 0;
+  let accGross = 0;
+
+  const cheques: PlanChequeItem[] = chequeDatesISO.map((iso, idx) => {
+    const isLast = idx === n - 1;
+
+    const net = isLast ? +(targetNet - accNet).toFixed(2) : baseNet;
+    const raw = isLast ? +(totalGross - accGross).toFixed(2) : baseGross;
+
+    accNet += net;
+    accGross += raw;
+
     const daysTotal = diffFromTodayToDate(iso) || 0;
 
-    // === NEW: si blockChequeInterest => SIN días gravados, SIN interés, factor 1
+    // Para info de "días gravados" seguimos usando la misma regla
     const daysChargedRaw = chargeableDaysFor({
       chequeDateISO: iso,
       receiptDate,
       invoiceIssueDateApprox,
       refinanciacion,
     });
-    const daysCharged = blockChequeInterest ? 0 : daysChargedRaw; // NEW
-    const interestPct = blockChequeInterest ? 0 : daily * daysCharged; // NEW
-    const factor = blockChequeInterest ? 1 : Math.max(0, 1 - interestPct); // NEW
+    const daysCharged = blockChequeInterest ? 0 : daysChargedRaw;
+
+    // % del período (info nada más, no afecta el cálculo principal)
+    const monthsFromStart = idx + 1;
+    const periodPct =
+      (blockChequeInterest ? 0 : monthlyRate * monthsFromStart) * 100;
 
     const promoRate = getChequePromoRate({
       invoiceAgeAtReceiptDaysMin: docsDaysMin,
@@ -218,23 +246,16 @@ function computeEqualRawChequesWithRules(params: {
       chequeDateISO: iso,
     });
 
-    return { iso, daysTotal, daysCharged, interestPct, factor, promoRate };
-  });
+    const promoAmount = +(promoBaseOf(raw, net) * promoRate).toFixed(2);
 
-  const sumFactors = factors.reduce((a, f) => a + f.factor, 0) || 1;
-  const raw = Math.round((targetNet / sumFactors) * 100) / 100;
-
-  const cheques: PlanChequeItem[] = factors.map((f) => {
-    const net = Math.max(0, +(raw * f.factor).toFixed(2)); // con block: net = raw
-    const promoAmount = +(promoBaseOf(raw, net) * f.promoRate).toFixed(2);
     return {
-      dateISO: f.iso,
-      daysTotal: f.daysTotal,
-      daysCharged: f.daysCharged,
-      periodPct: f.interestPct * 100,
-      raw,
-      net,
-      promoRate: f.promoRate,
+      dateISO: iso,
+      daysTotal,
+      daysCharged,
+      periodPct,
+      raw, // BRUTO de cada cheque (todos iguales salvo centavos)
+      net, // NETO imputable
+      promoRate,
       promoAmount,
     };
   });
@@ -245,7 +266,7 @@ function computeEqualRawChequesWithRules(params: {
     docSurchargeDays,
     docSurchargeRate,
     docSurchargeAmount,
-    targetNetWithDocSurcharge,
+    targetNetWithDocSurcharge: targetNet,
   };
 }
 
