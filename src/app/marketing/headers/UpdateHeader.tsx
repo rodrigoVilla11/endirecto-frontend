@@ -28,7 +28,11 @@ const UpdateHeaderComponent = ({
   closeModal,
 }: UpdateHeaderComponentProps) => {
   const { t } = useTranslation();
-  const { data: header, error, isLoading } = useGetMarketingByIdQuery({ id: marketingId });
+  const {
+    data: header,
+    error,
+    isLoading,
+  } = useGetMarketingByIdQuery({ id: marketingId });
   const [updateMarketing, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateMarketingMutation();
 
@@ -46,7 +50,11 @@ const UpdateHeaderComponent = ({
 
   const [
     uploadImage,
-    { isLoading: isLoadingUpload, isSuccess: isSuccessUpload, isError: isErrorUpload },
+    {
+      isLoading: isLoadingUpload,
+      isSuccess: isSuccessUpload,
+      isError: isErrorUpload,
+    },
   ] = useUploadImageMutation();
 
   useEffect(() => {
@@ -79,7 +87,9 @@ const UpdateHeaderComponent = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
@@ -122,7 +132,7 @@ const UpdateHeaderComponent = ({
 
   return (
     <div>
-      <div className="flex justify-between">
+      <div className="flex justify-between bg-white rounded-2xl">
         <h2 className="text-lg mb-4">{t("updateHeader.title")}</h2>
         <button
           onClick={closeModal}
@@ -148,10 +158,14 @@ const UpdateHeaderComponent = ({
                 }))
               }
               className={`p-1 rounded-md text-sm ${
-                form.header.enable ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                form.header.enable
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
               }`}
             >
-              {form.header.enable ? t("updateHeader.enabled") : t("updateHeader.disabled")}
+              {form.header.enable
+                ? t("updateHeader.enabled")
+                : t("updateHeader.disabled")}
             </button>
           </label>
         </div>
@@ -159,14 +173,20 @@ const UpdateHeaderComponent = ({
         <div className="flex flex-col gap-2">
           <label className="flex flex-col text-sm">
             {t("updateHeader.imageLabel")}:
-            <input type="file" accept="image/*" onChange={handleHomeFileChange} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleHomeFileChange}
+            />
             <button
               type="button"
               onClick={handleUploadHome}
               disabled={isLoadingUpload}
               className="mt-1 bg-blue-500 text-white rounded-md p-1 text-sm"
             >
-              {isLoadingUpload ? t("updateHeader.uploading") : t("updateHeader.uploadPrompt")}
+              {isLoadingUpload
+                ? t("updateHeader.uploading")
+                : t("updateHeader.uploadPrompt")}
             </button>
             {form.header.img && (
               <div className="flex items-center gap-2 mt-1">

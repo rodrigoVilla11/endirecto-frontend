@@ -266,7 +266,7 @@ const Page = () => {
 
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 bg-white rounded-2xl">
         <h3 className="font-bold pt-4 px-4">{t("page.itemsTitle")}</h3>
         <Header headerBody={headerBody} />
 

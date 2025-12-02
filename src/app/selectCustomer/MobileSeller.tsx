@@ -1,65 +1,80 @@
-"use client"
-import { useState } from "react"
-import { useTranslation } from "react-i18next"
-import { IoEnterOutline } from "react-icons/io5"
+"use client";
+import { useGetPaymentConditionByIdQuery } from "@/redux/services/paymentConditionsApi";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { IoEnterOutline } from "react-icons/io5";
 
 interface Customer {
-  id: number
-  name: string
-  address: string
-  locality: string
-  state: string
-  payment_condition_id: string
-  status_account?: number
-  status_account_expired?: number
-  shopping_cart: any
-  gps?: string
+  id: number;
+  name: string;
+  address: string;
+  locality: string;
+  state: string;
+  payment_condition_id: string;
+  status_account?: number;
+  status_account_expired?: number;
+  shopping_cart: any;
+  gps?: string;
 }
 
 interface DetailRowProps {
-  label: string
-  value: any
-  className?: string
-  valueClassName?: string
+  label: string;
+  value: any;
+  className?: string;
+  valueClassName?: string;
 }
 
-function DetailRow({ label, value, className = "", valueClassName = "text-gray-300" }: DetailRowProps) {
+function DetailRow({
+  label,
+  value,
+  className = "",
+  valueClassName = "text-gray-300",
+}: DetailRowProps) {
   return (
     <div className={`flex justify-between items-start ${className}`}>
       <span className="text-sm text-gray-400 font-semibold">{label}:</span>
-      <span className={`text-sm ${valueClassName} text-right ml-4 font-medium`}>{value}</span>
+      <span className={`text-sm ${valueClassName} text-right ml-4 font-medium`}>
+        {value}
+      </span>
     </div>
-  )
+  );
 }
 
 function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
-  const { t } = useTranslation()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const { t } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
+  const {
+    data: paymentsConditionsData,
+    error: paymentError,
+    isLoading: isPaymentLoading,
+  } = useGetPaymentConditionByIdQuery({
+    id: selectedCustomer?.payment_condition_id || "",
+  });
   const handleArrowClick = (customer: any) => {
     if (selectedCustomer?.id === customer.id && isModalOpen) {
-      setIsModalOpen(false)
-      setSelectedCustomer(null)
+      setIsModalOpen(false);
+      setSelectedCustomer(null);
     } else {
-      setSelectedCustomer(customer)
-      setIsModalOpen(true)
+      setSelectedCustomer(customer);
+      setIsModalOpen(true);
     }
-  }
+  };
 
   return (
     <>
       {/* Listado de clientes */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
         {filteredItems?.map((customer: any, index: number) => (
-          <div 
-            key={customer.id} 
+          <div
+            key={customer.id}
             className={index !== 0 ? "border-t border-gray-200" : ""}
           >
             <div
               className={`flex items-center gap-3 p-4 transition-all duration-200 hover:bg-gradient-to-r hover:from-pink-50 hover:via-purple-50 hover:to-blue-50 ${
-                selectedCustomer?.id === customer.id && isModalOpen 
-                  ? "bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100" 
+                selectedCustomer?.id === customer.id && isModalOpen
+                  ? "bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100"
                   : ""
               }`}
             >
@@ -69,8 +84,8 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
               </div>
 
               {/* Contenido principal */}
-              <div 
-                className="flex-1 min-w-0 space-y-1 cursor-pointer" 
+              <div
+                className="flex-1 min-w-0 space-y-1 cursor-pointer"
                 onClick={() => handleArrowClick(customer)}
               >
                 <div className="flex items-baseline gap-2">
@@ -94,8 +109,8 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className={`h-6 w-6 flex-shrink-0 transition-all duration-300 ease-in-out ${
-                    selectedCustomer?.id === customer.id && isModalOpen 
-                      ? "rotate-90 text-purple-600" 
+                    selectedCustomer?.id === customer.id && isModalOpen
+                      ? "rotate-90 text-purple-600"
                       : "text-gray-400"
                   }`}
                   fill="none"
@@ -103,7 +118,11 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
                   stroke="currentColor"
                   strokeWidth={2.5}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </div>
             </div>
@@ -201,33 +220,41 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
                 <div className="space-y-3">
                   <DetailRow
                     label={t("customerListMobile.paymentCondition")}
-                    value={selectedCustomer.payment_condition_id}
+                    value={paymentsConditionsData?.name}
                     valueClassName="text-gray-900 font-semibold"
                   />
                   <DetailRow
                     label={t("customerListMobile.accountStatus")}
-                    value={selectedCustomer.status_account ? `$${selectedCustomer.status_account.toLocaleString()}` : "$0"}
+                    value={
+                      selectedCustomer.totalAmount
+                        ? `$${selectedCustomer.totalAmount.toLocaleString()}`
+                        : "$0"
+                    }
                     valueClassName="text-green-600 font-bold"
                   />
                   <DetailRow
                     label={t("customerListMobile.expiredDebt")}
                     value={
-                      selectedCustomer.status_account_expired 
-                        ? `$${selectedCustomer.status_account_expired.toLocaleString()}` 
+                      selectedCustomer.totalAmountExpired
+                        ? `$${selectedCustomer.totalAmountExpired.toLocaleString()}`
                         : "$0"
                     }
                     valueClassName={
-                      selectedCustomer.status_account_expired 
-                        ? "text-red-600 font-bold" 
+                      selectedCustomer.totalAmountExpired
+                        ? "text-red-600 font-bold"
                         : "text-gray-400"
                     }
                   />
                   <DetailRow
                     label={t("customerListMobile.cartItems")}
-                    value={`${selectedCustomer.shopping_cart.length} ${selectedCustomer.shopping_cart.length === 1 ? 'artículo' : 'artículos'}`}
+                    value={`${selectedCustomer.shopping_cart.length} ${
+                      selectedCustomer.shopping_cart.length === 1
+                        ? "artículo"
+                        : "artículos"
+                    }`}
                     valueClassName={
-                      selectedCustomer.shopping_cart.length > 0 
-                        ? "text-orange-600 font-bold" 
+                      selectedCustomer.shopping_cart.length > 0
+                        ? "text-orange-600 font-bold"
                         : "text-gray-400"
                     }
                   />
@@ -246,7 +273,7 @@ function CustomerListMobile({ filteredItems, handleSelectCustomer }: any) {
         </div>
       )}
     </>
-  )
+  );
 }
 
-export default CustomerListMobile
+export default CustomerListMobile;

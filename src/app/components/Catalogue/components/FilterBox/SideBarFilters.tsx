@@ -42,10 +42,10 @@ const SidebarFilters = () => {
 
   // Botones de etiquetas (tu diseño original)
   const tagButtons = [
-    { label: "OFERTAS", color: "bg-red-500" },
-    { label: "NUEVO", color: "bg-green-500" },
-    { label: "PROMOS", color: "bg-yellow-500" },
-    { label: "KITS", color: "bg-orange-500" },
+    { label: "OFERTAS", color: "bg-red-500", id: "OFFER" },
+    { label: "NUEVO", color: "bg-green-500", id: "NEW" },
+    { label: "PROMOS", color: "bg-yellow-500" , id: "OUTLET"},
+    { label: "KITS", color: "bg-orange-500", id: "COMBO" },
   ];
 
   const handleTagClick = (tag: string) => {
@@ -126,7 +126,7 @@ const SidebarFilters = () => {
       {/* Ordenar por */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700 uppercase">
-          {t("orderBy") || "ORDENAR POR"}
+          {"ORDENAR POR"}
         </label>
         <select
           onChange={(e) => setOrder(e.target.value)}
@@ -135,13 +135,13 @@ const SidebarFilters = () => {
         >
           <option value="">{t("bestSellers") || "Más vendidos"}</option>
           <option value="price:asc">
-            {t("priceAsc") || "Precio: Menor a mayor"}
+            {"Precio: Menor a mayor"}
           </option>
           <option value="price:desc">
-            {t("priceDesc") || "Precio: Mayor a menor"}
+            { "Precio: Mayor a menor"}
           </option>
           <option value="name:asc">
-            {t("nameAsc") || "Nombre: A-Z"}
+            {"Nombre: A-Z"}
           </option>
         </select>
       </div>
@@ -149,7 +149,7 @@ const SidebarFilters = () => {
       {/* Precio de compra */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700 uppercase">
-          {t("purchasePrice") || "PRECIO DE COMPRA"}
+          {"PRECIO DE COMPRA"}
         </label>
         <div className="flex gap-2">
           <button
@@ -200,7 +200,7 @@ const SidebarFilters = () => {
           {tagButtons.map((tag, index) => (
             <button
               key={index}
-              onClick={() => handleTagClick(tag.label)}
+              onClick={() => handleTagClick(tag.id)}
               className={`w-full py-4 rounded-lg text-sm font-bold text-white uppercase transition-all ${
                 tags === tag.label
                   ? `${tag.color} shadow-lg scale-105`

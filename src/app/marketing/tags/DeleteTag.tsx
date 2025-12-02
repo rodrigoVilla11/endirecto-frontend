@@ -22,7 +22,7 @@ const DeleteTagComponent = ({ marketingId, closeModal }: DeleteBannerProps) => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-white rounded-2xl">
       <h2 className="text-lg mb-4">{t("deleteTag.confirmDelete")}</h2>
       <p>{t("deleteTag.confirmPrompt")}</p>
       <div className="flex justify-end gap-4 mt-4">

@@ -232,34 +232,47 @@ const VouchersComponent = () => {
       if (current) observer.unobserve(current);
     };
   }, [isFetching, isLoading, items.length, totalDocuments]);
+  const isCustomer = userRole === "CUSTOMER";
 
   // Event handlers
   const handleDownload = useCallback(async () => {
-  try {
-    const blob = await triggerExport({
-      query: filters.searchQuery || undefined,
-      startDate: filters.startDate ? filters.startDate.toISOString().slice(0, 10) : undefined,
-      endDate: filters.endDate ? filters.endDate.toISOString().slice(0, 10) : undefined,
-      customer_id: selectedClientId || filters.customer_id || undefined,   // 👈 snake_case
-      sort: filters.sortQuery || undefined,
-      type: filters.typeFilter || undefined,
-      seller_id: isVendedor ? userData?.seller_id : filters.sellerFilter || undefined, // 👈 snake_case
-    }).unwrap();
+    try {
+      const blob = await triggerExport({
+        query: filters.searchQuery || undefined,
+        startDate: filters.startDate
+          ? filters.startDate.toISOString().slice(0, 10)
+          : undefined,
+        endDate: filters.endDate
+          ? filters.endDate.toISOString().slice(0, 10)
+          : undefined,
+        customer_id: selectedClientId || filters.customer_id || undefined, // 👈 snake_case
+        sort: filters.sortQuery || undefined,
+        type: filters.typeFilter || undefined,
+        seller_id: isVendedor
+          ? userData?.seller_id
+          : filters.sellerFilter || undefined, // 👈 snake_case
+      }).unwrap();
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `documentos_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Export error:", error);
-    alert(t("downloadError") || "No se pudo descargar el Excel.");
-  }
-}, [filters, selectedClientId, isVendedor, userData?.seller_id, triggerExport, t]);
-
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `documentos_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert(t("downloadError") || "No se pudo descargar el Excel.");
+    }
+  }, [
+    filters,
+    selectedClientId,
+    isVendedor,
+    userData?.seller_id,
+    triggerExport,
+    t,
+  ]);
 
   const handleSort = useCallback(
     (field: string) => {
@@ -351,12 +364,19 @@ const VouchersComponent = () => {
       ),
       sellerFilter: (
         <select
-          value={isVendedor ? userData?.seller_id || "" : filters.sellerFilter}
-          onChange={(e) =>
-            !isVendedor && updateFilter("sellerFilter", e.target.value)
+          value={
+            isVendedor
+              ? userData?.seller_id || ""
+              : isCustomer
+              ? ""
+              : filters.sellerFilter
           }
+          onChange={(e) => {
+            if (isVendedor || isCustomer) return;
+            updateFilter("sellerFilter", e.target.value);
+          }}
           className="border border-gray-300 rounded p-2 min-w-[150px]"
-          disabled={isVendedor || isLoadingSellers}
+          disabled={isVendedor || isCustomer || isLoadingSellers}
         >
           <option value="">{t("allSellers")}</option>
           {sellersData.map((s) => (
@@ -366,6 +386,7 @@ const VouchersComponent = () => {
           ))}
         </select>
       ),
+
       customerFilter: (
         <select
           value={selectedClientId || filters.customer_id}

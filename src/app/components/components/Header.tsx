@@ -1,4 +1,4 @@
-import Buttons from "./Buttons"
+import Buttons from "./Buttons";
 
 const Header = ({ headerBody }: any) => {
   return (
@@ -6,12 +6,12 @@ const Header = ({ headerBody }: any) => {
       {/* Sección de Botones */}
       <div className="flex flex-wrap justify-end items-center w-full border-b border-gradient-to-r from-pink-200 via-purple-200 to-blue-200 pb-4 gap-3">
         {headerBody.buttons.map((button: any, index: any) => (
-          <Buttons 
-            key={index} 
-            logo={button.logo} 
-            title={button.title} 
-            onClick={button.onClick} 
-            red={button.red} 
+          <Buttons
+            key={index}
+            logo={button.logo}
+            title={button.title}
+            onClick={button.onClick}
+            red={button.red}
             disabled={button.disabled}
           />
         ))}
@@ -23,7 +23,7 @@ const Header = ({ headerBody }: any) => {
           <div className="flex items-center gap-2">
             <p className="font-semibold text-gray-700 text-sm">
               {headerBody.secondSection.title}
-              <span className="font-bold pl-2 text-xl text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-white to-blue-500">
+              <span className="font-bold pl-2 text-xl text-red-600">
                 {headerBody.secondSection.amount}
               </span>
             </p>
@@ -37,9 +37,9 @@ const Header = ({ headerBody }: any) => {
       )}
 
       {/* Filtros */}
-      <div className="flex flex-wrap justify-start items-center w-full gap-3 p-3 bg-white/50 rounded-xl backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap justify-start items-center w-full gap-3 p-3 bg-white/50 rounded-xl backdrop-blur-sm z-50">
         {headerBody.filters.map((filter: any, index: any) => (
-          <div key={index} className="w-full sm:w-auto">
+          <div key={index} className="w-full sm:w-auto min-w-0">
             {filter.content}
           </div>
         ))}
@@ -50,7 +50,7 @@ const Header = ({ headerBody }: any) => {
         {headerBody.results}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

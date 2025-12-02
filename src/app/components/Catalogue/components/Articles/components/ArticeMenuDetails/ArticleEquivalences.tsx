@@ -19,7 +19,7 @@ const ArticleEquivalence = ({
   });
 
   return (
-    <div className="w-128 z-50">
+    <div className="w-128 z-50 overflow-hidden">
       <div className="flex items-center justify-between p-4 bg-gray-100 rounded-t-lg">
         <h2 className="text-lg font-medium">{t("equivalencesTitle")}  {articleId}</h2>
         <button
@@ -29,6 +29,7 @@ const ArticleEquivalence = ({
           <X className="h-5 w-5" />
         </button>
       </div>
+      <div className="max-h-96 overflow-y-auto scrollbar-hide">
       <table className="min-w-full bg-white">
         <thead>
           <tr className="text-xs">
@@ -51,6 +52,7 @@ const ArticleEquivalence = ({
             ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

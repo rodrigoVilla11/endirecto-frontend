@@ -56,7 +56,7 @@ const UpdateFaqComponent = ({ faqId, closeModal }: UpdateFaqComponentProps) => {
   if (error) return <p>{t("updateFaq.fetchError")}</p>;
 
   return (
-    <div>
+    <div className="bg-white rounded-2xl">
       <h2 className="text-lg mb-4">{t("updateFaq.title")}</h2>
       <form className="flex flex-col gap-4" onSubmit={handleUpdate}>
         <label className="flex flex-col">

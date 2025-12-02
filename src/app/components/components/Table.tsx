@@ -54,7 +54,7 @@ export default function Table({
       >
         {/* Header de la card con gradiente */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-purple-100 bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-red-500 via-white to-blue-500 px-3 py-1 text-xs font-bold text-black shadow-sm">
+          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
             {row.key ?? t("na")}
           </span>
 

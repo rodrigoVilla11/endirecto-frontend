@@ -79,6 +79,7 @@ const PaymentsChargedPage = () => {
   // Modal de detalles
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selected, setSelected] = useState<Payment | null>(null);
+  const { userData } = useAuth();
 
   const [fetchPayments, { data, isFetching }] = useLazyGetPaymentsQuery();
   const [setCharged, { isLoading: isToggling }] = useSetChargedMutation();
@@ -90,6 +91,12 @@ const PaymentsChargedPage = () => {
   const { data: sellersData, isLoading: isSellersLoading } =
     useGetSellersQuery(null);
   const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+
+  const userRole = useMemo(
+    () => userData?.role?.toUpperCase() || "",
+    [userData]
+  );
+  const isCustomerRole = userRole === "CUSTOMER";
 
   const [rendidoFilter, setRendidoFilter] = useState<"" | "true" | "false">(
     "false"
@@ -135,7 +142,6 @@ const PaymentsChargedPage = () => {
     }
   }, [selectedClientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { userData } = useAuth();
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
 
@@ -881,7 +887,9 @@ const PaymentsChargedPage = () => {
       const isThisRowToggling = togglingId === p._id;
       const gray = isAnulado(p) ? "text-zinc-400" : "";
       return {
-        key: p._id,
+        key: `${format(new Date(p.date), "dd/MM/yyyy HH:mm")}- ${
+          p.customer.name
+        }`,
         select: (
           <input
             {...stopProps}
@@ -953,10 +961,10 @@ const PaymentsChargedPage = () => {
       important: true,
     },
     { component: <FaEye className="text-center text-xl" />, key: "info" },
-    { name: t("customer"), key: "customer", important: true },
+    { name: t("customer"), key: "customer" },
     { name: t("seller") || "Vendedor", key: "seller" },
     { name: t("date"), key: "date" },
-    { name: t("documents"), key: "documents" },
+    { name: t("documents"), key: "documents", important: true },
     { name: t("imputed"), key: "imputed" },
     { name: t("rendido"), key: "rendido", important: true },
     { name: t("total"), key: "total", important: true },
@@ -1130,14 +1138,15 @@ const PaymentsChargedPage = () => {
               isSellerRole ? String(userData?.seller_id ?? "") : sellerFilter
             }
             onChange={(e) => {
-              // si está bloqueado por rol, no hacemos nada
-              if (isSellerRole) return;
+              // bloquear para SELLER y CUSTOMER
+              if (isSellerRole || isCustomerRole) return;
+
               setSellerFilter(e.target.value);
               setPage(1);
               setItems([]);
               setHasMore(true);
             }}
-            disabled={isSellersLoading || isSellerRole} // ⬅️ bloqueado para VENDEDOR
+            disabled={isSellersLoading || isSellerRole || isCustomerRole}
             className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
             title={t("seller") || "Vendedor"}
           >
@@ -1152,6 +1161,7 @@ const PaymentsChargedPage = () => {
           </select>
         ),
       },
+
       {
         content: (
           <select
@@ -1385,7 +1395,6 @@ function DetailsModal({
   const chequeInterest = (payment?.totals as any)?.cheque_interest; // Σ intereses cheques
   const saldoDiff = (payment?.totals as any)?.diff;
 
-  console.log(payment)
   const netFromValues =
     typeof valuesNominal === "number" && typeof chequeInterest === "number"
       ? valuesNominal - Math.abs(chequeInterest)

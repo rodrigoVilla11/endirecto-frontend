@@ -128,7 +128,7 @@ const UpdateBannerComponent = ({
 
   return (
     <div>
-      <div className="flex justify-between">
+      <div className="flex justify-between bg-white rounded-2xl">
         <h2 className="text-lg mb-4">{t("updateBanner.title")}</h2>
         <button
           onClick={closeModal}

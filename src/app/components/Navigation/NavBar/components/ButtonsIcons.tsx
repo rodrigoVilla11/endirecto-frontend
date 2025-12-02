@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MdFullscreen,
   MdHome,
@@ -27,7 +27,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const { userData } = useAuth();
   const router = useRouter();
 
-  const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
+  const { data: userQueryData, refetch: refetchUser } = useGetUserByIdQuery(
+    { id: userData?._id || "" },
+    { skip: !userData?._id }
+  );
 
   const { data: customer, refetch: refetchCustomer } = useGetCustomerByIdQuery(
     { id: selectedClientId || "" },
@@ -40,6 +43,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const notifRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setCurrentLanguage(i18n.language);
@@ -53,7 +57,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     };
   }, []);
 
-  const currentUserId = selectedClientId || userQuery.data?._id || "";
+  const currentUserId =
+    selectedClientId || userData?._id || userQueryData?._id || "";
   const sortedNotifications = notifications
     .slice()
     .sort(
@@ -69,12 +74,12 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
   useEffect(() => {
     if (selectedClientId && customer?.notifications) {
       setNotifications(customer.notifications);
-    } else if (!selectedClientId && userQuery.data?.notifications) {
-      setNotifications(userQuery.data?.notifications);
+    } else if (!selectedClientId && userQueryData?.notifications) {
+      setNotifications(userQueryData.notifications);
     } else {
       setNotifications([]);
     }
-  }, [userQuery, customer, selectedClientId]);
+  }, [customer, userQueryData, selectedClientId]);
 
   useEffect(() => {
     if (cartItemCount > 0) {
@@ -116,36 +121,55 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     useMarkNotificationAsReadCustomerMutation();
 
   const handleMarkAsRead = async (notification: any) => {
-    if (!notification.read && currentUserId) {
-      try {
-        if (selectedClientId) {
-          await markNotificationCustomerAsRead({
-            id: currentUserId,
-            notificationId: notification._id,
-          }).unwrap();
-        } else {
-          await markNotificationAsRead({
-            id: currentUserId,
-            title: notification.title,
-          }).unwrap();
-        }
-      } catch (err) {
-        console.error("Error al marcar notificación como leída", err);
+    if (notification.read || !currentUserId) return;
+
+    try {
+      if (selectedClientId) {
+        // CLIENTE
+        await markNotificationCustomerAsRead({
+          id: currentUserId,
+          notificationId: notification._id,
+        }).unwrap();
+      } else {
+        // USUARIO (ANITA / ADMIN / VENDEDOR / etc.)
+        await markNotificationAsRead({
+          id: currentUserId,
+          notificationId: notification._id,
+        }).unwrap();
       }
+
+      // Actualizar en memoria para que se vea al toque
+      setNotifications((prev) =>
+        prev.map((n) =>
+          String(n._id) === String(notification._id) ? { ...n, read: true } : n
+        )
+      );
+    } catch (err) {
+      console.error("Error al marcar notificación como leída", err);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    for (const notification of notifications) {
-      if (!notification.read) {
-        await handleMarkAsRead(notification);
-      }
+    if (!currentUserId) return;
+
+    const unread = notifications.filter((n) => !n.read);
+    if (!unread.length) {
+      setIsNotificationsMenuOpen(false);
+      return;
     }
+
+    // Marcamos todas en backend
+    for (const notification of unread) {
+      await handleMarkAsRead(notification);
+    }
+
+    // Refetch por las dudas (sincronizar con back)
     if (selectedClientId) {
       await refetchCustomer();
     } else {
-      await userQuery.refetch();
+      await refetchUser();
     }
+
     setIsNotificationsMenuOpen(false);
   };
 
@@ -154,16 +178,41 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
     if (selectedClientId) {
       await refetchCustomer();
     } else {
-      await userQuery.refetch();
+      await refetchUser();
     }
     setIsNotificationsMenuOpen(false);
     handleRedirect("/notifications");
   };
 
+  useEffect(() => {
+    if (!isNotificationsMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNotificationsMenuOpen]);
+
   return (
-    <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4 w-60 justify-evenly'} text-xl sm:text-2xl text-white relative`}>
+    <div
+      className={`flex items-center ${
+        isMobile ? "gap-2" : "gap-4 w-60 justify-evenly"
+      } text-xl sm:text-2xl text-white relative`}
+    >
       {!isMobile && (
-        <button onClick={handleLanguageToggle} className="cursor-pointer hover:scale-110 transition-transform">
+        <button
+          onClick={handleLanguageToggle}
+          className="cursor-pointer hover:scale-110 transition-transform"
+        >
           {currentLanguage === "en" ? (
             <ReactCountryFlag
               countryCode="US"
@@ -193,7 +242,9 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
       {selectedClientId && (
         <div className="relative">
           <MdShoppingCart
-            className={`cursor-pointer hover:scale-110 transition-transform ${animateCart ? "animate-bounce" : ""}`}
+            className={`cursor-pointer hover:scale-110 transition-transform ${
+              animateCart ? "animate-bounce" : ""
+            }`}
             onClick={() => handleRedirect("/shopping-cart")}
           />
           {cartItemCount > 0 && (
@@ -209,7 +260,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
           onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
         />
         {notifications.filter((n) => !n.read).length > 0 && (
-          <span onClick={() => setIsNotificationsMenuOpen((prev) => !prev)} className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse">
+          <span
+            onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
+            className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse"
+          >
             {notifications.filter((n) => !n.read).length}
           </span>
         )}
@@ -226,6 +280,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                   onClick={() => setIsNotificationsMenuOpen(false)}
                 >
                   <motion.div
+                    ref={notifRef}
                     initial={{ scale: 0.9, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.9, y: 20 }}
@@ -261,7 +316,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: 20 }}
-                                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                                  transition={{
+                                    duration: 0.2,
+                                    delay: index * 0.05,
+                                  }}
                                   className={`p-5 cursor-pointer transition-all duration-200 ${
                                     !notification.read
                                       ? "bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 border-l-4 border-orange-400"
@@ -272,16 +330,20 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                   }
                                 >
                                   <div className="flex items-start gap-3">
-                                    <div className={`mt-1 p-2 rounded-full ${
-                                      !notification.read 
-                                        ? "bg-orange-500" 
-                                        : "bg-gray-300"
-                                    }`}>
-                                      <Bell className={`w-4 h-4 ${
-                                        !notification.read 
-                                          ? "text-white" 
-                                          : "text-gray-600"
-                                      }`} />
+                                    <div
+                                      className={`mt-1 p-2 rounded-full ${
+                                        !notification.read
+                                          ? "bg-orange-500"
+                                          : "bg-gray-300"
+                                      }`}
+                                    >
+                                      <Bell
+                                        className={`w-4 h-4 ${
+                                          !notification.read
+                                            ? "text-white"
+                                            : "text-gray-600"
+                                        }`}
+                                      />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-bold text-gray-900 mb-1 text-sm">
@@ -337,6 +399,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                 </motion.div>
               ) : (
                 <motion.div
+                  ref={notifRef}
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -371,7 +434,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
-                                transition={{ duration: 0.2, delay: index * 0.05 }}
+                                transition={{
+                                  duration: 0.2,
+                                  delay: index * 0.05,
+                                }}
                                 className={`p-5 cursor-pointer transition-all duration-200 ${
                                   !notification.read
                                     ? "bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 border-l-4 border-orange-400"
@@ -382,16 +448,20 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                                 }
                               >
                                 <div className="flex items-start gap-3">
-                                  <div className={`mt-1 p-2 rounded-full ${
-                                    !notification.read 
-                                      ? "bg-orange-500" 
-                                      : "bg-gray-300"
-                                  }`}>
-                                    <Bell className={`w-4 h-4 ${
-                                      !notification.read 
-                                        ? "text-white" 
-                                        : "text-gray-600"
-                                    }`} />
+                                  <div
+                                    className={`mt-1 p-2 rounded-full ${
+                                      !notification.read
+                                        ? "bg-orange-500"
+                                        : "bg-gray-300"
+                                    }`}
+                                  >
+                                    <Bell
+                                      className={`w-4 h-4 ${
+                                        !notification.read
+                                          ? "text-white"
+                                          : "text-gray-600"
+                                      }`}
+                                    />
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="font-bold text-gray-900 mb-1 text-sm">
@@ -450,7 +520,10 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
         </AnimatePresence>
       </div>
       {!isMobile && (
-        <MdHome onClick={() => handleRedirect("/")} className="cursor-pointer hover:scale-110 transition-transform" />
+        <MdHome
+          onClick={() => handleRedirect("/")}
+          className="cursor-pointer hover:scale-110 transition-transform"
+        />
       )}
       {showTick && (
         <div

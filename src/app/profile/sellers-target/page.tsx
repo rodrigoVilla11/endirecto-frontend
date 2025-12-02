@@ -49,8 +49,8 @@ const Page = () => {
 
   const tableHeader = [
     { name: "Marca", key: "brand", important: true },
-    { name: "Objetivo Actual", key: "currentTarget", important: true },
-    { name: "Nuevo Objetivo", key: "newTarget", important: true },
+    { name: "Objetivo Actual", key: "currentTarget",  },
+    { name: "Nuevo Objetivo", key: "newTarget",  },
   ];
 
   const headerBody = {

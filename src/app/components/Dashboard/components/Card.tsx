@@ -23,17 +23,20 @@ const Card: React.FC<CardProps> = ({
     <div
       onClick={onClick}
       className={`
-        group relative w-full sm:w-80 h-auto min-h-[160px] 
-        bg-white rounded-2xl border-2 border-gray-200 
-        shadow-lg hover:shadow-2xl 
-        transition-all duration-300 
-        cursor-pointer overflow-hidden
-        hover:scale-105 hover:border-purple-300
-        ${className}
-      `}
+    group relative 
+    w-[280px]       /* ancho uniforme */
+    h-[180px]                 /* ↙ alto fijo */
+    bg-white rounded-2xl border-2 border-gray-200 
+    shadow-lg hover:shadow-2xl 
+    transition-all duration-300 
+    cursor-pointer overflow-hidden
+    hover:scale-[1.03] hover:border-purple-300
+    flex flex-col             /* para que el contenido se acomode */
+    ${className}
+  `}
     >
       {/* Barra de color superior */}
-      <div 
+      <div
         className="absolute top-0 left-0 right-0 h-1.5 transition-all duration-300 group-hover:h-2"
         style={{ backgroundColor: color }}
       />
@@ -43,11 +46,11 @@ const Card: React.FC<CardProps> = ({
         {/* Icono + Título + Subtitle */}
         <div className="flex items-start gap-4">
           {/* Contenedor del icono con gradiente */}
-          <div 
+          <div
             className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center text-3xl shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
-            style={{ 
+            style={{
               background: `linear-gradient(135deg, ${color}20, ${color}10)`,
-              border: `2px solid ${color}40`
+              border: `2px solid ${color}40`,
             }}
           >
             {logo}
@@ -78,7 +81,7 @@ const Card: React.FC<CardProps> = ({
       </div>
 
       {/* Efecto de brillo en hover */}
-      <div 
+      <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
           background: `linear-gradient(135deg, transparent 0%, ${color}10 50%, transparent 100%)`,
@@ -87,18 +90,22 @@ const Card: React.FC<CardProps> = ({
 
       {/* Indicador de click */}
       <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
-        <div 
+        <div
           className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
           style={{ backgroundColor: color }}
         >
-          <svg 
-            className="w-4 h-4 text-white" 
-            fill="none" 
-            strokeWidth="2" 
-            stroke="currentColor" 
+          <svg
+            className="w-4 h-4 text-white"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </div>
       </div>

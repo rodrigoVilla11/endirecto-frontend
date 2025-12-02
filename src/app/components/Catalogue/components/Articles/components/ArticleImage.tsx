@@ -55,7 +55,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
             onClick={handlePrev}
             className={`absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/80 text-black rounded-full ${
               isMobile ? 'p-1 text-xs' : 'p-2'
-            } shadow-md hover:scale-110 transition z-20`}
+            } shadow-md hover:scale-110 transition z-20 text-xs` }
           >
             ❮
           </button>
@@ -64,7 +64,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
             onClick={handleNext}
             className={`absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/80 text-black rounded-full ${
               isMobile ? 'p-1 text-xs' : 'p-2'
-            } shadow-md hover:scale-110 transition z-20`}
+            } shadow-md hover:scale-110 transition z-20 text-xs`}
           >
             ❯
           </button>

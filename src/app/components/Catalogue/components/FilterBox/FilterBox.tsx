@@ -107,7 +107,7 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
                 onClick={handleClearFilters}
                 className="text-[10px] md:text-xs font-semibold text-blue-600 hover:text-blue-800"
               >
-                {t("clearFilters") || "Limpiar filtros"}
+                { "Limpiar filtros"}
               </button>
             )}
 

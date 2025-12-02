@@ -47,7 +47,7 @@ export interface CreateUserNotificationDto {
   schedule_from: Date;
   schedule_to: Date;
   title: string;
-  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO";
+  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO" | "CONTACTO";
   customer_id?: string;
 }
 
@@ -131,16 +131,18 @@ export const usersApi = createApi({
         body: payload,
       }),
     }),
+    // usersApi.ts
     markNotificationAsRead: builder.mutation<
       User,
-      { id: string; title: string }
+      { id: string; notificationId: string }
     >({
-      query: ({ id, title }) => ({
+      query: ({ id, notificationId }) => ({
         url: `/users/mark-notification-read?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PATCH",
-        body: { id, title },
+        body: { id, notificationId },
       }),
     }),
+
     addNotificationToUserById: builder.mutation<
       User,
       { id: string; notification: CreateUserNotificationDto }

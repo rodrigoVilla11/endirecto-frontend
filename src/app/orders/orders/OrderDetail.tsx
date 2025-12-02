@@ -44,7 +44,7 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl max-w-2xl mx-auto overflow-hidden">
+    <div className="bg-white rounded-lg shadow-xl max-w-2xl mx-auto overflow-hidden max-h-[90vh] flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-xl font-bold text-gray-800">
@@ -72,7 +72,7 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
         </button>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 overflow-y-auto flex-1">
         {/* Estado */}
         <div className="mb-4">
           <span

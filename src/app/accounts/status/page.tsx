@@ -271,40 +271,52 @@ export default function Page() {
     () => [
       {
         content: (
-          <div className="flex space-x-2">
-            <DatePicker
-              selected={startDate}
-              onChange={(d) => {
-                setStartDate(d);
-                resetList();
-              }}
-              placeholderText={t("dateFrom")}
-              dateFormat="yyyy-MM-dd"
-              className="border rounded p-2"
-            />
-            {startDate && (
-              <FaTimes
-                className="cursor-pointer"
-                onClick={() => setStartDate(null)}
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            {/* Fecha desde */}
+            <div className="relative flex-1 min-w-0">
+              <DatePicker
+                selected={startDate}
+                onChange={(d) => {
+                  setStartDate(d);
+                  resetList();
+                }}
+                placeholderText={t("dateFrom")}
+                dateFormat="yyyy-MM-dd"
+                className="w-full border rounded p-2"
               />
-            )}
+              {startDate && (
+                <FaTimes
+                  className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setStartDate(null);
+                    resetList();
+                  }}
+                />
+              )}
+            </div>
 
-            <DatePicker
-              selected={endDate}
-              onChange={(d) => {
-                setEndDate(d);
-                resetList();
-              }}
-              placeholderText={t("dateTo")}
-              dateFormat="yyyy-MM-dd"
-              className="border rounded p-2"
-            />
-            {endDate && (
-              <FaTimes
-                className="cursor-pointer"
-                onClick={() => setEndDate(null)}
+            {/* Fecha hasta */}
+            <div className="relative flex-1 min-w-0">
+              <DatePicker
+                selected={endDate}
+                onChange={(d) => {
+                  setEndDate(d);
+                  resetList();
+                }}
+                placeholderText={t("dateTo")}
+                dateFormat="yyyy-MM-dd"
+                className="w-full border rounded p-2"
               />
-            )}
+              {endDate && (
+                <FaTimes
+                  className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setEndDate(null);
+                    resetList();
+                  }}
+                />
+              )}
+            </div>
           </div>
         ),
       },
@@ -316,7 +328,7 @@ export default function Page() {
               setTypeFilter(e.target.value);
               resetList();
             }}
-            className="border rounded p-2"
+            className="w-full border rounded p-2"
           >
             <option value="">{t("allTypes")}</option>
             {DOCUMENT_TYPES.map((type) => (
@@ -332,13 +344,14 @@ export default function Page() {
           <select
             value={forcedSellerId || sellerFilter}
             onChange={(e) => {
-              if (!forcedSellerId) {
-                setSellerFilter(e.target.value);
-                resetList();
-              }
+              // Si está bloqueado por rol o por forcedSellerId, no hacemos nada
+              if (forcedSellerId || userRole === "CUSTOMER") return;
+
+              setSellerFilter(e.target.value);
+              resetList();
             }}
-            disabled={!!forcedSellerId}
-            className="border rounded p-2"
+            disabled={!!forcedSellerId || userRole === "CUSTOMER"}
+            className="w-full border rounded p-2"
           >
             <option value="">{t("allSellers")}</option>
             {sellersData?.map((s) => (
@@ -358,7 +371,7 @@ export default function Page() {
               resetList();
             }}
             disabled={!!selectedClientId}
-            className="border rounded p-2"
+            className="w-full border rounded p-2"
           >
             <option value="">{t("allCustomers")}</option>
             {customersData?.map((c) => (
@@ -386,14 +399,55 @@ export default function Page() {
   );
 
   // Table data from allDocs
+  // Table data from allDocs
   const tableData = useMemo(
     () =>
       allDocs.map((doc) => {
         const isSelected = selectedDocs.some((d) => d.key === doc.id);
         const customer = customersData?.find((c) => c.id === doc.customer_id);
         const seller = sellersData?.find((s) => s.id === doc.seller_id);
+
+        // --- lógica color ---
+        const isInvoice = (doc.type || "").toUpperCase().startsWith("FACTURA");
+        const expirationDate = doc.expiration_date
+          ? new Date(doc.expiration_date)
+          : null;
+
+        // Si está vencida: fecha < hoy
+        const isExpired =
+          isInvoice &&
+          expirationDate !== null &&
+          expirationDate.getTime() < new Date().setHours(0, 0, 0, 0);
+        const amountNumber = Number(doc.amount);
+        const formattedAmount = formatCurrency(amountNumber);
+
+        const amountCell = isInvoice ? (
+          <span
+            className={`font-semibold ${
+              isExpired ? "text-red-600" : "text-emerald-600"
+            }`}
+          >
+            {formattedAmount}
+          </span>
+        ) : (
+          formattedAmount
+        );
+
+        const balanceCell = isInvoice ? (
+          <span
+            className={`font-semibold ${
+              isExpired ? "text-red-600" : "text-emerald-600"
+            }`}
+          >
+            {formattedAmount}
+          </span>
+        ) : (
+          formattedAmount
+        );
+        // --- fin lógica color ---
+
         return {
-          key: doc.id,
+          key: `${doc.date} - ${customer?.name}`,
           action: (
             <ToggleSwitch
               selected={isSelected}
@@ -412,14 +466,14 @@ export default function Page() {
           type: doc.type,
           number: doc.number,
           date: doc.date,
-          amount: formatCurrency(Number(doc.amount)),
-          balance: formatCurrency(Number(doc.amount)),
+          amount: amountCell,
+          balance: balanceCell,
           expiration_date: doc.expiration_date,
           expiration_status: doc.expiration_status || "",
           seller_id: seller?.name || t("notFound"),
         };
       }),
-    [allDocs, customersData, sellersData, selectedDocs, t]
+    [allDocs, customersData, sellersData, selectedDocs, t, toggleSelect]
   );
 
   return (
@@ -443,7 +497,7 @@ export default function Page() {
                 // si tu <Header> soporta deshabilitar:
                 disabled: isFetching,
               },
-              ...(canCreate
+              ...(canCreate && selectedClientId
                 ? [
                     {
                       logo: <FaPlus />,
@@ -463,7 +517,7 @@ export default function Page() {
             results: t("results", { count: documentsData?.totalData || 0 }),
           }}
         />
-        {latestHighInstance && (
+        {canCreate && selectedClientId && latestHighInstance && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 mx-4 py-3 flex items-start gap-3">
             <span
               className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500"
@@ -531,13 +585,14 @@ export default function Page() {
           </>
         )}
       </div>
-
-      <Modal isOpen={createModalOpen} onClose={closeCreateModal}>
-        <CRM
-          closeModal={closeCreateModal}
-          selectedClientId={selectedClientId}
-        />
-      </Modal>
+      {canCreate && selectedClientId && (
+        <Modal isOpen={createModalOpen} onClose={closeCreateModal}>
+          <CRM
+            closeModal={closeCreateModal}
+            selectedClientId={selectedClientId}
+          />
+        </Modal>
+      )}
 
       <Modal isOpen={docModalOpen} onClose={closeDocModal}>
         <DocumentDetails

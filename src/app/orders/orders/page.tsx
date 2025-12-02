@@ -402,7 +402,7 @@ const Page = () => {
         ),
         title: isExporting ? t("exporting") || "Exportando..." : t("download"),
         onClick: handleExport,
-        disabled: isExporting, 
+        disabled: isExporting,
       },
     ],
     filters: [
@@ -448,9 +448,9 @@ const Page = () => {
             value={filters.status}
             onChange={(e) => updateFilter("status", e.target.value)}
           >
-            <option value="">{t("allStatuses") || "Todos los estados"}</option>
+            <option value="">{"Todos los estados"}</option>
             <option value="charged">{t("charged")}</option>
-            <option value="sendend">{t("sendend")}</option>
+            <option value="sendend">{t("Enviado")}</option>
           </select>
         ),
       },
@@ -460,7 +460,7 @@ const Page = () => {
             value={filters.seller_id}
             onChange={(e) => updateFilter("seller_id", e.target.value)}
             className="border border-gray-300 rounded p-2"
-            disabled={userRole === "VENDEDOR"}
+            disabled={userRole === "VENDEDOR" || userRole === "CUSTOMER"}
           >
             <option value="">{t("allSellers")}</option>
             {sellersData?.map((seller: any) => (
@@ -471,6 +471,7 @@ const Page = () => {
           </select>
         ),
       },
+
       {
         content: (
           <div className="relative">

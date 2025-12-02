@@ -22,7 +22,7 @@ const StripeStock = ({ articleId, isBar = false }: { articleId: any; isBar?: boo
   const getStockText = () => {
     if (hasStock === "STOCK") return `Stock disponible: ${stockQuantity}`;
     if (hasStock === "LOW-STOCK") return `Poco stock: ${stockQuantity}`;
-    if (hasStock === "NO-STOCK") return "STOCK";
+    if (hasStock === "NO-STOCK") return "SIN STOCK";
     return "Stock";
   };
 

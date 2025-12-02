@@ -79,10 +79,16 @@ const SalesTargetsPage = () => {
 
   // Filtrar marcas con objetivo
   const brandsWithTargets =
-    brands?.filter((brand) => {
-      const target = parseFloat(seller?.target?.[brand.id] || "0");
-      return target > 0;
-    }) || [];
+    brands
+      ?.filter((brand) => {
+        const target = parseFloat(seller?.target?.[brand.id] || "0");
+        return target > 0;
+      })
+      .sort((a, b) => {
+        const targetA = parseFloat(seller?.target?.[a.id] || "0");
+        const targetB = parseFloat(seller?.target?.[b.id] || "0");
+        return targetB - targetA; // mayor a menor
+      }) || [];
 
   // Efecto para cargar datos de todas las marcas
   useEffect(() => {
@@ -245,7 +251,7 @@ const SalesTargetsPage = () => {
     <PrivateRoute requiredRoles={["VENDEDOR", "ADMINISTRADOR"]}>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-6 mt-4">
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 text-black rounded-b-3xl shadow-2xl p-4 mb-4 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500 to-blue-500 text-black rounded-b-3xl shadow-2xl p-4 mb-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
 
