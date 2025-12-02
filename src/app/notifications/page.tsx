@@ -115,7 +115,7 @@ const Page = () => {
         } else {
           await markNotificationAsRead({
             id: currentUserId,
-            title: notification.title,
+            notificationId: notification._id,
           }).unwrap();
         }
         // Actualizamos el estado local de forma optimista
