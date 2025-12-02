@@ -27,7 +27,7 @@ export interface CreateCustomerNotificationDto {
   schedule_from: Date;
   schedule_to: Date;
   title: string;
-  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO";
+  type: "NOVEDAD" | "PEDIDO" | "PRESUPUESTO" | "PAGO"| "CONTACTO" ;
 }
 
 interface CustomersPagResponse {
