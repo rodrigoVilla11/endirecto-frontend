@@ -22,7 +22,6 @@ import {
 } from "@/redux/services/settingsApi";
 import { diffFromDateToToday } from "@/lib/dateUtils";
 import { InfoIcon } from "lucide-react";
-import Modal from "@/app/components/components/Modal";
 import PlanCalculator from "@/app/finance/planCaluculator";
 import { useCheckInsituVisitMutation } from "@/redux/services/crmApi";
 
@@ -818,7 +817,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         diff: saldoDiff,
       };
 
-      console.log({ totals });
       // ——— Payload final ———
       const payload = {
         status: "pending",

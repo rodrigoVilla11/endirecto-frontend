@@ -103,7 +103,7 @@ export interface Payment {
   payment_condition: { id: string };
   values: PaymentValueLine[];
   user: { id: string };
-  seller: { id: string };
+  seller?: { id: string };
   comments?: string;
   source?: string; // "web" | "mobile" | "pos"
   pdf?: string;
