@@ -291,6 +291,8 @@ const PaymentsChargedPage = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+    const fmtMoney = (n: number) =>
+      currencyFmt.format(n).replace(/\s/g, "\u00A0");
 
     const valueGross = (v: any) =>
       Number(v?.raw_amount ?? v?.rawAmount ?? v?.amount ?? 0);
@@ -345,13 +347,26 @@ const PaymentsChargedPage = () => {
 
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight(); // 👈 agregado para saber el alto de página
     const margin = { left: 40, right: 40 };
     const wAvail = pageW - margin.left - margin.right;
 
-    // Título
+    // ===== Título (con vendedor) =====
+    const firstRow: any = rows[0];
+    const sellerId = firstRow?.seller.id; 
+
+    let sellerName = "";
+    if (sellerId && Array.isArray(sellersData)) {
+      const seller = usersData?.find((s) => s.seller_id === sellerId);
+      sellerName = seller?.username || "";
+    }
+    const title = sellerName
+      ? `Rendición de pagos - ${sellerName}`
+      : "Rendición de pagos";
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("Rendición de pagos", margin.left, 40);
+    doc.text(title, margin.left, 40);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     const now = new Date();
@@ -372,20 +387,20 @@ const PaymentsChargedPage = () => {
       0
     );
 
-    // Anchos de columna (incluye columna “Total Cobrado” vacía por fila)
     const cw = {
-      fecha: wAvail * 0.16,
-      cliente: wAvail * 0.26,
-      docs: wAvail * 0.22,
-      metodos: wAvail * 0.2,
-      cobrado: wAvail * 0.16,
-      totalCobrado: wAvail * 0.0, // prácticamente sin uso en filas
+      fecha: wAvail * 0.15,
+      cliente: wAvail * 0.22,
+      docs: wAvail * 0.2,
+      metodos: wAvail * 0.16,
+      cobrado: wAvail * 0.15,
+      totalCobrado: wAvail * 0.14,
     };
 
-    // Tabla principal (igual al PDF ejemplo)
+    // ===== BLOQUE 1: tabla principal =====
     autoTable(doc, {
       startY: 72,
       tableWidth: wAvail,
+      pageBreak: "avoid",
       head: [
         ["Fecha", "Cliente", "Docs", "Métodos", "Cobrado", "Total Cobrado"],
       ],
@@ -397,16 +412,27 @@ const PaymentsChargedPage = () => {
         const nombre = p.customer?.name;
         const cliente =
           id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
+
         const docs =
           (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
+
         const methods =
           p.values && p.values.length ? formatMethodsCell(p.values) : "—";
-        const cobradoBruto = currencyFmt.format(
-          (p.values ?? []).reduce((s: number, v: any) => s + valueGross(v), 0)
-        );
 
-        // penúltima col: Cobrado, última col (Total Cobrado) vacía en filas
-        return [fecha, cliente, docs, methods, cobradoBruto, ""];
+        const valuesArr: any[] = p.values ?? [];
+
+        const cobradoLines =
+          valuesArr.length > 0
+            ? valuesArr.map((v) => fmtMoney(valueGross(v))).join("\n")
+            : "—";
+
+        const totalCobradoNumber = valuesArr.reduce(
+          (s, v) => s + valueGross(v),
+          0
+        );
+        const totalCobrado = fmtMoney(totalCobradoNumber);
+
+        return [fecha, cliente, docs, methods, cobradoLines, totalCobrado];
       }),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
@@ -418,25 +444,30 @@ const PaymentsChargedPage = () => {
         2: { cellWidth: cw.docs },
         3: { cellWidth: cw.metodos },
         4: { cellWidth: cw.cobrado, halign: "right" },
-        5: { cellWidth: cw.totalCobrado, halign: "right" },
+        5: {
+          cellWidth: cw.totalCobrado,
+          halign: "right",
+          overflow: "visible",
+        },
       },
       margin,
       foot: [
         [
-          { content: "", colSpan: 4 },
           {
             content: "Totales",
+            colSpan: 5,
             styles: { halign: "right", fontStyle: "bold" },
           },
           {
-            content: currencyFmt.format(sumValuesGross),
+            content: fmtMoney(sumValuesGross),
             styles: { halign: "right", fontStyle: "bold" },
           },
         ],
       ],
     });
 
-    // Totales por método (bruto) en página siguiente
+    // ===== BLOQUE 2: Totales por método justo debajo =====
+
     const totalsMap = buildMethodTotalsGross(rows as any);
     const totalsEntries = Object.entries(totalsMap).sort(
       (a, b) => b[1].total - a[1].total
@@ -444,13 +475,26 @@ const PaymentsChargedPage = () => {
     const grand = totalsEntries.reduce((s, [, o]) => s + o.total, 0);
     const grandCount = totalsEntries.reduce((s, [, o]) => s + o.count, 0);
 
-    doc.addPage();
+    // Y de la primera tabla
+    const firstTableFinalY =
+      (doc as any).lastAutoTable?.finalY != null
+        ? (doc as any).lastAutoTable.finalY
+        : 140;
+
+    // Dejo un espacio y calculo si entra en la misma página
+    let totalsStartY = firstTableFinalY + 30;
+    const estimatedHeight = 120; // estimación simple
+    if (totalsStartY + estimatedHeight > pageH - 40) {
+      doc.addPage();
+      totalsStartY = 60;
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("Totales por método (bruto)", margin.left, 60);
+    doc.text("Totales por método (bruto)", margin.left, totalsStartY);
 
     autoTable(doc, {
-      startY: 80,
+      startY: totalsStartY + 20,
       tableWidth: wAvail,
       head: [["Método", "Cant. valores", "Total bruto", "% del total"]],
       body: totalsEntries.map(([m, o]) => [
@@ -479,7 +523,7 @@ const PaymentsChargedPage = () => {
       margin,
     });
 
-    // Generar File y subir
+    // ===== Subida + actualización de pagos (sin cambios) =====
     const filename = `rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
     const ab = doc.output("arraybuffer");
     const blob = new Blob([ab], { type: "application/pdf" });
