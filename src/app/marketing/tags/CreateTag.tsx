@@ -3,7 +3,6 @@ import { useUploadImageMutation } from "@/redux/services/cloduinaryApi";
 import { useCreateMarketingMutation } from "@/redux/services/marketingApi";
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
-import { FaTrashCan } from "react-icons/fa6";
 import { useTranslation } from "react-i18next";
 
 const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
@@ -83,41 +82,56 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
     }));
   };
 
+  const isSubmitDisabled =
+    isLoadingCreate ||
+    !form.tags.name ||
+    !form.tags.url ||
+    !form.tags.image;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-auto">
-        <div className="flex justify-between mb-4">
-          <h2 className="text-lg font-semibold">{t("createTag.title")}</h2>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-3">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 md:p-7">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+            {t("createTag.title")}
+          </h2>
           <button
             onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
+            className="bg-gray-200 hover:bg-gray-300 rounded-full h-8 w-8 flex justify-center items-center transition"
             aria-label={t("createTag.closeModal")}
           >
-            <IoMdClose className="text-lg" />
+            <IoMdClose className="text-gray-700 text-lg" />
           </button>
         </div>
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="flex flex-col mb-2">
-                {t("createTag.nameLabel")}:
+        <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+          {/* Datos principales + Imagen / URL */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Columna izquierda: nombre + enable */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("createTag.nameLabel")}
+                </label>
                 <input
                   name="name"
                   value={form.tags.name}
                   placeholder={t("createTag.namePlaceholder")}
                   onChange={handleChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </label>
+              </div>
 
-              <div className="flex flex-col mb-2">
-                <label>{t("createTag.enableLabel")}:</label>
+              <div className="space-y-1">
+                <span className="block text-sm font-medium text-gray-700">
+                  {t("createTag.enableLabel")}
+                </span>
                 <button
                   type="button"
                   onClick={handleToggleEnable}
-                  className={`border border-gray-300 rounded-md p-2 text-white w-24 ${
-                    form.tags.enable ? "bg-green-500" : "bg-red-500"
+                  className={`inline-flex items-center justify-center border border-gray-300 rounded-full px-4 py-2 text-xs font-semibold text-white transition ${
+                    form.tags.enable ? "bg-emerald-600" : "bg-red-500"
                   }`}
                   aria-pressed={form.tags.enable}
                 >
@@ -126,117 +140,119 @@ const CreateTagComponent = ({ closeModal }: { closeModal: () => void }) => {
               </div>
             </div>
 
-            <div>
-              <label className="flex flex-col mb-2">
-                {t("createTag.imageLabel")}:
-                <div className="flex items-center gap-2">
+            {/* Columna derecha: imagen + url */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("createTag.imageLabel")}
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageFileChange}
-                    className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+                    className="block w-full text-xs text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
                   />
                   <button
                     type="button"
                     onClick={handleUpload}
                     disabled={isLoadingUpload}
-                    className="ml-2 bg-blue-500 text-white rounded-md px-4 py-2"
+                    className={`sm:w-auto w-full sm:flex-none bg-blue-500 text-white rounded-md px-4 py-2 text-xs font-semibold transition ${
+                      isLoadingUpload
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:bg-blue-600"
+                    }`}
                     aria-busy={isLoadingUpload}
                   >
-                    {isLoadingUpload ? t("createTag.uploading") : t("createTag.uploadPrompt")}
+                    {isLoadingUpload
+                      ? t("createTag.uploading")
+                      : t("createTag.uploadPrompt")}
                   </button>
                 </div>
-              </label>
+              </div>
 
-              <label className="flex flex-col mb-2">
-                {t("createTag.urlLabel")}:
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("createTag.urlLabel")}
+                </label>
                 <input
                   name="url"
                   value={form.tags.url}
                   placeholder={t("createTag.urlPlaceholder")}
                   onChange={handleChange}
-                  className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </label>
+              </div>
             </div>
           </div>
 
-          {/* Display uploaded image and URL */}
-          <div className="mt-4">
-            <h3 className="text-md font-semibold mb-2">{t("createTag.uploadedImagesTitle")}</h3>
+          {/* Preview imagen subida */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">
+              {t("createTag.uploadedImagesTitle")}
+            </h3>
+
             {uploadedImageUrl ? (
-              <table className="min-w-full border border-gray-300 rounded-md">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border border-gray-300 p-2 w-1/4 text-center">
-                      {t("createTag.imageColumn")}
-                    </th>
-                    <th className="border border-gray-300 p-2 text-center">
-                      {t("createTag.urlColumn")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-300 p-2 text-center">
-                      <img
-                        src={uploadedImageUrl}
-                        alt={t("createTag.uploadedAlt")}
-                        className="h-16 w-16 object-cover mx-auto"
-                      />
-                    </td>
-                    <td className="border border-gray-300 p-2 break-all text-center">
-                      <a
-                        href={uploadedImageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 underline"
-                      >
-                        {uploadedImageUrl}
-                      </a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="flex flex-col md:flex-row gap-4 items-center md:items-start">
+                <div className="flex-shrink-0">
+                  <img
+                    src={uploadedImageUrl}
+                    alt={t("createTag.uploadedAlt")}
+                    className="h-20 w-20 rounded-md object-cover border border-gray-300"
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <p className="text-xs text-gray-600 mb-1">
+                    {t("createTag.urlColumn")}
+                  </p>
+                  <a
+                    href={uploadedImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 underline break-all"
+                  >
+                    {uploadedImageUrl}
+                  </a>
+                </div>
+              </div>
             ) : (
-              <p className="text-gray-500 text-center">{t("createTag.noImageUploaded")}</p>
+              <p className="text-sm text-gray-500 text-center">
+                {t("createTag.noImageUploaded")}
+              </p>
             )}
           </div>
 
-          <div className="flex justify-end gap-4 mt-4">
+          {/* Botones */}
+          <div className="flex justify-end gap-3 mt-1">
             <button
               type="button"
               onClick={closeModal}
-              className="bg-gray-400 rounded-md p-2 text-white"
+              className="bg-gray-400 hover:bg-gray-500 rounded-md px-4 py-2 text-sm text-white font-medium transition"
             >
               {t("createTag.cancel")}
             </button>
             <button
               type="submit"
-              className={`rounded-md p-2 text-white ${
-                isLoadingCreate ||
-                !form.tags.name ||
-                !form.tags.url ||
-                !form.tags.image
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-blue-600"
+              className={`rounded-md px-4 py-2 text-sm text-white font-medium transition ${
+                isSubmitDisabled
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
-              disabled={
-                isLoadingCreate ||
-                !form.tags.name ||
-                !form.tags.url ||
-                !form.tags.image
-              }
+              disabled={isSubmitDisabled}
             >
               {isLoadingCreate ? t("createTag.saving") : t("createTag.save")}
             </button>
           </div>
 
           {isSuccess && (
-            <p className="text-green-500 mt-2">{t("createTag.success")}</p>
+            <p className="text-sm text-emerald-600 mt-1">
+              {t("createTag.success")}
+            </p>
           )}
           {isError && (
-            <p className="text-red-500 mt-2">{t("createTag.error")}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {t("createTag.error")}
+            </p>
           )}
         </form>
       </div>

@@ -26,8 +26,8 @@ const DeleteReclaimTypeComponent: React.FC<DeleteReclaimTypeComponentProps> = ({
   };
 
   return (
-    <div className="p-4">
-      <div className="p-1 absolute border-b top-0 right-0 bg-white z-10">
+    <div className="p-4 bg-white rounded-xl">
+      <div className="p-1 absolute top-0 right-0 z-10">
         <button
           onClick={closeModal}
           className=" hover:bg-gray-100 rounded-full transition-colors"

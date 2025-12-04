@@ -21,7 +21,7 @@ const DeleteReclaim = ({ reclaimId, closeModal }: DeleteReclaimProps) => {
   };
 
   return (
-      <div className="p-4">
+      <div className="p-4 bg-white rounded-xl">
         <h2 className="text-lg mb-4">{t("deleteReclaim.title")}</h2>
         <p>{t("deleteReclaim.confirmMessage")}</p>
         <div className="flex justify-end gap-4 mt-4">

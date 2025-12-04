@@ -37,7 +37,7 @@ const Header = ({ headerBody }: any) => {
       )}
 
       {/* Filtros */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap justify-start items-center w-full gap-3 p-3 bg-white/50 rounded-xl backdrop-blur-sm z-50">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap justify-start items-center w-full gap-3 p-3 bg-white/50 rounded-xl backdrop-blur-sm z-30">
         {headerBody.filters.map((filter: any, index: any) => (
           <div key={index} className="w-full sm:w-auto min-w-0">
             {filter.content}

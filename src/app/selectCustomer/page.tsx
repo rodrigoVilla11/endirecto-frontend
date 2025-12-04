@@ -36,6 +36,7 @@ import Table from "../components/components/Table";
 import Modal from "../components/components/Modal";
 import ButtonOnOff from "./ButtonOnOff";
 import { useClient } from "../context/ClientContext";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 // Función helper optimizada para eliminar duplicados
 const removeDuplicates = (array: any[]) => {
@@ -98,6 +99,13 @@ const SelectCustomer = () => {
   // Referencia para el IntersectionObserver
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastItemRef = useRef<HTMLDivElement>(null);
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+  const users = usersData || [];
+  const getSellerLabel = (seller: any) => {
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   // Memoizar parámetros de consulta para evitar re-fetches innecesarios
   const queryParams = useMemo(
@@ -306,7 +314,7 @@ const SelectCustomer = () => {
   CustomerIcon.displayName = "CustomerIcon";
 
   // Formatear moneda optimizado
-    function formatCurrency(value: number) {
+  function formatCurrency(value: number) {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
@@ -315,7 +323,7 @@ const SelectCustomer = () => {
       .format(value)
       .replace("ARS", "");
   }
-  
+
   // Transformar datos de tabla con memoización optimizada
   const tableData = useMemo(() => {
     return items.map((customer: any) => {
@@ -444,12 +452,12 @@ const SelectCustomer = () => {
                 resetFilters();
               }}
               className="border border-gray-300 rounded p-2"
-              disabled={role === "VENDEDOR"}
+              disabled={role === "VENDEDOR" || isLoadingUsers}
             >
               <option value="">{t("seller")}</option>
               {sellersData?.map((seller) => (
                 <option key={seller.id} value={seller.id}>
-                  {seller.name}
+                  {getSellerLabel(seller)}
                 </option>
               ))}
             </select>

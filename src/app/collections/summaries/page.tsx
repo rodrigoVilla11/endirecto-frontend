@@ -25,7 +25,10 @@ import {
 } from "@/redux/services/paymentsApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
-import { useGetUserByIdQuery } from "@/redux/services/usersApi";
+import {
+  useGetUserByIdQuery,
+  useGetUsersQuery,
+} from "@/redux/services/usersApi";
 
 const ITEMS_PER_PAGE = 15;
 function isPaymentRendido(p?: Payment): boolean {
@@ -50,6 +53,16 @@ const PaymentsPendingPage = () => {
 
   const { data: sellersData, isLoading: isSellersLoading } =
     useGetSellersQuery(null);
+  const { data: usersData = [], isLoading: isLoadingUsers } =
+    useGetUsersQuery(null);
+  const users = usersData || [];
+
+  const getSellerLabel = (seller: any) => {
+    if (!seller) return t("notFound");
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   // Filtros
   const [searchParams, setSearchParams] = useState<{
@@ -317,7 +330,11 @@ const PaymentsPendingPage = () => {
 
         // 4) FORMA DE PAGO (desde values[].method)
         paymentMethod: methodsFromValues(p.values),
-
+        rendido: (
+          <span>
+            <ImputedPill imputed={p.rendido} />
+          </span>
+        ),
         // 5) BANCO (desde values[].bank)
         bank: banksFromValues(p.values),
         // 6) FECHA
@@ -340,6 +357,7 @@ const PaymentsPendingPage = () => {
     { name: t("documents"), key: "documents" },
     // 4) FORMA DE PAGO
     { name: t("paymentMethod"), key: "paymentMethod" },
+    { name: t("rendido"), key: "rendido", important: true },
     // 5) BANCO
     { name: t("bank"), key: "bank" },
     // 6) FECHA
@@ -352,21 +370,15 @@ const PaymentsPendingPage = () => {
 
   /* ===================== Header (filtros/contador) ===================== */
   const sellerOptions = React.useMemo(() => {
-    const raw = (sellersData ?? sellersData ?? []) as any[];
+    const raw = (sellersData ?? []) as any[];
     return raw
       .map((s) => {
         const id = String(s?.id ?? s?._id ?? s?.seller_id ?? "");
-        const name =
-          s?.name ??
-          s?.fullName ??
-          ([s?.first_name, s?.last_name].filter(Boolean).join(" ") ||
-            s?.username ||
-            s?.email ||
-            id);
-        return id ? { id, name } : null;
+        if (!id) return null;
+        return { id, label: getSellerLabel({ ...s, id }) };
       })
-      .filter(Boolean) as Array<{ id: string; name: string }>;
-  }, [sellersData]);
+      .filter(Boolean) as Array<{ id: string; label: string }>;
+  }, [sellersData, getSellerLabel]);
 
   const headerBody = {
     buttons: [],
@@ -410,19 +422,18 @@ const PaymentsPendingPage = () => {
             value={sellerFilter}
             onChange={(e) => {
               setSellerFilter(e.target.value);
-              // reset de paginación/lista para aplicar el filtro
               setPage(1);
               setItems([]);
               setHasMore(true);
             }}
-            disabled={isSellersLoading}
+            disabled={isSellersLoading || isLoadingUsers}
             className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
             title={t("seller") || "Vendedor"}
           >
             <option value="">{"Todos los vendedores"}</option>
             {sellerOptions.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {s.label}
               </option>
             ))}
           </select>
@@ -773,6 +784,10 @@ function DetailsModal({
 
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {
+    const documents: any[] = Array.isArray(payment?.documents)
+      ? payment.documents
+      : [];
+
     const lines: string[] = [];
     lines.push(`Fecha: ${fecha.replace(" ", " ")}`);
     lines.push(`ID Pago: ${idPago}`);
@@ -780,6 +795,46 @@ function DetailsModal({
     lines.push(`Vendedor: ${sellerLabel}`);
     lines.push(`Usuario: ${username}`);
     lines.push(``);
+
+    lines.push(`DOCUMENTOS:`);
+
+    if (documents.length === 0) {
+      lines.push(`Sin documentos aplicados`);
+    } else {
+      documents.forEach((doc, idx) => {
+        const docNumber = doc?.number || `#${idx + 1}`;
+        const docBase = typeof doc?.base === "number" ? doc.base : 0;
+        const docDiscount =
+          typeof doc?.discount_amount === "number" ? doc.discount_amount : 0;
+        const docFinal =
+          typeof doc?.final_amount === "number" ? doc.final_amount : docBase;
+        const docDays =
+          typeof doc?.days_used === "number"
+            ? doc.days_used
+            : typeof doc?.days === "number"
+            ? doc.days
+            : undefined;
+
+        lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
+
+        if (docDiscount !== 0) {
+          const label = docDiscount > 0 ? "Desc" : "Cost. F";
+          const pct =
+            docBase > 0
+              ? `${((Math.abs(docDiscount) / docBase) * 100).toFixed(2)}%`
+              : "";
+          const daysText = typeof docDays === "number" ? `${docDays}d` : "";
+          lines.push(`    ${label}: ${daysText} ${pct ? `- ${pct}` : ""}`);
+          lines.push(`    ${label}: ${fmtMoney(Math.abs(docDiscount))}`);
+        }
+
+        lines.push(`    Neto: ${fmtMoney(docFinal)}`);
+
+        if (idx < documents.length - 1) {
+          lines.push(""); // línea en blanco entre documentos
+        }
+      });
+    }
 
     if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
     if (typeof daysUsed === "number" && discountRateTxt) {
@@ -1539,4 +1594,21 @@ function Pill({
       {text}
     </span>
   );
+}
+
+function ImputedPill({ imputed }: { imputed?: boolean }) {
+  const { t } = useTranslation();
+  const labelYes = t("yes") || "Sí";
+  const labelNo = t("no") || "No";
+  const label = imputed ? labelYes : labelNo;
+
+  // ✅ Colores: verde si está rendido (true), rojo si no (false)
+  const cls = imputed
+    ? "bg-emerald-100 text-emerald-800"
+    : "bg-rose-100 text-rose-800";
+
+  const base =
+    "px-4 py-2 rounded-full text-xs font-medium inline-flex items-center gap-1";
+
+  return <span className={`${base} ${cls}`}>{label}</span>;
 }

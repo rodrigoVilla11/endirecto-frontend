@@ -25,6 +25,7 @@ import debounce from "@/app/context/debounce";
 import { FaTimes } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/app/context/AuthContext";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 // Constants
 const ITEMS_PER_PAGE = 15;
@@ -98,6 +99,16 @@ const VouchersComponent = () => {
     useGetCustomersQuery(null);
   const { data: sellersData = [], isLoading: isLoadingSellers } =
     useGetSellersQuery(null);
+  const { data: usersData = [], isLoading: isLoadingUsers } =
+    useGetUsersQuery(null);
+  const users = usersData || [];
+
+  const getSellerLabel = (seller: any) => {
+    if (!seller) return t("notFound");
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   // Memoized query parameters
   const queryParams = useMemo(() => {
@@ -376,12 +387,14 @@ const VouchersComponent = () => {
             updateFilter("sellerFilter", e.target.value);
           }}
           className="border border-gray-300 rounded p-2 min-w-[150px]"
-          disabled={isVendedor || isCustomer || isLoadingSellers}
+          disabled={
+            isVendedor || isCustomer || isLoadingSellers || isLoadingUsers
+          }
         >
           <option value="">{t("allSellers")}</option>
           {sellersData.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name}
+              {getSellerLabel(s)}
             </option>
           ))}
         </select>
@@ -421,12 +434,12 @@ const VouchersComponent = () => {
   const headerBody = useMemo(
     () => ({
       buttons: [
-        {
-          logo: <AiOutlineDownload />,
-          title: isFetchingExcel ? t("downloading") : t("download"),
-          onClick: handleDownload,
-          disabled: isFetchingExcel || items.length === 0,
-        },
+        // {
+        //   logo: <AiOutlineDownload />,
+        //   title: isFetchingExcel ? t("downloading") : t("download"),
+        //   onClick: handleDownload,
+        //   disabled: isFetchingExcel || items.length === 0,
+        // },
       ],
       filters: [
         {

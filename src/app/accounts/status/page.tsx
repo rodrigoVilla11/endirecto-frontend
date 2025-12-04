@@ -30,6 +30,7 @@ import {
   useGetCustomerByIdQuery,
 } from "@/redux/services/customersApi";
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 // Constants
 const ITEMS_PER_PAGE = 15;
@@ -112,6 +113,13 @@ export default function Page() {
     null
   );
   const [triggerExport, { isFetching }] = useLazyExportDocumentsQuery();
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+  const users = usersData || [];
+  const getSellerLabel = (seller: any) => {
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   const handleDownload = async () => {
     const blob = await triggerExport({
@@ -344,19 +352,22 @@ export default function Page() {
           <select
             value={forcedSellerId || sellerFilter}
             onChange={(e) => {
-              // Si está bloqueado por rol o por forcedSellerId, no hacemos nada
-              if (forcedSellerId || userRole === "CUSTOMER") return;
+              // Si está bloqueado por rol, forcedSellerId o todavía está cargando users, no hacemos nada
+              if (forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers)
+                return;
 
               setSellerFilter(e.target.value);
               resetList();
             }}
-            disabled={!!forcedSellerId || userRole === "CUSTOMER"}
+            disabled={
+              !!forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers
+            }
             className="w-full border rounded p-2"
           >
             <option value="">{t("allSellers")}</option>
             {sellersData?.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {getSellerLabel(s)}
               </option>
             ))}
           </select>
@@ -487,6 +498,7 @@ export default function Page() {
       ]}
     >
       <div className="space-y-4 mt-4">
+        <h3 className="font-bold p-4">{t("statusAccount")}</h3>
         <Header
           headerBody={{
             buttons: [

@@ -1,4 +1,24 @@
 {
+  "crmd": {
+    "type": {
+      "collection": "Cobranza",
+      "order": "Pedido",
+      "visit": "Visita",
+      "email": "Email",
+      "call": "Llamada",
+      "message": "Mensaje",
+      "reclaim": "Reclamo"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "sended": "Enviado",
+      "authorized": "Autorizado",
+      "charged": "Cargado",
+      "canceled": "Cancelado"
+    }
+  },
+  "copiableSummary": "Resumen",
+  "copy": "Copiar",
   "home": "Inicio",
   "sellersTarget": "Obj. de Vendedores",
   "brands": "Marca",
@@ -1110,9 +1130,9 @@
     "uploadError": "Error al subir imagen:"
   },
   "createReclaim": {
-    "title": "Nuevo RECLAIM",
-    "reclaimType": "Tipo de RECLAIM",
-    "selectReclaimType": "Selecciona Tipo de RECLAIM",
+    "title": "Nuevo reclamo",
+    "reclaimType": "Tipo de reclamo",
+    "selectReclaimType": "Selecciona Tipo de reclamo",
     "description": "Descripción",
     "newDescription": "Nueva descripción",
     "article": "Artículo",
@@ -1122,25 +1142,35 @@
     "cancel": "Cancelar",
     "saving": "Guardando...",
     "save": "Guardar",
-    "success": "RECLAIM creado exitosamente!",
-    "error": "Error al crear RECLAIM",
-    "errorCreating": "Error al crear el RECLAIM:"
+    "success": "reclamo creado exitosamente!",
+    "error": "Error al crear reclamo",
+    "errorCreating": "Error al crear el reclamo:"
   },
   "deleteReclaim": {
     "title": "Confirmar Eliminación",
-    "confirmMessage": "¿Estás seguro de que deseas eliminar este RECLAIM?",
+    "confirmMessage": "¿Estás seguro de que deseas eliminar este reclamo?",
     "cancel": "Cancelar",
     "deleting": "Eliminando...",
     "delete": "Eliminar",
-    "success": "¡RECLAIM eliminado exitosamente!",
-    "error": "Error al eliminar RECLAIM",
-    "errorDeleting": "Error al eliminar el RECLAIM:"
+    "success": "!Reclamo eliminado exitosamente!",
+    "error": "Error al eliminar reclamo",
+    "errorDeleting": "Error al eliminar el reclamo:"
   },
   "updateReclaimComponent": {
+    "mainInfo": "Información del reclamo",
+    "descriptionSection": "Descripción del reclamo",
+    "resolutionSection": "Gestión y resolución",
+    "status": "Estado",
+    "close": "Cerrar",
+    "statusLabels": {
+      "PENDING": "Pendiente",
+      "ANSWERED": "Respondida",
+      "CANCELED": "Cancelada"
+    },
     "loading": "Cargando...",
-    "errorLoading": "Error al cargar datos del RECLAIM.",
-    "header": "Actualizar RECLAIM",
-    "reclaimType": "Tipo de RECLAIM",
+    "errorLoading": "Error al cargar datos del reclamo.",
+    "header": "Actualizar reclamo",
+    "reclaimType": "Tipo de reclamo",
     "description": "Descripción",
     "article": "Artículo",
     "branch": "Sucursal",
@@ -1155,12 +1185,12 @@
     "cancel": "Cancelar",
     "updating": "Actualizando...",
     "update": "Actualizar",
-    "errorUpdating": "Error al actualizar el RECLAIM:"
+    "errorUpdating": "Error al actualizar el RECLAMO:"
   },
   "pageReclaims": {
-    "title": "RECLAIMS",
-    "errorLoadingBrands": "Error al cargar reclaims. Por favor, inténtalo de nuevo más tarde.",
-    "noReclaimsFound": "No se encontraron reclaims",
+    "title": "RECLAMOS",
+    "errorLoadingBrands": "Error al cargar reclamo. Por favor, inténtalo de nuevo más tarde.",
+    "noReclaimsFound": "No se encontraron reclamo",
     "table": {
       "number": "Número",
       "status": "Estado",

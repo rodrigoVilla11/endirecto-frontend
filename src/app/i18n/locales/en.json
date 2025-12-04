@@ -1,4 +1,6 @@
 {
+  "copiableSummary": "Summary",
+  "copy": "Copy",
   "home": "Home",
   "sellersTarget": "Sellers Target",
   "brands": "Brands",
@@ -1142,6 +1144,17 @@
     "errorDeleting": "Error deleting the RECLAIM:"
   },
   "updateReclaimComponent": {
+    "mainInfo": "Claim information",
+    "descriptionSection": "Claim description",
+    "resolutionSection": "Management and resolution",
+    "status": "Status",
+    "close": "Close",
+
+    "statusLabels": {
+      "PENDING": "Pending",
+      "ANSWERED": "Answered",
+      "CANCELED": "Canceled"
+    },
     "loading": "Loading...",
     "errorLoading": "Error loading reclaim data.",
     "header": "Update Reclaim",

@@ -101,7 +101,7 @@ export default function InterestSettingsPage() {
       </div>
 
       <div className="mx-auto max-w-3xl p-4 space-y-6">
-        <h2 className="text-xl font-semibold text-slate-100">
+        <h2 className="text-xl font-semibold text-gray-900">
           {t("Settings de Interés y Gracia")}
         </h2>
 

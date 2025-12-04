@@ -24,27 +24,42 @@ import { useClient } from "../context/ClientContext";
 import debounce from "../context/debounce";
 import { useTranslation } from "react-i18next";
 import Modal from "../components/components/Modal";
+import { useAuth } from "../context/AuthContext";
+import { IoMdClose } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 20;
 
 const PageReclaims = () => {
   const { t } = useTranslation();
-  // Basic states
+  const { selectedClientId } = useClient();
+  const { userData } = useAuth();
+
   const [page, setPage] = useState(1);
   const [brands, setBrands] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>(""); // Formato: "campo:asc" o "campo:desc"
+  const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState("");
-  const { selectedClientId } = useClient();
 
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentReclaimId, setCurrentReclaimId] = useState<string | null>(null);
-  // References
+
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+
+  const openDetailModal = (data: any) => {
+    setDetailData(data);
+    setDetailOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setDetailOpen(false);
+    setDetailData(null);
+  };
 
   const [searchParams, setSearchParams] = useState({
     status: "",
@@ -80,6 +95,10 @@ const PageReclaims = () => {
   });
   const { data: countReclaimsData } = useCountReclaimsQuery(null);
 
+  // 🔐 Rol
+  const userRole = (userData?.role || "").toUpperCase();
+  const isAdmin = userRole === "ADMINISTRADOR";
+
   // Debounced search
   const debouncedSearch = debounce((query: string) => {
     setSearchQuery(query);
@@ -91,12 +110,12 @@ const PageReclaims = () => {
   useEffect(() => {
     if (selectedClientId) {
       setCustomer_id(selectedClientId);
-      refetch;
+      refetch();
     } else {
       setCustomer_id("");
-      refetch;
+      refetch();
     }
-  }, [selectedClientId]);
+  }, [selectedClientId, refetch]);
 
   useEffect(() => {
     if (data) {
@@ -126,7 +145,7 @@ const PageReclaims = () => {
             setPage((prev) => prev + 1);
           }
         },
-        { threshold: 0.0, rootMargin: "200px" } // Se dispara 200px antes de que el sentinel esté visible
+        { threshold: 0.0, rootMargin: "200px" }
       );
 
       if (node) observerRef.current.observe(node);
@@ -141,6 +160,7 @@ const PageReclaims = () => {
   };
 
   const openUpdateModal = (id: string) => {
+    if (!isAdmin) return; // 🔒 solo ADMIN
     setCurrentReclaimId(id);
     setUpdateModalOpen(true);
   };
@@ -151,6 +171,7 @@ const PageReclaims = () => {
   };
 
   const openDeleteModal = (id: string) => {
+    if (!isAdmin) return; // 🔒 solo ADMIN
     setCurrentReclaimId(id);
     setDeleteModalOpen(true);
   };
@@ -165,11 +186,9 @@ const PageReclaims = () => {
       const [currentField, currentDirection] = sortQuery.split(":");
       let newSortQuery = "";
       if (currentField === field) {
-        // Alternar entre ascendente y descendente
         newSortQuery =
           currentDirection === "asc" ? `${field}:desc` : `${field}:asc`;
       } else {
-        // Nuevo campo de ordenamiento, por defecto ascendente
         newSortQuery = `${field}:asc`;
       }
       setSortQuery(newSortQuery);
@@ -188,40 +207,51 @@ const PageReclaims = () => {
     setHasMore(true);
   };
 
-  const tableData = brands?.map((reclaim) => {
-    const branch = branchData?.find((d) => d.id == reclaim.branch_id);
-    const customer = customerData?.find((d) => d.id == reclaim.customer_id);
-    const user = userDatas?.find((d) => d._id == reclaim.user_id);
-    return {
-      key: reclaim._id,
-      info: <IoInformationCircleOutline className="text-center text-xl" />,
-      id: reclaim._id,
-      status: reclaim.status,
-      type: reclaim.reclaims_type_id,
-      description: reclaim.description,
-      customer: customer?.name,
-      user: user?.username,
-      branch: branch?.name,
-      data: reclaim.date,
-      edit: (
-        <div className="flex justify-center items-center">
-          <FaPencil
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openUpdateModal(reclaim._id)}
-          />
-        </div>
-      ),
-      erase: (
-        <div className="flex justify-center items-center">
-          <FaTrashCan
-            className="text-center text-lg hover:cursor-pointer"
-            onClick={() => openDeleteModal(reclaim._id)}
-          />
-        </div>
-      ),
-    };
-  });
-  const tableHeader = [
+  const tableData =
+    brands?.map((reclaim) => {
+      const branch = branchData?.find((d) => d.id == reclaim.branch_id);
+      const customer = customerData?.find((d) => d.id == reclaim.customer_id);
+      const user = userDatas?.find((d) => d._id == reclaim.user_id);
+
+      return {
+        key: reclaim._id,
+        info: (
+          <button
+            onClick={() => openDetailModal(reclaim)}
+            className="text-gray-600 hover:text-blue-800"
+          >
+            <IoInformationCircleOutline className="text-center text-xl" />
+          </button>
+        ),
+
+        id: reclaim._id,
+        status: reclaim.status,
+        type: reclaim.reclaims_type_id,
+        description: reclaim.description,
+        customer: customer?.name,
+        data: reclaim.date,
+        ...(isAdmin && {
+          edit: (
+            <div className="flex justify-center items-center">
+              <FaPencil
+                className="text-center text-lg hover:cursor-pointer"
+                onClick={() => openUpdateModal(reclaim._id)}
+              />
+            </div>
+          ),
+          erase: (
+            <div className="flex justify-center items-center">
+              <FaTrashCan
+                className="text-center text-lg hover:cursor-pointer"
+                onClick={() => openDeleteModal(reclaim._id)}
+              />
+            </div>
+          ),
+        }),
+      };
+    }) || [];
+
+  const baseHeaders = [
     {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
       key: "info",
@@ -235,12 +265,16 @@ const PageReclaims = () => {
       key: "customer",
       important: true,
     },
-    { name: t("pageReclaims.table.user"), key: "user" },
-    { name: t("pageReclaims.table.branch"), key: "branch" },
     { name: t("pageReclaims.table.date"), key: "date" },
+  ];
+
+  const adminHeaders = [
     { component: <FaPencil className="text-center text-xl" />, key: "edit" },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
+
+  const tableHeader = isAdmin ? [...baseHeaders, ...adminHeaders] : baseHeaders;
+
   const headerBody = {
     buttons: [
       ...(selectedClientId
@@ -351,6 +385,7 @@ const PageReclaims = () => {
       count: countReclaimsData || 0,
     }),
   };
+
   if (isQueryLoading && brands.length === 0) {
     return (
       <div className="flex justify-center py-8">
@@ -365,6 +400,7 @@ const PageReclaims = () => {
       </div>
     );
   }
+
   return (
     <PrivateRoute
       requiredRoles={[
@@ -396,7 +432,7 @@ const PageReclaims = () => {
               sortOrder={sortQuery.split(":")[1] as "asc" | "desc" | ""}
             />
             {isLoading && (
-              <div  className="flex justify-center py-4">
+              <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               </div>
             )}
@@ -420,9 +456,148 @@ const PageReclaims = () => {
             closeModal={closeDeleteModal}
           />
         </Modal>
+        <Modal isOpen={detailOpen} onClose={closeDetailModal}>
+          {detailData && (
+            <ReclaimDetail data={detailData} onClose={closeDetailModal} />
+          )}
+        </Modal>
       </div>
     </PrivateRoute>
   );
 };
 
 export default PageReclaims;
+
+interface ReclaimDetailProps {
+  data: any;
+  onClose: () => void;
+}
+
+const ReclaimDetail: React.FC<ReclaimDetailProps> = ({ data, onClose }) => {
+  const { t } = useTranslation();
+
+  const translateStatus = (status?: string) => {
+    if (!status) return "-";
+    return t(`updateReclaimComponent.statusLabels.${status}`) || status;
+  };
+
+  const fmt = (v: any) => (v ? v : "—");
+
+  return (
+    <div className="bg-white rounded-xl shadow-xl max-w-2xl mx-auto max-h-[90vh] overflow-hidden flex flex-col">
+      {/* HEADER */}
+      <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+        <h2 className="text-lg font-bold text-gray-700">
+          {t("crmd.type.reclaim")} #{data._id}
+        </h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 rounded-full p-1 hover:bg-gray-200"
+        >
+          <IoMdClose size={20} />
+        </button>
+      </div>
+
+      {/* BODY SCROLLABLE */}
+      <div className="p-6 overflow-y-auto">
+        {/* MAIN INFORMATION */}
+        <h3 className="text-md font-semibold mb-2 text-gray-700">
+          {t("updateReclaimComponent.mainInfo")}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.reclaimType")}
+            </p>
+            <p className="font-medium">{fmt(data.reclaims_type_id)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.customer")}
+            </p>
+            <p className="font-medium">
+              {fmt(data.customer_name || data.customer_id)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.branch")}
+            </p>
+            <p className="font-medium">
+              {fmt(data.branch_name || data.branch_id)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.date")}
+            </p>
+            <p className="font-medium">{data.date}</p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.status")}
+            </p>
+            <span className="inline-block mt-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+              {translateStatus(data.status)}
+            </span>
+          </div>
+        </div>
+
+        {/* DESCRIPTION SECTION */}
+        <h3 className="text-md font-semibold mb-2 text-gray-700">
+          {t("updateReclaimComponent.descriptionSection")}
+        </h3>
+
+        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <p className="text-sm text-gray-700 whitespace-pre-line">
+            {fmt(data.description)}
+          </p>
+        </div>
+
+        {/* RESOLUTION SECTION */}
+        <h3 className="text-md font-semibold mb-2 text-gray-700">
+          {t("updateReclaimComponent.resolutionSection")}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.cause")}
+            </p>
+            <p className="font-medium">{fmt(data.cause)}</p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.solution")}
+            </p>
+            <p className="font-medium">{fmt(data.public_solution)}</p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">
+              {t("updateReclaimComponent.internalSolution")}
+            </p>
+            <p className="font-medium text-gray-700">
+              {fmt(data.internal_solution)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      <div className="p-4 border-t flex justify-end bg-gray-50">
+        <button
+          onClick={onClose}
+          className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
+        >
+          {t("updateReclaimComponent.close")}
+        </button>
+      </div>
+    </div>
+  );
+};

@@ -22,8 +22,8 @@ const CreateFaqComponent = ({ closeModal }: any) => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between bg-white rounded-2xl">
+    <div className="bg-white rounded-2xl p-4">
+      <div className="flex justify-between">
         <h2 className="text-lg mb-4">{t("createFaq.title")}</h2>
         <button
           onClick={closeModal}

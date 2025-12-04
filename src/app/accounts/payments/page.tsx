@@ -274,15 +274,13 @@ const PaymentsChargedPage = () => {
   const downloadPDFFor = async (
     rows: Payment[],
     opts?: {
-      // Inyectables opcionales (si ya tenés los hooks en el scope de tu componente)
       uploadPdf?: (
         file: File,
         folder?: string
       ) => Promise<{ inline_url?: string; secure_url?: string; url?: string }>;
       updatePayment?: (id: string, body: any) => Promise<any>;
-      // Config opcional
-      folder?: string; // carpeta en Cloudinary (default: "rendiciones")
-      alsoDownload?: boolean; // si querés además descargar localmente
+      folder?: string;
+      alsoDownload?: boolean;
     }
   ) => {
     if (!rows.length) return;
@@ -347,10 +345,10 @@ const PaymentsChargedPage = () => {
 
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
     const margin = { left: 40, right: 40 };
     const wAvail = pageW - margin.left - margin.right;
 
+    // Título
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.text("Rendición de pagos", margin.left, 40);
@@ -363,6 +361,7 @@ const PaymentsChargedPage = () => {
       58
     );
 
+    // Total bruto de todos los valores
     const sumValuesGross = rows.reduce(
       (s, p) =>
         s +
@@ -373,18 +372,23 @@ const PaymentsChargedPage = () => {
       0
     );
 
+    // Anchos de columna (incluye columna “Total Cobrado” vacía por fila)
     const cw = {
       fecha: wAvail * 0.16,
-      cliente: wAvail * 0.28,
+      cliente: wAvail * 0.26,
       docs: wAvail * 0.22,
-      metodos: wAvail * 0.18,
+      metodos: wAvail * 0.2,
       cobrado: wAvail * 0.16,
+      totalCobrado: wAvail * 0.0, // prácticamente sin uso en filas
     };
 
+    // Tabla principal (igual al PDF ejemplo)
     autoTable(doc, {
       startY: 72,
       tableWidth: wAvail,
-      head: [["Fecha", "Cliente", "Docs", "Métodos", "Cobrado (bruto)"]],
+      head: [
+        ["Fecha", "Cliente", "Docs", "Métodos", "Cobrado", "Total Cobrado"],
+      ],
       body: rows.map((p: any) => {
         const fecha = p.date
           ? format(new Date(p.date), "dd/MM/yyyy HH:mm")
@@ -400,7 +404,9 @@ const PaymentsChargedPage = () => {
         const cobradoBruto = currencyFmt.format(
           (p.values ?? []).reduce((s: number, v: any) => s + valueGross(v), 0)
         );
-        return [fecha, cliente, docs, methods, cobradoBruto];
+
+        // penúltima col: Cobrado, última col (Total Cobrado) vacía en filas
+        return [fecha, cliente, docs, methods, cobradoBruto, ""];
       }),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
@@ -412,13 +418,14 @@ const PaymentsChargedPage = () => {
         2: { cellWidth: cw.docs },
         3: { cellWidth: cw.metodos },
         4: { cellWidth: cw.cobrado, halign: "right" },
+        5: { cellWidth: cw.totalCobrado, halign: "right" },
       },
       margin,
       foot: [
         [
+          { content: "", colSpan: 4 },
           {
             content: "Totales",
-            colSpan: 4,
             styles: { halign: "right", fontStyle: "bold" },
           },
           {
@@ -429,81 +436,7 @@ const PaymentsChargedPage = () => {
       ],
     });
 
-    // Detalle por pago y método
-    let cursorY = (doc as any).lastAutoTable?.finalY
-      ? (doc as any).lastAutoTable.finalY + 50
-      : 140;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Detalle por pago y método", margin.left, cursorY - 30);
-
-    for (const [idx, pAny] of rows.entries()) {
-      const p = pAny as any;
-      if (cursorY > pageH - 200) {
-        (doc as any).addPage();
-        cursorY = 72;
-      }
-      if (idx > 0) cursorY += 12;
-
-      const fecha = p.date ? format(new Date(p.date), "dd/MM/yyyy HH:mm") : "—";
-      const id = p.customer?.id ?? "—";
-      const nombre = p.customer?.name;
-      const cliente =
-        id !== "—" && nombre !== "—" ? `${id} — ${nombre}` : nombre ?? id;
-      const docsLine =
-        (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text(`Pago ${idx + 1} — ${fecha}`, margin.left, cursorY);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text(`Cliente: ${cliente}`, margin.left, cursorY + 12);
-      doc.text(`Docs: ${docsLine}`, margin.left, cursorY + 24);
-
-      const rowsTable = (p.values ?? []).map((v: any) => {
-        const m = String(v?.method ?? "").toLowerCase();
-        const metodo = prettyMethod(m);
-        const bruto = currencyFmt.format(valueGross(v));
-        const num =
-          m === "cheque" ? `N° ${v?.cheque?.cheque_number ?? "—"}` : "—";
-        return [metodo, bruto, num];
-      });
-
-      autoTable(doc, {
-        startY: cursorY + 36,
-        tableWidth: wAvail,
-        head: [["Método", "Monto bruto", "N° Cheque"]],
-        body: rowsTable,
-        theme: "grid",
-        styles: { fontSize: 9, cellPadding: 5 },
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-        columnStyles: {
-          0: { cellWidth: wAvail * 0.35 },
-          1: { cellWidth: wAvail * 0.35, halign: "right" },
-          2: { cellWidth: wAvail * 0.3 },
-        },
-        margin,
-      });
-
-      const yAfter = (doc as any).lastAutoTable.finalY;
-      const brutoPago = Number(p.totals?.gross ?? 0);
-      const cobradoPago = (p.values ?? []).reduce(
-        (s: number, v: any) => s + valueGross(v),
-        0
-      );
-
-      doc.text(
-        `Cobrado (bruto): ${currencyFmt.format(cobradoPago)}}`,
-        margin.left,
-        yAfter + 12
-      );
-
-      cursorY = yAfter + 30;
-    }
-
-    // Totales por método
+    // Totales por método (bruto) en página siguiente
     const totalsMap = buildMethodTotalsGross(rows as any);
     const totalsEntries = Object.entries(totalsMap).sort(
       (a, b) => b[1].total - a[1].total
@@ -546,19 +479,19 @@ const PaymentsChargedPage = () => {
       margin,
     });
 
+    // Generar File y subir
     const filename = `rendidos_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
     const ab = doc.output("arraybuffer");
     const blob = new Blob([ab], { type: "application/pdf" });
     const file = new File([blob], filename, { type: "application/pdf" });
 
     if (opts?.alsoDownload) {
-      doc.save(filename); // opcional
+      doc.save(filename);
     }
 
     const folder = opts?.folder ?? "rendiciones";
     let pdfUrl = "";
 
-    // 1) Subir a Cloudinary (usa o bien el hook inyectado o fetch)
     try {
       if (typeof opts?.uploadPdf === "function") {
         const r = await opts.uploadPdf(file, folder);
@@ -584,7 +517,6 @@ const PaymentsChargedPage = () => {
 
     if (!pdfUrl) return;
 
-    // 2) Actualizar cada pago con la URL del PDF
     try {
       await Promise.all(
         (rows as any[]).map((p) => {
@@ -1077,168 +1009,177 @@ const PaymentsChargedPage = () => {
     }
   };
 
+  const headerFilters: Array<{ content: React.ReactNode }> = [
+    {
+      content: (
+        <DatePicker
+          selected={searchParams.startDate}
+          onChange={(date) => {
+            setPage(1);
+            setItems([]);
+            setHasMore(true);
+            setSearchParams((s) => ({ ...s, startDate: date }));
+          }}
+          placeholderText={t("dateFrom")}
+          dateFormat="yyyy-MM-dd"
+          className="border border-gray-300 rounded p-2"
+          isClearable
+        />
+      ),
+    },
+    {
+      content: (
+        <DatePicker
+          selected={searchParams.endDate}
+          onChange={(date) => {
+            setPage(1);
+            setItems([]);
+            setHasMore(true);
+            setSearchParams((s) => ({ ...s, endDate: date }));
+          }}
+          placeholderText={t("dateTo")}
+          dateFormat="yyyy-MM-dd"
+          className="border border-gray-300 rounded p-2"
+          isClearable
+        />
+      ),
+    },
+    {
+      content: (
+        <select
+          value={methodFilter}
+          onChange={(e) => setMethodFilter(e.target.value as any)}
+          className="border border-gray-300 rounded p-2 text-sm"
+          title={t("paymentMethod") || "Forma de pago"}
+        >
+          <option value="">{t("all") || "Todas las formas"}</option>
+          <option value="efectivo">{t("cash") || "Efectivo"}</option>
+          <option value="transferencia">
+            {t("transfer") || "Transferencia"}
+          </option>
+          <option value="cheque">{t("cheque") || "Cheque"}</option>
+        </select>
+      ),
+    },
+    {
+      content: (
+        <select
+          value={
+            isSellerRole ? String(userData?.seller_id ?? "") : sellerFilter
+          }
+          onChange={(e) => {
+            // bloquear para SELLER y CUSTOMER
+            if (isSellerRole || isCustomerRole) return;
+
+            setSellerFilter(e.target.value);
+            setPage(1);
+            setItems([]);
+            setHasMore(true);
+          }}
+          disabled={isSellersLoading || isSellerRole || isCustomerRole}
+          className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
+          title={t("seller") || "Vendedor"}
+        >
+          <option value="">{t("allSellers") || "Todos los vendedores"}</option>
+          {sellerOptions.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      ),
+    },
+    {
+      content: (
+        <select
+          value={rendidoFilter}
+          onChange={(e) =>
+            setRendidoFilter(e.target.value as "" | "true" | "false")
+          }
+          className="border border-gray-300 rounded p-2 text-sm min-w-[160px]"
+          title="Estado de rendición"
+        >
+          <option value="">Todos</option>
+          <option value="true">Rendidos</option>
+          <option value="false">No Rendidos</option>
+        </select>
+      ),
+    },
+  ];
+
+  // 👉 Botón "Rendir": solo si NO es CUSTOMER
+  if (!isCustomerRole) {
+    headerFilters.push({
+      content: (
+        <button
+          onClick={handleRendir}
+          disabled={selectedIds.size === 0 || isRindiendo}
+          className={`px-3 py-2 rounded text-white ${
+            selectedIds.size === 0 || isRindiendo
+              ? "bg-zinc-300 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-700"
+          }`}
+          title={
+            selectedIds.size === 0
+              ? "Seleccioná al menos un pago"
+              : "Rendir pagos seleccionados"
+          }
+        >
+          {isRindiendo ? "Rindiendo..." : "Rendir"}
+        </button>
+      ),
+    });
+  }
+
+  // 👉 Botón "PDF diario (vendedor)": SOLO ADMINISTRADOR
+  if (isAdmin) {
+    headerFilters.push({
+      content: (
+        <button
+          key="pdf-diario"
+          onClick={handleDownloadDailyForCurrentFilters}
+          disabled={!canDownloadDaily || isRindiendo}
+          className={`px-3 py-2 rounded text-white ${
+            !canDownloadDaily || isRindiendo
+              ? "bg-zinc-300 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
+          title={
+            canDownloadDaily
+              ? "Descargar PDF diario del vendedor"
+              : !isAdmin
+              ? "Requiere rol ADMIN"
+              : !isSingleDaySelected
+              ? "Seleccioná el mismo día en ambos campos"
+              : "Elegí un vendedor o mostrás solo un vendedor en la lista"
+          }
+        >
+          PDF diario (vendedor)
+        </button>
+      ),
+    });
+  }
+
+  // Botón mobile de seleccionar visibles (lo dejamos para todos menos si no hay items)
+  headerFilters.push({
+    content: (
+      <button
+        onClick={() => toggleAll(!allSelected)}
+        disabled={visibleItems.length === 0}
+        className={`sm:hidden px-3 py-2 rounded text-white text-sm ${
+          visibleItems.length === 0
+            ? "bg-zinc-300 cursor-not-allowed"
+            : "bg-zinc-800 hover:bg-zinc-900"
+        }`}
+      >
+        {allSelected ? "Deseleccionar visibles" : "Seleccionar visibles"}
+      </button>
+    ),
+  });
+
   const headerBody = {
-    buttons: [{}],
-    filters: [
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.startDate}
-            onChange={(date) => {
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-              setSearchParams((s) => ({ ...s, startDate: date }));
-            }}
-            placeholderText={t("dateFrom")}
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-            isClearable
-          />
-        ),
-      },
-      {
-        content: (
-          <DatePicker
-            selected={searchParams.endDate}
-            onChange={(date) => {
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-              setSearchParams((s) => ({ ...s, endDate: date }));
-            }}
-            placeholderText={t("dateTo")}
-            dateFormat="yyyy-MM-dd"
-            className="border border-gray-300 rounded p-2"
-            isClearable
-          />
-        ),
-      },
-      {
-        content: (
-          <select
-            value={methodFilter}
-            onChange={(e) => setMethodFilter(e.target.value as any)}
-            className="border border-gray-300 rounded p-2 text-sm"
-            title={t("paymentMethod") || "Forma de pago"}
-          >
-            <option value="">{t("all") || "Todas las formas"}</option>
-            <option value="efectivo">{t("cash") || "Efectivo"}</option>
-            <option value="transferencia">
-              {t("transfer") || "Transferencia"}
-            </option>
-            <option value="cheque">{t("cheque") || "Cheque"}</option>
-          </select>
-        ),
-      },
-      {
-        content: (
-          <select
-            value={
-              isSellerRole ? String(userData?.seller_id ?? "") : sellerFilter
-            }
-            onChange={(e) => {
-              // bloquear para SELLER y CUSTOMER
-              if (isSellerRole || isCustomerRole) return;
-
-              setSellerFilter(e.target.value);
-              setPage(1);
-              setItems([]);
-              setHasMore(true);
-            }}
-            disabled={isSellersLoading || isSellerRole || isCustomerRole}
-            className="border border-gray-300 rounded p-2 text-sm min-w-[220px]"
-            title={t("seller") || "Vendedor"}
-          >
-            <option value="">
-              {t("allSellers") || "Todos los vendedores"}
-            </option>
-            {sellerOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-
-      {
-        content: (
-          <select
-            value={rendidoFilter}
-            onChange={(e) =>
-              setRendidoFilter(e.target.value as "" | "true" | "false")
-            }
-            className="border border-gray-300 rounded p-2 text-sm min-w-[160px]"
-            title="Estado de rendición"
-          >
-            <option value="">Todos</option>
-            <option value="true">Rendidos</option>
-            <option value="false">No Rendidos</option>
-          </select>
-        ),
-      },
-      {
-        content: (
-          <button
-            onClick={handleRendir}
-            disabled={selectedIds.size === 0 || isRindiendo}
-            className={`px-3 py-2 rounded text-white ${
-              selectedIds.size === 0 || isRindiendo
-                ? "bg-zinc-300 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-700"
-            }`}
-            title={
-              selectedIds.size === 0
-                ? "Seleccioná al menos un pago"
-                : "Rendir pagos seleccionados"
-            }
-          >
-            {isRindiendo ? "Rindiendo..." : "Rendir"}
-          </button>
-        ),
-      },
-      {
-        content: (
-          <button
-            key="pdf-diario"
-            onClick={handleDownloadDailyForCurrentFilters}
-            disabled={!canDownloadDaily || isRindiendo}
-            className={`px-3 py-2 rounded text-white ${
-              !canDownloadDaily || isRindiendo
-                ? "bg-zinc-300 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700"
-            }`}
-            title={
-              canDownloadDaily
-                ? "Descargar PDF diario del vendedor"
-                : !isAdmin
-                ? "Requiere rol ADMIN"
-                : !isSingleDaySelected
-                ? "Seleccioná el mismo día en ambos campos"
-                : "Elegí un vendedor o mostrás solo un vendedor en la lista"
-            }
-          >
-            PDF diario (vendedor)
-          </button>
-        ),
-      },
-      {
-        content: (
-          <button
-            onClick={() => toggleAll(!allSelected)}
-            disabled={visibleItems.length === 0}
-            className={`sm:hidden px-3 py-2 rounded text-white text-sm ${
-              visibleItems.length === 0
-                ? "bg-zinc-300 cursor-not-allowed"
-                : "bg-zinc-800 hover:bg-zinc-900"
-            }`}
-          >
-            {allSelected ? "Deseleccionar visibles" : "Seleccionar visibles"}
-          </button>
-        ),
-      },
-    ],
+    buttons: [],
+    filters: headerFilters,
     results: `${data?.total ?? 0} ${t("page.header.results")}`,
   };
 

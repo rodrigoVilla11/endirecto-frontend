@@ -110,17 +110,17 @@ export default function ChequeCalculator({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-gray-900 font-medium">{title}</h4>
-        <div className="text-xs text-gray-500">
-          Tasa anual: <span className="text-gray-900 font-semibold">{annualInterestPct}%</span>
-          {" · "}Gracia: <span className="text-gray-900 font-semibold">{graceUsed}</span> días
+        <h4 className="text-slate-300 font-medium">{title}</h4>
+        <div className="text-xs text-slate-300">
+          Tasa anual: <span className="text-slate-300 font-semibold">{annualInterestPct}%</span>
+          {" · "}Gracia: <span className="text-slate-300 font-semibold">{graceUsed}</span> días
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Monto original */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Monto original</label>
+          <label className="block text-xs text-slate-300 mb-1">Monto original</label>
           <input
             type="number"
             inputMode="decimal"
@@ -128,20 +128,20 @@ export default function ChequeCalculator({
             placeholder="0.00"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            className="w-full h-10 px-3 rounded-md bg-gray-50 text-gray-900 placeholder-gray-400 outline-none border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500"
+            className="w-full h-10 px-3 rounded-md bg-gray-50 text-slate-300 placeholder-gray-400 outline-none border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500"
           />
         </div>
 
         {/* Fecha de cobro */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Fecha de cobro</label>
+          <label className="block text-xs text-slate-300 mb-1">Fecha de cobro</label>
           <input
             type="date"
             value={dateISO}
             onChange={(e) => setDateISO(e.target.value)}
-            className="w-full h-10 px-3 rounded-md bg-gray-50 text-gray-900 placeholder-gray-400 outline-none border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500"
+            className="w-full h-10 px-3 rounded-md bg-gray-50 text-slate-300 placeholder-gray-400 outline-none border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500"
           />
-          <div className="mt-1 text-[11px] text-gray-500">
+          <div className="mt-1 text-[11px] text-slate-300">
             Días totales: <span className="text-emerald-600">{daysTotal}</span>{" "}
             · Gravados: <span className="text-emerald-600">{daysChargeable}</span>
           </div>
@@ -149,7 +149,7 @@ export default function ChequeCalculator({
 
         {/* Neto imputable */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Imputa aprox.</label>
+          <label className="block text-xs text-slate-300 mb-1">Imputa aprox.</label>
           <div className="w-full h-10 px-3 rounded-md bg-gray-100 text-gray-900 flex items-center tabular-nums border border-gray-300">
             {fmt.format(neto || 0)}
           </div>

@@ -23,6 +23,7 @@ import Modal from "@/app/components/components/Modal";
 import OrderDetail from "./OrderDetail";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLazyExportOrdersQuery } from "@/redux/services/ordersApi";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -96,6 +97,15 @@ const Page = () => {
   // Queries
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: sellersData } = useGetSellersQuery(null);
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+  const users = usersData || [];
+
+  const getSellerLabel = (seller: any) => {
+    if (!seller) return t("notFound");
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller.name || seller.id;
+    return `${nameToShow} (${seller.id})`;
+  };
 
   // Formatear fecha para la API
   const formatDate = useCallback((date: Date) => {
@@ -351,7 +361,7 @@ const Page = () => {
               />
             </div>
           ),
-          seller: seller?.name || t("notFound"),
+          seller: seller ? getSellerLabel(seller) : t("notFound"),
           customer: customer
             ? `${customer.id} - ${customer.name}`
             : t("notFound"),
@@ -449,7 +459,7 @@ const Page = () => {
             onChange={(e) => updateFilter("status", e.target.value)}
           >
             <option value="">{"Todos los estados"}</option>
-            <option value="charged">{t("charged")}</option>
+            <option value="charged">{t("Cargado")}</option>
             <option value="sendend">{t("Enviado")}</option>
           </select>
         ),
@@ -460,12 +470,16 @@ const Page = () => {
             value={filters.seller_id}
             onChange={(e) => updateFilter("seller_id", e.target.value)}
             className="border border-gray-300 rounded p-2"
-            disabled={userRole === "VENDEDOR" || userRole === "CUSTOMER"}
+            disabled={
+              userRole === "VENDEDOR" ||
+              userRole === "CUSTOMER" ||
+              isLoadingUsers
+            }
           >
             <option value="">{t("allSellers")}</option>
             {sellersData?.map((seller: any) => (
               <option key={seller.id} value={seller.id}>
-                {seller.name}
+                {getSellerLabel(seller)}
               </option>
             ))}
           </select>

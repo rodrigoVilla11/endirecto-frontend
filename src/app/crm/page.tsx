@@ -77,7 +77,14 @@ const Page = () => {
   const { data: sellersData } = useGetSellersQuery(null);
   const { data: ordersData } = useGetOrdersQuery(null);
   const { data: usersData } = useGetUsersQuery(null);
+  const users = usersData || [];
 
+  const getSellerLabel = (seller: any) => {
+    if (!seller) return t("notAvailable");
+    const user = users.find((u: any) => u.seller_id === seller.id);
+    const nameToShow = user?.username || seller?.name || seller?.id;
+    return `${nameToShow} (${seller.id})`;
+  };
   // -------- Filtro por rol vendedor --------
   useEffect(() => {
     if (userRole === "VENDEDOR" && userData?.seller_id) {
@@ -401,7 +408,8 @@ const Page = () => {
               />
             </div>
           ),
-          seller: seller?.name || t("notAvailable"),
+          seller: seller ? getSellerLabel(seller) : t("notAvailable"),
+
           customer: customer?.name || t("notAvailable"),
           user: user?.username || customer?.name || t("notAvailable"),
           date: crm.date
@@ -486,7 +494,7 @@ const Page = () => {
           ? [
               {
                 logo: <FaPlus />,
-                title: t("newInstance"),
+                title: t("CRM Cobranzas"),
                 onClick: () => setCreateModalOpen(true),
               },
             ]
@@ -533,12 +541,13 @@ const Page = () => {
               <option value="">{t("allSellers")}</option>
               {sellersData?.map((s: any) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  {getSellerLabel(s)}
                 </option>
               ))}
             </select>
           ),
         },
+
         {
           content: (
             <select
@@ -547,9 +556,9 @@ const Page = () => {
               className="border border-gray-300 rounded p-2"
             >
               <option value="">{t("type")}</option>
-              <option value="VISIT">VISIT</option>
-              <option value="ORDER">ORDER</option>
-              <option value="RECLAIM">RECLAIM</option>
+              <option value="VISIT">VISITA</option>
+              <option value="ORDER">PEDIDO</option>
+              <option value="RECLAIM">RECLAMO</option>
             </select>
           ),
         },
@@ -622,7 +631,7 @@ const Page = () => {
           </div>
         )}
 
-        {!hideHighBanner && latestHighInstance && (
+        {!hideHighBanner && latestHighInstance && canCreate && (
           <div className="mx-4 my-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <span
               className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500"
@@ -653,7 +662,7 @@ const Page = () => {
                 onClick={() => setCreateModalOpen(true)}
                 className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
               >
-                {t("newInstance")}
+                {t("CRM Cobranzas")}
               </button>
               <button
                 onClick={() => setHideHighBanner(true)}

@@ -135,7 +135,7 @@ const UpdateTagComponent = ({ marketingId, closeModal }: UpdateTagComponentProps
   if (error) return <p>{t("error_loading")}</p>;
 
   return (
-    <div className="bg-white rounded-2xl">
+    <div className="bg-white rounded-2xl p-4">
       <div className="flex justify-between">
         <h2 className="text-lg mb-4">{t("update_tag")}</h2>
         <button

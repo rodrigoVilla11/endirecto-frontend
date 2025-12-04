@@ -32,10 +32,10 @@ export default function ChequeCalculatorPage() {
     >
       <div className="mx-auto max-w-4xl p-4 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-3">
-          <h2 className="text-xl font-semibold text-slate-100">
+          <h2 className="text-xl font-semibold text-gray-900">
             {t("Calculadora de Cheques")}
           </h2>
-          <div className="text-xs text-slate-300">
+          <div className="text-xs text-gray-900">
             {t("Predeterminada actual")}{" "}
             <span className="font-medium text-white">{annual.toFixed(2)}%</span>
           </div>

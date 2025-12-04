@@ -33,7 +33,9 @@ const CreateHeaderComponent = ({ closeModal }: { closeModal: () => void }) => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
 
     setForm((prevForm) => ({
@@ -57,6 +59,7 @@ const CreateHeaderComponent = ({ closeModal }: { closeModal: () => void }) => {
             img: response.url,
           },
         }));
+        setUploadError("");
       } catch (err) {
         console.error("Error uploading home image:", err);
         setUploadError(t("createHeader.uploadError"));
@@ -98,109 +101,161 @@ const CreateHeaderComponent = ({ closeModal }: { closeModal: () => void }) => {
     }));
   };
 
+  const isSubmitDisabled =
+    isLoadingCreate || !form.header.url || !form.header.img;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-3">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 md:p-7">
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">{t("createHeader.title")}</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+            {t("createHeader.title")}
+          </h2>
           <button
             onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-8 w-8 flex justify-center items-center"
+            className="bg-gray-200 hover:bg-gray-300 rounded-full h-8 w-8 flex justify-center items-center transition"
           >
-            <IoMdClose className="text-lg" />
+            <IoMdClose className="text-lg text-gray-700" />
           </button>
         </div>
 
-        <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
-          {/* URL */}
-          <label className="flex flex-col col-span-2">
-            {t("createHeader.urlPlaceholder")}:
-            <input
-              name="url"
-              value={form.header.url}
-              placeholder={t("createHeader.urlPlaceholder")}
-              onChange={handleChange}
-              className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
-          </label>
+        <form
+          className="flex flex-col gap-6"
+          onSubmit={handleSubmit}
+        >
+          {/* Zona superior: URL + toggle enable */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* URL (ocupa 2 columnas en desktop) */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("createHeader.urlPlaceholder")}
+              </label>
+              <input
+                name="url"
+                value={form.header.url}
+                placeholder={t("createHeader.urlPlaceholder")}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-          {/* Enable */}
-          <label className="flex flex-col">
-            {t("createHeader.enableLabel")}:
-            <button
-              type="button"
-              onClick={handleToggleEnable}
-              className={`border border-gray-300 rounded-md p-2 ${
-                form.header.enable ? "bg-green-500" : "bg-red-500"
-              } text-white w-24`}
-            >
-              {form.header.enable ? t("createHeader.on") : t("createHeader.off")}
-            </button>
-          </label>
-
-          {/* Images Table */}
-          <div className="w-full flex justify-evenly gap-2">
-            <label className="flex flex-col text-sm">
-              {t("createHeader.imageLabel")}
-              <input type="file" accept="image/*" onChange={handleFileChange} />
+            {/* Enable */}
+            <div className="flex flex-col justify-end md:items-start gap-1">
+              <span className="text-sm font-medium text-gray-700">
+                {t("createHeader.enableLabel")}
+              </span>
               <button
                 type="button"
-                onClick={handleUploadHome}
-                disabled={isLoadingUpload || !selectedHomeFile}
-                className={`mt-1 ${
-                  isLoadingUpload || !selectedHomeFile ? "bg-gray-400" : "bg-blue-500"
-                } text-white rounded-md p-1 text-sm`}
+                onClick={handleToggleEnable}
+                className={`inline-flex items-center justify-center border border-gray-300 rounded-full px-4 py-2 text-xs font-semibold text-white transition ${
+                  form.header.enable ? "bg-emerald-600" : "bg-red-500"
+                }`}
               >
-                {isLoadingUpload ? t("createHeader.uploading") : t("createHeader.uploadPrompt")}
+                {form.header.enable ? t("createHeader.on") : t("createHeader.off")}
               </button>
-              {uploadError && (
-                <span className="text-red-500 text-sm mt-1">{uploadError}</span>
-              )}
-              {homeUploadResponse && (
-                <div className="flex items-center gap-2 mt-1">
-                  <img
-                    src={homeUploadResponse}
-                    alt={t("createHeader.homeImageAlt")}
-                    className="h-20 w-full rounded-md"
+            </div>
+          </div>
+
+          {/* Imagen */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("createHeader.imageLabel")}
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="block w-full text-xs text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveImage()}
-                    className="text-red-500 text-sm"
+                    onClick={handleUploadHome}
+                    disabled={isLoadingUpload || !selectedHomeFile}
+                    className={`sm:w-auto w-full sm:flex-none rounded-md px-4 py-2 text-xs font-semibold text-white transition ${
+                      isLoadingUpload || !selectedHomeFile
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-blue-500 hover:bg-blue-600"
+                    }`}
                   >
-                    <FaTrashCan />
+                    {isLoadingUpload
+                      ? t("createHeader.uploading")
+                      : t("createHeader.uploadPrompt")}
                   </button>
                 </div>
-              )}
-            </label>
+                {uploadError && (
+                  <span className="text-red-500 text-xs mt-1 block">
+                    {uploadError}
+                  </span>
+                )}
+              </div>
+
+              {/* Preview imagen */}
+              <div className="flex-shrink-0 w-full md:w-64">
+                {homeUploadResponse ? (
+                  <div className="relative">
+                    <img
+                      src={homeUploadResponse}
+                      alt={t("createHeader.homeImageAlt")}
+                      className="w-full h-32 md:h-40 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white text-red-500 rounded-full p-1 shadow"
+                    >
+                      <FaTrashCan className="text-xs" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-full h-32 md:h-40 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                    {t("createHeader.homeImageAlt")}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Buttons */}
-          <div className="col-span-2 flex justify-end gap-4 mt-4">
+          {/* Botones */}
+          <div className="flex justify-end gap-3 mt-2">
             <button
               type="button"
               onClick={closeModal}
-              className="bg-gray-400 rounded-md p-2 text-white"
+              className="bg-gray-400 hover:bg-gray-500 rounded-md px-4 py-2 text-sm text-white font-medium transition"
             >
               {t("createHeader.cancel")}
             </button>
             <button
               type="submit"
-              className={`rounded-md p-2 text-white ${
-                isLoadingCreate ? "bg-gray-500" : "bg-green-500"
+              className={`rounded-md px-4 py-2 text-sm text-white font-medium transition ${
+                isSubmitDisabled
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700"
               }`}
-              disabled={isLoadingCreate}
+              disabled={isSubmitDisabled}
             >
               {isLoadingCreate ? t("createHeader.saving") : t("createHeader.save")}
             </button>
           </div>
-        </form>
 
-        {/* Messages */}
-        {isSuccess && (
-          <p className="text-green-500 mt-4">{t("createHeader.success")}</p>
-        )}
-        {isError && <p className="text-red-500 mt-4">{t("createHeader.error")}</p>}
+          {/* Mensajes */}
+          {isSuccess && (
+            <p className="text-sm text-emerald-600 mt-2">
+              {t("createHeader.success")}
+            </p>
+          )}
+          {isError && (
+            <p className="text-sm text-red-500 mt-2">
+              {t("createHeader.error")}
+            </p>
+          )}
+          {successMessage && (
+            <p className="text-sm text-emerald-600 mt-1">{successMessage}</p>
+          )}
+        </form>
       </div>
     </div>
   );

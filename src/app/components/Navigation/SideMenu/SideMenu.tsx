@@ -208,32 +208,18 @@ const SideMenu = () => {
       icon: <FaRegNoteSticky />,
       name: t("collectionsSummaries"),
       allowedRoles: ["ADMINISTRADOR"],
-      subCategories: [
-        {
-          name: t("collectionsSummaries"),
-          path: "/collections/summaries",
-        },
-      ],
+      path: "/collections/summaries",
     },
     {
       icon: <CgShoppingCart />,
       name: t("orders"),
+      path: "/orders/orders",
       allowedRoles: [
         "ADMINISTRADOR",
         "OPERADOR",
         "MARKETING",
         "VENDEDOR",
         "CUSTOMER",
-      ],
-      subCategories: [
-        {
-          name: t("ordersName"),
-          path: "/orders/orders",
-        },
-        selectedClientId && {
-          name: t("shoppingCart"),
-          path: "/shopping-cart",
-        },
       ],
     },
     {
@@ -340,30 +326,6 @@ const SideMenu = () => {
         "VENDEDOR",
         "CUSTOMER",
       ],
-      getSubCategories: (role: any, selectedClientId: any) => {
-        const allSubCategories = [
-          {
-            name: t("myProfile"),
-            path: "/profile/my-profile",
-          },
-          {
-            name: t("brandMargins"),
-            path: "/profile/brands-margin",
-          },
-          { name: t("itemMargins"), path: "/profile/items-margin" },
-        ];
-
-        if (role === "ADMINISTRADOR") {
-          return allSubCategories;
-        } else if (["OPERADOR", "MARKETING", "VENDEDOR"].includes(role)) {
-          if (selectedClientId) {
-            return allSubCategories;
-          } else {
-            return [allSubCategories[0]];
-          }
-        }
-        return [];
-      },
     },
     {
       icon: <FaPowerOff />,
@@ -379,31 +341,6 @@ const SideMenu = () => {
     },
   ];
 
-  const filteredIcons = React.useMemo(() => {
-    return role
-      ? icons
-          .map((icon) => {
-            const hasAllowedRole =
-              !icon.allowedRoles || icon.allowedRoles.includes(role);
-            const isMyProfile = icon.name === t("myProfile");
-            const shouldShow =
-              hasAllowedRole &&
-              (isMyProfile ||
-                selectedClientId ||
-                (icon.name !== t("favourites") && icon.name !== t("contact")));
-
-            if (icon.getSubCategories) {
-              return {
-                ...icon,
-                subCategories: icon.getSubCategories(role, selectedClientId),
-              };
-            }
-
-            return shouldShow ? icon : null;
-          })
-          .filter(Boolean)
-      : icons;
-  }, [role, selectedClientId, icons, t]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -439,7 +376,7 @@ const SideMenu = () => {
         isSelectCustomers ? "mt-16" : "mt-16"
       } pt-2`}
     >
-      {filteredIcons.map((icon: any, index: any) => (
+      {icons.map((icon: any, index: any) => (
         <ButtonsIcons key={index} icon={icon} />
       ))}
     </div>

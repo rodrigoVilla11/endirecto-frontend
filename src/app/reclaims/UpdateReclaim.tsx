@@ -12,7 +12,10 @@ import {
   useGetCustomersQuery,
 } from "@/redux/services/customersApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
-import { ReclaimType, useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
+import {
+  ReclaimType,
+  useGetReclaimsTypesQuery,
+} from "@/redux/services/reclaimsTypes";
 import Select from "react-select";
 import { IoMdClose } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
@@ -56,7 +59,8 @@ const UpdateReclaimComponent = ({
     user_solved_id: userData?._id || "",
   });
 
-  const { data: reclaimTypesData, isLoading: isLoadingReclaimsTypes } = useGetReclaimsTypesQuery();
+  const { data: reclaimTypesData, isLoading: isLoadingReclaimsTypes } =
+    useGetReclaimsTypesQuery();
   const { data: branchesData } = useGetBranchesQuery(null);
   const { data: customersData } = useGetCustomersQuery(null);
   const { data: articlesData } = useGetAllArticlesQuery(null);
@@ -115,14 +119,16 @@ const UpdateReclaimComponent = ({
     }
   };
 
-    const handleChangeReclaim = (
-      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
-      setForm((prevForm) => ({
-        ...prevForm,
-        [e.target.name]: e.target.value,
-      }));
-    };
+  const handleChangeReclaim = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    setForm((prevForm) => ({
+      ...prevForm,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const branchOptions =
     branchesData?.map((branch: { id: string; name: string }) => ({
@@ -146,172 +152,60 @@ const UpdateReclaimComponent = ({
   if (error) return <p>{t("updateReclaimComponent.errorLoading")}</p>;
 
   return (
-    <div className="bg-white shadow-xl rounded-lg p-8 max-w-4xl mx-auto">
+    <div className="bg-white shadow-xl rounded-2xl max-w-5xl mx-auto max-h-[90vh] flex flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-700">
-          {t("updateReclaimComponent.header")}
-        </h2>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-gray-800">
+            {t("updateReclaimComponent.header")}
+          </h2>
+          {form._id && (
+            <p className="text-xs text-gray-500 mt-1">
+              ID:{" "}
+              <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+                {form._id}
+              </span>
+            </p>
+          )}
+        </div>
         <button
           onClick={closeModal}
-          className="text-gray-500 hover:text-gray-700 rounded-full h-8 w-8 flex justify-center items-center bg-gray-100 hover:bg-gray-200"
+          className="text-gray-500 hover:text-gray-700 rounded-full h-8 w-8 flex justify-center items-center bg-gray-100 hover:bg-gray-200 transition-colors"
         >
           <IoMdClose size={20} />
         </button>
       </div>
 
-      {/* Form */}
+      {/* Body scrollable */}
       <form
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="flex-1 overflow-y-auto px-6 py-5 space-y-6"
         onSubmit={handleUpdate}
       >
-        {/* Left Column */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.reclaimType")}:
-            </label>
-            <select
-              name="reclaims_type_id"
-              value={form.reclaims_type_id}
-              onChange={handleChangeReclaim}
-              className="border border-black rounded-md p-2"
+        {/* Estado + Validez */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-500 uppercase">
+              {t("updateReclaimComponent.status") ?? "Estado"}:
+            </span>
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                form.status === Status.PENDING
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-emerald-100 text-emerald-700"
+              }`}
             >
-              <option value="">{t("createReclaim.selectReclaimType")}</option>
-              {!isLoadingReclaimsTypes &&
-                reclaimTypesData
-                  ?.filter(
-                    (reclaimType: ReclaimType) => !reclaimType.deleted_at
-                  )
-                  .map((reclaimType: ReclaimType) => (
-                    <option key={reclaimType.id} value={reclaimType.id}>
-                      {reclaimType.categoria}
-                      {reclaimType.tipo ? ` - ${reclaimType.tipo}` : ""}
-                    </option>
-                  ))}
-            </select>
+              {t(`updateReclaimComponent.statusLabels.${form.status}`)}
+            </span>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.description")}:
-            </label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring focus:ring-green-200"
-              rows={4}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.article")}:
-            </label>
-            <Select
-              value={articleOptions.find(
-                (option) => option.value === form.article_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "article_id")
-              }
-              options={articleOptions}
-              className="mt-1 border-gray-300 rounded-lg shadow-sm"
-            />
-          </div>
-        </div>
 
-        {/* Middle Column */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.branch")}:
-            </label>
-            <Select
-              value={branchOptions.find(
-                (option) => option.value === form.branch_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "branch_id")
-              }
-              options={branchOptions}
-              className="mt-1 border-gray-300 rounded-lg shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.customer")}:
-            </label>
-            <Select
-              value={customerOptions.find(
-                (option) => option.value === form.customer_id
-              )}
-              onChange={(selectedOption) =>
-                handleSelectChange(selectedOption, "customer_id")
-              }
-              options={customerOptions}
-              className="mt-1 border-gray-300 rounded-lg shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.date")}:
-            </label>
-            <input
-              type="text"
-              name="date"
-              value={form.date}
-              readOnly
-              className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm bg-gray-50"
-            />
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.cause")}:
-            </label>
-            <input
-              type="text"
-              name="cause"
-              value={form.cause}
-              onChange={handleChange}
-              className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.solution")}:
-            </label>
-            <input
-              type="text"
-              name="solution"
-              value={form.solution}
-              onChange={handleChange}
-              className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t("updateReclaimComponent.internalSolution")}:
-            </label>
-            <input
-              type="text"
-              name="internal_solution"
-              value={form.internal_solution}
-              onChange={handleChange}
-              className="mt-1 border border-gray-300 rounded-lg p-3 text-sm shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-500 uppercase">
               {t("updateReclaimComponent.valid")}:
-            </label>
+            </span>
             <button
               type="button"
               onClick={toggleValid}
-              className={`p-3 rounded-lg text-sm shadow-sm ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-colors ${
                 form.valid === Valid.S
                   ? "bg-green-500 text-white hover:bg-green-600"
                   : "bg-red-500 text-white hover:bg-red-600"
@@ -324,18 +218,187 @@ const UpdateReclaimComponent = ({
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="col-span-1 md:col-span-3 flex justify-end items-end gap-4 mt-6">
+        {/* Sección 1: Información principal */}
+        <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-gray-50/60 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
+            {t("updateReclaimComponent.mainInfo") ?? "Información del reclamo"}
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Tipo de reclamo */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.reclaimType")}:
+              </label>
+              <select
+                name="reclaims_type_id"
+                value={form.reclaims_type_id}
+                onChange={handleChangeReclaim}
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none"
+              >
+                <option value="">{t("createReclaim.selectReclaimType")}</option>
+                {!isLoadingReclaimsTypes &&
+                  reclaimTypesData
+                    ?.filter(
+                      (reclaimType: ReclaimType) => !reclaimType.deleted_at
+                    )
+                    .map((reclaimType: ReclaimType) => (
+                      <option key={reclaimType.id} value={reclaimType.id}>
+                        {reclaimType.categoria}
+                        {reclaimType.tipo ? ` - ${reclaimType.tipo}` : ""}
+                      </option>
+                    ))}
+              </select>
+            </div>
+
+            {/* Sucursal */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.branch")}:
+              </label>
+              <Select
+                value={branchOptions.find(
+                  (option) => option.value === form.branch_id
+                )}
+                onChange={(selectedOption) =>
+                  handleSelectChange(selectedOption, "branch_id")
+                }
+                options={branchOptions}
+                className="text-sm"
+                classNamePrefix="react-select"
+              />
+            </div>
+
+            {/* Cliente */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.customer")}:
+              </label>
+              <Select
+                value={customerOptions.find(
+                  (option) => option.value === form.customer_id
+                )}
+                onChange={(selectedOption) =>
+                  handleSelectChange(selectedOption, "customer_id")
+                }
+                options={customerOptions}
+                className="text-sm"
+                classNamePrefix="react-select"
+              />
+            </div>
+
+            {/* Artículo */}
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.article")}:
+              </label>
+              <Select
+                value={articleOptions.find(
+                  (option) => option.value === form.article_id
+                )}
+                onChange={(selectedOption) =>
+                  handleSelectChange(selectedOption, "article_id")
+                }
+                options={articleOptions}
+                className="text-sm"
+                classNamePrefix="react-select"
+              />
+            </div>
+
+            {/* Fecha creación */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.date")}:
+              </label>
+              <input
+                type="text"
+                name="date"
+                value={form.date}
+                readOnly
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm bg-gray-50 text-gray-700"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Sección 2: Descripción */}
+        <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-white space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
+            {t("updateReclaimComponent.descriptionSection") ??
+              "Descripción del reclamo"}
+          </h3>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none min-h-[80px]"
+          />
+        </div>
+
+        {/* Sección 3: Gestión y resolución */}
+        <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-white space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
+            {t("updateReclaimComponent.resolutionSection") ??
+              "Gestión y resolución"}
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Causa */}
+            <div className="md:col-span-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.cause")}:
+              </label>
+              <input
+                type="text"
+                name="cause"
+                value={form.cause}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none"
+              />
+            </div>
+
+            {/* Solución pública */}
+            <div className="md:col-span-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.solution")}:
+              </label>
+              <input
+                type="text"
+                name="solution"
+                value={form.solution}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none"
+              />
+            </div>
+
+            {/* Solución interna */}
+            <div className="md:col-span-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t("updateReclaimComponent.internalSolution")}:
+              </label>
+              <input
+                type="text"
+                name="internal_solution"
+                value={form.internal_solution}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer buttons */}
+        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
           <button
             type="button"
             onClick={closeModal}
-            className="bg-gray-400 text-white rounded-lg p-3 text-sm hover:bg-gray-500"
+            className="px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
           >
             {t("updateReclaimComponent.cancel")}
           </button>
           <button
             type="submit"
-            className="bg-green-500 text-white rounded-lg p-3 text-sm hover:bg-green-600"
+            className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={isUpdating}
           >
             {isUpdating
@@ -343,6 +406,20 @@ const UpdateReclaimComponent = ({
               : t("updateReclaimComponent.update")}
           </button>
         </div>
+
+        {/* Mensajes de feedback (no toco lógica, solo los reacomodo si los querés usar) */}
+        {isSuccess && (
+          <p className="text-xs text-emerald-600 mt-1">
+            {t("updateReclaimComponent.success") ??
+              "Reclamo actualizado correctamente."}
+          </p>
+        )}
+        {isError && (
+          <p className="text-xs text-red-600 mt-1">
+            {t("updateReclaimComponent.error") ??
+              "Ocurrió un error al actualizar el reclamo."}
+          </p>
+        )}
       </form>
     </div>
   );
