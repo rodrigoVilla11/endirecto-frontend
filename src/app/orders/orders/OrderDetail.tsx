@@ -7,8 +7,8 @@ interface OrderDetailProps {
 }
 
 const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
-  if (!order) return null;
   const { t } = useTranslation();
+  if (!order) return null;
 
   // Formatea un número a ARS con fallback a '-'
   function formatPriceWithCurrency(value: number | string): string {
