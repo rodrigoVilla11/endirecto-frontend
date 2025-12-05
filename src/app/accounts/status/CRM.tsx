@@ -93,6 +93,9 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
     return list;
   }, [instances, query, sortKey, filterType, filterPriority]);
 
+  const customerIdLabel = customer?.id || "";
+  const customerNameLabel = customer?.name || t("crm.defaultCustomerName");
+
   return (
     <section className="h-[90vh] flex flex-col rounded-3xl overflow-hidden bg-gradient-to-br from-red-500 via-white to-blue-500 p-[3px] shadow-2xl">
       <div className="bg-zinc-950 rounded-3xl h-full flex flex-col overflow-hidden">
@@ -100,10 +103,20 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
         <header className="flex-shrink-0 px-6 py-4 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm text-gray-400">{customer?.id || ''}</p>
-              <h2 className="text-2xl font-bold text-white">
-                CRM - {customer?.name || 'Cobranza'}
+              <p className="text-xs text-gray-500">
+                {customerIdLabel && (
+                  <>
+                    {t("crm.customerCode")}: {customerIdLabel}
+                  </>
+                )}
+              </p>
+              <h2 className="text-2xl font-bold text-white mt-1">
+                {t("crm.title")} – {customerNameLabel}
               </h2>
+              <p className="text-xs text-gray-400 mt-1">
+                {t("crm.subtitle") ||
+                  "Seguimiento de gestiones comerciales y de cobranza."}
+              </p>
             </div>
             <button
               onClick={closeModal}
@@ -116,43 +129,60 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
 
           {/* Filtros */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Crear instancia */}
             <button
               onClick={openCreateModal}
               className="bg-white text-gray-900 rounded-xl px-4 py-3 text-sm font-bold hover:bg-gray-100 transition-colors"
             >
-              Nueva instancia
+              {t("crm.newInstance")}
+              <span className="ml-2 text-xs text-gray-500">
+                ({t("crm.shortcutNewInstance", { key: "N" })})
+              </span>
             </button>
 
+            {/* Búsqueda */}
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder={t("crm.searchPlaceholder") || ""}
+            />
+
+            {/* Fecha (por ahora solo visual, para futuro filtro si querés) */}
             <div className="relative">
               <input
                 type="date"
                 className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Fecha"
+                placeholder={t("crm.datePlaceholder") || "Fecha"}
+                aria-label={t("crm.dateFilter")}
               />
               <FaCalendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
 
+            {/* Tipo */}
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="all">Tipo</option>
-              <option value="llamada">Llamada</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="email">Email</option>
-              <option value="visita">Visita</option>
+              <option value="all">{t("crm.type.all")}</option>
+              <option value="llamada">{t("crm.type.call")}</option>
+              <option value="whatsapp">{t("crm.type.whatsapp")}</option>
+              <option value="email">{t("crm.type.email")}</option>
+              <option value="visita">{t("crm.type.visit")}</option>
             </select>
 
+            {/* Prioridad */}
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
               className="bg-gray-800 text-white rounded-xl px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="all">Prioridad</option>
-              <option value="alta">Alta</option>
-              <option value="media">Media</option>
-              <option value="baja">Baja</option>
+              <option value="all">{t("crm.priority.all")}</option>
+              <option value="alta">{t("crm.priority.high")}</option>
+              <option value="media">{t("crm.priority.medium")}</option>
+              <option value="baja">{t("crm.priority.low")}</option>
             </select>
           </div>
         </header>
@@ -160,7 +190,7 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 hide-scrollbar">
           {/* Loading */}
-          {isLoading && (
+          {(isLoading || isFetching) && (
             <ul className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <li key={i} className="animate-pulse">
@@ -174,7 +204,8 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
           {!isLoading && error && (
             <div className="rounded-2xl border border-red-500/50 bg-red-500/10 p-6">
               <p className="text-sm text-red-400">
-                {t("errorLoading")}{" "}
+                {t("crm.errorLoading") || t("errorLoading")}
+                {" · "}
                 <button
                   onClick={() => refetch()}
                   className="underline font-medium hover:text-red-300"
@@ -191,10 +222,10 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
               <div className="text-6xl">📋</div>
               <p className="text-sm text-gray-400">
                 {query
-                  ? t("noResultsForQuery", { query })
-                  : t("noInstancesAvailable")}
+                  ? t("crm.noResultsForQuery", { query })
+                  : t("crm.noInstancesAvailable")}
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 {query && (
                   <button
                     onClick={() => setQuery("")}
@@ -207,7 +238,7 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
                   onClick={openCreateModal}
                   className="text-sm rounded-xl bg-white px-4 py-2 text-gray-900 font-bold hover:bg-gray-100"
                 >
-                  {t("newInstance")}
+                  {t("crm.newInstance")}
                 </button>
               </div>
             </div>
@@ -215,7 +246,7 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
 
           {/* List */}
           {!isLoading && !error && filtered.length > 0 && (
-            <ul className="space-y-3">
+            <ul className="space-y-3" role="list">
               {filtered.map((item: any, index: number) => (
                 <li key={item?.id ?? item?._id ?? index}>
                   <Instance instances={item} />

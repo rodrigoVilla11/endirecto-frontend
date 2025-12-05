@@ -376,7 +376,7 @@ const EditArticleTechnicalDetailComponent: React.FC<
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 relative">
+    <form onSubmit={handleSubmit} className="p-4 relative bg-white rounded-xl">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold mb-4">Editar Detalle Técnico</h2>
         <button

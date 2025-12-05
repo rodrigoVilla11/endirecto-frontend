@@ -131,8 +131,8 @@ const UpdateHeaderComponent = ({
   if (error) return <p>{t("updateHeader.fetchError")}</p>;
 
   return (
-    <div>
-      <div className="flex justify-between bg-white rounded-2xl">
+    <div className="bg-white rounded-2xl p-4">
+      <div className="flex justify-between ">
         <h2 className="text-lg mb-4">{t("updateHeader.title")}</h2>
         <button
           onClick={closeModal}

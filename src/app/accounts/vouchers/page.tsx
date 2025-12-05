@@ -26,6 +26,7 @@ import { FaTimes } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
+import DocumentDetailsModal from "./DocumentDetailsModal";
 
 // Constants
 const ITEMS_PER_PAGE = 15;
@@ -332,7 +333,7 @@ const VouchersComponent = () => {
 
       return {
         key: doc.id,
-        action: (
+        info: (
           <div className="flex justify-center items-center">
             <IoInformationCircleOutline
               className="text-xl cursor-pointer hover:text-blue-600 transition-colors"
@@ -576,11 +577,6 @@ const VouchersComponent = () => {
         <Table
           headers={[
             {
-              name: t("action"),
-              key: "action",
-              sortable: false,
-            },
-            {
               component: <IoInformationCircleOutline className="text-xl" />,
               key: "info",
               sortable: false,
@@ -628,6 +624,24 @@ const VouchersComponent = () => {
           <div className="text-center py-8 text-gray-500">
             {t("noDocumentsFound") || "No se encontraron documentos"}
           </div>
+        )}
+
+        <div ref={observerRef} className="h-10" />
+        {/* No results message */}
+        {!isLoading && items.length === 0 && !isFetching && (
+          <div className="text-center py-8 text-gray-500">
+            {t("noDocumentsFound") || "No se encontraron documentos"}
+          </div>
+        )}
+
+        {/* Modal de detalle */}
+        {isDocumentModalOpen && selectedDocumentId && (
+          <DocumentDetailsModal
+            documentId={selectedDocumentId}
+            onClose={closeDocumentModal}
+            customers={customersData}
+            sellers={sellersData}
+          />
         )}
 
         <div ref={observerRef} className="h-10" />

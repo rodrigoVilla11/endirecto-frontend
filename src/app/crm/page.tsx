@@ -641,7 +641,7 @@ const Page = () => {
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("crm")}</h3>
+        <h3 className="font-bold p-4">{t("crm.title")}</h3>
         <Header headerBody={headerBody} />
 
         {predefOpen && typeFilter === "VISIT" && (
@@ -661,30 +661,38 @@ const Page = () => {
             </div>
           </div>
         )}
-
         {!hideHighBanner && latestHighInstance && canCreate && (
           <div className="mx-4 my-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <span
               className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500"
               aria-hidden="true"
             />
+
             <div className="flex-1 min-w-0">
+              {/* Título y tipo */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-red-800">
-                  {t("highPriorityInstance") || "Instancia de ALTA prioridad"}
+                  {t("crm.highPriorityInstance")}
                 </span>
+
                 {latestHighInstance.type && (
                   <span className="text-xs rounded-full bg-red-100 text-red-800 ring-1 ring-inset ring-red-200 px-2 py-0.5">
-                    {t("type")}: {latestHighInstance.type}
+                    {t("crm.typeLabel")}:{" "}
+                    {t(
+                      `crm.types.${latestHighInstance.type}`,
+                      latestHighInstance.type
+                    )}
                   </span>
                 )}
               </div>
+
+              {/* Nota */}
               <p
                 className="mt-1 text-sm text-red-900 line-clamp-2"
                 title={latestHighInstance.notes || ""}
               >
-                <span className="font-medium">{t("notes")}:</span>{" "}
-                {latestHighInstance.notes || t("none")}
+                <span className="font-medium">{t("crm.noteLabel")}:</span>{" "}
+                {latestHighInstance.notes || t("crm.none")}
               </p>
             </div>
 
@@ -693,8 +701,9 @@ const Page = () => {
                 onClick={() => setCreateModalOpen(true)}
                 className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
               >
-                {t("CRM Cobranzas")}
+                {t("crm.openCRM")}
               </button>
+
               <button
                 onClick={() => setHideHighBanner(true)}
                 className="shrink-0 rounded-md bg-white px-2 py-1.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-100"

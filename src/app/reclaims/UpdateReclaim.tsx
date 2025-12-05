@@ -8,7 +8,6 @@ import {
 } from "@/redux/services/reclaimsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import {
-  useGetCustomerByIdQuery,
   useGetCustomersQuery,
 } from "@/redux/services/customersApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
@@ -86,26 +85,13 @@ const UpdateReclaimComponent = ({
     }
   }, [reclaim, userData]);
 
+  // Este handleChange ahora se usa SOLO en Gestión y Resolución
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setForm((prevForm) => ({
       ...prevForm,
       [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleSelectChange = (selectedOption: any, field: string) => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      [field]: selectedOption ? selectedOption.value : "",
-    }));
-  };
-
-  const toggleValid = () => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      valid: prevForm.valid === Valid.S ? Valid.N : Valid.S,
     }));
   };
 
@@ -117,17 +103,6 @@ const UpdateReclaimComponent = ({
     } catch (err) {
       console.error(t("updateReclaimComponent.errorUpdating"), err);
     }
-  };
-
-  const handleChangeReclaim = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    setForm((prevForm) => ({
-      ...prevForm,
-      [e.target.name]: e.target.value,
-    }));
   };
 
   const branchOptions =
@@ -181,7 +156,7 @@ const UpdateReclaimComponent = ({
         className="flex-1 overflow-y-auto px-6 py-5 space-y-6"
         onSubmit={handleUpdate}
       >
-        {/* Estado + Validez */}
+        {/* Estado + Validez (SOLO LECTURA) */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-gray-500 uppercase">
@@ -202,23 +177,22 @@ const UpdateReclaimComponent = ({
             <span className="text-xs font-medium text-gray-500 uppercase">
               {t("updateReclaimComponent.valid")}:
             </span>
-            <button
-              type="button"
-              onClick={toggleValid}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-colors ${
+            {/* Píldora solo lectura, sin botón */}
+            <span
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${
                 form.valid === Valid.S
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-red-500 text-white hover:bg-red-600"
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
               }`}
             >
               {form.valid === Valid.S
                 ? t("updateReclaimComponent.validLabel")
                 : t("updateReclaimComponent.invalidLabel")}
-            </button>
+            </span>
           </div>
         </div>
 
-        {/* Sección 1: Información principal */}
+        {/* Sección 1: Información principal (SOLO LECTURA) */}
         <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-gray-50/60 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
             {t("updateReclaimComponent.mainInfo") ?? "Información del reclamo"}
@@ -233,10 +207,12 @@ const UpdateReclaimComponent = ({
               <select
                 name="reclaims_type_id"
                 value={form.reclaims_type_id}
-                onChange={handleChangeReclaim}
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none"
+                disabled
+                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
               >
-                <option value="">{t("createReclaim.selectReclaimType")}</option>
+                <option value="">
+                  {t("createReclaim.selectReclaimType")}
+                </option>
                 {!isLoadingReclaimsTypes &&
                   reclaimTypesData
                     ?.filter(
@@ -260,9 +236,7 @@ const UpdateReclaimComponent = ({
                 value={branchOptions.find(
                   (option) => option.value === form.branch_id
                 )}
-                onChange={(selectedOption) =>
-                  handleSelectChange(selectedOption, "branch_id")
-                }
+                isDisabled
                 options={branchOptions}
                 className="text-sm"
                 classNamePrefix="react-select"
@@ -278,9 +252,7 @@ const UpdateReclaimComponent = ({
                 value={customerOptions.find(
                   (option) => option.value === form.customer_id
                 )}
-                onChange={(selectedOption) =>
-                  handleSelectChange(selectedOption, "customer_id")
-                }
+                isDisabled
                 options={customerOptions}
                 className="text-sm"
                 classNamePrefix="react-select"
@@ -296,9 +268,7 @@ const UpdateReclaimComponent = ({
                 value={articleOptions.find(
                   (option) => option.value === form.article_id
                 )}
-                onChange={(selectedOption) =>
-                  handleSelectChange(selectedOption, "article_id")
-                }
+                isDisabled
                 options={articleOptions}
                 className="text-sm"
                 classNamePrefix="react-select"
@@ -315,13 +285,13 @@ const UpdateReclaimComponent = ({
                 name="date"
                 value={form.date}
                 readOnly
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm shadow-sm bg-gray-50 text-gray-700"
+                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-gray-100 text-gray-700"
               />
             </div>
           </div>
         </div>
 
-        {/* Sección 2: Descripción */}
+        {/* Sección 2: Descripción (SOLO LECTURA) */}
         <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-white space-y-3">
           <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
             {t("updateReclaimComponent.descriptionSection") ??
@@ -330,12 +300,12 @@ const UpdateReclaimComponent = ({
           <textarea
             name="description"
             value={form.description}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring-2 focus:ring-emerald-200 focus:outline-none min-h-[80px]"
+            readOnly
+            className="w-full border border-gray-200 rounded-lg p-3 text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
           />
         </div>
 
-        {/* Sección 3: Gestión y resolución */}
+        {/* Sección 3: Gestión y resolución (EDITABLE) */}
         <div className="border border-gray-100 rounded-xl p-4 md:p-5 bg-white space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
             {t("updateReclaimComponent.resolutionSection") ??
@@ -407,7 +377,6 @@ const UpdateReclaimComponent = ({
           </button>
         </div>
 
-        {/* Mensajes de feedback (no toco lógica, solo los reacomodo si los querés usar) */}
         {isSuccess && (
           <p className="text-xs text-emerald-600 mt-1">
             {t("updateReclaimComponent.success") ??

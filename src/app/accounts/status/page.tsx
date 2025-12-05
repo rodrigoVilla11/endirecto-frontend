@@ -99,7 +99,7 @@ export default function Page() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
-  const [sellerFilter, setSellerFilter] = useState("");
+  // const [sellerFilter, setSellerFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState<string>(
     selectedClientId || ""
   );
@@ -128,7 +128,7 @@ export default function Page() {
       startDate: startDate?.toISOString().slice(0, 10),
       endDate: endDate?.toISOString().slice(0, 10),
       customerId: customerFilter || undefined,
-      sellerId: forcedSellerId || sellerFilter || undefined,
+      // sellerId: forcedSellerId || sellerFilter || undefined,
       type: typeFilter || undefined,
     }).unwrap();
 
@@ -165,7 +165,7 @@ export default function Page() {
         startDate: startDate?.toISOString().slice(0, 10),
         endDate: endDate?.toISOString().slice(0, 10),
         customerId: customerFilter,
-        sellerId: forcedSellerId || sellerFilter,
+        // sellerId: forcedSellerId || sellerFilter,
         type: typeFilter,
         ...(sortQuery
           ? {
@@ -180,7 +180,7 @@ export default function Page() {
         endDate,
         customerFilter,
         forcedSellerId,
-        sellerFilter,
+        // sellerFilter,
         typeFilter,
         sortQuery,
       ]
@@ -347,32 +347,32 @@ export default function Page() {
           </select>
         ),
       },
-      {
-        content: (
-          <select
-            value={forcedSellerId || sellerFilter}
-            onChange={(e) => {
-              // Si está bloqueado por rol, forcedSellerId o todavía está cargando users, no hacemos nada
-              if (forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers)
-                return;
+      // {
+      //   content: (
+      //     <select
+      //       value={forcedSellerId || sellerFilter}
+      //       onChange={(e) => {
+      //         // Si está bloqueado por rol, forcedSellerId o todavía está cargando users, no hacemos nada
+      //         if (forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers)
+      //           return;
 
-              setSellerFilter(e.target.value);
-              resetList();
-            }}
-            disabled={
-              !!forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers
-            }
-            className="w-full border rounded p-2"
-          >
-            <option value="">{t("allSellers")}</option>
-            {sellersData?.map((s) => (
-              <option key={s.id} value={s.id}>
-                {getSellerLabel(s)}
-              </option>
-            ))}
-          </select>
-        ),
-      },
+      //         setSellerFilter(e.target.value);
+      //         resetList();
+      //       }}
+      //       disabled={
+      //         !!forcedSellerId || userRole === "CUSTOMER" || isLoadingUsers
+      //       }
+      //       className="w-full border rounded p-2"
+      //     >
+      //       <option value="">{t("allSellers")}</option>
+      //       {sellersData?.map((s) => (
+      //         <option key={s.id} value={s.id}>
+      //           {getSellerLabel(s)}
+      //         </option>
+      //       ))}
+      //     </select>
+      //   ),
+      // },
       {
         content: (
           <select
@@ -398,7 +398,7 @@ export default function Page() {
       startDate,
       endDate,
       typeFilter,
-      sellerFilter,
+      // sellerFilter,
       customerFilter,
       forcedSellerId,
       selectedClientId,

@@ -55,7 +55,18 @@ const Page = () => {
 
   const [exportOrders, { isFetching: isExporting }] =
     useLazyExportOrdersQuery();
-
+  const translateStatus = (status?: string) => {
+    if (!status) return "";
+    const normalized = status.toUpperCase();
+    const map: Record<string, string> = {
+      PENDING: t("crmd.status.pending"),
+      SENDED: t("crmd.status.sended"),
+      AUTHORIZED: t("crmd.status.authorized"),
+      CHARGED: t("crmd.status.charged"),
+      CANCELED: t("crmd.status.canceled"),
+    };
+    return map[normalized] ?? status;
+  };
   const handleExport = async () => {
     try {
       const blob = await exportOrders({
@@ -371,7 +382,7 @@ const Page = () => {
             : "N/A",
           "total-without-taxes": formatPriceWithCurrency(order.total),
           observations: order.notes ? order.notes : "-",
-          status: order.status,
+          status: translateStatus(order.status),
         };
       }) || []
     );

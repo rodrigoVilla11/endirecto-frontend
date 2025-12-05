@@ -15,8 +15,8 @@ interface OrderDetails {
 }
 
 interface Orders {
-  orders: Order[],
-  total: number
+  orders: Order[];
+  total: number;
 }
 interface Order {
   _id: string;
@@ -76,67 +76,67 @@ export const ordersApi = createApi({
       query: () => `/orders/all?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
     getOrdersPag: builder.query<
-  { orders: Order[]; total: number },
-  {
-    page?: number;
-    limit?: number;
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-    customer_id?: string;
-    seller_id?: string;
-    sort?: string;
-    search?: string; // nuevo parámetro
-  }
->({
-  query: ({
-    page = 1,
-    limit = 10,
-    startDate,
-    endDate,
-    status,
-    customer_id,
-    seller_id,
-    sort = "",
-    search,
-  } = {}) => {
-    const url = `/orders`;
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      token: process.env.NEXT_PUBLIC_TOKEN || "",
-    });
+      { orders: Order[]; total: number },
+      {
+        page?: number;
+        limit?: number;
+        startDate?: string;
+        endDate?: string;
+        status?: string;
+        customer_id?: string;
+        seller_id?: string;
+        sort?: string;
+        search?: string; // nuevo parámetro
+      }
+    >({
+      query: ({
+        page = 1,
+        limit = 10,
+        startDate,
+        endDate,
+        status,
+        customer_id,
+        seller_id,
+        sort = "",
+        search,
+      } = {}) => {
+        const url = `/orders`;
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          token: process.env.NEXT_PUBLIC_TOKEN || "",
+        });
 
-    if (sort) {
-      params.append("sort", sort);
-    }
-    if (customer_id) {
-      params.append("customer_id", customer_id);
-    }
-    if (seller_id) {
-      params.append("seller_id", seller_id);
-    }
-    if (startDate) {
-      params.append("startDate", startDate);
-    }
-    if (endDate) {
-      params.append("endDate", endDate);
-    }
-    if (status) {
-      params.append("status", status);
-    }
-    if (search) {
-      params.append("search", search);
-    }
-    return `${url}?${params.toString()}`;
-  },
-  transformResponse: (response: Orders) => {
-    if (!response || !response.orders) {
-      return { orders: [], total: 0 };
-    }
-    return response;
-  },
-}),
+        if (sort) {
+          params.append("sort", sort);
+        }
+        if (customer_id) {
+          params.append("customer_id", customer_id);
+        }
+        if (seller_id) {
+          params.append("seller_id", seller_id);
+        }
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+        if (status) {
+          params.append("status", status);
+        }
+        if (search) {
+          params.append("search", search);
+        }
+        return `${url}?${params.toString()}`;
+      },
+      transformResponse: (response: Orders) => {
+        if (!response || !response.orders) {
+          return { orders: [], total: 0 };
+        }
+        return response;
+      },
+    }),
 
     countOrder: builder.query<number, null>({
       query: () => `/orders/count?token=${process.env.NEXT_PUBLIC_TOKEN}`,
@@ -164,16 +164,21 @@ export const ordersApi = createApi({
         startDate?: string;
         endDate?: string;
         brand?: string;
+        seller_id?: string;
+        customer_id?: string;
         item?: string;
       }
     >({
-      query: ({ startDate, endDate, brand, item }) => {
+      query: ({ startDate, endDate, brand, item, seller_id, customer_id }) => {
         const params = new URLSearchParams({
           token: process.env.NEXT_PUBLIC_TOKEN || "",
         });
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (brand) params.append("brand", brand);
+        if (seller_id) params.append("seller_id", seller_id);
+        if (customer_id) params.append("customer_id", customer_id);
+
         if (item) params.append("item", item);
         return `/orders/monthly-sales?${params.toString()}`;
       },
@@ -232,5 +237,5 @@ export const {
   useGetOrdersPagQuery,
   useGetOrdersQuery,
   useGetMonthlySalesQuery,
-  useLazyExportOrdersQuery
+  useLazyExportOrdersQuery,
 } = ordersApi;

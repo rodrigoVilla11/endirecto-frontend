@@ -39,6 +39,7 @@ import { ordersApi } from "./services/ordersApi";
 import { searchesApi } from "./services/searchesApi";
 import { paymentsApi } from "./services/paymentsApi";
 import { settingsApi } from "./services/settingsApi";
+import { statsApi } from "./services/statsApi";
 
 export const store = configureStore({
   reducer: {
@@ -80,7 +81,8 @@ export const store = configureStore({
     ordersApi: ordersApi.reducer,
     searchesApi: searchesApi.reducer,
     paymentsApi: paymentsApi.reducer,
-    settingsApi: settingsApi.reducer
+    settingsApi: settingsApi.reducer,
+    statsApi: statsApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -123,7 +125,8 @@ export const store = configureStore({
       ordersApi.middleware,
       searchesApi.middleware,
       paymentsApi.middleware,
-      settingsApi.middleware
+      settingsApi.middleware,
+      statsApi.middleware
     ]),
 });
 

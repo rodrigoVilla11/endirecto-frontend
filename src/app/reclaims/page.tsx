@@ -576,7 +576,7 @@ const ReclaimDetail: React.FC<ReclaimDetailProps> = ({ data, onClose }) => {
             <p className="text-xs text-gray-500">
               {t("updateReclaimComponent.solution")}
             </p>
-            <p className="font-medium">{fmt(data.public_solution)}</p>
+            <p className="font-medium">{fmt(data.solution)}</p>
           </div>
 
           <div>

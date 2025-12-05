@@ -109,7 +109,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
 
     const lines: string[] = [];
     lines.push(`Nuevo Reclamo`);
-    lines.push(`Estado: ${status}`);
+    lines.push(`Estado: PENDIENTE`);
     lines.push(`Cliente: ${customerLabel}`);
     lines.push(`Sucursal: ${branchLabel}`);
     lines.push(`Tipo de reclamo: ${reclamoLabel}`);

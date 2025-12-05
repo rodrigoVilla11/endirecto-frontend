@@ -12,6 +12,67 @@
   "envío de resumen de cuenta": "Envío de resumen de cuenta",
   "reclamo de pago": "Reclamo de pago",
   "visita": "Visita",
+  "crmType": {
+    "collection": "Cobranza",
+    "order": "Pedido",
+    "visit": "Visita",
+    "email": "Email",
+    "call": "Llamada",
+    "message": "Mensaje",
+    "reclaim": "Reclamo"
+  },
+  "crm": {
+    "title": "CRM",
+    "subtitle": "Seguimiento de gestiones comerciales y de cobranza.",
+    "customerCode": "Cliente",
+    "defaultCustomerName": "Cobranza",
+    "newInstance": "Nueva instancia",
+    "shortcutNewInstance": "Atajo: {{key}}",
+    "searchPlaceholder": "Buscar por título, descripción o estado...",
+    "datePlaceholder": "Fecha",
+    "dateFilter": "Filtrar por fecha",
+    "type": {
+      "all": "Todos los tipos",
+      "call": "Llamada",
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "visit": "Visita"
+    },
+    "priority": {
+      "all": "Todas las prioridades",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja"
+    },
+    "priorityHigh": "Alta",
+    "priorityMedium": "Media",
+    "priorityLow": "Baja",
+    "priorityLabel": "Prioridad",
+    "dateLabel": "Fecha",
+    "noteLabel": "Nota",
+    "statusLabel": "Estado",
+    "noDate": "Sin fecha",
+    "noNotes": "Sin notas registradas",
+    "noResultsForQuery": "No se encontraron resultados para \"{{query}}\"",
+    "whatsappMessage": "Mensaje de WhatsApp",
+    "call": "Llamada",
+    "paymentClaim": "Reclamo de pago",
+    "visit": "Visita",
+    "collectionCall": "Llamada de cobranza",
+    "sendAccountSummary": "Envío de resumen de cuenta",
+    "genericInstance": "Instancia",
+
+    "highPriorityInstance": "Instancia de ALTA prioridad",
+    "typeLabel": "Tipo",
+    "types": {
+      "COLLECTION CALL": "Llamada de cobranza",
+      "WHATSAPP MESSAGE": "Mensaje de WhatsApp",
+      "SEND ACCOUNT SUMMARY": "Envío de resumen de cuenta",
+      "PAYMENT CLAIM": "Reclamo de pago"
+    },
+    "none": "Ninguna",
+    "openCRM": "CRM Cobranzas"
+  },
   "crmd": {
     "type": {
       "collection": "Cobranza",
@@ -73,7 +134,6 @@
   "orders": "Pedidos",
   "ordersName": "Pedidos",
   "shoppingCart": "Carrito de Compras",
-  "crm": "CRM",
   "favourites": "Favoritos",
   "downloads": "Descargas",
   "listsPricesDownloads": "Listas de Precios",
