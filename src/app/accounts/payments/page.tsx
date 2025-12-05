@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useClient } from "@/app/context/ClientContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { startOfDay, endOfDay } from "date-fns";
 
 // RTK Query (payments)
 import {
@@ -158,10 +159,11 @@ const PaymentsChargedPage = () => {
       setIsLoading(true);
       try {
         const startDate = searchParams.startDate
-          ? format(searchParams.startDate, "yyyy-MM-dd")
+          ? startOfDay(searchParams.startDate).toISOString()
           : undefined;
+
         const endDate = searchParams.endDate
-          ? format(searchParams.endDate, "yyyy-MM-dd")
+          ? endOfDay(searchParams.endDate).toISOString()
           : undefined;
 
         const baseArgs: any = {
@@ -990,10 +992,10 @@ const PaymentsChargedPage = () => {
 
       // Fechas yyyy-MM-dd ya usadas en loadItems
       const startDate = searchParams.startDate
-        ? format(searchParams.startDate, "yyyy-MM-dd")
+        ? startOfDay(searchParams.startDate).toISOString()
         : undefined;
       const endDate = searchParams.endDate
-        ? format(searchParams.endDate, "yyyy-MM-dd")
+        ? endOfDay(searchParams.endDate).toISOString()
         : undefined;
 
       // Construir args base (igual que en loadItems) pero independiente del estado de página
