@@ -306,28 +306,20 @@ const PaymentsChargedPage = () => {
     };
 
     const formatMethodsCell = (values: any[]) => {
-      const chequeNums: string[] = [];
-      const others: Set<string> = new Set();
-      for (const v of values || []) {
-        const m = String(v?.method || "").toLowerCase();
-        if (m === "cheque") {
-          const num = v?.cheque?.cheque_number;
-          if (num) chequeNums.push(num);
-        } else if (m) {
-          others.add(prettyMethod(m));
-        }
-      }
-      const parts: string[] = [];
-      if (chequeNums.length) {
-        const shown = chequeNums
-          .slice(0, 3)
-          .map((n) => `N° ${n}`)
-          .join(" / ");
-        const extra = chequeNums.length > 3 ? ` +${chequeNums.length - 3}` : "";
-        parts.push(`Cheque ${shown}${extra}`);
-      }
-      if (others.size) parts.push(...others);
-      return parts.join(", ");
+      if (!values || !values.length) return "—";
+
+      return values
+        .map((v) => {
+          const m = String(v?.method || "").toLowerCase();
+
+          if (m === "cheque") {
+            const num = v?.cheque?.cheque_number;
+            return num ? `Cheque N° ${num}` : "Cheque";
+          }
+
+          return prettyMethod(m); // Efectivo / Transferencia / etc.
+        })
+        .join("\n"); // 👈 una línea por valor, igual que Cobrado
     };
 
     const buildMethodTotalsGross = (payments: Payment[]) => {
@@ -353,7 +345,7 @@ const PaymentsChargedPage = () => {
 
     // ===== Título (con vendedor) =====
     const firstRow: any = rows[0];
-    const sellerId = firstRow?.seller.id; 
+    const sellerId = firstRow?.seller.id;
 
     let sellerName = "";
     if (sellerId && Array.isArray(sellersData)) {
@@ -416,10 +408,10 @@ const PaymentsChargedPage = () => {
         const docs =
           (p.documents ?? []).map((d: any) => d.number).join(", ") || "—";
 
-        const methods =
-          p.values && p.values.length ? formatMethodsCell(p.values) : "—";
-
         const valuesArr: any[] = p.values ?? [];
+
+        const methods =
+          valuesArr.length > 0 ? formatMethodsCell(valuesArr) : "—";
 
         const cobradoLines =
           valuesArr.length > 0
@@ -434,6 +426,7 @@ const PaymentsChargedPage = () => {
 
         return [fecha, cliente, docs, methods, cobradoLines, totalCobrado];
       }),
+
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
       bodyStyles: { valign: "top" },

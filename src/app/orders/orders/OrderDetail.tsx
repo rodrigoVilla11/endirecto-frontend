@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface OrderDetailProps {
   order: any;
@@ -7,6 +8,7 @@ interface OrderDetailProps {
 
 const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
   if (!order) return null;
+  const { t } = useTranslation();
 
   // Formatea un número a ARS con fallback a '-'
   function formatPriceWithCurrency(value: number | string): string {
@@ -25,6 +27,19 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
       .replace("ARS", "")
       .trim();
   }
+
+  const translateStatus = (status?: string) => {
+    if (!status) return "";
+    const normalized = status.toUpperCase();
+    const map: Record<string, string> = {
+      PENDING: t("crmd.status.pending"),
+      SENDED: t("crmd.status.sended"),
+      AUTHORIZED: t("crmd.status.authorized"),
+      CHARGED: t("crmd.status.charged"),
+      CANCELED: t("crmd.status.canceled"),
+    };
+    return map[normalized] ?? status;
+  };
 
   // Color según estado
   const getStatusColor = (status: string) => {
@@ -80,7 +95,7 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
               order.status
             )}`}
           >
-            {order.status}
+            {translateStatus(order.status)}
           </span>
         </div>
 
@@ -169,9 +184,7 @@ const OrderDetail = ({ order, closeModal }: OrderDetailProps) => {
               </table>
             </div>
           ) : (
-            <p className="text-gray-500 italic">
-              No hay detalles disponibles.
-            </p>
+            <p className="text-gray-500 italic">No hay detalles disponibles.</p>
           )}
         </div>
 

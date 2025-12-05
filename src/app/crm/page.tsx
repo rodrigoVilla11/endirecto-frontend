@@ -36,6 +36,36 @@ import { FaPlus } from "react-icons/fa";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import CRM from "../accounts/status/CRM";
 
+const useCrmTypeLabel = () => {
+  const { t } = useTranslation();
+
+  const getCrmTypeKey = (type?: string) => {
+    const key = (type || "").toUpperCase();
+    switch (key) {
+      case "COLLECTION":
+        return "crmType.collection";
+      case "ORDER":
+        return "crmType.order";
+      case "VISIT":
+        return "crmType.visit";
+      case "EMAIL":
+        return "crmType.email";
+      case "CALL":
+        return "crmType.call";
+      case "MESSAGE":
+        return "crmType.message";
+      case "RECLAIM":
+        return "crmType.reclaim";
+      default:
+        return "crmType.unknown";
+    }
+  };
+
+  const getCrmTypeLabel = (type?: string) => t(getCrmTypeKey(type));
+
+  return { getCrmTypeLabel };
+};
+
 const ITEMS_PER_PAGE = 15;
 const keyOf = (o: unknown) => JSON.stringify(o);
 
@@ -97,6 +127,7 @@ const Page = () => {
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
+  const { getCrmTypeLabel } = useCrmTypeLabel();
 
   // Última instancia HIGH (sin created_at): recorre desde el final
   const latestHighInstance = useMemo(() => {
@@ -415,7 +446,7 @@ const Page = () => {
           date: crm.date
             ? format(new Date(crm.date), "yyyy-MM-dd HH:mm")
             : t("notAvailable"),
-          type: crm.type || t("notAvailable"),
+          type: getCrmTypeLabel(crm.type),
           number: order?.multisoft_id || t("-"),
           amount:
             order?.total != null && !isNaN(order.total)

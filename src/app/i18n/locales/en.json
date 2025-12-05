@@ -1,4 +1,32 @@
 {
+  "crm.whatsappMessage": "WhatsApp message",
+  "crm.call": "Call",
+  "crm.email": "Email",
+  "crm.paymentClaim": "Payment claim",
+  "crm.visit": "Visit",
+  "noNotes": "No notes",
+  "reclaims": {
+    "status": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In progress",
+      "SOLVED": "Solved",
+      "CLOSED": "Closed",
+      "REJECTED": "Rejected",
+      "unknown": "Unknown"
+    }
+  },
+  "llamada de cobranza": "Collection call",
+  "llamada": "Call",
+  "mensaje de whatsapp": "WhatsApp message",
+
+  "envío de resumen de cuenta": "Account summary sent",
+
+  "reclamo de pago": "Payment claim",
+  "visita": "Visit",
+
+  "ALTA": "High",
+  "MEDIA": "Medium",
+  "BAJA": "Low",
   "copiableSummary": "Summary",
   "copy": "Copy",
   "home": "Home",
@@ -47,7 +75,7 @@
   "downloads": "Downloads",
   "listsPricesDownloads": "Lists Prices Downloads",
   "bonificationsDownloads": "Bonifications Downloads",
-  "reclaims": "Reclaims",
+  "reclaim": "Reclaims",
   "statistics": "Statistics",
   "faq": "FAQ",
   "brandMargins": "Brand Margins",

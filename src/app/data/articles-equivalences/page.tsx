@@ -262,7 +262,7 @@ const EditArticleEquivalenceComponent = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4">
+    <form onSubmit={handleSubmit} className="p-4 bg-white rounded-xl">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold mb-4">Editar Equivalencia</h2>
         <button

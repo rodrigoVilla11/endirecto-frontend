@@ -1,4 +1,17 @@
 {
+  "noNotes": "Sin notas",
+
+  "crm.whatsappMessage": "Mensaje de WhatsApp",
+  "crm.call": "Llamada",
+  "crm.email": "Email",
+  "crm.paymentClaim": "Reclamo de pago",
+  "crm.visit": "Visita",
+  "llamada de cobranza": "Llamada de cobranza",
+  "llamada": "Llamada",
+  "mensaje de whatsapp": "Mensaje de WhatsApp",
+  "envío de resumen de cuenta": "Envío de resumen de cuenta",
+  "reclamo de pago": "Reclamo de pago",
+  "visita": "Visita",
   "crmd": {
     "type": {
       "collection": "Cobranza",
@@ -1166,6 +1179,16 @@
       "PENDING": "Pendiente",
       "ANSWERED": "Respondida",
       "CANCELED": "Cancelada"
+    },
+    "reclaims": {
+      "status": {
+        "PENDING": "Pendiente",
+        "IN_PROGRESS": "En proceso",
+        "SOLVED": "Solucionado",
+        "CLOSED": "Cerrado",
+        "REJECTED": "Rechazado",
+        "unknown": "Desconocido"
+      }
     },
     "loading": "Cargando...",
     "errorLoading": "Error al cargar datos del reclamo.",

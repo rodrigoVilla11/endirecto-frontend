@@ -1,8 +1,6 @@
 "use client";
-import React, { useMemo } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { IoPricetagOutline } from "react-icons/io5";
-import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 
 type Priority = "ALTA" | "MEDIA" | "BAJA" | "HIGH" | "MEDIUM" | "LOW" | string;
 
@@ -66,11 +64,47 @@ const Instance: React.FC<InstanceProps> = ({ instances }) => {
       year: "numeric",
     });
   };
+  // Devuelve la key de i18n según el enum que venga del back
+  const getInstanceTitleKey = (inst: InstanceModel): string => {
+    const raw = (inst.title || inst.type || "").toUpperCase();
+
+    switch (raw) {
+      case "WHATSAPP_MESSAGE":
+      case "WHATSAPP MESSAGE":
+        return "crm.whatsappMessage";
+
+      case "CALL":
+      case "PHONE_CALL":
+      case "LLAMADA":
+        return "crm.call";
+
+      case "EMAIL":
+        return "crm.email";
+
+      case "PAYMENT_CLAIM":
+      case "RECLAMO_PAGO":
+        return "crm.paymentClaim";
+
+      case "VISIT":
+      case "VISITA":
+        return "crm.visit";
+
+      default:
+        return "instance"; // fallback genérico
+    }
+  };
 
   const typeColor = getTypeColor(instances?.type);
-  const displayDate = formatDate(instances?.date || instances?.created_at || instances?.createdAt);
-  const displayNote = instances?.notes || instances?.description || instances?.note || t("noNotes");
-  const displayTitle = instances?.title || instances?.type || t("instance");
+  const displayDate = formatDate(
+    instances?.date || instances?.created_at || instances?.createdAt
+  );
+  const displayNote =
+    instances?.notes ||
+    instances?.description ||
+    instances?.note ||
+    t("noNotes");
+
+  const displayTitle = t(getInstanceTitleKey(instances));
 
   // Obtener el color del texto de prioridad
   const getPriorityTextColor = (p: string): string => {
@@ -86,9 +120,7 @@ const Instance: React.FC<InstanceProps> = ({ instances }) => {
     >
       {/* Header con color según tipo */}
       <div className={`${typeColor} px-6 py-3`}>
-        <h3 className="font-bold text-white text-base">
-          {displayTitle}
-        </h3>
+        <h3 className="font-bold text-white text-base">{displayTitle}</h3>
       </div>
 
       {/* Body */}
@@ -96,7 +128,11 @@ const Instance: React.FC<InstanceProps> = ({ instances }) => {
         {/* Prioridad */}
         <div className="flex items-center gap-2">
           <span className="font-bold text-white text-sm">PRIORIDAD:</span>
-          <span className={`text-sm font-bold uppercase ${getPriorityTextColor(priority)}`}>
+          <span
+            className={`text-sm font-bold uppercase ${getPriorityTextColor(
+              priority
+            )}`}
+          >
             {priority}
           </span>
         </div>
@@ -104,14 +140,14 @@ const Instance: React.FC<InstanceProps> = ({ instances }) => {
         {/* Fecha */}
         <div className="flex items-center gap-2">
           <span className="font-bold text-white text-sm">FECHA:</span>
-          <span className="text-gray-300 text-sm">
-            {displayDate}
-          </span>
+          <span className="text-gray-300 text-sm">{displayDate}</span>
         </div>
 
         {/* Nota */}
         <div className="flex items-start gap-2">
-          <span className="font-bold text-white text-sm flex-shrink-0">NOTA:</span>
+          <span className="font-bold text-white text-sm flex-shrink-0">
+            NOTA:
+          </span>
           <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
             {displayNote}
           </p>

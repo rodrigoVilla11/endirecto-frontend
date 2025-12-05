@@ -127,8 +127,8 @@ const UpdateBannerComponent = ({
   if (error) return <p>{t("updateBanner.fetchError")}</p>;
 
   return (
-    <div>
-      <div className="flex justify-between bg-white rounded-2xl">
+    <div className="bg-white rounded-2xl p-4">
+      <div className="flex justify-between ">
         <h2 className="text-lg mb-4">{t("updateBanner.title")}</h2>
         <button
           onClick={closeModal}

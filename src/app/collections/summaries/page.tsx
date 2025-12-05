@@ -467,9 +467,6 @@ const PaymentsPendingPage = () => {
       requiredRoles={[
         "ADMINISTRADOR",
         "OPERADOR",
-        "MARKETING",
-        "VENDEDOR",
-        "CUSTOMER",
       ]}
     >
       <div className="gap-4">
@@ -784,11 +781,10 @@ function DetailsModal({
 
   // Genero texto copiable idéntico al “resumen simple” que venías usando
   const copyLines = (() => {
+    const lines: string[] = [];
     const documents: any[] = Array.isArray(payment?.documents)
       ? payment.documents
       : [];
-
-    const lines: string[] = [];
     lines.push(`Fecha: ${fecha.replace(" ", " ")}`);
     lines.push(`ID Pago: ${idPago}`);
     lines.push(`Cliente: ${clienteLabel}`);
@@ -836,22 +832,22 @@ function DetailsModal({
       });
     }
 
+    lines.push(`-------------------------------------------`);
+
     if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
     if (typeof daysUsed === "number" && discountRateTxt) {
       lines.push(
         `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
       );
     }
-    if (typeof discountAmtOriginal === "number") {
+    if (typeof appliedDiscount === "number") {
       lines.push(
-        `Desc/Costo Financiero: ${fmtMoney(Math.abs(discountAmtOriginal))}`
+        `Desc/Costo Financiero por pago efect/transf: ${fmtMoney(
+          Math.abs(appliedDiscount)
+        )}`
       );
     }
-    if (typeof net === "number") {
-      lines.push(`-----------------------------------`);
-      lines.push(`TOTAL A PAGAR (efect/transf): ${fmtMoney(net)}`);
-      lines.push(``);
-    }
+    lines.push(``);
 
     if (Array.isArray(payment?.values) && payment.values.length > 0) {
       lines.push(`COMPOSICION DEL PAGO:`);
@@ -860,8 +856,26 @@ function DetailsModal({
         if (method === "cheque") {
           const whenRaw = v?.cheque?.collection_date;
           const dTxt = whenRaw
-            ? formatISODateOnlyUTC(whenRaw, "dd/MM/yy")
+            ? (() => {
+                try {
+                  const d =
+                    typeof whenRaw === "string" || typeof whenRaw === "number"
+                      ? new Date(whenRaw)
+                      : whenRaw instanceof Date
+                      ? whenRaw
+                      : new Date();
+
+                  const dd = String(d.getUTCDate()).padStart(2, "0");
+                  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+                  const yy = String(d.getUTCFullYear()).toString().slice(-2);
+
+                  return `${dd}/${mm}/${yy}`;
+                } catch {
+                  return "—";
+                }
+              })()
             : "—";
+
           const nominal =
             typeof v?.raw_amount === "number" ? v.raw_amount : undefined;
 
@@ -917,14 +931,23 @@ function DetailsModal({
       if (typeof valuesNominal === "number") {
         lines.push(`Total Pagado (Nominal): ${fmtMoney(valuesNominal)}`);
       }
-      if (typeof discountAmt === "number") {
-        lines.push(`Desc/Cost F: ${fmtMoney(discountAmt)}`);
+
+      // 👇 NUEVO: si vino `discount_applied_to_values` y difiere del ajuste original, lo mostramos explícito
+      if (showDiscountToValuesRow) {
+        lines.push(
+          `Desc/Cost F aplicado a valores: ${fmtMoney(appliedDiscount)}`
+        );
+      } else if (typeof appliedDiscount === "number") {
+        // Si no difiere, mantenemos la fila corta como antes
+        lines.push(`Desc/Cost F: ${fmtMoney(appliedDiscount)}`);
       }
+
       if (typeof chequeInterest === "number") {
         lines.push(`Cost F. Cheques: ${fmtMoney(chequeInterest)}`);
       }
+
       if (
-        typeof discountAmt === "number" ||
+        typeof appliedDiscount === "number" ||
         typeof chequeInterest === "number"
       ) {
         const shown =
@@ -933,6 +956,7 @@ function DetailsModal({
             : `-${fmtMoney(Math.abs(totalDescCostF))}`;
         lines.push(`Total Desc/Cost F: ${shown}`);
       }
+
       if (typeof gross === "number")
         lines.push(`Neto a aplicar Factura: ${fmtMoney(netToApply)}`);
       if (typeof saldoDiff === "number")

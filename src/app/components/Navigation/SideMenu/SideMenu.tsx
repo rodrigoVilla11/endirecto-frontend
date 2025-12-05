@@ -341,7 +341,6 @@ const SideMenu = () => {
     },
   ];
 
-
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -365,6 +364,15 @@ const SideMenu = () => {
     };
   }, [isOpen, setIsOpen]);
 
+  const filteredIcons = icons.filter((icon: any) => {
+    // Si no tiene allowedRoles, lo mostramos siempre
+    if (!icon.allowedRoles || !icon.allowedRoles.length) return true;
+    // Si todavía no tenemos role cargado, no mostramos nada de este tipo
+    if (!role) return false;
+    // Solo si el role actual está permitido
+    return icon.allowedRoles.includes(role);
+  });
+
   return (
     <div
       ref={menuRef}
@@ -376,7 +384,7 @@ const SideMenu = () => {
         isSelectCustomers ? "mt-16" : "mt-16"
       } pt-2`}
     >
-      {icons.map((icon: any, index: any) => (
+      {filteredIcons.map((icon: any, index: any) => (
         <ButtonsIcons key={index} icon={icon} />
       ))}
     </div>

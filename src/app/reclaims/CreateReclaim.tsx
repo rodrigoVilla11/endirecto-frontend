@@ -73,13 +73,13 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
 
   // Helper: texto de la notificación para ADMIN
   const buildReclaimNotificationText = (reclaim: any) => {
-    const id = reclaim?._id ?? reclaim?.id ?? "—";
     const status = reclaim?.status ?? form.status ?? "—";
     const description = reclaim?.description ?? form.description ?? "—";
 
     const reclaimType = reclaimsTypesData?.find(
       (rt: ReclaimType) =>
-        String(rt.id) === String(reclaim.reclaims_type_id ?? form.reclaims_type_id)
+        String(rt.id) ===
+        String(reclaim.reclaims_type_id ?? form.reclaims_type_id)
     );
     const branch = branchsData?.find(
       (b: any) => String(b.id) === String(reclaim.branch_id ?? form.branch_id)
@@ -108,7 +108,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
       : String(form.customer_id || "—");
 
     const lines: string[] = [];
-    lines.push(`ID Reclamo: ${id}`);
+    lines.push(`Nuevo Reclamo`);
     lines.push(`Estado: ${status}`);
     lines.push(`Cliente: ${customerLabel}`);
     lines.push(`Sucursal: ${branchLabel}`);
@@ -153,16 +153,12 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
         await addNotificationToUsersByRoles({
           roles: [Roles.ADMINISTRADOR],
           notification: {
-            title:
-              t("createReclaim.notificationTitle") ||
-              "Nuevo reclamo creado",
+            title: "Nuevo reclamo creado",
             type: "CONTACTO", // ajustá este valor si tu backend usa un enum específico
             description,
             link: "/reclaims", // o a detalle si lo tenés, ej: `/reclaims/${created._id}`
             schedule_from: now,
-            schedule_to: new Date(
-              now.getTime() + 7 * 24 * 60 * 60 * 1000
-            ), // 7 días
+            schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 días
           },
         }).unwrap();
       } catch (notifErr) {
@@ -196,7 +192,7 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
   }
 
   return (
-    <div>
+    <div className="bg-white rounded-xl p-4">
       <div className="flex justify-between">
         <h2 className="text-lg mb-4">{t("createReclaim.title")}</h2>
         <button
@@ -215,14 +211,10 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">
-              {t("createReclaim.selectReclaimType")}
-            </option>
+            <option value="">{t("createReclaim.selectReclaimType")}</option>
             {!isLoadingReclaimsTypes &&
               reclaimsTypesData
-                ?.filter(
-                  (reclaimType: ReclaimType) => !reclaimType.deleted_at
-                )
+                ?.filter((reclaimType: ReclaimType) => !reclaimType.deleted_at)
                 .map((reclaimType: ReclaimType) => (
                   <option key={reclaimType.id} value={reclaimType.id}>
                     {reclaimType.categoria}
@@ -251,17 +243,13 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">
-              {t("createReclaim.selectArticle")}
-            </option>
+            <option value="">{t("createReclaim.selectArticle")}</option>
             {!isLoadingArticles &&
-              articlesData?.map(
-                (article: { id: string; name: string }) => (
-                  <option key={article.id} value={article.id}>
-                    {article.id}
-                  </option>
-                )
-              )}
+              articlesData?.map((article: { id: string; name: string }) => (
+                <option key={article.id} value={article.id}>
+                  {article.id}
+                </option>
+              ))}
           </select>
         </label>
 
@@ -273,17 +261,13 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
             onChange={handleChange}
             className="border border-black rounded-md p-2"
           >
-            <option value="">
-              {t("createReclaim.selectBranch")}
-            </option>
+            <option value="">{t("createReclaim.selectBranch")}</option>
             {!isLoadingBranchs &&
-              branchsData?.map(
-                (branch: { id: string; name: string }) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                )
-              )}
+              branchsData?.map((branch: { id: string; name: string }) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
           </select>
         </label>
 
@@ -309,15 +293,9 @@ const CreateReclaimComponent = ({ closeModal }: any) => {
         </div>
 
         {isSuccess && (
-          <p className="text-green-500">
-            {t("createReclaim.success")}
-          </p>
+          <p className="text-green-500">{t("createReclaim.success")}</p>
         )}
-        {isError && (
-          <p className="text-red-500">
-            {t("createReclaim.error")}
-          </p>
-        )}
+        {isError && <p className="text-red-500">{t("createReclaim.error")}</p>}
       </form>
     </div>
   );

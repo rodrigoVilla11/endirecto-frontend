@@ -29,6 +29,7 @@ import { IoMdClose } from "react-icons/io";
 
 const ITEMS_PER_PAGE = 20;
 
+
 const PageReclaims = () => {
   const { t } = useTranslation();
   const { selectedClientId } = useClient();
@@ -39,7 +40,7 @@ const PageReclaims = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortQuery, setSortQuery] = useState<string>("");
+  const [sortQuery, setSortQuery] = useState<string>("date:desc");
   const [customer_id, setCustomer_id] = useState("");
 
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -60,7 +61,10 @@ const PageReclaims = () => {
     setDetailOpen(false);
     setDetailData(null);
   };
-
+  const translateStatus = (status?: string) => {
+    if (!status) return "-";
+    return t(`updateReclaimComponent.statusLabels.${status}`) || status;
+  };
   const [searchParams, setSearchParams] = useState({
     status: "",
     valid: "",
@@ -209,9 +213,7 @@ const PageReclaims = () => {
 
   const tableData =
     brands?.map((reclaim) => {
-      const branch = branchData?.find((d) => d.id == reclaim.branch_id);
       const customer = customerData?.find((d) => d.id == reclaim.customer_id);
-      const user = userDatas?.find((d) => d._id == reclaim.user_id);
 
       return {
         key: reclaim._id,
@@ -225,11 +227,11 @@ const PageReclaims = () => {
         ),
 
         id: reclaim._id,
-        status: reclaim.status,
+        status: translateStatus(reclaim.status),
         type: reclaim.reclaims_type_id,
         description: reclaim.description,
         customer: customer?.name,
-        data: reclaim.date,
+        date: reclaim.date,
         ...(isAdmin && {
           edit: (
             <div className="flex justify-center items-center">
@@ -256,7 +258,6 @@ const PageReclaims = () => {
       component: <IoInformationCircleOutline className="text-center text-xl" />,
       key: "info",
     },
-    { name: t("pageReclaims.table.number"), key: "number", important: true },
     { name: t("pageReclaims.table.status"), key: "status", important: true },
     { name: t("pageReclaims.table.type"), key: "type", important: true },
     { name: t("pageReclaims.table.description"), key: "description" },
@@ -332,7 +333,7 @@ const PageReclaims = () => {
             </option>
             {Object.values(Status).map((st) => (
               <option key={st} value={st}>
-                {st}
+                {translateStatus(st)}
               </option>
             ))}
           </select>

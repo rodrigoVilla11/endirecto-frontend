@@ -143,7 +143,7 @@ const UpdatePopupComponent = ({
   if (error) return <p>{t("updatePopup.fetchError")}</p>;
 
   return (
-    <div className="bg-white rounded-2xl p-4">
+    <div className="bg-white rounded-2xl p-6">
       <h2 className="text-lg mb-4">{t("updatePopup.title")}</h2>
       <form className="grid grid-cols-2 gap-4" onSubmit={handleUpdate}>
         <div className="flex flex-col gap-2">
