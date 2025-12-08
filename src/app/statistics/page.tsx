@@ -369,7 +369,7 @@ const StatsPage: React.FC = () => {
               <h2 className="font-semibold text-lg text-slate-900">
                 Resumen general
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 <StatCard
                   label="Ventas totales"
                   value={fmtMoney(general?.totalSales)}
@@ -388,14 +388,6 @@ const StatsPage: React.FC = () => {
                   label="Ticket promedio"
                   value={fmtMoney(general?.averageTicket)}
                   variation={variation?.averageTicket ?? null}
-                />
-                <StatCard
-                  label="Saldo total"
-                  value={fmtMoney(general?.totalBalance)}
-                />
-                <StatCard
-                  label="Margen de ganancia"
-                  value={pctFmt(general?.profitMargin)}
                 />
               </div>
             </section>
@@ -838,10 +830,6 @@ const StatsPage: React.FC = () => {
                     {/* Resumen */}
                     <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/60 text-xs space-y-2">
                       <InfoRow
-                        label="Saldo total"
-                        value={fmtMoney(financialStats?.totalBalance)}
-                      />
-                      <InfoRow
                         label="Total documentos"
                         value={fmtMoney(financialStats?.totalAmount)}
                       />
@@ -854,20 +842,12 @@ const StatsPage: React.FC = () => {
                         value={fmtMoney(financialStats?.totalDiscount)}
                       />
                       <InfoRow
-                        label="% descuento"
-                        value={pctFmt(financialStats?.discountPercentage)}
-                      />
-                      <InfoRow
                         label="Balance vencido"
                         value={fmtMoney(financialStats?.expiredBalance)}
                       />
                       <InfoRow
                         label="Docs vencidos"
                         value={financialStats?.expiredDocumentCount ?? 0}
-                      />
-                      <InfoRow
-                        label="Tasa de cobro"
-                        value={pctFmt(financialStats?.collectionRate)}
                       />
 
                       <div className="mt-2 border-t border-slate-200 pt-2">
