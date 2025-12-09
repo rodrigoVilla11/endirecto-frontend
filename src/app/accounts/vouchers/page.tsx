@@ -348,8 +348,8 @@ const VouchersComponent = () => {
         type: doc.type,
         number: doc.number,
         date: doc.date,
-        amount: doc.amount,
-        balance: doc.amount,
+        amount: formatCurrency(Number(doc.amount)),
+        balance: formatCurrency(Number(doc.amount)),
         expiration: doc.expiration_date,
         logistic: doc.expiration_status,
         seller: seller?.name || t("notFound"),
@@ -560,7 +560,15 @@ const VouchersComponent = () => {
       </div>
     );
   }
-
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    })
+      .format(value)
+      .replace("ARS", "");
+  }
   return (
     <PrivateRoute
       requiredRoles={[

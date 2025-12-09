@@ -224,7 +224,7 @@ const SideMenu = () => {
     },
     {
       icon: <MdOutlineMessage />,
-      name: t("crm"),
+      name: t("crm.title"),
       path: "/crm",
       allowedRoles: ["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"],
     },

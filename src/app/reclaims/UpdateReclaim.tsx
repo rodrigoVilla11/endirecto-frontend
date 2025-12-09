@@ -8,6 +8,7 @@ import {
 } from "@/redux/services/reclaimsApi";
 import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import {
+  useAddNotificationToCustomerMutation,
   useGetCustomersQuery,
 } from "@/redux/services/customersApi";
 import { useGetAllArticlesQuery } from "@/redux/services/articlesApi";
@@ -40,6 +41,7 @@ const UpdateReclaimComponent = ({
 
   const [updateReclaim, { isLoading: isUpdating, isSuccess, isError }] =
     useUpdateReclaimMutation();
+  const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
 
   const [form, setForm] = useState({
     _id: "",
@@ -50,7 +52,7 @@ const UpdateReclaimComponent = ({
     article_id: "",
     valid: Valid.S,
     date: "",
-    status: Status.PENDING,
+    status: Status.ANSWERED,
     cause: "",
     solution: "",
     internal_solution: "",
@@ -98,7 +100,21 @@ const UpdateReclaimComponent = ({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const now = new Date();
+      const longDescription = `Su reclamo ha sido respondido.Causa: ${form.cause} Solución: ${form.solution} Por favor, revise los detalles en su sección de reclamos.`;
+
       await updateReclaim(form).unwrap();
+      await addNotificationToCustomer({
+        customerId: String(form.customer_id),
+        notification: {
+          title: "RECLAMO RESPONDIDO",
+          type: "CONTACTO",
+          description: longDescription,
+          link: "/payments",
+          schedule_from: now,
+          schedule_to: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        },
+      }).unwrap();
       closeModal();
     } catch (err) {
       console.error(t("updateReclaimComponent.errorUpdating"), err);
@@ -210,9 +226,7 @@ const UpdateReclaimComponent = ({
                 disabled
                 className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
               >
-                <option value="">
-                  {t("createReclaim.selectReclaimType")}
-                </option>
+                <option value="">{t("createReclaim.selectReclaimType")}</option>
                 {!isLoadingReclaimsTypes &&
                   reclaimTypesData
                     ?.filter(

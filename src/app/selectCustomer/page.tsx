@@ -104,7 +104,7 @@ const SelectCustomer = () => {
   const getSellerLabel = (seller: any) => {
     const user = users.find((u: any) => u.seller_id === seller.id);
     const nameToShow = user?.username || seller.name || seller.id;
-    return `${nameToShow} (${seller.id})`;
+    return `${nameToShow}`;
   };
 
   // Memoizar parámetros de consulta para evitar re-fetches innecesarios

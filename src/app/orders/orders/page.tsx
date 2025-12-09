@@ -115,7 +115,7 @@ const Page = () => {
     if (!seller) return t("notFound");
     const user = users.find((u: any) => u.seller_id === seller.id);
     const nameToShow = user?.username || seller.name || seller.id;
-    return `${nameToShow} (${seller.id})`;
+    return `${nameToShow}`;
   };
 
   // Formatear fecha para la API

@@ -118,7 +118,7 @@ export default function Page() {
   const getSellerLabel = (seller: any) => {
     const user = users.find((u: any) => u.seller_id === seller.id);
     const nameToShow = user?.username || seller.name || seller.id;
-    return `${nameToShow} (${seller.id})`;
+    return `${nameToShow}`;
   };
 
   const handleDownload = async () => {
