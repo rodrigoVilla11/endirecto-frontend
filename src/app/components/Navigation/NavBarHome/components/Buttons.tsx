@@ -8,7 +8,15 @@ import i18n from "i18next";
 import Search from "../../NavBar/components/Search";
 import ReactCountryFlag from "react-country-flag";
 import { IoMenu, IoClose } from "react-icons/io5";
-import { Home, Tag, FileText, Mail, LayoutDashboard, LogIn } from "lucide-react";
+import {
+  Home,
+  Tag,
+  FileText,
+  Mail,
+  LayoutDashboard,
+  LogIn,
+} from "lucide-react";
+import Link from "next/link";
 
 const Buttons = () => {
   const router = useRouter();
@@ -74,8 +82,8 @@ const Buttons = () => {
     <>
       {isMobile ? (
         <div className="flex items-center justify-between text-sm text-black gap-6">
-          <button 
-            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full" 
+          <button
+            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full"
             onClick={handleSearchToggle}
           >
             <BiSearchAlt />
@@ -85,20 +93,20 @@ const Buttons = () => {
               <Search />
             </div>
           )}
-          <button 
+          <button
             onClick={() => setMenuOpen(!isMenuOpen)}
             className="p-2 hover:bg-white/20 rounded-full transition-all"
           >
             <IoMenu className="text-black text-3xl" />
           </button>
-          
+
           {isMenuOpen && (
             <div className="fixed inset-0 z-50 bg-white backdrop-blur-sm">
               <div className="absolute right-0 top-0 h-full w-3/4 bg-gradient-to-r from-red-500 via-white to-blue-500 shadow-2xl">
                 {/* Header del menú */}
                 <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center">
-                  <button 
-                    onClick={handleLanguageToggle} 
+                  <button
+                    onClick={handleLanguageToggle}
                     className="text-2xl hover:scale-110 transition-transform bg-white/20 p-2 rounded-full"
                   >
                     {currentLanguage === "en" ? (
@@ -127,47 +135,47 @@ const Buttons = () => {
 
                 {/* Links del menú */}
                 <div className="flex flex-col gap-2 p-6 text-black">
-                  <a 
-                    href="/" 
+                  <Link
+                    href="/"
                     onClick={(e) => handleRedirect("/")}
                     className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
                     <Home className="w-5 h-5" />
                     {t("home")}
-                  </a>
-                  <a 
-                    href="#brands" 
+                  </Link>
+                  <Link
+                    href="#brands"
                     onClick={(e) => handleScroll(e, "brands")}
                     className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
                     <Tag className="w-5 h-5" />
                     {t("brands")}
-                  </a>
-                  <a 
-                    href="#tags" 
+                  </Link>
+                  <Link
+                    href="#tags"
                     onClick={(e) => handleScroll(e, "tags")}
                     className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
                     <Tag className="w-5 h-5" />
                     {t("tags")}
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="#articles"
                     onClick={(e) => handleScroll(e, "articles")}
                     className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
                     <FileText className="w-5 h-5" />
                     {t("articles")}
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="#contact"
                     onClick={(e) => handleScroll(e, "contact")}
                     className="flex items-center gap-3 p-4 rounded-xl hover:bg-white/10 transition-all font-semibold"
                   >
                     <Mail className="w-5 h-5" />
                     {t("contact")}
-                  </a>
-                  
+                  </Link>
+
                   <div className="border-t-2 border-zinc-700 pt-6 mt-6">
                     {isAuthenticated ? (
                       <button
@@ -194,44 +202,44 @@ const Buttons = () => {
         </div>
       ) : (
         <div className="flex items-center justify-between text-sm text-black gap-8 font-semibold">
-          <a 
-            href="/" 
+          <Link
+            href="/"
             onClick={(e) => handleRedirect("/")}
             className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
           >
             {t("home")}
-          </a>
-          <a 
-            href="#brands" 
+          </Link>
+          <Link
+            href="#brands"
             onClick={(e) => handleScroll(e, "brands")}
             className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
           >
             {t("brands")}
-          </a>
-          <a 
-            href="#tags" 
+          </Link>
+          <Link
+            href="#tags"
             onClick={(e) => handleScroll(e, "tags")}
             className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
           >
             {t("tags")}
-          </a>
-          <a 
-            href="#articles" 
+          </Link>
+          <Link
+            href="#articles"
             onClick={(e) => handleScroll(e, "articles")}
             className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
           >
             {t("articles")}
-          </a>
-          <a 
-            href="#contact" 
+          </Link>
+          <Link
+            href="#contact"
             onClick={(e) => handleScroll(e, "contact")}
             className="hover:bg-white/20 px-4 py-2 rounded-xl transition-all hover:scale-105"
           >
             {t("contact")}
-          </a>
-          
-          <button 
-            onClick={handleLanguageToggle} 
+          </Link>
+
+          <button
+            onClick={handleLanguageToggle}
             className="text-xl hover:scale-110 transition-transform bg-white/20 p-2 rounded-full"
           >
             {currentLanguage === "es" ? (
@@ -250,25 +258,25 @@ const Buttons = () => {
               />
             )}
           </button>
-          
+
           {isAuthenticated ? (
-            <button 
+            <button
               onClick={() => handleRedirect("/dashboard")}
               className="px-6 py-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all hover:scale-105 font-bold"
             >
               {t("dashboard")}
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => handleRedirect("/login")}
               className="px-6 py-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all hover:scale-105 font-bold"
             >
               {t("signIn")}
             </button>
           )}
-          
-          <button 
-            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full" 
+
+          <button
+            className="text-2xl hover:scale-110 transition-transform p-2 hover:bg-white/20 rounded-full"
             onClick={handleSearchToggle}
           >
             <BiSearchAlt />
