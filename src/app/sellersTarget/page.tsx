@@ -24,9 +24,9 @@ type SalesTargetsPageProps = {
   sellerId?: string; // opcional, si la página se usa como componente y se le pasa un vendedor
 };
 
-const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
+const SalesTargetsPage = ({
   sellerId: sellerIdProp,
-}) => {
+}: SalesTargetsPageProps) => {
   const { userData } = useAuth();
 
   // Si viene por props, usamos ese. Si no, el del usuario logueado
