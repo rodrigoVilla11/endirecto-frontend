@@ -25,7 +25,7 @@ type SalesTargetsViewProps = {
   sellerId?: string;
 };
 
-export const SalesTargetsView = ({ sellerId: sellerIdProp }: SalesTargetsViewProps) => {
+const SalesTargetsView = ({ sellerId: sellerIdProp }: SalesTargetsViewProps) => {
   const { userData } = useAuth();
 
   // Si viene por props, usamos ese. Si no, el del usuario logueado
