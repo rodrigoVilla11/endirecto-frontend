@@ -23,6 +23,9 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import { useGetUsersQuery } from "@/redux/services/usersApi";
+import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
+import SalesTargetsPage from "../sellersTarget/page";
 
 // ============================================================================
 // HELPERS
@@ -40,7 +43,22 @@ const fmtMoney = (n: number | undefined | null): string =>
 const pctFmt = (n: number | undefined | null): string =>
   `${(Number(n || 0) * 100).toFixed(1)}%`;
 
-const COLORS = ["#0ea5e9", "#22c55e", "#f97316", "#a855f7", "#e11d48", "#64748b"];
+const moneyTooltip =
+  (labelMap: Record<string, string> = {}) =>
+  (value: any, name: string) => {
+    const pretty = fmtMoney(value as number);
+    const prettyName = labelMap[name] ?? name;
+    return [pretty, prettyName];
+  };
+
+const COLORS = [
+  "#0ea5e9",
+  "#22c55e",
+  "#f97316",
+  "#a855f7",
+  "#e11d48",
+  "#64748b",
+];
 
 // ============================================================================
 // MAIN PAGE
@@ -49,10 +67,19 @@ const StatsPage: React.FC = () => {
   const [filters, setFilters] = useState<StatsQueryParams>({
     periodType: PeriodType.MONTH,
   });
+  const [selectedSellerId, setSelectedSellerId] = useState<string>("");
 
   const [activeTab, setActiveTab] = useState<
-    "general" | "sellers" | "customers" | "products" | "financial"
+    "general" | "sellers" | "customers" | "products" | "financial" | "targets"
   >("general");
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery(null);
+  const getSellerLabel = (seller: any) => {
+    if (!seller) return "Sin vendedor";
+    const user = usersData?.find((u: any) => u.seller_id === seller.id);
+    const nameToShow =
+      user?.username || seller.name || seller.id || "Sin nombre";
+    return `${nameToShow}`;
+  };
 
   const periodOptions = [
     { value: PeriodType.DAY, label: "Día" },
@@ -65,6 +92,46 @@ const StatsPage: React.FC = () => {
   const sellersQuery = useGetSellersQuery(null);
   const customersQuery = useGetCustomersQuery(null);
   const brandsQuery = useGetBrandsQuery(null);
+  const paymentConditionsData = useGetPaymentConditionsQuery(null);
+
+  const getBrandLabel = (brand: any) => {
+    if (!brand && !brandsQuery) return "Sin marca";
+
+    const brandId =
+      typeof brand === "string"
+        ? brand
+        : brand?.id || brand?._id || brand?.brandId || brand?.brand_id;
+
+    const found = brandsQuery.data?.find(
+      (b: any) => b.id === brandId || b._id === brandId
+    );
+
+    const nameToShow =
+      found?.name || brand?.brandName || brand?.name || brandId || "Sin marca";
+
+    return `${nameToShow}`;
+  };
+
+  const getPaymentConditionLabel = (pc: any) => {
+    if (!pc && !paymentConditionsData) return "Sin condición";
+
+    const pcId =
+      typeof pc === "string"
+        ? pc
+        : pc?.id ||
+          pc?._id ||
+          pc?.paymentConditionId ||
+          pc?.payment_condition_id ||
+          pc?.payment_condition;
+
+    const found = paymentConditionsData.data?.find(
+      (p: any) => p.id === pcId || p._id === pcId
+    );
+
+    const nameToShow = found?.name || pc?.name || pcId || "Sin condición";
+
+    return `${nameToShow}`;
+  };
 
   const { data, isLoading, isFetching, error, refetch } =
     useGetStatsQuery(filters);
@@ -93,8 +160,9 @@ const StatsPage: React.FC = () => {
     [sellersStats]
   );
 
-  const topSellersChartData = topSellers.map((s: any) => ({
-    name: s.sellerName || s.sellerId || "Sin nombre",
+  const topSellersChartData = topSellers.map((s: any, idx: number) => ({
+    rank: idx + 1, // 1,2,3...
+    name: getSellerLabel({ id: s.sellerId, name: s.sellerName }),
     totalSales: Number(s.totalSales || 0),
   }));
 
@@ -108,7 +176,8 @@ const StatsPage: React.FC = () => {
     [customersStats]
   );
 
-  const topCustomersChartData = topCustomers.map((c: any) => ({
+  const topCustomersChartData = topCustomers.map((c: any, idx: number) => ({
+    rank: idx + 1,
     name: c.customerName || "Sin nombre",
     totalPurchases: Number(c.totalPurchases || 0),
   }));
@@ -122,10 +191,20 @@ const StatsPage: React.FC = () => {
     return [];
   }, [productsStats]);
 
-  const brandSalesChartData = rawSalesByBrand.map((b: any) => ({
-    name: b.brandName || b.brandId || b._id || "Sin nombre",
+  const brandSalesChartData = rawSalesByBrand.map((b: any, idx: number) => ({
+    rank: idx + 1,
+    name: getBrandLabel(b),
     totalSales: Number(b.totalSales || b.total_amount || 0),
   }));
+
+  const MAX_BARS = 12;
+  const productSalesChartData = Array.isArray(productsStats?.topProducts)
+    ? productsStats.topProducts.map((p: any, idx: number) => ({
+        rank: idx + 1,
+        name: p.articleName || p.articleId || "Sin nombre",
+        totalSales: Number(p.totalSales || 0),
+      }))
+    : [];
 
   const paymentConditionsArray = useMemo(() => {
     const f: any = financialStats;
@@ -136,7 +215,8 @@ const StatsPage: React.FC = () => {
   }, [financialStats]);
 
   const paymentConditionsPieData = paymentConditionsArray.map((pc: any) => ({
-    name: pc.name || pc._id || "Sin nombre",
+    id: pc.paymentConditionId || pc.payment_condition_id || pc._id || pc.id,
+    name: getPaymentConditionLabel(pc),
     value: Number(pc.totalAmount || pc.total || 0),
     count: pc.count || 0,
   }));
@@ -165,8 +245,8 @@ const StatsPage: React.FC = () => {
               Dashboard de estadísticas
             </h1>
             <p className="text-sm text-slate-500 max-w-xl">
-              Visualizá el rendimiento de ventas, clientes, productos y cobranzas
-              en un solo lugar.
+              Visualizá el rendimiento de ventas, clientes, productos y
+              cobranzas en un solo lugar.
             </p>
             <div className="flex flex-wrap gap-2 mt-1">
               <Pill size="xs" variant="soft">
@@ -296,7 +376,7 @@ const StatsPage: React.FC = () => {
               {/* Vendedor */}
               <FilterField label="Vendedor">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
                   value={filters.sellerId || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -309,7 +389,7 @@ const StatsPage: React.FC = () => {
                   {Array.isArray(sellersQuery.data) &&
                     sellersQuery.data.map((s: any) => (
                       <option key={s.id || s._id} value={s.id || s._id}>
-                        {s.name || s.id || s._id}
+                        {getSellerLabel(s)}
                       </option>
                     ))}
                 </select>
@@ -434,13 +514,14 @@ const StatsPage: React.FC = () => {
 
             {/* TABS */}
             <div className="border-b border-slate-200 mt-4">
-              <nav className="flex gap-2 overflow-x-auto text-xs md:text-sm">
+              <nav className="flex gap-2 text-xs md:text-sm">
                 {[
                   { id: "general", label: "General" },
                   { id: "sellers", label: "Vendedores" },
                   { id: "customers", label: "Clientes" },
                   { id: "products", label: "Productos" },
                   { id: "financial", label: "Finanzas" },
+                  { id: "targets", label: "Objetivos" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -469,21 +550,28 @@ const StatsPage: React.FC = () => {
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={topSellersChartData}>
                               <XAxis
-                                dataKey="name"
+                                dataKey="rank"
                                 tick={{ fontSize: 10 }}
                                 interval={0}
                               />
+
                               <YAxis
                                 tickFormatter={(v) =>
                                   `${(v / 1000).toFixed(0)}k`
                                 }
                               />
                               <Tooltip
-                                formatter={(value: any) =>
-                                  fmtMoney(value as number)
-                                }
+                                formatter={moneyTooltip({
+                                  totalSales: "Ventas",
+                                })}
+                                labelFormatter={(_, payload: any[]) => {
+                                  const d = payload?.[0]?.payload;
+                                  if (!d) return "";
+                                  return `#${d.rank} - ${d.name}`;
+                                }}
                               />
-                              <Bar dataKey="totalSales">
+
+                              <Bar dataKey="totalSales" name="Ventas">
                                 {topSellersChartData.map((_, idx) => (
                                   <Cell
                                     key={idx}
@@ -505,21 +593,28 @@ const StatsPage: React.FC = () => {
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={topCustomersChartData}>
                               <XAxis
-                                dataKey="name"
+                                dataKey="rank"
                                 tick={{ fontSize: 10 }}
                                 interval={0}
                               />
+
                               <YAxis
                                 tickFormatter={(v) =>
                                   `${(v / 1000).toFixed(0)}k`
                                 }
                               />
                               <Tooltip
-                                formatter={(value: any) =>
-                                  fmtMoney(value as number)
-                                }
+                                formatter={moneyTooltip({
+                                  totalPurchases: "Compras",
+                                })}
+                                labelFormatter={(_, payload: any[]) => {
+                                  const d = payload?.[0]?.payload;
+                                  if (!d) return "";
+                                  return `#${d.rank} - ${d.name}`;
+                                }}
                               />
-                              <Bar dataKey="totalPurchases">
+
+                              <Bar dataKey="totalPurchases" name="Compras">
                                 {topCustomersChartData.map((_, idx) => (
                                   <Cell
                                     key={idx}
@@ -543,29 +638,34 @@ const StatsPage: React.FC = () => {
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={brandSalesChartData}>
                               <XAxis
-                                dataKey="name"
+                                dataKey="rank"
                                 tick={{ fontSize: 10 }}
                                 interval={0}
                               />
+
                               <YAxis
                                 tickFormatter={(v) =>
                                   `${(v / 1000).toFixed(0)}k`
                                 }
                               />
                               <Tooltip
-                                formatter={(value: any) =>
-                                  fmtMoney(value as number)
-                                }
+                                formatter={moneyTooltip({
+                                  totalSales: "Ventas",
+                                })}
+                                labelFormatter={(_, payload: any[]) => {
+                                  const d = payload?.[0]?.payload;
+                                  if (!d) return "";
+                                  return `#${d.rank} - ${d.name}`;
+                                }}
                               />
-                              <Bar dataKey="totalSales">
-                                {brandSalesChartData.map(
-                                  (_: any, idx: any) => (
-                                    <Cell
-                                      key={idx}
-                                      fill={COLORS[idx % COLORS.length]}
-                                    />
-                                  )
-                                )}
+
+                              <Bar dataKey="totalSales" name="Ventas">
+                                {brandSalesChartData.map((_: any, idx: any) => (
+                                  <Cell
+                                    key={idx}
+                                    fill={COLORS[idx % COLORS.length]}
+                                  />
+                                ))}
                               </Bar>
                             </BarChart>
                           </ResponsiveContainer>
@@ -632,19 +732,24 @@ const StatsPage: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={topSellersChartData}>
                             <XAxis
-                              dataKey="name"
+                              dataKey="rank"
                               tick={{ fontSize: 10 }}
                               interval={0}
                             />
+
                             <YAxis
                               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                             />
                             <Tooltip
-                              formatter={(value: any) =>
-                                fmtMoney(value as number)
-                              }
+                              formatter={moneyTooltip({ totalSales: "Ventas" })}
+                              labelFormatter={(_, payload: any[]) => {
+                                const d = payload?.[0]?.payload;
+                                if (!d) return "";
+                                return `#${d.rank} - ${d.name}`;
+                              }}
                             />
-                            <Bar dataKey="totalSales">
+
+                            <Bar dataKey="totalSales" name="Ventas">
                               {topSellersChartData.map((_, idx) => (
                                 <Cell
                                   key={idx}
@@ -676,8 +781,12 @@ const StatsPage: React.FC = () => {
                                 className="border-b border-slate-100 last:border-0"
                               >
                                 <td className="py-1">
-                                  {s.sellerName || s.sellerId}
+                                  {getSellerLabel({
+                                    id: s.sellerId,
+                                    name: s.sellerName,
+                                  })}
                                 </td>
+
                                 <td className="py-1 text-right">
                                   {fmtMoney(s.totalSales)}
                                 </td>
@@ -713,19 +822,26 @@ const StatsPage: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={topCustomersChartData}>
                             <XAxis
-                              dataKey="name"
+                              dataKey="rank"
                               tick={{ fontSize: 10 }}
                               interval={0}
                             />
+
                             <YAxis
                               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                             />
                             <Tooltip
-                              formatter={(value: any) =>
-                                fmtMoney(value as number)
-                              }
+                              formatter={moneyTooltip({
+                                totalPurchases: "Compras",
+                              })}
+                              labelFormatter={(_, payload: any[]) => {
+                                const d = payload?.[0]?.payload;
+                                if (!d) return "";
+                                return `#${d.rank} - ${d.name}`;
+                              }}
                             />
-                            <Bar dataKey="totalPurchases">
+
+                            <Bar dataKey="totalPurchases" name="Compras">
                               {topCustomersChartData.map((_, idx) => (
                                 <Cell
                                   key={idx}
@@ -783,88 +899,207 @@ const StatsPage: React.FC = () => {
                 </DashboardCard>
               )}
 
-              {/* TAB PRODUCTOS */}
               {activeTab === "products" && (
-                <DashboardCard title="Productos">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="h-64">
-                      {brandSalesChartData.length ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={brandSalesChartData}>
-                            <XAxis
-                              dataKey="name"
-                              tick={{ fontSize: 10 }}
-                              interval={0}
-                            />
-                            <YAxis
-                              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                            />
-                            <Tooltip
-                              formatter={(value: any) =>
-                                fmtMoney(value as number)
-                              }
-                            />
-                            <Bar dataKey="totalSales">
-                              {brandSalesChartData.map(
-                                (_: any, idx: any) => (
-                                  <Cell
-                                    key={idx}
-                                    fill={COLORS[idx % COLORS.length]}
-                                  />
-                                )
-                              )}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <EmptyState text="Sin datos de ventas por marca." />
-                      )}
-                    </div>
+                <>
+                  {/* MARCAS */}
+                  <DashboardCard title="Marcas">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Gráfico marcas */}
+                      <div className="h-64">
+                        {brandSalesChartData.length ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={brandSalesChartData}>
+                              <XAxis
+                                dataKey="rank"
+                                tick={{ fontSize: 10 }}
+                                interval={0}
+                              />
 
-                    <div className="border border-slate-100 rounded-xl p-3 max-h-64 overflow-y-auto bg-slate-50/60">
-                      <h4 className="text-xs font-semibold text-slate-500 mb-2">
-                        Top productos
-                      </h4>
-                      <table className="min-w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-slate-500">
-                            <th className="text-left py-1">Artículo</th>
-                            <th className="text-right py-1">Cant.</th>
-                            <th className="text-right py-1">Ventas</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.isArray(productsStats?.topProducts) &&
-                            productsStats.topProducts.map((p: any) => (
-                              <tr
-                                key={p.articleId}
-                                className="border-b border-slate-100 last:border-0"
-                              >
-                                <td className="py-1">{p.articleId}</td>
-                                <td className="py-1 text-right">
-                                  {p.totalQuantity}
-                                </td>
-                                <td className="py-1 text-right">
-                                  {fmtMoney(p.totalSales)}
+                              <YAxis
+                                tickFormatter={(v) =>
+                                  `${(v / 1000).toFixed(0)}k`
+                                }
+                              />
+                              <Tooltip
+                                formatter={moneyTooltip({
+                                  totalSales: "Ventas",
+                                })}
+                                labelFormatter={(_, payload: any[]) => {
+                                  const d = payload?.[0]?.payload;
+                                  if (!d) return "";
+                                  return `#${d.rank} - ${d.name}`;
+                                }}
+                              />
+
+                              <Bar dataKey="totalSales" name="Ventas">
+                                {brandSalesChartData.map(
+                                  (_: any, idx: number) => (
+                                    <Cell
+                                      key={idx}
+                                      fill={COLORS[idx % COLORS.length]}
+                                    />
+                                  )
+                                )}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <EmptyState text="Sin datos de ventas por marca." />
+                        )}
+                      </div>
+
+                      {/* Lista marcas */}
+                      <div className="border border-slate-100 rounded-xl p-3 max-h-64 overflow-y-auto bg-slate-50/60">
+                        <h4 className="text-xs font-semibold text-slate-500 mb-2">
+                          Top marcas
+                        </h4>
+                        <table className="min-w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500">
+                              <th className="text-left py-1">Marca</th>
+                              <th className="text-right py-1">Cant.</th>
+                              <th className="text-right py-1">Ventas</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rawSalesByBrand.length ? (
+                              rawSalesByBrand.map((b: any, idx: number) => (
+                                <tr
+                                  key={b.brandId || b._id || idx}
+                                  className="border-b border-slate-100 last:border-0"
+                                >
+                                  <td className="py-1">{getBrandLabel(b)}</td>
+
+                                  <td className="py-1 text-right">
+                                    {b.totalQuantity ?? b.count ?? "-"}
+                                  </td>
+                                  <td className="py-1 text-right">
+                                    {fmtMoney(b.totalSales || b.total_amount)}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan={3}
+                                  className="text-center text-slate-400 py-2"
+                                >
+                                  Sin datos.
                                 </td>
                               </tr>
-                            ))}
-                          {!Array.isArray(productsStats?.topProducts) ||
-                          !productsStats?.topProducts?.length ? (
-                            <tr>
-                              <td
-                                colSpan={3}
-                                className="text-center text-slate-400 py-2"
-                              >
-                                Sin datos.
-                              </td>
-                            </tr>
-                          ) : null}
-                        </tbody>
-                      </table>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                </DashboardCard>
+                  </DashboardCard>
+
+                  {/* PRODUCTOS */}
+                  <DashboardCard title="Productos">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Gráfico productos */}
+                      <div className="h-64">
+                        {productSalesChartData.length ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={productSalesChartData}>
+                              <XAxis
+                                dataKey="rank"
+                                tick={{ fontSize: 10 }}
+                                interval={0}
+                              />
+
+                              <YAxis
+                                tickFormatter={(v) =>
+                                  `${(v / 1000).toFixed(0)}k`
+                                }
+                              />
+
+                              <Tooltip
+                                formatter={moneyTooltip({
+                                  totalSales: "Ventas",
+                                })}
+                                labelFormatter={(_, payload: any[]) => {
+                                  const d = payload?.[0]?.payload;
+                                  if (!d) return "";
+                                  return `#${d.rank} - ${d.name}`;
+                                }}
+                              />
+
+                              <Bar dataKey="totalSales" name="Ventas">
+                                {productSalesChartData.map(
+                                  (_: any, idx: number) => (
+                                    <Cell
+                                      key={idx}
+                                      fill={COLORS[idx % COLORS.length]}
+                                    />
+                                  )
+                                )}
+                              </Bar>
+                              {productsStats &&
+                                productsStats?.topProducts?.length >
+                                  MAX_BARS && (
+                                  <div className="text-[11px] text-slate-400 mt-1">
+                                    +
+                                    {productsStats.topProducts.length -
+                                      MAX_BARS}{" "}
+                                    productos más
+                                  </div>
+                                )}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <EmptyState text="Sin datos de ventas por producto." />
+                        )}
+                      </div>
+
+                      {/* Lista productos */}
+                      <div className="border border-slate-100 rounded-xl p-3 max-h-64 overflow-y-auto bg-slate-50/60">
+                        <h4 className="text-xs font-semibold text-slate-500 mb-2">
+                          Top productos
+                        </h4>
+                        <table className="min-w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500">
+                              <th className="text-left py-1">Artículo</th>
+                              <th className="text-right py-1">Cant.</th>
+                              <th className="text-right py-1">Ventas</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.isArray(productsStats?.topProducts) &&
+                            productsStats.topProducts.length ? (
+                              productsStats.topProducts.map((p: any) => (
+                                <tr
+                                  key={p.articleId}
+                                  className="border-b border-slate-100 last:border-0"
+                                >
+                                  <td className="py-1">
+                                    {p.articleName || p.articleId}
+                                  </td>
+                                  <td className="py-1 text-right">
+                                    {p.totalQuantity}
+                                  </td>
+                                  <td className="py-1 text-right">
+                                    {fmtMoney(p.totalSales)}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan={3}
+                                  className="text-center text-slate-400 py-2"
+                                >
+                                  Sin datos.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </DashboardCard>
+                </>
               )}
 
               {/* TAB FINANZAS */}
@@ -999,7 +1234,7 @@ const StatsPage: React.FC = () => {
                                     className="border-b border-slate-100 last:border-0"
                                   >
                                     <td className="py-1">
-                                      {pc.name || pc._id || "Sin nombre"}
+                                      {getPaymentConditionLabel(pc)}
                                     </td>
                                     <td className="py-1 text-right">
                                       {pc.count ?? "-"}
@@ -1073,6 +1308,33 @@ const StatsPage: React.FC = () => {
                   </div>
                 </DashboardCard>
               )}
+
+              {activeTab === "targets" && (
+                <div className="space-y-4">
+                  {/* SELECT DE VENDEDORES */}
+                  <div className="max-w-xs">
+                    <label className="text-[11px] font-medium text-slate-600">
+                      Seleccionar vendedor
+                    </label>
+                    <select
+                      className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm"
+                      value={selectedSellerId}
+                      onChange={(e) => setSelectedSellerId(e.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      {Array.isArray(sellersQuery.data) &&
+                        sellersQuery.data.map((s: any) => (
+                          <option key={s.id || s._id} value={s.id || s._id}>
+                            {getSellerLabel(s)}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* PASAR PROPS */}
+                  <SalesTargetsPage sellerId={selectedSellerId} />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1106,7 +1368,12 @@ interface StatCardProps {
   icon?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, variation, icon }) => {
+const StatCard: React.FC<StatCardProps> = ({
+  label,
+  value,
+  variation,
+  icon,
+}) => {
   const hasVar = typeof variation === "number";
   const varPercent = hasVar ? (variation || 0) * 100 : 0;
   const isPositive = varPercent >= 0;
@@ -1132,9 +1399,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, variation, icon }) =>
         >
           <span>{isPositive ? "▲" : "▼"}</span>
           <span>{Math.abs(varPercent).toFixed(1)}%</span>
-          <span className="text-[9px] text-slate-400">
-            vs período anterior
-          </span>
+          <span className="text-[9px] text-slate-400">vs período anterior</span>
         </span>
       )}
     </div>
@@ -1207,9 +1472,7 @@ const SectionTitle = ({
   <div className="flex flex-col gap-1">
     <h2 className="font-semibold text-lg text-slate-900">{title}</h2>
     {subtitle && (
-      <p className="text-xs md:text-sm text-slate-500 max-w-2xl">
-        {subtitle}
-      </p>
+      <p className="text-xs md:text-sm text-slate-500 max-w-2xl">{subtitle}</p>
     )}
   </div>
 );

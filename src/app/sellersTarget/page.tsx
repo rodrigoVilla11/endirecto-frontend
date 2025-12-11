@@ -19,9 +19,17 @@ import {
 import { useGetSumsByIdsAndBrandMutation } from "@/redux/services/documentsDetailsApi";
 import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
-const SalesTargetsPage = () => {
+type SalesTargetsPageProps = {
+  sellerId?: string; // 👈 opcional, por props
+};
+
+const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
+  sellerId: sellerIdProp,
+}) => {
   const { userData } = useAuth();
-  const sellerId = userData?.seller_id;
+
+  // 👇 Si viene por props, se usa ese. Si no, el del usuario logueado
+  const sellerId = sellerIdProp ?? userData?.seller_id;
 
   // Calcular fechas del mes actual
   const currentDate = new Date();
@@ -45,6 +53,12 @@ const SalesTargetsPage = () => {
   );
 
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
+  const displayName =
+    // Si viene sellerId por props, mostramos el nombre del vendedor
+    sellerIdProp
+      ? seller?.name || `Vendedor ${sellerId}`
+      : // Si NO viene por props, usamos el usuario logueado
+        userQuery.data?.username || seller?.name || `Vendedor ${sellerId}`;
 
   const { data: brands, isLoading: isLoadingBrands } = useGetBrandsQuery(null);
 
@@ -153,6 +167,7 @@ const SalesTargetsPage = () => {
     };
 
     fetchAllBrandSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentIds, brandsWithTargets.length, seller]);
 
   const formatCurrency = (value: number) => {
@@ -262,9 +277,7 @@ const SalesTargetsPage = () => {
                 <Target className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">
-                  {userQuery.data?.username}
-                </h1>
+                <h1 className="text-xl font-bold">{displayName}</h1>
                 <p className="text-white/80 text-xs">ID: {seller?.id}</p>
               </div>
             </div>
@@ -457,11 +470,7 @@ const SalesTargetsPage = () => {
                             {formatNumber(target)}
                           </span>
                           <span className="text-xs text-gray-500">
-                            <span className="text-xs text-gray-500">
-                              {isRelativeBrand(brand.id)
-                                ? "Litros"
-                                : "unidades"}
-                            </span>
+                            {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
                           </span>
                         </div>
                       </div>
