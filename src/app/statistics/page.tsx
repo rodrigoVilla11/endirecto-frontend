@@ -222,7 +222,7 @@ const StatsPage: React.FC = () => {
         </header>
 
         {/* FILTROS - barra sticky */}
-        <div className="sticky top-0 z-20 bg-slate-950/5 pb-3 mb-4">
+        <div className="sticky top-0 z-20 pb-3 mb-4">
           <section className="bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-3 py-3 md:px-4 md:py-4">
             <div className="flex flex-wrap gap-2 mb-3 items-center">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
@@ -1114,7 +1114,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, variation, icon }) =>
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-sm border border-slate-200 px-3 py-3 flex flex-col gap-1">
       {icon && (
-        <div className="absolute right-3 top-3 text-xl opacity-20 pointer-events-none">
+        <div className="absolute right-3 top-3 text-xl pointer-events-none">
           {icon}
         </div>
       )}
