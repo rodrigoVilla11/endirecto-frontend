@@ -7,7 +7,10 @@ import {
   useGetStatsQuery,
 } from "@/redux/services/statsApi";
 
-import { useGetSellerByIdQuery, useGetSellersQuery } from "@/redux/services/sellersApi";
+import {
+  useGetSellerByIdQuery,
+  useGetSellersQuery,
+} from "@/redux/services/sellersApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 
@@ -23,9 +26,22 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { useGetUserByIdQuery, useGetUsersQuery } from "@/redux/services/usersApi";
+import {
+  useGetUserByIdQuery,
+  useGetUsersQuery,
+} from "@/redux/services/usersApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
-import { AlertCircle, ChevronDown, ChevronUp, DollarSign, Loader2, Package, ShoppingBag, Target, TrendingUp } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  Loader2,
+  Package,
+  ShoppingBag,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import { useGetSumsByIdsAndBrandMutation } from "@/redux/services/documentsDetailsApi";
 import { useGetDocumentIdsBySellerQuery } from "@/redux/services/documentsApi";
 import { useAuth } from "../context/AuthContext";
@@ -353,6 +369,7 @@ const StatsPage: React.FC = () => {
                   type="date"
                   className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.startDate || ""}
+                  disabled={!isCustom}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
@@ -367,6 +384,7 @@ const StatsPage: React.FC = () => {
                   type="date"
                   className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.endDate || ""}
+                  disabled={!isCustom}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
