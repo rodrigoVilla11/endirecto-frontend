@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useGetSellerByIdQuery } from "@/redux/services/sellersApi";
@@ -20,7 +21,7 @@ import { useGetSumsByIdsAndBrandMutation } from "@/redux/services/documentsDetai
 import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 
 type SalesTargetsPageProps = {
-  sellerId?: string; // 👈 opcional, por props
+  sellerId?: string; // opcional, si la página se usa como componente y se le pasa un vendedor
 };
 
 const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
@@ -28,7 +29,7 @@ const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
 }) => {
   const { userData } = useAuth();
 
-  // 👇 Si viene por props, se usa ese. Si no, el del usuario logueado
+  // Si viene por props, usamos ese. Si no, el del usuario logueado
   const sellerId = sellerIdProp ?? userData?.seller_id;
 
   // Calcular fechas del mes actual
@@ -53,12 +54,6 @@ const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
   );
 
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
-  const displayName =
-    // Si viene sellerId por props, mostramos el nombre del vendedor
-    sellerIdProp
-      ? seller?.name || `Vendedor ${sellerId}`
-      : // Si NO viene por props, usamos el usuario logueado
-        userQuery.data?.username || seller?.name || `Vendedor ${sellerId}`;
 
   const { data: brands, isLoading: isLoadingBrands } = useGetBrandsQuery(null);
 
@@ -215,6 +210,11 @@ const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
       [brandId]: !prev[brandId],
     }));
   };
+
+  // 👉 Nombre a mostrar según contexto
+  const displayName = sellerIdProp
+    ? seller?.name || `Vendedor ${sellerId}` // si viene por props, usamos el nombre del vendedor
+    : userQuery.data?.username || seller?.name || `Vendedor ${sellerId}`; // si no, usuario logueado / fallback
 
   // Calcular totales generales usando la métrica correcta por marca
   const totalTarget = brandsWithTargets.reduce((sum, brand) => {
@@ -575,4 +575,5 @@ const SalesTargetsPage: React.FC<SalesTargetsPageProps> = ({
   );
 };
 
+// 👈 IMPORTANTE: el default export tiene que ser el componente, NO el tipo
 export default SalesTargetsPage;
