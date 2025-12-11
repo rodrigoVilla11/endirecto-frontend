@@ -7,13 +7,10 @@ import {
   useGetStatsQuery,
 } from "@/redux/services/statsApi";
 
-// AJUSTAR ESTOS IMPORTS SEGÚN TU PROYECTO
 import { useGetSellersQuery } from "@/redux/services/sellersApi";
 import { useGetCustomersQuery } from "@/redux/services/customersApi";
-import { useGetBranchesQuery } from "@/redux/services/branchesApi";
 import { useGetBrandsQuery } from "@/redux/services/brandsApi";
 
-// Recharts
 import {
   ResponsiveContainer,
   BarChart,
@@ -43,14 +40,7 @@ const fmtMoney = (n: number | undefined | null): string =>
 const pctFmt = (n: number | undefined | null): string =>
   `${(Number(n || 0) * 100).toFixed(1)}%`;
 
-const COLORS = [
-  "#0ea5e9",
-  "#22c55e",
-  "#f97316",
-  "#a855f7",
-  "#e11d48",
-  "#64748b",
-];
+const COLORS = ["#0ea5e9", "#22c55e", "#f97316", "#a855f7", "#e11d48", "#64748b"];
 
 // ============================================================================
 // MAIN PAGE
@@ -72,10 +62,8 @@ const StatsPage: React.FC = () => {
     { value: PeriodType.CUSTOM, label: "Personalizado" },
   ];
 
-  // Si tus endpoints no reciben argumentos, podés cambiar {} por undefined o quitar los paréntesis.
   const sellersQuery = useGetSellersQuery(null);
   const customersQuery = useGetCustomersQuery(null);
-  const branchesQuery = useGetBranchesQuery(null);
   const brandsQuery = useGetBrandsQuery(null);
 
   const { data, isLoading, isFetching, error, refetch } =
@@ -125,7 +113,6 @@ const StatsPage: React.FC = () => {
     totalPurchases: Number(c.totalPurchases || 0),
   }));
 
-  // Ventas por marca (acepta salesByBrand / brands / brandSales)
   const rawSalesByBrand = useMemo(() => {
     const p: any = productsStats;
 
@@ -140,7 +127,6 @@ const StatsPage: React.FC = () => {
     totalSales: Number(b.totalSales || b.total_amount || 0),
   }));
 
-  // Condiciones de pago (acepta paymentConditions / payment_conditions)
   const paymentConditionsArray = useMemo(() => {
     const f: any = financialStats;
 
@@ -155,52 +141,98 @@ const StatsPage: React.FC = () => {
     count: pc.count || 0,
   }));
 
-  // Orders arrays defensivos
   const ordersByStatusArray = Array.isArray(ordersStats?.ordersByStatus)
     ? ordersStats!.ordersByStatus
     : [];
+
+  const hasAnyData =
+    !!general ||
+    topSellersChartData.length > 0 ||
+    topCustomersChartData.length > 0 ||
+    brandSalesChartData.length > 0 ||
+    paymentConditionsPieData.length > 0;
 
   // ========================================================================
   // Render
   // ========================================================================
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-5 md:py-8 space-y-5">
+    <main className="min-h-screen bg-slate-950/5">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-5 md:py-8">
         {/* HEADER */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-semibold text-slate-900">
               Dashboard de estadísticas
             </h1>
-            <p className="text-sm text-slate-500">
-              Visualizá el rendimiento de ventas, clientes, productos y
-              cobranzas.
+            <p className="text-sm text-slate-500 max-w-xl">
+              Visualizá el rendimiento de ventas, clientes, productos y cobranzas
+              en un solo lugar.
             </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <Pill size="xs" variant="soft">
+                Periodo:{" "}
+                {
+                  periodOptions.find((p) => p.value === filters.periodType)
+                    ?.label
+                }
+              </Pill>
+              {filters.startDate && (
+                <Pill size="xs" variant="outline">
+                  Desde {filters.startDate}
+                </Pill>
+              )}
+              {filters.endDate && (
+                <Pill size="xs" variant="outline">
+                  Hasta {filters.endDate}
+                </Pill>
+              )}
+              {filters.sellerId && (
+                <Pill size="xs" variant="outline">
+                  Vendedor filtrado
+                </Pill>
+              )}
+              {filters.customerId && (
+                <Pill size="xs" variant="outline">
+                  Cliente filtrado
+                </Pill>
+              )}
+              {filters.brandId && (
+                <Pill size="xs" variant="outline">
+                  Marca filtrada
+                </Pill>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
             <button
               onClick={() => refetch()}
-              className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs md:text-sm font-medium text-slate-700 hover:bg-slate-50 active:scale-[0.99] transition"
             >
-              Actualizar
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.25)]" />
+              Actualizar datos
             </button>
             {isFetching && (
-              <span className="text-xs text-slate-500 animate-pulse">
+              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-sky-400 animate-ping" />
                 Actualizando...
               </span>
             )}
           </div>
-        </div>
+        </header>
 
         {/* FILTROS - barra sticky */}
-        <div className="sticky top-0 z-10 bg-slate-100 pb-2">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm px-3 py-3 md:px-4 md:py-4">
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        <div className="sticky top-0 z-20 bg-slate-950/5 pb-3 mb-4">
+          <section className="bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-3 py-3 md:px-4 md:py-4">
+            <div className="flex flex-wrap gap-2 mb-3 items-center">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
                 Filtros
               </span>
+              <span className="text-[11px] text-slate-400">
+                Ajustá el periodo y los filtros para refinar el análisis.
+              </span>
               <button
-                className="ml-auto text-[11px] text-slate-500 hover:text-slate-700"
+                className="ml-auto text-[11px] text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline"
                 onClick={() =>
                   setFilters({
                     periodType: PeriodType.MONTH,
@@ -215,7 +247,7 @@ const StatsPage: React.FC = () => {
               {/* Periodo */}
               <FilterField label="Periodo">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.periodType}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -236,7 +268,7 @@ const StatsPage: React.FC = () => {
               <FilterField label={`Desde ${isCustom ? "(obligatorio)" : ""}`}>
                 <input
                   type="date"
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.startDate || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -250,7 +282,7 @@ const StatsPage: React.FC = () => {
               <FilterField label={`Hasta ${isCustom ? "(obligatorio)" : ""}`}>
                 <input
                   type="date"
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.endDate || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -264,7 +296,7 @@ const StatsPage: React.FC = () => {
               {/* Vendedor */}
               <FilterField label="Vendedor">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.sellerId || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -286,7 +318,7 @@ const StatsPage: React.FC = () => {
               {/* Cliente */}
               <FilterField label="Cliente">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.customerId || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -305,32 +337,10 @@ const StatsPage: React.FC = () => {
                 </select>
               </FilterField>
 
-              {/* Sucursal */}
-              <FilterField label="Sucursal">
-                <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
-                  value={filters.branchId || ""}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      branchId: e.target.value || undefined,
-                    }))
-                  }
-                >
-                  <option value="">Todas</option>
-                  {Array.isArray(branchesQuery.data) &&
-                    branchesQuery.data.map((b: any) => (
-                      <option key={b.id || b._id} value={b.id || b._id}>
-                        {b.name || b.id || b._id}
-                      </option>
-                    ))}
-                </select>
-              </FilterField>
-
               {/* Marca */}
               <FilterField label="Marca">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500"
                   value={filters.brandId || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({
@@ -349,52 +359,82 @@ const StatsPage: React.FC = () => {
                 </select>
               </FilterField>
             </div>
-          </div>
+          </section>
         </div>
 
         {/* ESTADO DE CARGA / ERROR */}
-        {isLoading && (
-          <div className="text-sm text-slate-500">Cargando estadísticas...</div>
-        )}
         {error && (
-          <div className="text-sm text-red-500">
-            Error al cargar estadísticas.
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs md:text-sm text-rose-700 flex items-start gap-2">
+            <span className="mt-[2px]">⚠️</span>
+            <div>
+              <div className="font-semibold mb-0.5">
+                Error al cargar estadísticas
+              </div>
+              <p className="text-rose-700/80">
+                Verificá la conexión o intentá nuevamente con el botón
+                &quot;Actualizar datos&quot;.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="mt-6">
+            <LoadingOverlay text="Cargando estadísticas iniciales..." />
           </div>
         )}
 
         {data && (
-          <>
-            {/* RESUMEN GENERAL */}
-            <section className="space-y-3">
-              <h2 className="font-semibold text-lg text-slate-900">
-                Resumen general
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                <StatCard
-                  label="Ventas totales"
-                  value={fmtMoney(general?.totalSales)}
-                  variation={variation?.totalSales ?? null}
-                />
-                <StatCard
-                  label="Neto facturado"
-                  value={fmtMoney(general?.totalNetAmount)}
-                />
-                <StatCard
-                  label="Cantidad de documentos"
-                  value={general?.documentCount ?? 0}
-                  variation={variation?.documentCount ?? null}
-                />
-                <StatCard
-                  label="Ticket promedio"
-                  value={fmtMoney(general?.averageTicket)}
-                  variation={variation?.averageTicket ?? null}
-                />
+          <div className="relative">
+            {isFetching && !isLoading && (
+              <LoadingOverlay text="Actualizando datos..." subtle />
+            )}
+
+            {!hasAnyData && (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-10 px-4 text-center text-sm text-slate-500 mb-4">
+                No se encontraron datos para los filtros seleccionados. Probá
+                ampliando el periodo o quitando algunos filtros.
               </div>
-            </section>
+            )}
+
+            {/* RESUMEN GENERAL */}
+            {general && (
+              <section className="space-y-3 mb-4">
+                <SectionTitle
+                  title="Resumen general"
+                  subtitle="Visión rápida de la salud del negocio en el periodo seleccionado."
+                />
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <StatCard
+                    icon="💰"
+                    label="Ventas totales"
+                    value={fmtMoney(general?.totalSales)}
+                    variation={variation?.totalSales ?? null}
+                  />
+                  <StatCard
+                    icon="🧾"
+                    label="Neto facturado"
+                    value={fmtMoney(general?.totalNetAmount)}
+                  />
+                  <StatCard
+                    icon="📄"
+                    label="Cantidad de documentos"
+                    value={general?.documentCount ?? 0}
+                    variation={variation?.documentCount ?? null}
+                  />
+                  <StatCard
+                    icon="🎟️"
+                    label="Ticket promedio"
+                    value={fmtMoney(general?.averageTicket)}
+                    variation={variation?.averageTicket ?? null}
+                  />
+                </div>
+              </section>
+            )}
 
             {/* TABS */}
             <div className="border-b border-slate-200 mt-4">
-              <nav className="flex gap-2 overflow-x-auto text-sm">
+              <nav className="flex gap-2 overflow-x-auto text-xs md:text-sm">
                 {[
                   { id: "general", label: "General" },
                   { id: "sellers", label: "Vendedores" },
@@ -405,10 +445,10 @@ const StatsPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    className={`px-3 py-2 border-b-2 -mb-px ${
+                    className={`px-3 py-2 rounded-t-xl border-b-2 -mb-px transition ${
                       activeTab === tab.id
-                        ? "border-sky-500 text-sky-600 font-medium"
-                        : "border-transparent text-slate-500 hover:text-slate-700"
+                        ? "border-sky-500 text-sky-600 font-medium bg-sky-50/60"
+                        : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     {tab.label}
@@ -518,12 +558,14 @@ const StatsPage: React.FC = () => {
                                 }
                               />
                               <Bar dataKey="totalSales">
-                                {brandSalesChartData.map((_: any, idx: any) => (
-                                  <Cell
-                                    key={idx}
-                                    fill={COLORS[idx % COLORS.length]}
-                                  />
-                                ))}
+                                {brandSalesChartData.map(
+                                  (_: any, idx: any) => (
+                                    <Cell
+                                      key={idx}
+                                      fill={COLORS[idx % COLORS.length]}
+                                    />
+                                  )
+                                )}
                               </Bar>
                             </BarChart>
                           </ResponsiveContainer>
@@ -763,12 +805,14 @@ const StatsPage: React.FC = () => {
                               }
                             />
                             <Bar dataKey="totalSales">
-                              {brandSalesChartData.map((_: any, idx: any) => (
-                                <Cell
-                                  key={idx}
-                                  fill={COLORS[idx % COLORS.length]}
-                                />
-                              ))}
+                              {brandSalesChartData.map(
+                                (_: any, idx: any) => (
+                                  <Cell
+                                    key={idx}
+                                    fill={COLORS[idx % COLORS.length]}
+                                  />
+                                )
+                              )}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
@@ -829,6 +873,9 @@ const StatsPage: React.FC = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Resumen */}
                     <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/60 text-xs space-y-2">
+                      <h4 className="text-[11px] font-semibold text-slate-600 mb-1">
+                        Resumen documentos
+                      </h4>
                       <InfoRow
                         label="Total documentos"
                         value={fmtMoney(financialStats?.totalAmount)}
@@ -851,7 +898,7 @@ const StatsPage: React.FC = () => {
                       />
 
                       <div className="mt-2 border-t border-slate-200 pt-2">
-                        <h4 className="text-[11px] font-semibold text-slate-500 mb-1">
+                        <h4 className="text-[11px] font-semibold text-slate-600 mb-1">
                           Pagos
                         </h4>
                         <InfoRow
@@ -865,7 +912,7 @@ const StatsPage: React.FC = () => {
                       </div>
 
                       <div className="mt-2 border-t border-slate-200 pt-2">
-                        <h4 className="text-[11px] font-semibold text-slate-500 mb-1">
+                        <h4 className="text-[11px] font-semibold text-slate-600 mb-1">
                           Pedidos
                         </h4>
                         <InfoRow
@@ -1027,10 +1074,10 @@ const StatsPage: React.FC = () => {
                 </DashboardCard>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 
@@ -1056,27 +1103,38 @@ interface StatCardProps {
   label: string;
   value: string | number;
   variation?: number | null;
+  icon?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, variation }) => {
+const StatCard: React.FC<StatCardProps> = ({ label, value, variation, icon }) => {
   const hasVar = typeof variation === "number";
   const varPercent = hasVar ? (variation || 0) * 100 : 0;
   const isPositive = varPercent >= 0;
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-sm border border-slate-200 px-3 py-3 flex flex-col gap-1">
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-sm border border-slate-200 px-3 py-3 flex flex-col gap-1">
+      {icon && (
+        <div className="absolute right-3 top-3 text-xl opacity-20 pointer-events-none">
+          {icon}
+        </div>
+      )}
       <span className="text-[11px] text-slate-500">{label}</span>
       <span className="text-sm md:text-base font-semibold text-slate-900">
         {value}
       </span>
       {hasVar && (
         <span
-          className={`text-[10px] md:text-xs font-medium flex items-center gap-1 ${
-            isPositive ? "text-emerald-600" : "text-rose-600"
+          className={`text-[10px] md:text-xs font-medium inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full w-fit ${
+            isPositive
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-rose-50 text-rose-700"
           }`}
         >
-          {isPositive ? "▲" : "▼"} {Math.abs(varPercent).toFixed(1)}% vs período
-          anterior
+          <span>{isPositive ? "▲" : "▼"}</span>
+          <span>{Math.abs(varPercent).toFixed(1)}%</span>
+          <span className="text-[9px] text-slate-400">
+            vs período anterior
+          </span>
         </span>
       )}
     </div>
@@ -1091,7 +1149,7 @@ const DashboardCard = ({
   children: React.ReactNode;
 }) => (
   <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-4 space-y-3">
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-2">
       <h3 className="font-semibold text-sm md:text-base text-slate-900">
         {title}
       </h3>
@@ -1112,8 +1170,67 @@ interface InfoRowProps {
 }
 
 const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
-  <div className="flex justify-between gap-2">
+  <div className="flex justify-between gap-2 py-[1px]">
     <span className="text-[11px] text-slate-500">{label}</span>
     <span className="text-[11px] font-medium text-slate-900">{value}</span>
+  </div>
+);
+
+const Pill = ({
+  children,
+  size = "sm",
+  variant = "soft",
+}: {
+  children: React.ReactNode;
+  size?: "xs" | "sm";
+  variant?: "soft" | "outline";
+}) => {
+  const base =
+    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]";
+  const sizeClass = size === "xs" ? "px-2 py-0.5" : "px-2.5 py-0.5";
+  const variantClass =
+    variant === "soft"
+      ? "bg-sky-50/80 border-sky-100 text-sky-700"
+      : "bg-white/70 border-slate-200 text-slate-600";
+  return (
+    <span className={`${base} ${sizeClass} ${variantClass}`}>{children}</span>
+  );
+};
+
+const SectionTitle = ({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) => (
+  <div className="flex flex-col gap-1">
+    <h2 className="font-semibold text-lg text-slate-900">{title}</h2>
+    {subtitle && (
+      <p className="text-xs md:text-sm text-slate-500 max-w-2xl">
+        {subtitle}
+      </p>
+    )}
+  </div>
+);
+
+const LoadingOverlay = ({
+  text,
+  subtle,
+}: {
+  text: string;
+  subtle?: boolean;
+}) => (
+  <div
+    className={`${
+      subtle
+        ? "absolute inset-0 bg-white/40 backdrop-blur-[1px]"
+        : "rounded-2xl border border-slate-200 bg-white shadow-sm"
+    } flex items-center justify-center z-30`}
+  >
+    <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600">
+      <span className="h-4 w-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+      <span>{text}</span>
+    </div>
   </div>
 );
