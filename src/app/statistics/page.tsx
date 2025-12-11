@@ -25,7 +25,7 @@ import {
 } from "recharts";
 import { useGetUsersQuery } from "@/redux/services/usersApi";
 import { useGetPaymentConditionsQuery } from "@/redux/services/paymentConditionsApi";
-import SalesTargetsPage from "../sellersTarget/page";
+import SalesTargetsPage, { SalesTargetsView } from "../sellersTarget/page";
 
 // ============================================================================
 // HELPERS
@@ -1332,7 +1332,7 @@ const StatsPage: React.FC = () => {
                   </div>
 
                   {/* PASAR PROPS */}
-                  <SalesTargetsPage sellerId={selectedSellerId} />
+                  <SalesTargetsView sellerId={selectedSellerId} />
                 </div>
               )}
             </div>
