@@ -164,6 +164,7 @@ const StatsPage: React.FC = () => {
   const ordersStats = data?.orders;
   const paymentsStats = data?.payments;
 
+  console.log(financialStats)
   const isCustom = filters.periodType === PeriodType.CUSTOM;
 
   // --------------------------------------------------------------------------
