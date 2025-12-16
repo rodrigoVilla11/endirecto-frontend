@@ -204,7 +204,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold p-4">{t("page.stockTitle")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("page.stockTitle")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && stock.length === 0 ? (
           <div className="flex justify-center py-4">

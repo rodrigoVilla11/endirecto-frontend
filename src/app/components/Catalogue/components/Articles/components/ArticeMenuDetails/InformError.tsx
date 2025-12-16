@@ -38,8 +38,7 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
     () =>
       (reclaimTypes || []).filter(
         (rt) =>
-          rt.categoria?.toUpperCase() === "DATOS DE ARTICULO" &&
-          !rt.deleted_at
+          rt.categoria?.toUpperCase() === "DATOS DE ARTICULO" && !rt.deleted_at
       ),
     [reclaimTypes]
   );
@@ -88,36 +87,46 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
   };
 
   return (
-    <div className="p-6 w-128 bg-white rounded-2xl">
-      <h2 className="text-xl font-semibold mb-4">
-        {t("informErrorTitle") /* ej: "Informar error del artículo" */}
+    <div className="p-6 w-128 bg-[#0B0B0B] rounded-2xl border border-white/10 shadow-2xl">
+      <h2 className="text-xl font-extrabold mb-4 text-white">
+        {t("informErrorTitle")}
+        <span className="text-[#E10600]">.</span>
       </h2>
 
       {/* Info del artículo */}
-      <div className="mb-4">
-        <p className="font-bold text-gray-800">{articleId}</p>
+      <div className="mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
+        <p className="font-extrabold text-white tracking-wide">{articleId}</p>
         {/* TODO: reemplazar por nombre real del artículo si lo tenés */}
-        <p className="text-gray-600">ELF MOTO 4 CRUISE 20W50 X 1L</p>
+        <p className="text-white/70 text-sm mt-1">
+          ELF MOTO 4 CRUISE 20W50 X 1L
+        </p>
+        <div className="mt-3 h-0.5 w-12 bg-[#E10600] opacity-80 rounded-full" />
       </div>
 
       {/* Select de tipo de reclamo */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          { "Tipo de reclamo"}
+        <label className="block text-sm font-semibold text-white/80 mb-1">
+          {"Tipo de reclamo"}
         </label>
+
         <select
-          className="w-full border border-gray-300 rounded-md p-2 text-sm"
+          className="
+          w-full rounded-xl p-3 text-sm
+          bg-white/10 text-white
+          border border-white/20
+          focus:border-[#E10600] focus:outline-none
+          disabled:opacity-60 disabled:cursor-not-allowed
+        "
           value={selectedReclaimTypeId}
           onChange={(e) => setSelectedReclaimTypeId(e.target.value)}
           disabled={isLoadingTypes}
         >
-          <option value="">
-            {isLoadingTypes
-              ?  "Cargando..."
-              :  "Seleccioná un tipo de reclamo"}
+          <option value="" className="bg-[#0B0B0B]">
+            {isLoadingTypes ? "Cargando..." : "Seleccioná un tipo de reclamo"}
           </option>
+
           {articleReclaimTypes.map((rt) => (
-            <option key={rt.id} value={rt.id}>
+            <option key={rt.id} value={rt.id} className="bg-[#0B0B0B]">
               {rt.tipo || rt.categoria}
             </option>
           ))}
@@ -126,7 +135,13 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
 
       {/* Descripción */}
       <textarea
-        className="w-full p-3 border border-gray-300 rounded-md"
+        className="
+        w-full p-3 rounded-xl
+        bg-white/10 text-white
+        border border-white/20
+        focus:border-[#E10600] focus:outline-none
+        placeholder:text-white/40
+      "
         placeholder={t("describeErrorPlaceholder")}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -134,35 +149,48 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
       />
 
       {/* Botones */}
-      <div className="flex justify-end mt-6 gap-4">
+      <div className="flex justify-end mt-6 gap-3">
         <button
           type="button"
           onClick={closeModal}
-          className="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+          className="
+          px-4 py-2 rounded-xl
+          bg-white/10 text-white
+          border border-white/20
+          hover:bg-white/15
+          transition-all
+        "
         >
           {t("close")}
         </button>
+
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isLoading}
-          className={`px-4 py-2 rounded-md text-white ${
+          className={`
+          px-4 py-2 rounded-xl text-white font-bold
+          transition-all shadow-lg
+          ${
             isLoading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
+              ? "bg-white/10 border border-white/10 cursor-not-allowed text-white/60"
+              : "bg-[#E10600] hover:shadow-xl hover:scale-[1.02]"
+          }
+        `}
         >
           {isLoading ? t("sending") : t("send")}
         </button>
       </div>
 
+      {/* Mensajes */}
       {isSuccess && (
-        <p className="text-green-500 mt-4">
+        <p className="text-emerald-400 mt-4 text-sm font-semibold">
           {t("successMessage") || "Se envió el reclamo correctamente."}
         </p>
       )}
+
       {isError && (
-        <p className="text-red-500 mt-4">
+        <p className="text-[#E10600] mt-4 text-sm font-semibold">
           {t("errorMessage") || "Ocurrió un error al enviar el reclamo."}
         </p>
       )}

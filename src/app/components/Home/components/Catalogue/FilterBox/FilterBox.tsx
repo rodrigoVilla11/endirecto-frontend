@@ -25,8 +25,12 @@ const FilterBox = ({ isVisible, onClose }: any) => {
     { label: tags, clear: () => setTags(""), show: tags.length > 0 },
     { label: brand, clear: () => setBrand(""), show: brand && brand !== "" },
     { label: item, clear: () => setItem(""), show: item && item !== "" },
-    { label: vehicleBrand, clear: () => setVehicleBrand(""), show: vehicleBrand && vehicleBrand !== "" },
-  ].filter(f => f.show);
+    {
+      label: vehicleBrand,
+      clear: () => setVehicleBrand(""),
+      show: vehicleBrand && vehicleBrand !== "",
+    },
+  ].filter((f) => f.show);
 
   const clearAllFilters = () => {
     setTags("");
@@ -38,18 +42,23 @@ const FilterBox = ({ isVisible, onClose }: any) => {
   return (
     <>
       {isVisible && (
-        <div className="w-80 lg:w-96 h-fit sticky top-24 bg-white rounded-3xl shadow-2xl border-2 border-gray-200 overflow-hidden">
+        <div className="w-80 lg:w-96 h-fit sticky top-24 bg-[#0B0B0B] rounded-3xl shadow-2xl border border-white/10 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-6 flex justify-between items-center">
+          <div className="bg-[#0B0B0B] p-6 flex justify-between items-center border-b border-white/10">
             <div className="flex items-center gap-3">
-              <Filter className="w-6 h-6 text-white" />
-              <h2 className="text-xl font-bold text-white">
+              <div className="p-2 rounded-xl bg-[#E10600]/10 border border-[#E10600]/25">
+                <Filter className="w-6 h-6 text-[#E10600]" />
+              </div>
+              <h2 className="text-xl font-extrabold text-white">
                 {t("filters") || "Filtros"}
+                <span className="text-[#E10600]">.</span>
               </h2>
             </div>
-            <button 
+
+            <button
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
+              className="text-white/70 hover:text-white hover:bg-white/10 rounded-xl p-2 transition-all"
+              aria-label={t("close") || "Cerrar"}
             >
               <X className="w-6 h-6" />
             </button>
@@ -57,36 +66,54 @@ const FilterBox = ({ isVisible, onClose }: any) => {
 
           {/* Filtros aplicados */}
           {activeFilters.length > 0 && (
-            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-b-2 border-gray-200">
+            <div className="p-6 bg-white/5 border-b border-white/10">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-[#E10600] rounded-full animate-pulse" />
                   {t("filtersApplied") || "Filtros Aplicados"}
                 </h3>
+
                 <button
                   onClick={clearAllFilters}
-                  className="text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-all flex items-center gap-1"
+                  className="
+                  text-xs font-extrabold
+                  text-white
+                  bg-[#E10600] hover:bg-[#c80500]
+                  px-3 py-1.5 rounded-xl
+                  transition-all flex items-center gap-2
+                "
                 >
-                  <XCircle className="w-3 h-3" />
+                  <XCircle className="w-3.5 h-3.5" />
                   {t("clearAll") || "Limpiar todo"}
                 </button>
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 {activeFilters.map((filter, index) => (
                   <div
                     key={index}
-                    className="group relative inline-flex items-center gap-2 bg-white border-2 border-purple-200 rounded-xl px-3 py-2 shadow-sm hover:shadow-md transition-all"
+                    className="
+                    group relative inline-flex items-center gap-2
+                    bg-white/5 border border-white/10
+                    rounded-2xl px-3 py-2
+                    hover:border-[#E10600]/40 hover:bg-white/10
+                    transition-all
+                  "
                   >
-                    <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
+                    <span className="text-sm font-semibold text-white/80 max-w-[140px] truncate">
                       {filter.label}
                     </span>
                     <button
                       onClick={filter.clear}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1 transition-all"
+                      className="
+                      text-white/70 hover:text-white
+                      hover:bg-[#E10600]/15
+                      rounded-xl p-1.5 transition-all
+                    "
                       title={t("remove") || "Eliminar"}
+                      aria-label={t("remove") || "Eliminar"}
                     >
-                      <FaTrashCan className="w-3 h-3" />
+                      <FaTrashCan className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -97,15 +124,15 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           {/* Contenido de filtros */}
           <div className="p-6 space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 hover:border-purple-300 transition-colors">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-[#E10600]/40 transition-colors">
                 <Brands onChange={setBrand} brand={brand} />
               </div>
-              
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 hover:border-purple-300 transition-colors">
+
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-[#E10600]/40 transition-colors">
                 <Items onChange={setItem} item={item} />
               </div>
-              
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 hover:border-purple-300 transition-colors">
+
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-[#E10600]/40 transition-colors">
                 <VehiclesBrands />
               </div>
             </div>
@@ -113,12 +140,12 @@ const FilterBox = ({ isVisible, onClose }: any) => {
 
           {/* Footer con contador */}
           {activeFilters.length > 0 && (
-            <div className="p-4 bg-gradient-to-r from-red-500 via-white to-blue-500 border-t-2 border-white">
+            <div className="p-4 bg-white/5 border-t border-white/10">
               <div className="flex items-center justify-between text-white">
-                <span className="text-sm font-semibold">
+                <span className="text-sm font-semibold text-white/80">
                   {t("activeFiltersCount") || "Filtros activos"}
                 </span>
-                <span className="px-3 py-1 bg-white text-purple-600 rounded-full font-bold text-sm">
+                <span className="px-3 py-1 bg-[#E10600] text-white rounded-full font-extrabold text-sm">
                   {activeFilters.length}
                 </span>
               </div>
@@ -126,23 +153,6 @@ const FilterBox = ({ isVisible, onClose }: any) => {
           )}
         </div>
       )}
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #ec4899, #a855f7, #3b82f6);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(to bottom, #db2777, #9333ea, #2563eb);
-        }
-      `}</style>
     </>
   );
 };

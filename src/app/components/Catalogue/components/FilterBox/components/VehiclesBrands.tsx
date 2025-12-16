@@ -24,19 +24,23 @@ const VehicleFilter = () => {
   } = useFilters();
 
   // Consultas (dependen del contexto)
-  const { data: brandsData = [], isLoading: isLoadingBrands } = useGetArticleVehicleBrandsQuery(null);
-  const { data: modelsData = [], isLoading: isLoadingModels } = useGetArticleVehicleModelsQuery(
-    { brand: vehicleBrand },
-    { skip: !vehicleBrand }
-  );
-  const { data: enginesData = [], isLoading: isLoadingEngines } = useGetArticleVehicleEnginesQuery(
-    { brand: vehicleBrand },
-    { skip: !vehicleBrand }
-  );
-  const { data: yearsData = [], isLoading: isLoadingYears } = useGetArticleVehicleYearsQuery(
-    { brand: vehicleBrand, model },
-    { skip: !vehicleBrand || !model }
-  );
+  const { data: brandsData = [], isLoading: isLoadingBrands } =
+    useGetArticleVehicleBrandsQuery(null);
+  const { data: modelsData = [], isLoading: isLoadingModels } =
+    useGetArticleVehicleModelsQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+  const { data: enginesData = [], isLoading: isLoadingEngines } =
+    useGetArticleVehicleEnginesQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+  const { data: yearsData = [], isLoading: isLoadingYears } =
+    useGetArticleVehicleYearsQuery(
+      { brand: vehicleBrand, model },
+      { skip: !vehicleBrand || !model }
+    );
 
   // Cada vez que se actualice alguno de estos valores, se notifican (si fuera necesario)
   // Aquí el componente es "controlado" por el contexto
@@ -74,54 +78,62 @@ const VehicleFilter = () => {
   };
 
   return (
-    <div className="text-xs font-semibold">
+    <div className="text-xs font-semibold text-white/80">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-sm">{t("vehicleFilters")}</h3>
+        <h3 className="font-extrabold text-sm uppercase tracking-wide text-white/80">
+          {t("vehicleFilters")}
+        </h3>
+
         {(vehicleBrand || model || engine || year) && (
-          <button onClick={handleClearFilters} className="text-blue-600 hover:text-blue-800 text-xs">
+          <button
+            onClick={handleClearFilters}
+            className="text-[#E10600] hover:text-white text-xs font-bold transition-colors"
+          >
             {t("clearFilters")}
           </button>
         )}
       </div>
 
-      <FilterDropdown
-        label={t("vehicleBrands")}
-        value={vehicleBrand}
-        onChange={handleBrandChange}
-        options={brandsData}
-        placeholder={t("selectVehicleBrands")}
-        isLoading={isLoadingBrands}
-      />
+      <div className="space-y-3">
+        <FilterDropdown
+          label={t("vehicleBrands")}
+          value={vehicleBrand}
+          onChange={handleBrandChange}
+          options={brandsData}
+          placeholder={t("selectVehicleBrands")}
+          isLoading={isLoadingBrands}
+        />
 
-      <FilterDropdown
-        label={t("vehicleModels")}
-        value={model}
-        onChange={handleModelChange}
-        options={modelsData}
-        placeholder={t("selectVehicleModels")}
-        isLoading={isLoadingModels}
-        disabled={!vehicleBrand}
-      />
+        <FilterDropdown
+          label={t("vehicleModels")}
+          value={model}
+          onChange={handleModelChange}
+          options={modelsData}
+          placeholder={t("selectVehicleModels")}
+          isLoading={isLoadingModels}
+          disabled={!vehicleBrand}
+        />
 
-      <FilterDropdown
-        label={t("vehicleEngines")}
-        value={engine}
-        onChange={handleEngineChange}
-        options={enginesData}
-        placeholder={t("selectVehicleEngines")}
-        isLoading={isLoadingEngines}
-        disabled={!vehicleBrand}
-      />
+        <FilterDropdown
+          label={t("vehicleEngines")}
+          value={engine}
+          onChange={handleEngineChange}
+          options={enginesData}
+          placeholder={t("selectVehicleEngines")}
+          isLoading={isLoadingEngines}
+          disabled={!vehicleBrand}
+        />
 
-      <FilterDropdown
-        label={t("vehicleYears")}
-        value={year}
-        onChange={handleYearChange}
-        options={yearsData}
-        placeholder={t("selectVehicleYears")}
-        isLoading={isLoadingYears}
-        disabled={!vehicleBrand || !model}
-      />
+        <FilterDropdown
+          label={t("vehicleYears")}
+          value={year}
+          onChange={handleYearChange}
+          options={yearsData}
+          placeholder={t("selectVehicleYears")}
+          isLoading={isLoadingYears}
+          disabled={!vehicleBrand || !model}
+        />
+      </div>
     </div>
   );
 };

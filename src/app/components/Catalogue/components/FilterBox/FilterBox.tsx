@@ -92,11 +92,19 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
   const hasActiveFilters = !!(vehicleBrand || model || engine || year);
 
   return (
-    <div className="w-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl p-3 md:p-4 shadow-lg">
+    <div
+      className="
+    w-full
+    bg-white/5 backdrop-blur-xl
+    rounded-3xl p-3 md:p-4
+    shadow-2xl
+    border border-white/10
+  "
+    >
       <div className="flex flex-col gap-3">
-        {/* Primera fila: Título, contador y limpiar */}
+        {/* Primera fila */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs md:text-sm font-bold text-gray-700 uppercase whitespace-nowrap">
+          <span className="text-xs md:text-sm font-extrabold text-white/70 uppercase whitespace-nowrap tracking-wide">
             {t("vehicleFilters") || "FILTRAR POR VEHICULO"}
           </span>
 
@@ -105,13 +113,13 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="text-[10px] md:text-xs font-semibold text-blue-600 hover:text-blue-800"
+                className="text-[10px] md:text-xs font-bold text-[#E10600] hover:text-white transition-colors"
               >
-                { "Limpiar filtros"}
+                {"Limpiar filtros"}
               </button>
             )}
 
-            <span className="text-xs md:text-sm font-semibold text-gray-600 whitespace-nowrap">
+            <span className="text-xs md:text-sm font-semibold text-white/60 whitespace-nowrap">
               {t("results", { count: totalResults })}
             </span>
           </div>
@@ -123,15 +131,23 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
             isMobile ? "grid-cols-2" : "grid-cols-4"
           } gap-2 md:gap-3`}
         >
-          {/* Marca de vehículo */}
+          {/* Marca */}
           <div>
             <select
               value={vehicleBrand}
               onChange={handleBrandChange}
               disabled={isLoadingBrands}
-              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                isLoadingBrands ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
-              }`}
+              className={`
+              w-full px-3 py-2 rounded-2xl
+              border border-white/10
+              bg-black/30 text-xs md:text-sm font-semibold text-white
+              focus:outline-none focus:ring-2 focus:ring-[#E10600]/25
+              ${
+                isLoadingBrands
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:border-[#E10600]/40"
+              }
+            `}
             >
               <option value="">
                 {isLoadingBrands
@@ -152,11 +168,17 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
               value={model}
               onChange={handleModelChange}
               disabled={!vehicleBrand || isLoadingModels}
-              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`
+              w-full px-3 py-2 rounded-2xl
+              border border-white/10
+              bg-black/30 text-xs md:text-sm font-semibold text-white
+              focus:outline-none focus:ring-2 focus:ring-[#E10600]/25
+              ${
                 !vehicleBrand || isLoadingModels
-                  ? "bg-gray-100 cursor-not-allowed opacity-60"
-                  : ""
-              }`}
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:border-[#E10600]/40"
+              }
+            `}
             >
               <option value="">
                 {isLoadingModels
@@ -177,11 +199,17 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
               value={engine}
               onChange={handleEngineChange}
               disabled={!vehicleBrand || isLoadingEngines}
-              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`
+              w-full px-3 py-2 rounded-2xl
+              border border-white/10
+              bg-black/30 text-xs md:text-sm font-semibold text-white
+              focus:outline-none focus:ring-2 focus:ring-[#E10600]/25
+              ${
                 !vehicleBrand || isLoadingEngines
-                  ? "bg-gray-100 cursor-not-allowed opacity-60"
-                  : ""
-              }`}
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:border-[#E10600]/40"
+              }
+            `}
             >
               <option value="">
                 {isLoadingEngines
@@ -202,11 +230,17 @@ const FilterBox = ({ isVisible, onClose, totalResults }: FilterBoxProps) => {
               value={year}
               onChange={handleYearChange}
               disabled={!vehicleBrand || !model || isLoadingYears}
-              className={`w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`
+              w-full px-3 py-2 rounded-2xl
+              border border-white/10
+              bg-black/30 text-xs md:text-sm font-semibold text-white
+              focus:outline-none focus:ring-2 focus:ring-[#E10600]/25
+              ${
                 !vehicleBrand || !model || isLoadingYears
-                  ? "bg-gray-100 cursor-not-allowed opacity-60"
-                  : ""
-              }`}
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:border-[#E10600]/40"
+              }
+            `}
             >
               <option value="">
                 {isLoadingYears

@@ -433,7 +433,7 @@ const ShoppingCart: React.FC = () => {
       ]}
     >
       <div className="p-4">
-        <h3 className="font-bold text-lg">Carrito de Compras</h3>
+        <h3 className="font-bold text-lg text-white">Carrito de Compras</h3>
         <Header headerBody={headerConfig} />
         <div className="overflow-x-auto">
           {cartItems.length === 0 ? (

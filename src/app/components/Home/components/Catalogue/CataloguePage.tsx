@@ -4,12 +4,12 @@ import { FaFilter, FaList } from "react-icons/fa";
 import { RxDashboard } from "react-icons/rx";
 import { useRouter } from "next/navigation";
 import { useFilters } from "@/app/context/FiltersContext";
-import Articles from "./Articles/Articles";
 import Modal from "@/app/components/components/Modal";
 import PopUpModal from "./Articles/PopUpModal";
 import FilterBox from "./FilterBox/FilterBox";
 import { useTranslation } from "react-i18next";
 import { Grid3x3, List, SlidersHorizontal } from "lucide-react";
+import Articles from "./Articles/Articles";
 
 const CataloguePage = () => {
   const { t } = useTranslation();
@@ -48,13 +48,15 @@ const CataloguePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white mt-10">
+    <div className="min-h-screen bg-[#0B0B0B] mt-6">
       {/* Header */}
-      <div className="bg-white border-b-2 border-gray-200 shadow-sm">
+      <div className="bg-[#0B0B0B] border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             🛍️ {t("catalogueHeader") || "Catálogo"}
+            <span className="text-[#E10600]">.</span>
           </h1>
+          <div className="mt-3 h-1 w-24 rounded-full bg-[#E10600]" />
         </div>
       </div>
 
@@ -68,74 +70,111 @@ const CataloguePage = () => {
 
           <div className="flex-1 flex flex-col gap-6">
             {/* Barra de control */}
-            <div className="bg-white rounded-2xl shadow-lg p-4 border-2 border-gray-200">
+            <div className="rounded-3xl p-4 bg-white/5 border border-white/10 backdrop-blur shadow-xl">
               <div className="flex flex-wrap items-center gap-3">
                 {/* Botón de filtros */}
                 <button
                   onClick={toggleFilterBox}
-                  className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-xl ${
+                  className={`
+                  group flex items-center gap-2
+                  px-6 py-3 rounded-2xl
+                  font-bold text-sm
+                  transition-all duration-200
+                  border shadow-lg
+                  ${
                     isFilterBoxVisible
-                      ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black"
-                      : "bg-white text-gray-700 border-2 border-gray-300 hover:border-purple-500"
-                  }`}
+                      ? "bg-[#E10600] text-white border-[#E10600]"
+                      : "bg-white/5 text-white/80 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+                  }
+                `}
                 >
-                  <SlidersHorizontal className={`w-4 h-4 ${
-                    isFilterBoxVisible ? "text-white" : "text-gray-700 group-hover:text-purple-500"
-                  }`} />
+                  <SlidersHorizontal
+                    className={`w-4 h-4 ${
+                      isFilterBoxVisible
+                        ? "text-white"
+                        : "text-white/70 group-hover:text-[#E10600]"
+                    }`}
+                  />
                   <span>{t("filtersButton") || "Filtros"}</span>
+
                   {!isFilterBoxVisible && (
-                    <span className="ml-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full animate-pulse">
+                    <span className="ml-1 px-2 py-0.5 bg-[#E10600] text-white text-xs rounded-full animate-pulse">
                       !
                     </span>
                   )}
                 </button>
 
                 {/* Separador */}
-                <div className="hidden sm:block h-8 w-px bg-gray-300"></div>
+                <div className="hidden sm:block h-8 w-px bg-white/10" />
 
-                {/* Vista como catálogo */}
+                {/* Vista catálogo */}
                 <button
                   onClick={() => toggleShowArticles("catalogue")}
-                  className={`group flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg ${
+                  className={`
+                  group flex items-center justify-center gap-2
+                  px-4 py-3 rounded-2xl
+                  font-bold text-sm
+                  transition-all duration-200
+                  border shadow-lg
+                  ${
                     showArticles === "catalogue"
-                      ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white"
-                      : "bg-white text-gray-700 border-2 border-gray-300 hover:border-emerald-500"
-                  }`}
+                      ? "bg-white text-black border-white"
+                      : "bg-white/5 text-white/80 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+                  }
+                `}
                   title={t("catalogueView") || "Vista Catálogo"}
                 >
-                  <Grid3x3 className={`w-5 h-5 ${
-                    showArticles === "catalogue" ? "text-white" : "text-gray-700 group-hover:text-emerald-500"
-                  }`} />
+                  <Grid3x3
+                    className={`w-5 h-5 ${
+                      showArticles === "catalogue"
+                        ? "text-black"
+                        : "text-white/70 group-hover:text-[#E10600]"
+                    }`}
+                  />
                   <span className="hidden md:inline">
                     {t("catalogueView") || "Catálogo"}
                   </span>
                 </button>
 
-                {/* Vista como lista */}
+                {/* Vista lista */}
                 <button
                   onClick={() => toggleShowArticles("list")}
-                  className={`group flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg ${
+                  className={`
+                  group flex items-center justify-center gap-2
+                  px-4 py-3 rounded-2xl
+                  font-bold text-sm
+                  transition-all duration-200
+                  border shadow-lg
+                  ${
                     showArticles === "list"
-                      ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
-                      : "bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-500"
-                  }`}
+                      ? "bg-white text-black border-white"
+                      : "bg-white/5 text-white/80 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+                  }
+                `}
                   title={t("listView") || "Vista Lista"}
                 >
-                  <List className={`w-5 h-5 ${
-                    showArticles === "list" ? "text-white" : "text-gray-700 group-hover:text-blue-500"
-                  }`} />
+                  <List
+                    className={`w-5 h-5 ${
+                      showArticles === "list"
+                        ? "text-black"
+                        : "text-white/70 group-hover:text-[#E10600]"
+                    }`}
+                  />
                   <span className="hidden md:inline">
                     {t("listView") || "Lista"}
                   </span>
                 </button>
 
-                {/* Info adicional (opcional) */}
-                <div className="ml-auto hidden lg:flex items-center gap-2 text-sm text-gray-600">
+                {/* Info adicional */}
+                <div className="ml-auto hidden lg:flex items-center gap-2 text-sm text-white/70">
                   <span className="font-semibold">
                     {t("activeFilters") || "Filtros activos"}:
                   </span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold">
-                    {[brand, item, vehicleBrand, stock, tags].filter(Boolean).length}
+                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full font-extrabold text-white">
+                    {
+                      [brand, item, vehicleBrand, stock, tags].filter(Boolean)
+                        .length
+                    }
                   </span>
                 </div>
               </div>
@@ -159,10 +198,7 @@ const CataloguePage = () => {
 
       {/* Modal */}
       <Modal isOpen={isModalVisible} onClose={closeModal}>
-        <PopUpModal
-          closeModal={closeModal}
-          handleRedirect={handleRedirect}
-        />
+        <PopUpModal closeModal={closeModal} handleRedirect={handleRedirect} />
       </Modal>
     </div>
   );

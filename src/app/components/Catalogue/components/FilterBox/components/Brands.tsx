@@ -25,23 +25,48 @@ const Brands = ({ onChange, brand }: any) => {
   };
 
   return (
-    <div className="text-xs font-semibold">
-      <div className="mb-4">
-        <div className="relative flex gap-1 justify-center items-center">
+    <div className="text-xs font-semibold text-white/80 px-4">
+      <div className="">
+        <div className="relative">
           <select
             id="brands"
             value={selectedBrand}
             onChange={handleBrandChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="
+          w-full
+          appearance-none
+          rounded-2xl
+          px-4 py-2
+          bg-white/10
+          border border-white/20
+          text-white font-bold text-xs
+          backdrop-blur
+          shadow-lg
+          transition-all duration-200
+          hover:bg-white/20
+          focus:outline-none
+          focus:ring-2 focus:ring-purple-400
+        "
           >
-            {selectedBrand === "" && <option value="">{t("selectBrand")}</option>}
+            {selectedBrand === "" && (
+              <option value="" className="bg-zinc-900 text-white">
+                {t("selectBrand")}
+              </option>
+            )}
+
             {brands?.map((brand, index) => (
-              <option key={index} value={brand.id}>
+              <option
+                key={index}
+                value={brand.id}
+                className="bg-zinc-900 text-white font-semibold"
+              >
                 {brand.name}
               </option>
             ))}
           </select>
-          <FaAngleDown className="absolute right-3 pointer-events-none" />
+
+          {/* Icono */}
+          <FaAngleDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" />
         </div>
       </div>
     </div>

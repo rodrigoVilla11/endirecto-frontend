@@ -251,7 +251,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
           {cartItemCount > 0 && (
             <span
               onClick={() => handleRedirect("/shopping-cart")}
-              className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg cursor-pointer"
+              className="absolute -top-1 -right-1 bg-[#E10600]  rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg cursor-pointer"
             >
               {cartItemCount}
             </span>
@@ -267,7 +267,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
         {notifications.filter((n) => !n.read).length > 0 && (
           <span
             onClick={() => setIsNotificationsMenuOpen((prev) => !prev)}
-            className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse"
+            className="absolute -top-1 -right-1 bg-[#E10600]  rounded-full text-[10px] w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse"
           >
             {notifications.filter((n) => !n.read).length}
           </span>
@@ -294,8 +294,8 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Header con gradiente */}
-                    <div className="p-6 flex justify-between items-center bg-gradient-to-r from-red-500 via-white to-blue-500">
-                      <h3 className="font-bold text-xl flex items-center text-black">
+                    <div className="p-6 flex justify-between items-center bg-[#E10600] ">
+                      <h3 className="font-bold text-xl flex items-center text-white">
                         <Bell className="w-6 h-6 mr-3" />
                         {i18n.t("notifications")}
                       </h3>
@@ -412,7 +412,7 @@ const ButtonsIcons = ({ isMobile }: { isMobile?: boolean }) => {
                   className="absolute top-full right-0 mt-4 w-96 bg-white text-gray-800 shadow-2xl rounded-3xl overflow-hidden z-50 border-2 border-gray-200"
                 >
                   {/* Header con gradiente */}
-                  <div className="p-6 flex justify-between items-center bg-gradient-to-r from-red-500 via-white to-blue-500">
+                  <div className="p-6 flex justify-between items-center bg-[#E10600] ">
                     <h3 className="font-bold text-xl flex items-center text-white">
                       <Bell className="w-6 h-6 mr-3" />
                       {i18n.t("notifications")}

@@ -115,35 +115,39 @@ export default function CustomerDashboard() {
     <PrivateRoute
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
-      <div className="min-h-screen p-4 mt-4">
+      <div className="min-h-screen p-4 mt-4 bg-[#0B0B0B]">
         <div className="max-w-2xl mx-auto">
-          {/* Main Card with Gradient Border */}
-          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 p-[2px] rounded-3xl">
-            <div className="bg-zinc-950 rounded-3xl p-6 space-y-6">
+          {/* Main Card */}
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl overflow-hidden">
+            {/* Acento marca */}
+            <div className="h-1 w-full bg-[#E10600] opacity-90" />
+
+            <div className="p-6 space-y-6">
               {/* Customer Header */}
-              <h1 className="text-2xl font-bold text-white text-center">
+              <h1 className="text-2xl font-extrabold text-white text-center">
                 {customer.id} - {customer.name}
+                <span className="text-[#E10600]">.</span>
               </h1>
 
               {/* Action Cards Grid */}
               <div className="grid grid-cols-4 gap-3">
                 <ActionCard
-                  icon={<Package className="h-8 w-8 text-orange-400" />}
+                  icon={<Package className="h-8 w-8 text-white/80" />}
                   title="NUEVO PEDIDO"
                   onClick={handleNewOrder}
                 />
                 <ActionCard
-                  icon={<DollarSign className="h-8 w-8 text-green-400" />}
+                  icon={<DollarSign className="h-8 w-8 text-white/80" />}
                   title="NUEVO PAGO"
                   onClick={() => setIsPaymentModalOpen(true)}
                 />
                 <ActionCard
-                  icon={<MapPin className="h-8 w-8 text-red-400" />}
+                  icon={<MapPin className="h-8 w-8 text-white/80" />}
                   title="NUEVA VISITA"
                   onClick={() => setIsVisitModalOpen(true)}
                 />
                 <ActionCard
-                  icon={<X className="h-8 w-8 text-red-500" />}
+                  icon={<X className="h-8 w-8 text-white/60" />}
                   title="NO VENTA"
                   onClick={() => {}}
                   disabled
@@ -161,32 +165,31 @@ export default function CustomerDashboard() {
 
               {/* Info Section */}
               {(customer.obs4 || customer.obs5 || customer.obs6) && (
-                <div className="bg-zinc-800 rounded-2xl p-6 space-y-4">
-                  {/* Info Grid */}
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 space-y-4">
                   <div className="space-y-3">
-                    <InfoRow
-                      label="Categoría"
-                      value={category || "A"} // HARDCODEADO: "A" si no hay categoría
-                    />
+                    <InfoRow label="Categoría" value={category || "A"} />
                     <InfoRow
                       label="Día de visita"
-                      value={visitDay || "LUNES"} // HARDCODEADO: "LUNES" si no hay día
+                      value={visitDay || "LUNES"}
                     />
                     <InfoRow
                       label="Objetivo de venta"
                       value={formatCurrency(salesTarget)}
                     />
-                    <InfoRow label="Vendido" value={formatCurrency(salesSold)} />
+                    <InfoRow
+                      label="Vendido"
+                      value={formatCurrency(salesSold)}
+                    />
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full h-10 bg-white rounded-full overflow-hidden relative">
+                  <div className="w-full h-10 rounded-full overflow-hidden relative border border-white/10 bg-white/10">
                     <div
-                      className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 transition-all duration-500"
+                      className="h-full bg-[#E10600] transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                     <div className="absolute inset-0 flex items-center justify-end pr-4">
-                      <span className="text-lg font-bold text-zinc-900">
+                      <span className="text-lg font-extrabold text-white">
                         {Math.round(pct)}%
                       </span>
                     </div>
@@ -196,20 +199,25 @@ export default function CustomerDashboard() {
 
               {/* Account Status */}
               <section
-                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                className="
+                rounded-2xl p-6 cursor-pointer
+                border border-white/10 bg-white/5 backdrop-blur
+                hover:bg-white/10 hover:border-[#E10600]/30
+                transition-all
+              "
                 onClick={() => router.push("/accounts/status")}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <FileText className="h-7 w-7 text-white" />
-                  <h2 className="text-xl font-bold text-white">
+                  <FileText className="h-7 w-7 text-white/80" />
+                  <h2 className="text-xl font-extrabold text-white">
                     Estado de cuenta
                   </h2>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-3xl font-bold text-white">
+                  <p className="text-3xl font-extrabold text-white">
                     ${formatedSumAmount}
                   </p>
-                  <p className="text-base text-red-400">
+                  <p className="text-base text-[#E10600]">
                     Vencido: ${formatedExpiredSumAmount}
                   </p>
                 </div>
@@ -217,44 +225,59 @@ export default function CustomerDashboard() {
 
               {/* Monthly Orders */}
               <section
-                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                className="
+                rounded-2xl p-6 cursor-pointer
+                border border-white/10 bg-white/5 backdrop-blur
+                hover:bg-white/10 hover:border-[#E10600]/30
+                transition-all
+              "
                 onClick={() => router.push("/orders/orders")}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <ShoppingCart className="h-7 w-7 text-white" />
-                  <h2 className="text-xl font-bold text-white">
+                  <ShoppingCart className="h-7 w-7 text-white/80" />
+                  <h2 className="text-xl font-extrabold text-white">
                     Pedidos mensuales
                   </h2>
                 </div>
-                <p className="text-lg text-gray-300">Total: {monthlyOrders}</p>
+                <p className="text-lg text-white/70">Total: {monthlyOrders}</p>
               </section>
 
               {/* CRM */}
               <section
-                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                className="
+                rounded-2xl p-6 cursor-pointer
+                border border-white/10 bg-white/5 backdrop-blur
+                hover:bg-white/10 hover:border-[#E10600]/30
+                transition-all
+              "
                 onClick={() => router.push("/reclaims")}
               >
                 <div className="flex items-center gap-3">
-                  <MessageSquare className="h-7 w-7 text-white" />
-                  <h2 className="text-xl font-bold text-white">CRM</h2>
+                  <MessageSquare className="h-7 w-7 text-white/80" />
+                  <h2 className="text-xl font-extrabold text-white">CRM</h2>
                 </div>
               </section>
 
               {/* Notifications */}
               <section
-                className="bg-zinc-800 rounded-2xl p-6 cursor-pointer hover:bg-zinc-700 transition-colors"
+                className="
+                rounded-2xl p-6 cursor-pointer
+                border border-white/10 bg-white/5 backdrop-blur
+                hover:bg-white/10 hover:border-[#E10600]/30
+                transition-all
+              "
                 onClick={() => router.push("/notifications")}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Bell className="h-7 w-7 text-white" />
+                    <Bell className="h-7 w-7 text-white/80" />
                     {notificationsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-[#E10600] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
                         {notificationsCount}
                       </span>
                     )}
                   </div>
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-xl font-extrabold text-white">
                     Notificaciones
                   </h2>
                 </div>

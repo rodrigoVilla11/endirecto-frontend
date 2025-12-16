@@ -51,7 +51,7 @@ const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b bg-gradient-to-r from-red-500 via-white to-blue-600 text-black">
+        <div className="flex items-center justify-between px-5 py-4 border-b bg-[#E10600]  text-black">
           <div>
             <h2 className="font-semibold text-lg">
               {"Detalle del comprobante"}

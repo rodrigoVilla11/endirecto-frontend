@@ -32,7 +32,7 @@ const PurchasePrice: React.FC<PurchasePriceProps> = ({ show, onToggle }) => {
       try {
         await updateCustomer({
           id: userData._id,
-         showCostPrice: value ,
+          showCostPrice: value,
         }).unwrap();
       } catch (error) {
         console.error("Error updating customer showCostPrice:", error);
@@ -43,27 +43,49 @@ const PurchasePrice: React.FC<PurchasePriceProps> = ({ show, onToggle }) => {
   if (localShow === null) return null; // opcional: evitar parpadeo visual antes de tener datos
 
   return (
-    <div className="text-xs font-semibold">
+    <div className="text-xs font-semibold text-white/80">
       <div className="mb-4">
-        <label className="block text-gray-700 font-bold mb-2" htmlFor="cart">
+        <label className="block text-white/70 font-extrabold mb-2 uppercase tracking-wide">
           {t("showPurchasePrice")}
         </label>
-        <div className="flex justify-between items-center gap-2">
+
+        <div className="flex gap-2">
+          {/* Mostrar */}
           <button
             onClick={() => handleToggle(true)}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              localShow ? "bg-primary text-white" : ""
-            }`}
+            className={`
+            flex-1 py-2 rounded-2xl
+            flex items-center justify-center gap-2
+            font-extrabold text-[10px] sm:text-xs
+            border transition-all duration-200
+            ${
+              localShow
+                ? "bg-emerald-500 text-white shadow-xl scale-[1.02]"
+                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/20"
+            }
+          `}
           >
-            <FaRegEye /> {t("show")}
+            <FaRegEye className="text-sm" />
+            {t("show")}
           </button>
+
+          {/* Ocultar */}
           <button
             onClick={() => handleToggle(false)}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              !localShow ? "bg-primary text-white" : ""
-            }`}
+            className={`
+            flex-1 py-2 rounded-2xl
+            flex items-center justify-center gap-2
+            font-extrabold text-[10px] sm:text-xs
+            border transition-all duration-200
+            ${
+              !localShow
+                ? "bg-red-500 text-white shadow-xl scale-[1.02]"
+                : "bg-white/10 text-white/80 border-white/20 hover:bg-white/20"
+            }
+          `}
           >
-            <FaRegEyeSlash /> {t("hide")}
+            <FaRegEyeSlash className="text-sm" />
+            {t("hide")}
           </button>
         </div>
       </div>

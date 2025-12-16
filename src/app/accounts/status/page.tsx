@@ -498,7 +498,7 @@ export default function Page() {
       ]}
     >
       <div className="space-y-4 mt-4">
-        <h3 className="font-bold p-4">{t("statusAccount")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("statusAccount")}</h3>
         <Header
           headerBody={{
             buttons: [

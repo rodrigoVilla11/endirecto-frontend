@@ -580,7 +580,7 @@ const VouchersComponent = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("document.comprobante")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("document.comprobante")}</h3>
         <Header headerBody={headerBody} />
         <Table
           headers={[

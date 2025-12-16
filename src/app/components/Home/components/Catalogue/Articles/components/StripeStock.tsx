@@ -10,17 +10,26 @@ const StripeStock = ({ articleId }: any) => {
   const hasStock = data?.status;
   return (
     <div
-      className={`${
+      className={`
+      px-3 py-1
+      rounded-full
+      text-xs font-extrabold
+      text-center
+      border
+      ${
         hasStock === "IN-STOCK"
-          ? "bg-success" 
-          : hasStock === "NO-STOCK"
-          ? "bg-red-600" 
+          ? "bg-white/5 text-white border-white/10"
           : hasStock === "LIMITED-STOCK"
-          ? "bg-orange-600" 
-          : "bg-gray-500" 
-      } font-bold text-white text-center pt-1  text-xs`}
+          ? "bg-[#E10600]/15 text-[#E10600] border-[#E10600]/40"
+          : hasStock === "NO-STOCK"
+          ? "bg-white/5 text-white/60 border-white/10"
+          : "bg-white/5 text-white/60 border-white/10"
+      }
+    `}
     >
-      <p>{hasStock}</p>
+      {hasStock === "IN-STOCK" && "En stock"}
+      {hasStock === "LIMITED-STOCK" && "Stock limitado"}
+      {hasStock === "NO-STOCK" && "Sin stock"}
     </div>
   );
 };

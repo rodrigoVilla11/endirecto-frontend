@@ -21,22 +21,40 @@ const CardSearch = ({ article, setSearchQuery, handleOpenModal }: any) => {
       className="relative w-36 sm:w-44 max-w-xs"
       onClick={() => handleRedirect(`/catalogue`)}
     >
-      {/* Contenido del artículo */}
-      <div className="relative flex flex-col justify-center items-center shadow-lg bg-white cursor-pointer rounded-lg hover:shadow-xl transition-all duration-300">
+      <div
+        className="
+        relative flex flex-col justify-center items-center
+        shadow-lg hover:shadow-2xl
+        bg-white/5 backdrop-blur-xl
+        border border-white/10 hover:border-[#E10600]/40
+        cursor-pointer rounded-2xl overflow-hidden
+        transition-all duration-300
+        hover:scale-[1.02]
+      "
+      >
+        {/* Badge equivalencia */}
         {article.foundEquivalence && (
-          <div className="absolute top-32 left-2 bg-gray-300 text-black text-xs font-bold px-1 py-0.5 rounded z-20">
+          <div className="absolute top-2 left-2 bg-[#E10600]/15 border border-[#E10600]/35 text-[#E10600] text-[10px] font-extrabold px-2 py-1 rounded-full z-20">
             EQUIVALENCIA
           </div>
         )}
-        <img
-          src={article.images ? article.images[0] : ""}
-          alt={article.name}
-          className="w-32 h-40 object-contain rounded-lg"
-        />
+
+        {/* Imagen */}
+        <div className="w-full bg-black/20">
+          <img
+            src={article.images ? article.images[0] : ""}
+            alt={article.name}
+            className="w-32 h-40 sm:w-40 sm:h-44 object-contain mx-auto p-3"
+          />
+        </div>
+
+        {/* Stock */}
         <div className="w-full">
           <StripeStock articleId={article.id} />
         </div>
-        <div className="bg-gray-100 px-4 py-2 w-full text-center rounded-lg">
+
+        {/* Nombre */}
+        <div className="w-full bg-white/5 border-t border-white/10 px-3 py-2 text-center">
           <ArticleName
             name={article.name}
             id={article.id}
@@ -44,6 +62,9 @@ const CardSearch = ({ article, setSearchQuery, handleOpenModal }: any) => {
             noName={true}
           />
         </div>
+
+        {/* Glow hover */}
+        <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-[#E10600]/10 via-transparent to-blue-500/10" />
       </div>
     </div>
   );

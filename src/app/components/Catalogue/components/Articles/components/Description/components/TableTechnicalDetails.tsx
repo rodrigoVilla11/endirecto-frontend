@@ -7,58 +7,75 @@ const TableTechnicalDetails = ({ articleId }: any) => {
   const { t } = useTranslation();
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading } = useGetArticleTechnicalDetailByArticleIdQuery({ articleId: encodedId });
-
-  if (isLoading) return (
+if (isLoading)
+  return (
     <div className="flex justify-center items-center h-32">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/20 border-t-[#E10600]" />
     </div>
   );
-  
-  if (error) return (
-    <div className="text-center text-red-500 py-8">
+
+if (error)
+  return (
+    <div className="text-center text-[#E10600] py-8 font-semibold">
       <p>{t("error")}</p>
     </div>
   );
 
-  if (!data || data.length === 0) return (
-    <div className="text-center text-gray-500 py-8">
+if (!data || data.length === 0)
+  return (
+    <div className="text-center text-white/60 py-8 italic">
       <p>{t("noTechnicalDetails")}</p>
     </div>
   );
 
-  return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr className="bg-gradient-to-r from-gray-100 to-gray-50">
-            <th className="py-3 px-4 text-left text-sm font-bold text-gray-700">
-              {t("technicalCharacteristics")}
-            </th>
-            <th className="py-3 px-4 text-left text-sm font-bold text-gray-700">
-              {t("value")}
-            </th>
+return (
+  <div className="overflow-x-auto rounded-2xl bg-white/5 backdrop-blur border border-white/10 shadow-2xl">
+    <table className="min-w-full text-sm">
+      <thead className="sticky top-0 z-10">
+        <tr>
+          <th className="py-3 px-4 text-left font-bold text-white/70 bg-[#0B0B0B] border-b border-white/10">
+            {t("technicalCharacteristics")}
+          </th>
+          <th className="py-3 px-4 text-left font-bold text-white/70 bg-[#0B0B0B] border-b border-white/10">
+            {t("value")}
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {data.map((technicalDetail: any, index: number) => (
+          <tr
+            key={index}
+            className={`
+              border-b border-white/10
+              transition-colors
+              ${index % 2 === 0 ? "bg-white/0" : "bg-white/5"}
+              hover:bg-white/10
+            `}
+          >
+            <td className="py-3 px-4 font-medium text-white">
+              <TechnicalDetail
+                technical_detail_id={technicalDetail.technical_detail_id}
+              />
+            </td>
+
+            <td className="py-3 px-4 text-white/80">
+              {technicalDetail.value || (
+                <span className="italic text-white/50">
+                  {t("noValue")}
+                </span>
+              )}
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {data.map((technicalDetail: any, index: number) => (
-            <tr 
-              key={index}
-              className={`border-t border-gray-200 hover:bg-gradient-to-r hover:from-pink-50 hover:via-purple-50 hover:to-blue-50 transition-colors ${
-                index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-              }`}
-            >
-              <td className="py-3 px-4 text-sm font-medium text-gray-700">
-                <TechnicalDetail technical_detail_id={technicalDetail.technical_detail_id}/>
-              </td>
-              <td className="py-3 px-4 text-sm text-gray-600">
-                {technicalDetail.value || t("noValue")}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+        ))}
+      </tbody>
+    </table>
+
+    {/* Acento marca */}
+    <div className="h-1 w-full bg-[#E10600] opacity-90" />
+  </div>
+);
+
 };
 
 export default TableTechnicalDetails;

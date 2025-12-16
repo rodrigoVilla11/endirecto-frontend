@@ -8,14 +8,20 @@ const Description = ({ article, description }: any) => {
   return (
     <div className="w-full space-y-4">
       {/* Descripción */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <span className="text-purple-500">📝</span>
+      <div className="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 shadow-xl">
+        <h3 className="text-lg font-extrabold text-white mb-3 flex items-center gap-2">
+          <span className="text-[#E10600]">📝</span>
           {t("description")}
+          <span className="text-[#E10600]">.</span>
         </h3>
-        <p className="text-sm text-gray-700 leading-relaxed max-h-36 overflow-y-auto hide-scrollbar">
-          {description || t("noDescription")}
+
+        <p className="text-sm text-white/70 leading-relaxed max-h-36 overflow-y-auto hide-scrollbar">
+          {description || (
+            <span className="text-white/50 italic">{t("noDescription")}</span>
+          )}
         </p>
+
+        <div className="mt-4 h-0.5 w-16 bg-[#E10600] opacity-80 rounded-full" />
       </div>
 
       {/* Tablas */}

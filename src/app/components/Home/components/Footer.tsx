@@ -13,121 +13,132 @@ const Footer = () => {
   const router = useRouter();
 
   const handleRedirect = (path: string) => {
-    if (path) {
-      router.push(path);
-    }
+    if (path) router.push(path);
   };
 
   const handleScroll = (id: string) => {
     const element = document.getElementById(id);
-    if (element) {
-      const navbarHeight = document.querySelector("nav")?.clientHeight || 0;
-      element.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      setTimeout(() => {
-        window.scrollBy(0, -navbarHeight);
-      }, 100);
-    }
+    if (!element) return;
+
+    const navbarHeight = document.querySelector("nav")?.clientHeight || 0;
+    element.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    setTimeout(() => {
+      window.scrollBy(0, -navbarHeight);
+    }, 100);
   };
 
   return (
     <footer
-      className={`bg-gradient-to-br from-zinc-900 to-zinc-800 text-white w-full relative overflow-hidden`}
       id="contact"
+      className="w-full relative overflow-hidden bg-[#0B0B0B] text-white"
     >
-      {/* Elementos decorativos */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500 rounded-full blur-3xl"></div>
-      </div>
+      {/* Glow rojo sutil */}
+      <div className="absolute -top-40 -right-40 w-[520px] h-[520px] bg-[#E10600] opacity-20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-48 -left-48 w-[560px] h-[560px] bg-white opacity-5 rounded-full blur-3xl" />
 
-      <div className={`container mx-auto px-4 py-16 relative z-10`}>
-        <div className={`grid ${isMobile ? "grid-cols-1 gap-12" : "grid-cols-3 gap-8"}`}>
-          {/* Columna 1: Logo y descripción */}
-          <div className={`flex flex-col gap-6 ${isMobile ? "items-center text-center" : "items-start"}`}>
-            <div className="bg-white rounded-2xl p-4 shadow-xl">
-              <img src="/dma.png" alt="DMA Logo" className="h-16 object-contain" />
+      <div className="container mx-auto px-4 py-16 relative z-10">
+        <div
+          className={`grid ${
+            isMobile ? "grid-cols-1 gap-12" : "grid-cols-3 gap-8"
+          }`}
+        >
+          {/* Col 1 */}
+          <div
+            className={`flex flex-col gap-6 ${
+              isMobile ? "items-center text-center" : "items-start"
+            }`}
+          >
+            <div className="rounded-2xl p-4 bg-white/5 border border-white/10 shadow-xl backdrop-blur">
+              <img
+                src="/endirecto.png"
+                alt="EN DIRECTO Logo"
+                className="h-40 object-contain"
+              />
             </div>
-            <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
-              {t("footer.description") || "Tu partner de confianza en soluciones industriales."}
+
+            <p className="text-white/70 text-sm leading-relaxed max-w-xs">
+              {t("footer.description") ||
+                "Tu partner de confianza en soluciones industriales."}
             </p>
+
+            {/* Línea/acento */}
+            <div className="h-1 w-16 rounded-full bg-[#E10600]" />
           </div>
 
-          {/* Columna 2: Enlaces */}
-          <div className={`flex flex-col gap-4 ${isMobile ? "items-center" : "items-start"}`}>
-            <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {t("footer.title") || "Enlaces Rápidos"}
+          {/* Col 2 */}
+          <div
+            className={`flex flex-col gap-4 ${
+              isMobile ? "items-center" : "items-start"
+            }`}
+          >
+            <h3 className="text-xl font-extrabold tracking-tight">
+              <span className="text-white">
+                {t("footer.title") || "Enlaces Rápidos"}
+              </span>
+              <span className="text-[#E10600]">.</span>
             </h3>
-            <button 
-              onClick={() => handleRedirect("/")}
-              className="text-gray-300 hover:text-white transition-colors hover:translate-x-2 transform duration-200"
-            >
-              → {t("footer.home")}
-            </button>
-            <button 
-              onClick={() => handleScroll("brands")}
-              className="text-gray-300 hover:text-white transition-colors hover:translate-x-2 transform duration-200"
-            >
-              → {t("footer.brands")}
-            </button>
-            <button 
-              onClick={() => handleScroll("tags")}
-              className="text-gray-300 hover:text-white transition-colors hover:translate-x-2 transform duration-200"
-            >
-              → {t("footer.tags")}
-            </button>
-            <button 
-              onClick={() => handleScroll("articles")}
-              className="text-gray-300 hover:text-white transition-colors hover:translate-x-2 transform duration-200"
-            >
-              → {t("footer.articles")}
-            </button>
-            <button 
-              onClick={() => handleScroll("contact")}
-              className="text-gray-300 hover:text-white transition-colors hover:translate-x-2 transform duration-200"
-            >
-              → {t("footer.contact")}
-            </button>
+
+            {[
+              { label: t("footer.home"), onClick: () => handleRedirect("/") },
+              { label: t("footer.brands"), onClick: () => handleScroll("brands") },
+              { label: t("footer.tags"), onClick: () => handleScroll("tags") },
+              { label: t("footer.articles"), onClick: () => handleScroll("articles") },
+              { label: t("footer.contact"), onClick: () => handleScroll("contact") },
+            ].map((l, i) => (
+              <button
+                key={i}
+                onClick={l.onClick}
+                className="text-white/70 hover:text-white transition-colors duration-200 group"
+              >
+                <span className="text-[#E10600] group-hover:translate-x-1 inline-block transition-transform duration-200">
+                  →
+                </span>{" "}
+                {l.label}
+              </button>
+            ))}
           </div>
 
-          {/* Columna 3: Contacto */}
-          <div className={`flex flex-col gap-4 ${isMobile ? "items-center text-center" : "items-start"}`}>
-            <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              {t("footer.contactTitle") || "Contacto"}
+          {/* Col 3 */}
+          <div
+            className={`flex flex-col gap-4 ${
+              isMobile ? "items-center text-center" : "items-start"
+            }`}
+          >
+            <h3 className="text-xl font-extrabold tracking-tight">
+              <span className="text-white">
+                {t("footer.contactTitle") || "Contacto"}
+              </span>
+              <span className="text-[#E10600]">.</span>
             </h3>
-            <div className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors group">
-              <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-                <IoMdPin className="text-xl" />
+
+            {[
+              { icon: <IoMdPin className="text-xl" />, text: t("footer.address") },
+              { icon: <FaPhoneAlt className="text-lg" />, text: t("footer.phone") },
+              { icon: <MdAttachEmail className="text-xl" />, text: t("footer.email") },
+              { icon: <FaCalendarAlt className="text-lg" />, text: t("footer.schedule") },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 text-white/70 hover:text-white transition-colors group"
+              >
+                <div className="p-2 rounded-lg bg-white/5 border border-white/10 group-hover:border-[#E10600]/40 group-hover:bg-[#E10600]/10 transition-colors">
+                  <span className="text-[#E10600]">{item.icon}</span>
+                </div>
+                <span className="text-sm">{item.text}</span>
               </div>
-              <span className="text-sm">{t("footer.address")}</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors group">
-              <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-                <FaPhoneAlt className="text-lg" />
-              </div>
-              <span className="text-sm">{t("footer.phone")}</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors group">
-              <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-                <MdAttachEmail className="text-xl" />
-              </div>
-              <span className="text-sm">{t("footer.email")}</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors group">
-              <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-                <FaCalendarAlt className="text-lg" />
-              </div>
-              <span className="text-sm">{t("footer.schedule")}</span>
-            </div>
+            ))}
           </div>
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-gray-700 text-center">
-          <p className="text-gray-400 text-sm">
-            © 2025 <span className="font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">DMA</span>. {t("footer.rights") || "Todos los derechos reservados."}
+        <div className="mt-12 pt-8 border-t border-white/10 text-center">
+          <p className="text-white/60 text-sm">
+            © 2025{" "}
+            <span className="font-extrabold text-white">
+              EN DIRECTO<span className="text-[#E10600]">.</span>
+            </span>{" "}
+            {t("footer.rights") || "Todos los derechos reservados."}
           </p>
         </div>
       </div>

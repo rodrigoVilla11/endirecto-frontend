@@ -364,44 +364,64 @@ const DashboardSeller = () => {
     : itemsCard;
 
   return (
-    <div className="gap-4">
-      <div className="mt-2 sm:mt-8 text-white mx-2 sm:mx-5 p-4 sm:p-10">
-        {t("hello", { username: userData?.username })}
+    <div className="flex flex-col gap-6">
+      {/* Saludo */}
+      <div
+        className="mt-2 sm:mt-8 mx-2 sm:mx-5 p-4 sm:p-8 rounded-2xl
+                    bg-white/5 backdrop-blur
+                    border border-white/10 shadow-xl"
+      >
+        <p className="text-xl sm:text-2xl font-extrabold text-white">
+          {t("hello", { username: userData?.username })}
+          <span className="text-[#E10600]">.</span>
+        </p>
       </div>
+
+      {/* Cards principales */}
       <div className="overflow-x-auto h-auto">
         <div
-          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[250px]" : "min-w-[200px]"
-          }`}
+          className={`flex flex-wrap justify-evenly gap-4 p-4
+          ${isOpen ? "min-w-[250px]" : "min-w-[200px]"}
+        `}
         >
           {filteredItemsCard.map((item, index) => (
             <Link
               key={index}
               href={item.href}
-              className="transform transition-transform duration-300 hover:scale-105"
+              className="transform transition-all duration-300 hover:scale-105"
             >
               <Card
                 title={item.title}
                 logo={item.logo}
                 subtitle={item.subtitle}
                 text={item.text}
-                className="shadow-md hover:shadow-lg rounded-md border border-gray-200"
+                className="
+                rounded-2xl
+                bg-white/5 backdrop-blur
+                border border-white/10
+                shadow-lg
+                hover:shadow-2xl
+                hover:border-[#E10600]/40
+                transition-all
+              "
               />
             </Link>
           ))}
         </div>
       </div>
+
+      {/* Shortcuts */}
       <div className="overflow-x-auto h-auto">
         <div
-          className={`flex flex-wrap justify-evenly gap-4 p-4 ${
-            isOpen ? "min-w-[250px]" : "min-w-[220px]"
-          }`}
+          className={`flex flex-wrap justify-evenly gap-4 p-4
+          ${isOpen ? "min-w-[250px]" : "min-w-[220px]"}
+        `}
         >
           {filteredItemsShortcuts.map((item, index) => (
             <Link
               key={index}
               href={item.href}
-              className="transform transition-transform duration-300 hover:scale-105"
+              className="transform transition-all duration-300 hover:scale-105"
             >
               <CardShortcuts
                 title={item.title}

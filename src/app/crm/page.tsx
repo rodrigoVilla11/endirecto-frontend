@@ -641,7 +641,7 @@ const Page = () => {
       requiredRoles={["ADMINISTRADOR", "OPERADOR", "MARKETING", "VENDEDOR"]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("crm.title")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("crm.title")}</h3>
         <Header headerBody={headerBody} />
 
         {predefOpen && typeFilter === "VISIT" && (

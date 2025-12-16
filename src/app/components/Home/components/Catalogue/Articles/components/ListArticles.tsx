@@ -22,28 +22,39 @@ const ListArticles = ({ article }: any) => {
   const closeModal = () => setModalOpen(false);
 
   return (
-    <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-lg mb-4">
-      {/* Imagen del artículo */}
+    <div
+      className="
+      flex items-center justify-between
+      bg-white/5 backdrop-blur
+      p-4 rounded-2xl
+      border border-white/10
+      shadow-lg
+      hover:border-[#E10600]/40
+      transition-all
+      mb-4
+    "
+    >
+      {/* Imagen */}
       <div className="flex items-center w-1/6">
         <ArticleImage img={article.images} />
       </div>
 
-      {/* Nombre del artículo */}
+      {/* Nombre */}
       <div className="flex-1 ml-4">
-        <ArticleName name={article.name} id={article.id} className="text-lg font-semibold" />
+        <ArticleName name={article.name} id={article.id} />
       </div>
 
-      {/* Estado de stock */}
+      {/* Stock */}
       <div className="flex items-center justify-center w-1/6">
-        <StripeStock articleId={article.id} className="text-green-500 text-center" />
+        <StripeStock articleId={article.id} />
       </div>
 
-      {/* Menú del artículo */}
-      <div className="flex items-center w-1/6">
-        <ArticleMenu article={article}/>
+      {/* Menú */}
+      <div className="flex items-center justify-end w-1/6">
+        <ArticleMenu article={article} />
       </div>
 
-      {/* Modal para mostrar detalles del artículo */}
+      {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ArticleDetails closeModal={closeModal} article={article} />
       </Modal>

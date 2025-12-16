@@ -233,340 +233,340 @@ const SalesTargetsView = ({ sellerId: sellerIdProp }: SalesTargetsViewProps) => 
   }, 0);
 
   const totalPercentage = calculatePercentage(totalSold, totalTarget);
+if (isLoadingSeller || isLoadingBrands || isLoadingDocs) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0B0B0B] p-6">
+      <Loader2 className="w-12 h-12 text-[#E10600] animate-spin mb-3" />
+      <p className="text-lg font-extrabold text-white">Cargando datos...</p>
+      <p className="text-sm text-white/60 mt-1">Un segundo…</p>
+    </div>
+  );
+}
 
-  if (isLoadingSeller || isLoadingBrands || isLoadingDocs) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-        <Loader2 className="w-12 h-12 text-purple-500 animate-spin mb-3" />
-        <p className="text-lg font-bold text-gray-700">Cargando datos...</p>
+if (!sellerId) {
+  return (
+    <div className="p-4 min-h-screen bg-[#0B0B0B] flex items-center justify-center">
+      <div className="bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-6 flex items-center gap-4 max-w-md">
+        <AlertCircle className="w-10 h-10 text-[#E10600] flex-shrink-0" />
+        <div>
+          <h3 className="text-lg font-extrabold text-white">Error</h3>
+          <p className="text-sm text-white/70">No se encontró ID de vendedor</p>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (!sellerId) {
-    return (
-      <div className="p-4 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-xl p-6 flex items-center gap-4 max-w-md">
-          <AlertCircle className="w-10 h-10 text-red-500 flex-shrink-0" />
+const statusColor = getStatusColor(totalPercentage);
+
+return (
+  <div className="min-h-screen bg-[#0B0B0B] pb-6 mt-4">
+    {/* Header */}
+    <div className="relative overflow-hidden rounded-b-3xl shadow-2xl p-4 mb-4 border-b border-white/10 bg-white/5">
+      {/* Acento marca */}
+      <div className="absolute left-0 right-0 top-0 h-1 bg-[#E10600] opacity-90" />
+
+      {/* Blobs suaves */}
+      <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10">
+        {/* Info del vendedor */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-white/10 border border-white/10 rounded-xl backdrop-blur-sm">
+            <Target className="w-6 h-6 text-white" />
+          </div>
           <div>
-            <h3 className="text-lg font-bold text-red-700">Error</h3>
-            <p className="text-sm text-red-600">
-              No se encontró ID de vendedor
-            </p>
+            <h1 className="text-xl font-extrabold text-white">{displayName}</h1>
+            <p className="text-white/60 text-xs">ID: {seller?.id}</p>
+          </div>
+        </div>
+
+        <h2 className="text-lg font-extrabold mb-4 text-white">
+          📊 Objetivos de Venta
+        </h2>
+
+        {/* Indicador de carga */}
+        {isLoadingBrandData && (
+          <div className="bg-white/5 border border-white/10 backdrop-blur-lg rounded-xl p-3 mb-3 flex items-center gap-2 animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-[#E10600]" />
+            <span className="text-sm font-bold text-white/80">
+              Cargando datos...
+            </span>
+          </div>
+        )}
+
+        {/* Total General */}
+        <div className="bg-white/5 border border-white/10 backdrop-blur-lg rounded-xl p-4">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div className="flex items-center gap-1 mb-1 text-white/70">
+                <Target className="w-4 h-4" />
+                <span className="text-xs">Objetivo</span>
+              </div>
+              <span className="text-xl font-extrabold block text-white">
+                {formatNumber(totalTarget)}
+              </span>
+              <span className="text-xs text-white/50">Cant. Relativa</span>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div className="flex items-center gap-1 mb-1 text-white/70">
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-xs">Vendidas</span>
+              </div>
+              <span className="text-xl font-extrabold block text-white">
+                {formatNumber(totalSold)}
+              </span>
+              <span className="text-xs text-white/50">Cant. Relativa</span>
+            </div>
+          </div>
+
+          {/* Barra de progreso total */}
+          <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1 text-white/70">
+              <span className="font-semibold">Progreso</span>
+              <span className="font-extrabold text-white">{totalPercentage}%</span>
+            </div>
+
+            <div className="w-full bg-white/10 rounded-full h-6 overflow-hidden border border-white/10">
+              <div
+                className="h-6 transition-all duration-1000 flex items-center justify-end pr-2"
+                style={getGradientStyle(totalPercentage)}
+              >
+                {totalPercentage > 10 && (
+                  <span className="text-white text-xs font-extrabold">
+                    {totalPercentage}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mensaje motivacional */}
+          <div className="text-center text-xs text-white/70">
+            {totalPercentage >= 100 && "🎉 ¡Objetivo cumplido!"}
+            {totalPercentage >= 80 && totalPercentage < 100 && "💪 ¡Casi lo logras!"}
+            {totalPercentage >= 50 && totalPercentage < 80 && "📈 ¡Buen progreso!"}
+            {totalPercentage < 50 && "🚀 ¡Vamos! Aún hay tiempo"}
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
 
-  const statusColor = getStatusColor(totalPercentage);
+    {/* Cards por marca */}
+    <div className="px-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg shadow-md">
+          <Package className="w-5 h-5 text-[#E10600]" />
+        </div>
+        <h3 className="text-lg font-extrabold text-white">Por Marcas</h3>
+      </div>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-6 mt-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-blue-500 text-black rounded-b-3xl shadow-2xl p-4 mb-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+      {brandsWithTargets.map((brand) => {
+        const target = parseFloat(seller?.target?.[brand.id] || "0");
+        const sales = brandSales[brand.id] || {
+          totalAmount: 0,
+          totalQuantity: 0,
+          totalRelativeQuantity: 0,
+        };
 
-        <div className="relative z-10">
-          {/* Info del vendedor */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-              <Target className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{displayName}</h1>
-              <p className="text-white/80 text-xs">ID: {seller?.id}</p>
-            </div>
-          </div>
+        // 👉 Métrica que se usa para objetivo / progreso
+        const usedUnits = isRelativeBrand(brand.id)
+          ? sales.totalRelativeQuantity
+          : sales.totalQuantity;
 
-          <h2 className="text-lg font-bold mb-4">📊 Objetivos de Venta</h2>
+        const percentage = calculatePercentage(usedUnits, target);
+        const isExpanded = expandedBrands[brand.id];
+        const hasData = brandSales[brand.id] !== undefined;
+        const brandStatus = getStatusColor(percentage);
+        const missingUnits = Math.max(0, target - usedUnits);
 
-          {/* Indicador de carga */}
-          {isLoadingBrandData && (
-            <div className="bg-white/20 backdrop-blur-lg rounded-xl p-3 mb-3 flex items-center gap-2 animate-pulse">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm font-semibold">Cargando datos...</span>
-            </div>
-          )}
-
-          {/* Total General */}
-          <div className="bg-white/20 backdrop-blur-lg rounded-xl p-4 border-2 border-white/30">
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="flex items-center gap-1 mb-1">
-                  <Target className="w-4 h-4" />
-                  <span className="text-xs opacity-90">Objetivo</span>
+        return (
+          <div
+            key={brand.id}
+            className={`rounded-2xl shadow-2xl overflow-hidden border border-white/10 bg-white/5 ${
+              !hasData ? "opacity-50" : ""
+            }`}
+          >
+            {/* Header de la card */}
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3 flex-1">
+                  {brand.images && (
+                    <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl p-1.5 flex items-center justify-center shadow flex-shrink-0">
+                      <img
+                        src={brand.images}
+                        alt={brand.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-extrabold text-base text-white truncate">
+                      {brand.name}
+                    </div>
+                    <div className="text-xs text-white/50">
+                      <span className="font-mono">{brand.id}</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xl font-bold block">
-                  {formatNumber(totalTarget)}
-                </span>
-                <span className="text-xs opacity-75">Cant. Relativa</span>
-              </div>
 
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="flex items-center gap-1 mb-1">
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="text-xs opacity-90">Vendidas</span>
-                </div>
-                <span className="text-xl font-bold block">
-                  {formatNumber(totalSold)}
-                </span>
-                <span className="text-xs opacity-75">Cant. Relativa</span>
-              </div>
-            </div>
-
-            {/* Barra de progreso total */}
-            <div className="mb-3">
-              <div className="flex justify-between text-xs mb-1">
-                <span>Progreso</span>
-                <span className="font-bold">{totalPercentage}%</span>
-              </div>
-              <div className="w-full bg-white/30 rounded-full h-6 overflow-hidden backdrop-blur-sm">
-                <div
-                  className="h-6 transition-all duration-1000 flex items-center justify-end pr-2"
-                  style={getGradientStyle(totalPercentage)}
-                >
-                  {totalPercentage > 10 && (
-                    <span className="text-white text-xs font-bold">
-                      {totalPercentage}%
-                    </span>
+                <div className="text-right ml-2">
+                  {hasData ? (
+                    <>
+                      <div className={`text-2xl font-extrabold ${brandStatus.text}`}>
+                        {formatNumber(usedUnits)}
+                      </div>
+                      <div className="text-xs text-white/60 font-semibold whitespace-nowrap">
+                        de {formatNumber(target)}
+                      </div>
+                      <div className="text-xs text-white/40">
+                        {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-1 text-white/40">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Mensaje motivacional */}
-            <div className="text-center text-xs">
-              {totalPercentage >= 100 && "🎉 ¡Objetivo cumplido!"}
-              {totalPercentage >= 80 &&
-                totalPercentage < 100 &&
-                "💪 ¡Casi lo logras!"}
-              {totalPercentage >= 50 &&
-                totalPercentage < 80 &&
-                "📈 ¡Buen progreso!"}
-              {totalPercentage < 50 && "🚀 ¡Vamos! Aún hay tiempo"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cards por marca */}
-      <div className="px-4 space-y-3">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-1.5 bg-white rounded-lg shadow-md">
-            <Package className="w-5 h-5 text-purple-500" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-800">Por Marcas</h3>
-        </div>
-
-        {brandsWithTargets.map((brand) => {
-          const target = parseFloat(seller?.target?.[brand.id] || "0");
-          const sales = brandSales[brand.id] || {
-            totalAmount: 0,
-            totalQuantity: 0,
-            totalRelativeQuantity: 0,
-          };
-
-          // 👉 Métrica que se usa para objetivo / progreso
-          const usedUnits = isRelativeBrand(brand.id)
-            ? sales.totalRelativeQuantity
-            : sales.totalQuantity;
-
-          const percentage = calculatePercentage(usedUnits, target);
-          const isExpanded = expandedBrands[brand.id];
-          const hasData = brandSales[brand.id] !== undefined;
-          const brandStatus = getStatusColor(percentage);
-          const missingUnits = Math.max(0, target - usedUnits);
-
-          return (
-            <div
-              key={brand.id}
-              className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-gray-200 ${
-                !hasData ? "opacity-50" : ""
-              }`}
-            >
-              {/* Header de la card */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    {brand.images && (
-                      <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-1.5 flex items-center justify-center shadow flex-shrink-0">
-                        <img
-                          src={brand.images}
-                          alt={brand.name}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-base text-gray-900 truncate">
-                        {brand.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <span className="font-mono">{brand.id}</span>
-                      </div>
+              {/* Detalles expandibles */}
+              {isExpanded && hasData && (
+                <div className="mb-3 space-y-2 bg-white/5 p-3 rounded-xl border border-white/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/70 font-medium flex items-center gap-1">
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      Artículos vendidos
+                    </span>
+                    <div className="text-right">
+                      <span className="font-extrabold text-white block">
+                        {Math.round(sales.totalQuantity)}
+                      </span>
+                      <span className="text-xs text-white/50">unidades</span>
                     </div>
                   </div>
-                  <div className="text-right ml-2">
-                    {hasData ? (
-                      <>
-                        <div
-                          className={`text-2xl font-bold ${brandStatus.text}`}
-                        >
-                          {formatNumber(usedUnits)}
-                        </div>
-                        <div className="text-xs text-gray-500 font-semibold whitespace-nowrap">
-                          de {formatNumber(target)}
-                        </div>
-                        <div className="text-xs text-gray-400">
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/70 font-medium flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5" />
+                      Cantidad en $
+                    </span>
+                    <span className="font-extrabold text-white text-sm">
+                      {formatCurrency(sales.totalAmount)}
+                    </span>
+                  </div>
+
+                  <div className="h-px bg-white/10 my-1" />
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/70 font-medium flex items-center gap-1">
+                      <Target className="w-3.5 h-3.5" />
+                      Objetivo de unidades
+                    </span>
+                    <div className="text-right">
+                      <span className="font-extrabold text-white block">
+                        {formatNumber(target)}
+                      </span>
+                      <span className="text-xs text-white/50">
+                        {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/70 font-medium">
+                      📊 Faltan para el objetivo
+                    </span>
+                    <div className="text-right">
+                      <span
+                        className={`font-extrabold text-sm block ${
+                          missingUnits > 0 ? "text-amber-400" : "text-emerald-400"
+                        }`}
+                      >
+                        {missingUnits > 0 ? formatNumber(missingUnits) : "✓"}
+                      </span>
+                      {missingUnits > 0 && (
+                        <span className="text-xs text-white/50">
                           {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-1 text-gray-400">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      </div>
-                    )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Detalles expandibles */}
-                {isExpanded && hasData && (
-                  <div className="mb-3 space-y-2 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-700 font-medium flex items-center gap-1">
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        Artículos vendidos
-                      </span>
-                      <div className="text-right">
-                        <span className="font-bold text-gray-900 block">
-                          {Math.round(sales.totalQuantity)}
-                        </span>
-                        <span className="text-xs text-gray-500">unidades</span>
-                      </div>
+              {/* Barra de progreso */}
+              {hasData && (
+                <>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs mb-1 text-white/70">
+                      <span className="font-semibold">Progreso</span>
+                      <span className="font-extrabold text-white">{percentage}%</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-700 font-medium flex items-center gap-1">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        Cantidad en $
-                      </span>
-                      <span className="font-bold text-gray-900 text-sm">
-                        {formatCurrency(sales.totalAmount)}
-                      </span>
-                    </div>
-                    <div className="h-px bg-gray-300 my-1"></div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-700 font-medium flex items-center gap-1">
-                        <Target className="w-3.5 h-3.5" />
-                        Objetivo de unidades
-                      </span>
-                      <div className="text-right">
-                        <span className="font-bold text-gray-900 block">
-                          {formatNumber(target)}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {isRelativeBrand(brand.id) ? "Litros" : "unidades"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-700 font-medium">
-                        📊 Faltan para el objetivo
-                      </span>
-                      <div className="text-right">
-                        <span
-                          className={`font-bold text-sm block ${
-                            missingUnits > 0
-                              ? "text-orange-600"
-                              : "text-green-600"
-                          }`}
-                        >
-                          {missingUnits > 0 ? formatNumber(missingUnits) : "✓"}
-                        </span>
-                        {missingUnits > 0 && (
-                          <span className="text-xs text-gray-500">
-                            {isRelativeBrand(brand.id)
-                              ? "Litros"
-                              : "unidades"}
+                    <div className="w-full bg-white/10 rounded-full h-5 overflow-hidden border border-white/10">
+                      <div
+                        className="h-5 transition-all duration-1000 flex items-center justify-end pr-1.5"
+                        style={getGradientStyle(percentage)}
+                      >
+                        {percentage > 15 && (
+                          <span className="text-white text-xs font-extrabold">
+                            {percentage}%
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* Barra de progreso */}
-                {hasData && (
-                  <>
-                    <div className="mb-2">
-                      <div className="flex justify-between text-xs mb-1 text-gray-600">
-                        <span className="font-semibold">Progreso</span>
-                        <span className="font-bold">{percentage}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden shadow-inner">
-                        <div
-                          className="h-5 transition-all duration-1000 flex items-center justify-end pr-1.5"
-                          style={getGradientStyle(percentage)}
-                        >
-                          {percentage > 15 && (
-                            <span className="text-white text-xs font-bold">
-                              {percentage}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Botón expandir */}
-                    <button
-                      onClick={() => toggleBrand(brand.id)}
-                      className="w-full flex items-center justify-center gap-1 text-gray-600 hover:text-purple-600 hover:bg-purple-50 py-2 rounded-lg transition-all font-semibold text-sm"
-                    >
-                      <span>{isExpanded ? "Ver menos" : "Ver detalles"}</span>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Footer con porcentaje */}
-              {hasData && (
-                <div
-                  className={`bg-gradient-to-r ${brandStatus.bg} text-white text-center py-2.5 font-bold shadow-inner`}
-                >
-                  <div className="flex items-center justify-center gap-1.5 text-sm">
-                    {percentage >= 100 && <span>🎉</span>}
-                    {percentage >= 80 && percentage < 100 && <span>💪</span>}
-                    {percentage >= 50 && percentage < 80 && <span>📈</span>}
-                    {percentage < 50 && <span>🚀</span>}
-                    <span>{percentage}% completado</span>
-                  </div>
-                </div>
+                  {/* Botón expandir */}
+                  <button
+                    onClick={() => toggleBrand(brand.id)}
+                    className="w-full flex items-center justify-center gap-1 text-white/70 hover:text-white hover:bg-white/10 py-2 rounded-lg transition-all font-bold text-sm border border-white/10"
+                  >
+                    <span>{isExpanded ? "Ver menos" : "Ver detalles"}</span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </>
               )}
             </div>
-          );
-        })}
-      </div>
 
-      {brandsWithTargets.length === 0 && (
-        <div className="mx-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-xl p-6 text-center border-2 border-yellow-200">
-          <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-yellow-800 mb-1">
-            Sin objetivos
-          </h3>
-          <p className="text-sm text-yellow-700">
-            No hay objetivos configurados
-          </p>
-        </div>
-      )}
+            {/* Footer con porcentaje */}
+            {hasData && (
+              <div className="bg-white/5 border-t border-white/10 text-white text-center py-2.5 font-extrabold shadow-inner">
+                <div className="flex items-center justify-center gap-1.5 text-sm">
+                  {percentage >= 100 && <span>🎉</span>}
+                  {percentage >= 80 && percentage < 100 && <span>💪</span>}
+                  {percentage >= 50 && percentage < 80 && <span>📈</span>}
+                  {percentage < 50 && <span>🚀</span>}
+                  <span className="text-white/90">{percentage}% completado</span>
+                </div>
+
+                {/* Mini acento marca */}
+                <div className="mt-2 h-1 w-24 mx-auto rounded-full bg-[#E10600]/80" />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
-  );
+
+    {brandsWithTargets.length === 0 && (
+      <div className="mx-4 bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-6 text-center">
+        <AlertCircle className="w-12 h-12 text-[#E10600] mx-auto mb-3" />
+        <h3 className="text-lg font-extrabold text-white mb-1">Sin objetivos</h3>
+        <p className="text-sm text-white/70">No hay objetivos configurados</p>
+      </div>
+    )}
+  </div>
+);
 };
+
 
 // 👇 ESTE es el componente de página que Next.js usa
 // No recibe props personalizados; sólo envuelve la vista en PrivateRoute

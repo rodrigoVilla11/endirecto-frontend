@@ -198,7 +198,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("collectionsUnsummaries")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("collectionsUnsummaries")}</h3>
         <Header headerBody={headerBody} />
         {isQueryLoading && items.length === 0 ? (
           <div className="flex justify-center py-8">

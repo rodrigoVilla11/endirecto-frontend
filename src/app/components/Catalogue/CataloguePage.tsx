@@ -92,12 +92,12 @@ const CataloguePage = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 mt-4">
+    <div className="min-h-screen p-4 mt-4 bg-[#0B0B0B]">
       {/* Botón flotante para abrir sidebar en mobile */}
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-zinc-950 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#1F1F1F] rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
         >
           <FaFilter className="text-xl" />
         </button>
@@ -110,8 +110,8 @@ const CataloguePage = () => {
         ) : (
           isSidebarVisible && (
             <div className="fixed inset-0 z-40 bg-black/50 flex items-end">
-              <div className="w-full bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
-                <div className="sticky top-0 bg-gradient-to-r from-red-500 via-white to-blue-500 p-4 flex justify-between items-center rounded-t-3xl z-10">
+              <div className="w-full bg-white/10 backdrop-blur-lg rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
+                <div className="sticky top-0 bg-[#E10600]  p-4 flex justify-between items-center rounded-t-3xl z-10">
                   <h2 className="text-lg font-bold text-white uppercase">
                     Filtros
                   </h2>

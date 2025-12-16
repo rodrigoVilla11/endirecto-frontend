@@ -215,7 +215,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR", "OPERADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">Objetivos de Vendedores por Marca</h3>
+        <h3 className="font-bold p-4 text-white">Objetivos de Vendedores por Marca</h3>
         <Header headerBody={headerBody} />
 
         {!selectedSellerId ? (

@@ -16,27 +16,53 @@ const PurchasePrice = ({ onToggle }: { onToggle: (show: boolean) => void }) => {
     <div className="px-4 text-sm">
       <div className="mb-4">
         <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="cart"
+          htmlFor="showPurchasePrice"
+          className="block text-white/80 text-sm font-extrabold mb-2"
         >
           {t("showPurchasePrice")}
         </label>
-        <div className="flex justify-between items-center gap-2">
+
+        <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => handleShowPrice(true)}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              showPrice ? "bg-primary text-white" : ""
-            }`}
+            className={`
+            w-1/2
+            flex items-center justify-center gap-2
+            py-2 rounded-xl
+            border
+            font-bold text-sm
+            transition-all duration-200
+            ${
+              showPrice
+                ? "bg-[#E10600] text-white border-[#E10600]"
+                : "bg-white/5 text-white/70 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+            }
+          `}
           >
-            <FaRegEye /> {t("show")}
+            <FaRegEye className="w-4 h-4" />
+            {t("show")}
           </button>
+
           <button
+            type="button"
             onClick={() => handleShowPrice(false)}
-            className={`flex gap-1 items-center justify-center rounded-md border border-primary w-1/2 py-1 ${
-              !showPrice ? "bg-primary text-white" : ""
-            }`}
+            className={`
+            w-1/2
+            flex items-center justify-center gap-2
+            py-2 rounded-xl
+            border
+            font-bold text-sm
+            transition-all duration-200
+            ${
+              !showPrice
+                ? "bg-[#E10600] text-white border-[#E10600]"
+                : "bg-white/5 text-white/70 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+            }
+          `}
           >
-            <FaRegEyeSlash /> {t("hide")}
+            <FaRegEyeSlash className="w-4 h-4" />
+            {t("hide")}
           </button>
         </div>
       </div>

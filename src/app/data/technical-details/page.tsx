@@ -165,7 +165,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("page.technicalDetailsTitle")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("page.technicalDetailsTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         <div ref={lastArticleRef} className="h-10" />

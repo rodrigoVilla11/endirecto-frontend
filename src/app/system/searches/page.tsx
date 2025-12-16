@@ -200,7 +200,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("page.searchesTitle")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("page.searchesTitle")}</h3>
         <Header headerBody={headerBody} />
 
         <Table headers={tableHeader} data={tableData} />

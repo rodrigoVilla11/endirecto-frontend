@@ -105,55 +105,75 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
 
   return (
     <div
-      className="flex flex-col sm:flex-row 
-               items-start sm:items-center 
-               sm:justify-between 
-               bg-gray-100 p-4 rounded-lg 
-               shadow-lg mb-4 gap-4"
+      className="
+      flex flex-col sm:flex-row
+      items-start sm:items-center
+      sm:justify-between
+      gap-4 mb-4
+      p-4
+      rounded-2xl
+      bg-white/5 backdrop-blur
+      border border-white/10
+      shadow-xl
+      hover:border-[#E10600]/40
+      transition-all
+    "
     >
       {/* Imagen del artículo */}
       <div
-        className="w-24 sm:w-24 h-24 sm:h-24 
-                 bg-white border border-gray-200 
-                 rounded-lg shadow-sm flex 
-                 items-center justify-center"
+        className="
+        w-24 h-24
+        rounded-xl
+        bg-white/5 border border-white/10
+        flex items-center justify-center
+        cursor-pointer
+      "
         onClick={openModal}
       >
         <img
           src={article.images?.[0] || "/placeholder.png"}
           alt={article.name}
-          className="w-full h-full object-contain rounded-md"
+          className="w-full h-full object-contain rounded-lg p-2"
         />
       </div>
 
       {/* Detalles del artículo */}
-      <div className="flex-1 flex flex-col gap-1" onClick={openModal}>
-        <h3 className="text-xs font-bold text-gray-800">{article.id}</h3>
-        <p className="text-xs text-gray-600 max-w-48 break-words overflow-hidden max-h-12">
+      <div
+        className="flex-1 flex flex-col gap-1 cursor-pointer"
+        onClick={openModal}
+      >
+        <h3 className="text-xs font-extrabold text-white tracking-wide">
+          {article.id}
+        </h3>
+
+        <p className="text-xs text-white/70 max-w-48 break-words line-clamp-2">
           {article.name}
         </p>
-        <StripeStock
-          articleId={article.id}
-        />
+
+        <StripeStock articleId={article.id} />
       </div>
 
       {/* Precios */}
       <div
-        className="flex flex-col items-end min-w-[150px]"
+        className="flex flex-col items-end min-w-[150px] cursor-pointer"
         onClick={openModal}
       >
         <SuggestedPrice
           articleId={article.id}
           showPurchasePrice={showPurchasePrice}
-          className="text-xl font-bold text-gray-900"
+          className="text-lg font-extrabold text-white"
         />
+
         {showPurchasePrice && (
           <CostPrice
             articleId={article.id}
             selectedClientId={selectedClientId}
-            className="text-gray-500 text-sm"
+            className="text-white/60 text-sm"
           />
         )}
+
+        {/* Acento marca */}
+        <div className="mt-1 h-0.5 w-12 bg-[#E10600] rounded-full opacity-80" />
       </div>
 
       {/* Menú del artículo */}
@@ -165,34 +185,43 @@ const ListArticle = ({ article, showPurchasePrice }: any) => {
         />
       </div>
 
-      {/* Cantidad y botón de agregar al carrito */}
+      {/* Cantidad + carrito */}
       <div className="flex items-center gap-2 w-full sm:w-auto">
         <input
           type="number"
           value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="w-16 p-2 text-center border border-gray-300 rounded-lg"
           min={1}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          className="
+          w-16 p-2 text-center
+          rounded-xl
+          bg-white/10
+          border border-white/20
+          text-white font-semibold
+          focus:border-[#E10600]
+          focus:outline-none
+        "
         />
+
         <button
           onClick={toggleShoppingCart}
-          className="flex items-center justify-center bg-green-500 
-                   hover:bg-green-600 text-white p-2 
-                   rounded-lg shadow-sm"
+          className="
+          flex items-center justify-center
+          p-2 rounded-xl
+          bg-[#E10600]
+          text-white
+          shadow-lg
+          hover:scale-110 hover:shadow-xl
+          transition-all
+        "
+          aria-label="Agregar al carrito"
         >
           <MdShoppingCart className="text-xl" />
         </button>
       </div>
+
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {/* <ArticleDetails
-          closeModal={closeModal}
-          toggleFavourite={toggleFavourite}
-          isFavourite={isFavourite}
-          article={article}
-          toggleShoppingCart={toggleShoppingCart}
-          quantity={quantity}
-          setQuantity={setQuantity}
-        /> */}
+        {/* Modal de detalles (sin cambios) */}
       </Modal>
     </div>
   );

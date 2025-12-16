@@ -133,7 +133,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">CRM Prenotes</h3>
+        <h3 className="font-bold p-4 text-white">CRM Prenotes</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={tableData} />
         {/* Elemento que se usa para disparar el infinite scroll */}

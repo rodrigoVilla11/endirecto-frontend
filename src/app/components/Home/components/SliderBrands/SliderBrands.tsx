@@ -16,51 +16,70 @@ const SliderBrands = () => {
   const { data: brands, isLoading, error } = useGetBrandsQuery(null);
   const { isMobile } = useMobile();
 
-  const logos = brands?.map((brand) => ({
-    id: brand.id,
-    brand: brand.name,
-    logo: brand.images,
-  }));
+  const logos =
+    brands?.map((brand) => ({
+      id: brand.id,
+      brand: brand.name,
+      logo: brand.images,
+    })) || [];
 
+  // Brand UI states
   if (isLoading) {
     return (
-      <div className="w-full py-16 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-700 font-semibold">{t("loadingBrands")}</p>
+      <section className="w-full py-16 bg-[#0B0B0B] border-y border-white/10" id="brands">
+        <div className="container mx-auto px-4 text-center">
+          <div className="inline-block w-12 h-12 border-4 border-white/20 border-t-[#E10600] rounded-full animate-spin mb-4" />
+          <p className="text-white/70 font-semibold">{t("loadingBrands")}</p>
         </div>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full py-16 bg-gradient-to-br from-red-50 to-red-100">
-        <div className="text-center p-6">
-          <span className="text-5xl mb-4 block">⚠️</span>
-          <p className="text-red-700 font-bold">{t("errorLoadingBrands")}</p>
+      <section className="w-full py-16 bg-[#0B0B0B] border-y border-white/10" id="brands">
+        <div className="container mx-auto px-4">
+          <div className="text-center p-6 bg-white/5 border border-white/10 rounded-3xl backdrop-blur shadow-xl">
+            <span className="text-5xl mb-4 block">⚠️</span>
+            <p className="text-white font-bold">{t("errorLoadingBrands")}</p>
+            <p className="text-white/60 text-sm mt-2">
+              {t("tryAgainLater") || "Probá de nuevo en unos minutos."}
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  if (!logos?.length) {
+  if (!logos.length) {
     return (
-      <div className="w-full py-16 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center p-6">
-          <span className="text-5xl mb-4 block">🏷️</span>
-          <p className="text-gray-700 font-bold">{t("noBrandsAvailable")}</p>
+      <section className="w-full py-16 bg-[#0B0B0B] border-y border-white/10" id="brands">
+        <div className="container mx-auto px-4">
+          <div className="text-center p-6 bg-white/5 border border-white/10 rounded-3xl backdrop-blur shadow-xl">
+            <span className="text-5xl mb-4 block">🏷️</span>
+            <p className="text-white font-bold">{t("noBrandsAvailable")}</p>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="w-full py-16 bg-gradient-to-br from-white to-gray-50" id="brands">
-      <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
-          🏷️ {t("ourBrands") || "Nuestras Marcas"}
-        </h2>
+    <section id="brands" className="w-full py-16 bg-[#0B0B0B] relative overflow-hidden">
+      {/* Glow rojo sutil */}
+      <div className="absolute -top-48 -right-48 w-[560px] h-[560px] bg-[#E10600] opacity-15 rounded-full blur-3xl" />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            🏷️ {t("ourBrands") || "Nuestras Marcas"}
+            <span className="text-[#E10600]">.</span>
+          </h2>
+          <p className="text-white/70 mt-2">
+            {t("ourBrandsSubtitle") || "Trabajamos con marcas líderes del rubro"}
+          </p>
+        </div>
+
         <Swiper
           modules={[Navigation, Autoplay]}
           spaceBetween={24}
@@ -72,17 +91,28 @@ const SliderBrands = () => {
         >
           {logos.map((logo) => (
             <SwiperSlide key={logo.id}>
-              <BrandsCards
-                logo={logo.logo}
-                name={logo.brand}
-                id={logo.id}
-                isAuthenticated={isAuthenticated}
-              />
+              <div
+                className="
+                  rounded-3xl overflow-hidden
+                  bg-white/5 border border-white/10
+                  hover:border-[#E10600]/40
+                  transition-all duration-300
+                "
+              >
+                <BrandsCards
+                  logo={logo.logo}
+                  name={logo.brand}
+                  id={logo.id}
+                  isAuthenticated={isAuthenticated}
+                />
+                {/* Acento marca */}
+                <div className="h-1 w-full bg-[#E10600] opacity-90" />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>
       </div>
-    </div>
+    </section>
   );
 };
 

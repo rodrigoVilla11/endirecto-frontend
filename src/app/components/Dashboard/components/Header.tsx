@@ -40,11 +40,11 @@ const Header = () => {
 
   return (
     <div className="mx-4 sm:mx-8 mt-16 sm:mt-10">
-      <div className=" mb-4 rounded-2xl bg-white/80 backdrop-blur shadow-md border border-gray-100 px-5 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div className="mb-4 rounded-2xl bg-white/5 backdrop-blur-xl shadow-md border border-white/10 px-5 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         {/* Perfil */}
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="relative">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center text-white text-2xl font-semibold ring-2 ring-gray-200">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 flex items-center justify-center text-white text-2xl font-extrabold ring-2 ring-white/10">
               {selectedClientId && data?.profileImg ? (
                 <img
                   src={data.profileImg}
@@ -55,24 +55,27 @@ const Header = () => {
                 <span>{firstLetter}</span>
               )}
             </div>
+
+            {/* puntito status (opcional) */}
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#E10600] border-2 border-[#0B0B0B]" />
           </div>
 
           <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm text-gray-500">
+            <span className="text-xs sm:text-sm text-white/60">
               {t("welcomeMessage")}
             </span>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-              {isLoading
-                ? "…"
-                : displayName || t("noNameAvailable")}
+
+            <h1 className="text-lg sm:text-xl font-extrabold text-white truncate">
+              {isLoading ? "…" : displayName || t("noNameAvailable")}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-700 uppercase tracking-wide">
+              <span className="inline-flex items-center rounded-full bg-white/5 border border-white/10 px-3 py-0.5 text-xs font-extrabold text-white/80 uppercase tracking-wide">
                 {userRole}
               </span>
+
               {selectedClientId && data?.id && (
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                <span className="inline-flex items-center rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-white/60">
                   ID: {data.id}
                 </span>
               )}
@@ -81,29 +84,27 @@ const Header = () => {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 w-full sm:w-auto justify-start sm:justify-end">
+        <div className="flex gap-6 w-full sm:w-auto justify-start sm:justify-end">
           {selectedClientId && (
             <div className="flex flex-col items-center min-w-[80px]">
-              <div className="flex items-center gap-1 text-gray-700">
-                <FaShoppingCart className="text-sm" />
-                <span className="text-xl font-semibold">
-                  {cartCount}
-                </span>
+              <div className="flex items-center gap-2 text-white">
+                <FaShoppingCart className="text-sm text-white/70" />
+                <span className="text-xl font-extrabold">{cartCount}</span>
               </div>
-              <span className="mt-0.5 text-xs sm:text-sm text-gray-500 text-center">
+              <span className="mt-0.5 text-xs sm:text-sm text-white/60 text-center">
                 {t("itemsInCart")}
               </span>
             </div>
           )}
 
           <div className="flex flex-col items-center min-w-[80px]">
-            <div className="flex items-center gap-1 text-gray-700">
-              <IoNotificationsOutline className="text-lg" />
-              <span className="text-xl font-semibold">
+            <div className="flex items-center gap-2 text-white">
+              <IoNotificationsOutline className="text-lg text-white/70" />
+              <span className="text-xl font-extrabold">
                 {unreadNotifications}
               </span>
             </div>
-            <span className="mt-0.5 text-xs sm:text-sm text-gray-500 text-center">
+            <span className="mt-0.5 text-xs sm:text-sm text-white/60 text-center">
               {t("notifications")}
             </span>
           </div>

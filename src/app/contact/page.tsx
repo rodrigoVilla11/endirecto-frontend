@@ -71,8 +71,7 @@ const Page = () => {
       const schedule_from = now;
       const schedule_to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 días
 
-      const title =
-        `Nuevo mensaje de contacto de  ${customer.id} - ${customer.name}`;
+      const title = `Nuevo mensaje de contacto de  ${customer.id} - ${customer.name}`;
 
       const description = `
 Teléfono: ${formData.telefono || "-"}
@@ -125,19 +124,22 @@ ${formData.comentario}
         "CUSTOMER",
       ]}
     >
+      return (
       <div className="w-full mx-auto p-6">
-        <div className="bg-white shadow-md rounded-md p-6 space-y-4 flex flex-col justify-center max-w-xl mx-auto">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">
+        <div className="max-w-xl mx-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0B0B0B]">
+            <h2 className="text-xl font-extrabold text-white">
               {t("contact")}
+              <span className="text-[#E10600]">.</span>
             </h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <form onSubmit={handleSubmit} className="p-4 space-y-4 bg-[#0B0B0B]">
             <div className="space-y-2">
               <label
                 htmlFor="nombre"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-semibold text-white/80"
               >
                 {t("name")}
               </label>
@@ -147,16 +149,23 @@ ${formData.comentario}
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-gray-100"
                 required
                 disabled
+                className="
+              w-full p-2 rounded-xl
+              bg-white/5 text-white/70
+              border border-white/10
+              placeholder:text-white/30
+              outline-none
+              cursor-not-allowed
+            "
               />
             </div>
 
             <div className="space-y-2">
               <label
                 htmlFor="telefono"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-semibold text-white/80"
               >
                 {t("phone")}
               </label>
@@ -166,16 +175,23 @@ ${formData.comentario}
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-gray-100"
                 disabled
                 required
+                className="
+              w-full p-2 rounded-xl
+              bg-white/5 text-white/70
+              border border-white/10
+              placeholder:text-white/30
+              outline-none
+              cursor-not-allowed
+            "
               />
             </div>
 
             <div className="space-y-2">
               <label
                 htmlFor="correoElectronico"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-semibold text-white/80"
               >
                 {t("email")}
               </label>
@@ -185,16 +201,23 @@ ${formData.comentario}
                 name="correoElectronico"
                 value={formData.correoElectronico}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-gray-100"
                 disabled
                 required
+                className="
+              w-full p-2 rounded-xl
+              bg-white/5 text-white/70
+              border border-white/10
+              placeholder:text-white/30
+              outline-none
+              cursor-not-allowed
+            "
               />
             </div>
 
             <div className="space-y-2">
               <label
                 htmlFor="comentario"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-semibold text-white/80"
               >
                 {t("comment")}
               </label>
@@ -204,35 +227,60 @@ ${formData.comentario}
                 value={formData.comentario}
                 onChange={handleChange}
                 rows={4}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"
                 required
+                className="
+              w-full p-2 rounded-xl resize-none
+              bg-white/10 text-white
+              border border-white/20
+              placeholder:text-white/40
+              outline-none transition-all
+              focus:border-[#E10600]
+              focus:ring-1 focus:ring-[#E10600]/40
+            "
               />
             </div>
 
             {/* Mensajes de feedback */}
             {successMsg && (
-              <p className="text-sm text-green-600 font-medium">{successMsg}</p>
+              <p className="text-sm font-semibold text-[#E10600] bg-[#E10600]/10 border border-[#E10600]/30 px-3 py-2 rounded-xl">
+                {successMsg}
+              </p>
             )}
             {errorMsg && (
-              <p className="text-sm text-red-600 font-medium">{errorMsg}</p>
+              <p className="text-sm font-semibold text-[#E10600] bg-[#E10600]/10 border border-[#E10600]/30 px-3 py-2 rounded-xl">
+                {errorMsg}
+              </p>
             )}
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-2">
               <button
                 type="submit"
                 disabled={isSending}
-                className={`px-4 py-2 rounded-md text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                  isSending
-                    ? "bg-green-300 cursor-not-allowed"
-                    : "bg-green-500 hover:bg-green-600"
-                }`}
+                className={`
+              px-4 py-2 rounded-xl
+              text-white font-extrabold
+              transition-all
+              focus:outline-none
+              focus:ring-2 focus:ring-[#E10600]/40
+              ${
+                isSending
+                  ? "bg-white/10 border border-white/10 cursor-not-allowed opacity-70"
+                  : "bg-[#E10600] hover:opacity-90 shadow-lg"
+              }
+            `}
               >
                 {isSending ? t("sending") || "Enviando..." : t("send")}
               </button>
             </div>
+
+            {/* Acento marca */}
+            <div className="pt-2">
+              <div className="h-1 w-full bg-[#E10600] opacity-90 rounded-full" />
+            </div>
           </form>
         </div>
       </div>
+      );
     </PrivateRoute>
   );
 };

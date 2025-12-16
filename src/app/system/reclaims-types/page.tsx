@@ -235,7 +235,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold pt-5 px-4">Tipos de Reclamo</h3>
+        <h3 className="font-bold pt-5 px-4 text-white">Tipos de Reclamo</h3>
         <Header headerBody={headerBody} />
 
         {items.length > 0 ? (

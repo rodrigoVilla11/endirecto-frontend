@@ -14,19 +14,57 @@ const ButtonsImage: React.FC<ButtonsImageProps> = ({ logo, name }) => {
   const { isMobile } = useMobile();
 
   const handleRedirect = (path: string, id: string) => {
-    if (path) {
-      router.push(path);
-      setTags(id);
-    }
+    router.push(path);
+    setTags(id);
   };
 
   return (
-    <img
-      src={logo}
-      alt={name}
-      className={`${isMobile ? "w-[70%] h-[70%]" : "w-[80%] h-[80%]"} object-fill cursor-pointer rounded-md`}
-      onClick={() => handleRedirect(`/catalogue`, name)}
-    />
+    <button
+      onClick={() => handleRedirect("/catalogue", name)}
+      className="
+        group relative w-full h-full
+        flex items-center justify-center
+        bg-white/5 backdrop-blur
+        border border-white/10
+        transition-all duration-300
+        hover:border-[#E10600]/40
+        hover:bg-white/10
+        focus:outline-none
+      "
+      aria-label={name}
+    >
+      {/* Imagen */}
+      <img
+        src={logo}
+        alt={name}
+        className={`
+          ${isMobile ? "w-[70%] h-[70%]" : "w-[80%] h-[80%]"}
+          object-contain
+          transition-transform duration-300
+          group-hover:scale-105
+        `}
+      />
+
+      {/* Overlay nombre (solo hover desktop) */}
+      <div className="
+        pointer-events-none
+        absolute inset-0
+        flex items-end justify-center
+        opacity-0 group-hover:opacity-100
+        transition-opacity duration-300
+        bg-gradient-to-t from-black/60 to-transparent
+      ">
+        <span className="
+          mb-3 px-3 py-1
+          text-xs font-bold uppercase tracking-wider
+          text-white
+          bg-[#E10600]/90
+          rounded-full
+        ">
+          {name}
+        </span>
+      </div>
+    </button>
   );
 };
 

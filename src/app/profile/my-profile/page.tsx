@@ -168,7 +168,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4 text-2xl bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
+        <h3 className="font-bold text-white p-4 text-2xl bg-[#E10600]  bg-clip-text text-transparent">
           {t("profile.title")}
         </h3>
         <Header headerBody={headerBody} />

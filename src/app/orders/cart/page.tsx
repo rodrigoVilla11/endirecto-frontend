@@ -68,7 +68,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">CART</h3>
+        <h3 className="font-bold p-4 text-white">CART</h3>
         <Header headerBody={headerBody} />
         {/* <Table headers={tableHeader} /> */}
       </div>

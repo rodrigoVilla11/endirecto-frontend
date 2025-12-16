@@ -14,22 +14,34 @@ const Tag = ({ onSelectTags }: any) => {
   const tags = ["OFFER", "OUTLET", "NEW", "COMBO"];
 
   return (
-    <div className="px-4 text-sm text-white">
+    <div className="px-4 text-sm">
       <div className="mb-4">
         <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="cart"
+          htmlFor="tags"
+          className="block text-white/80 text-sm font-extrabold mb-2"
         >
           {t("tagLabel")}
         </label>
-        <div className="flex justify-between items-center gap-2">
+
+        <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <button
               key={tag}
-              className={`flex gap-1 items-center justify-center rounded-md w-1/2 py-1 ${
-                selectedItem === tag ? "bg-blue-500" : "bg-gray-500"
-              }`}
+              type="button"
               onClick={() => handleButtonClick(tag)}
+              className={`
+              flex-1 min-w-[45%]
+              flex items-center justify-center
+              py-2 rounded-xl
+              border
+              font-bold text-xs sm:text-sm
+              transition-all duration-200
+              ${
+                selectedItem === tag
+                  ? "bg-[#E10600] text-white border-[#E10600]"
+                  : "bg-white/5 text-white/70 border-white/10 hover:border-[#E10600]/40 hover:bg-white/10"
+              }
+            `}
             >
               {t(tag)}
             </button>

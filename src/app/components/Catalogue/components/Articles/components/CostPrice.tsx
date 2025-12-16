@@ -56,30 +56,70 @@ const CostPrice = ({ article, onlyPrice }: any) => {
   const [integerPartOffer, decimalPartOffer] = formatPrice(offer);
 
   return (
-    <div className={`flex ${onlyPrice ? "justify-center" : "justify-between"} items-center`}>
+    <div
+      className={`flex ${
+        onlyPrice ? "justify-center" : "justify-between"
+      } items-center`}
+    >
+      {/* Label */}
       {!onlyPrice && (
-        <p className={`text-gray-500 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
-          {isMobile ? 'P. Costo s/IVA' : t("costPriceExclVAT")}
+        <p
+          className={`
+          text-white/60
+          ${isMobile ? "text-[10px]" : "text-xs"}
+        `}
+        >
+          {isMobile ? "P. Costo s/IVA" : t("costPriceExclVAT")}
         </p>
       )}
+
+      {/* Precio */}
       <div className="flex flex-col items-end">
         {offer !== null ? (
           <>
-            <span className={`line-through text-red-500 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            {/* Precio original */}
+            <span
+              className={`
+              line-through
+              text-[#E10600]
+              ${isMobile ? "text-xs" : "text-sm"}
+            `}
+            >
               ${integerPart || "0"}
-              {decimalPart && <span className="text-[10px]">,{decimalPart}</span>}
+              {decimalPart && (
+                <span className="text-[10px]">,{decimalPart}</span>
+              )}
             </span>
-            <span className={`font-bold text-gray-900 ${isMobile ? 'text-sm' : 'text-base'}`}>
+
+            {/* Precio oferta */}
+            <span
+              className={`
+              font-extrabold
+              text-white
+              ${isMobile ? "text-sm" : "text-base"}
+            `}
+            >
               ${integerPartOffer}
-              {decimalPartOffer && <span className="text-xs">,{decimalPartOffer}</span>}
+              {decimalPartOffer && (
+                <span className="text-xs">,{decimalPartOffer}</span>
+              )}
             </span>
           </>
         ) : (
-          <span className={`font-bold text-gray-900 ${isMobile ? 'text-sm' : 'text-base'}`}>
+          <span
+            className={`
+            font-extrabold
+            text-white
+            ${isMobile ? "text-sm" : "text-base"}
+          `}
+          >
             ${integerPart || "0"}
             {decimalPart && <span className="text-xs">,{decimalPart}</span>}
           </span>
         )}
+
+        {/* Acento visual */}
+        <div className="mt-1 h-0.5 w-full bg-[#E10600] opacity-80 rounded-full" />
       </div>
     </div>
   );

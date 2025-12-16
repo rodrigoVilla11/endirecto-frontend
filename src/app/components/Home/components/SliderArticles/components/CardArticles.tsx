@@ -1,5 +1,5 @@
+"use client";
 import React, { useState } from "react";
-import { BsTag } from "react-icons/bs";
 import { FaCar } from "react-icons/fa6";
 import ImageArticlesSlider from "./ImageArticlesSlider";
 import StripeStock from "@/app/components/Catalogue/components/Articles/components/StripeStock";
@@ -17,9 +17,9 @@ import ArticleVehicle from "@/app/components/Catalogue/components/Articles/compo
 
 const CardArticles = ({ article }: any) => {
   const { isAuthenticated } = useAuth();
-  const encodedId = encodeURIComponent(article.id);
   const { selectedClientId } = useClient();
   const { t } = useTranslation();
+
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
   const [isEquivalencesModalOpen, setEquivalencesModalOpen] = useState(false);
   const [isArticleVehicleModalOpen, setArticleVehicleModalOpen] = useState(false);
@@ -35,11 +35,7 @@ const CardArticles = ({ article }: any) => {
     if (e) e.stopPropagation();
     setEquivalencesModalOpen(false);
     setCurrentArticleId(null);
-    
-    // Use setTimeout to reset preventRedirect flag after the click event has fully propagated
-    setTimeout(() => {
-      setPreventRedirect(false);
-    }, 100);
+    setTimeout(() => setPreventRedirect(false), 100);
   };
 
   const openArticleVehicleModal = (id: string) => {
@@ -52,13 +48,9 @@ const CardArticles = ({ article }: any) => {
     if (e) e.stopPropagation();
     setArticleVehicleModalOpen(false);
     setCurrentArticleId(null);
-    
-    // Use setTimeout to reset preventRedirect flag after the click event has fully propagated
-    setTimeout(() => {
-      setPreventRedirect(false);
-    }, 100);
+    setTimeout(() => setPreventRedirect(false), 100);
   };
-  
+
   const { setArticleId } = useArticleId();
   const router = useRouter();
 
@@ -71,85 +63,105 @@ const CardArticles = ({ article }: any) => {
 
   return (
     <div
-      className="flex flex-col justify-between h-[400px] sm:h-[400px] w-[170px] sm:w-56 shadow-md rounded-lg m-2 border bg-white cursor-pointer"
       onClick={
         isAuthenticated
           ? () => handleRedirect("/catalogue")
           : () => handleRedirect("/catalogues")
       }
+      className="
+        group relative
+        flex flex-col justify-between
+        h-[400px] sm:h-[400px]
+        w-[170px] sm:w-56
+        rounded-3xl m-2
+        bg-white/5 backdrop-blur
+        border border-white/10
+        shadow-xl
+        cursor-pointer
+        transition-all duration-300
+        hover:border-[#E10600]/40 hover:bg-white/10 hover:shadow-2xl
+      "
     >
-      {/* Top Icons */}
-      <div className="flex items-center space-x-4">
+      {/* Top icons */}
+      <div className="flex items-center gap-2 p-3">
         <button
-          className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
+          className="
+            p-2 rounded-xl
+            bg-white/5 border border-white/10
+            hover:border-[#E10600]/40 hover:bg-[#E10600]/10
+            transition-colors z-40
+          "
           onClick={(e) => {
             e.stopPropagation();
             openEquivalencesModal(article.id);
           }}
           title={t("viewEquivalences")}
+          aria-label={t("viewEquivalences")}
         >
-          <GoTag className="w-4 h-4 text-gray-400" />
+          <GoTag className="w-4 h-4 text-white/70" />
         </button>
 
         {article.article_vehicles && article.article_vehicles.length > 0 && (
           <button
-            className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
+            className="
+              p-2 rounded-xl
+              bg-white/5 border border-white/10
+              hover:border-[#E10600]/40 hover:bg-[#E10600]/10
+              transition-colors z-40
+            "
             onClick={(e) => {
               e.stopPropagation();
               openArticleVehicleModal(article.article_vehicles);
             }}
             title={t("viewArticleApplications")}
+            aria-label={t("viewArticleApplications")}
           >
-            <FaCar className="w-4 h-4 text-gray-400" />
+            <FaCar className="w-4 h-4 text-white/70" />
           </button>
         )}
       </div>
 
-      {/* Image Slider */}
-      <div className="flex-grow flex items-center justify-center">
+      {/* Image */}
+      <div className="px-3">
         <ImageArticlesSlider img={article.images ? article.images[0] : ""} />
       </div>
 
-      {/* Stock Stripe */}
-      {isAuthenticated && (
-        <StripeStock
-          articleId={article.id}
-        />
-      )}
+      {/* Stock stripe */}
+      {isAuthenticated && <StripeStock articleId={article.id} />}
 
-      {/* Content Section */}
-      <div className="p-4">
+      {/* Content */}
+      <div className="px-4 pb-4">
         {/* Article ID */}
-        <p className="text-sm text-gray-700 font-bold mb-1">{article.id}</p>
+        <p className="text-sm text-white font-extrabold mb-1 tracking-wide">
+          {article.id}
+        </p>
 
         {/* Description */}
-        <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+        <p className="text-xs text-white/70 mb-3 line-clamp-2">
           {article.description}
         </p>
 
-        {/* Cost Price (if authenticated) */}
+        {/* Prices */}
         {selectedClientId && (
-          <CostPrice
-            articleId={article.id}
-            selectedClientId={selectedClientId}
-          />
-        )}
+          <div className="space-y-3">
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <CostPrice articleId={article.id} selectedClientId={selectedClientId} />
+            </div>
 
-        {/* Divider */}
-        {selectedClientId && <hr className="border-gray-300 my-4" />}
+            <div className="h-px w-full bg-white/10" />
 
-        {/* Suggested Price */}
-        {selectedClientId && (
-          <SuggestedPrice
-            articleId={article.id}
-            showPurchasePrice={isAuthenticated}
-          />
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
+              <SuggestedPrice articleId={article.id} showPurchasePrice={isAuthenticated} />
+            </div>
+          </div>
         )}
       </div>
-      <Modal 
-        isOpen={isEquivalencesModalOpen} 
-        onClose={closeEquivalencesModal}
-      >
+
+      {/* Acento marca */}
+      {/* <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#E10600] opacity-90 rounded-b-3xl" /> */}
+
+      {/* Modals */}
+      <Modal isOpen={isEquivalencesModalOpen} onClose={closeEquivalencesModal}>
         {currentArticleId && (
           <ArticleEquivalence
             articleId={currentArticleId}
@@ -157,10 +169,8 @@ const CardArticles = ({ article }: any) => {
           />
         )}
       </Modal>
-      <Modal
-        isOpen={isArticleVehicleModalOpen}
-        onClose={closeArticleVehicleModal}
-      >
+
+      <Modal isOpen={isArticleVehicleModalOpen} onClose={closeArticleVehicleModal}>
         <ArticleVehicle
           articleVehicles={article.article_vehicles}
           closeModal={closeArticleVehicleModal}

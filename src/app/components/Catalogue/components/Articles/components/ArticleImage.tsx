@@ -29,42 +29,68 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
 
   if (!img || img.length === 0) {
     return (
-      <div className="flex justify-center items-center bg-white">
+      <div className="flex justify-center items-center bg-white/5 backdrop-blur border border-white/10 rounded-2xl">
         <img
-          className={`w-full object-contain ${isMobile ? 'h-32' : 'h-44'}`}
+          className={`w-full object-contain ${isMobile ? "h-32" : "h-44"} p-2`}
           src={defaultImage}
           alt={t("notAvailable")}
         />
+        {/* acento marca */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#E10600] opacity-80 rounded-b-2xl" />
       </div>
     );
   }
 
   return (
     <div className="relative w-full mx-auto">
-      <div className="flex justify-center items-center bg-white">
+      {/* Contenedor imagen */}
+      <div className="flex justify-center items-center bg-white/5 backdrop-blur border border-white/10 rounded-2xl">
         <img
-          className={`w-full object-contain ${isMobile ? 'h-20' : 'h-32'}`}
+          className={`w-full object-contain ${isMobile ? "h-20" : "h-32"} p-2`}
           src={img[currentIndex]}
           alt={t("articleImageAlt", { number: currentIndex + 1 })}
         />
       </div>
 
+      {/* Flechas */}
       {img.length > 1 && (
         <>
           <button
             onClick={handlePrev}
-            className={`absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/80 text-black rounded-full ${
-              isMobile ? 'p-1 text-xs' : 'p-2'
-            } shadow-md hover:scale-110 transition z-20 text-xs` }
+            aria-label={t("previous")}
+            className={`
+            absolute left-2 top-1/2 -translate-y-1/2
+            flex items-center justify-center
+            rounded-full
+            bg-white/10 backdrop-blur
+            border border-white/20
+            text-white
+            ${isMobile ? "p-1 text-xs" : "p-2 text-sm"}
+            shadow-lg
+            hover:bg-[#E10600] hover:border-[#E10600]
+            hover:scale-110
+            transition z-20
+          `}
           >
             ❮
           </button>
 
           <button
             onClick={handleNext}
-            className={`absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/80 text-black rounded-full ${
-              isMobile ? 'p-1 text-xs' : 'p-2'
-            } shadow-md hover:scale-110 transition z-20 text-xs`}
+            aria-label={t("next")}
+            className={`
+            absolute right-2 top-1/2 -translate-y-1/2
+            flex items-center justify-center
+            rounded-full
+            bg-white/10 backdrop-blur
+            border border-white/20
+            text-white
+            ${isMobile ? "p-1 text-xs" : "p-2 text-sm"}
+            shadow-lg
+            hover:bg-[#E10600] hover:border-[#E10600]
+            hover:scale-110
+            transition z-20
+          `}
           >
             ❯
           </button>

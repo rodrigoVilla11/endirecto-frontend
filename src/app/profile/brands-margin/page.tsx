@@ -208,7 +208,7 @@ const tableData =
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("page.title")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("page.title")}</h3>
         <Header headerBody={headerBody} />
         {!isLoading && customersBrands.length > 0 && (
           <Table headers={tableHeader} data={tableData} />

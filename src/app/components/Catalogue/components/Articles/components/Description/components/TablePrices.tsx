@@ -99,26 +99,30 @@ const TablePrices = ({ article }: any) => {
 
   const priceRows = [
     { label: t("iva"), value: "21,00%", highlight: false },
-    { label: t("bonuses"), value: `${bonus?.percentage_1 || 0},00%`, highlight: false },
-    { 
-      label: t("netPrice"), 
-      value: `$ ${integerPartNoIva},${decimalPartNoIva}`, 
-      highlight: true 
+    {
+      label: t("bonuses"),
+      value: `${bonus?.percentage_1 || 0},00%`,
+      highlight: false,
     },
-    { 
-      label: t("margin"), 
-      value: `${margin || 0},00% ${marginItem ? `+ ${marginItem},00%` : ''}`, 
-      highlight: false 
+    {
+      label: t("netPrice"),
+      value: `$ ${integerPartNoIva},${decimalPartNoIva}`,
+      highlight: true,
     },
-    { 
-      label: t("marginValue"), 
-      value: `$ ${integerPartMargin},${decimalPartMargin}`, 
-      highlight: false 
+    {
+      label: t("margin"),
+      value: `${margin || 0},00% ${marginItem ? `+ ${marginItem},00%` : ""}`,
+      highlight: false,
     },
-    { 
-      label: t("suggestedPriceWithIVA"), 
-      value: `$ ${integerPart},${decimalPart}`, 
-      highlight: true 
+    {
+      label: t("marginValue"),
+      value: `$ ${integerPartMargin},${decimalPartMargin}`,
+      highlight: false,
+    },
+    {
+      label: t("suggestedPriceWithIVA"),
+      value: `$ ${integerPart},${decimalPart}`,
+      highlight: true,
     },
   ];
 
@@ -126,19 +130,41 @@ const TablePrices = ({ article }: any) => {
     <div className="space-y-2">
       {priceRows.map((row, index) => (
         <div key={index}>
-          <div className={`flex justify-between items-center p-3 rounded-lg transition-all duration-200 ${
-            row.highlight 
-              ? 'bg-gradient-to-r from-pink-100 via-purple-100 to-blue-100 font-bold' 
-              : 'hover:bg-gray-50'
-          }`}>
-            <p className="font-semibold text-gray-700 text-sm">{row.label}</p>
-            <p className={`text-sm ${row.highlight ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+          <div
+            className={`
+            flex justify-between items-center
+            p-3 rounded-xl
+            transition-all duration-200
+            ${
+              row.highlight
+                ? "bg-[#E10600]/15 border border-[#E10600]/40 font-extrabold"
+                : "hover:bg-white/5"
+            }
+          `}
+          >
+            {/* Label */}
+            <p
+              className={`
+              text-sm
+              ${row.highlight ? "text-white" : "text-white/70"}
+              tracking-wide
+            `}
+            >
+              {row.label}
+            </p>
+
+            {/* Value */}
+            <p
+              className={`
+              text-sm text-right
+              ${row.highlight ? "text-white font-extrabold" : "text-white/80"}
+            `}
+            >
               {row.value}
             </p>
           </div>
-          {index < priceRows.length - 1 && (
-            <hr className="border-gray-200" />
-          )}
+
+          {index < priceRows.length - 1 && <hr className="border-white/10" />}
         </div>
       ))}
     </div>

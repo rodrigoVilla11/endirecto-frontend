@@ -104,7 +104,10 @@ const ArticleDetails = ({
     setForm((prev) => ({ ...prev, favourites: updatedFavourites }));
 
     try {
-      await updateCustomer({ id: form.id, favourites: updatedFavourites }).unwrap();
+      await updateCustomer({
+        id: form.id,
+        favourites: updatedFavourites,
+      }).unwrap();
       refetch();
     } catch (error) {
       console.error("Error updating favourites:", error);
@@ -133,7 +136,14 @@ const ArticleDetails = ({
       console.error("Error updating shopping cart:", error);
       refetch();
     }
-  }, [resolvedArticle, quantity, form.id, form.shopping_cart, updateCustomer, refetch]);
+  }, [
+    resolvedArticle,
+    quantity,
+    form.id,
+    form.shopping_cart,
+    updateCustomer,
+    refetch,
+  ]);
 
   const handleQuantityChange = useCallback((value: number) => {
     setQuantity(Math.max(1, value));
@@ -149,24 +159,23 @@ const ArticleDetails = ({
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex flex-col justify-center items-center h-96 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-2xl">
+        <div className="flex flex-col justify-center items-center h-96 bg-[#0B0B0B] rounded-2xl border border-white/10">
           <div className="relative w-16 h-16 mb-4">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-white/15" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#E10600] animate-spin" />
           </div>
-          <p className="text-sm font-medium text-gray-600">
-            {t("loading")}...
-          </p>
+          <p className="text-sm font-medium text-white/70">{t("loading")}...</p>
         </div>
       );
     }
 
     if (customerError || articleError) {
       return (
-        <div className="flex flex-col justify-center items-center h-96 bg-red-50 rounded-2xl p-8">
+        <div className="flex flex-col justify-center items-center h-96 bg-[#0B0B0B] rounded-2xl border border-white/10 p-8">
           <div className="text-6xl mb-4">⚠️</div>
-          <p className="text-red-600 font-semibold">
-            {t("errorLoadingData")}
+          <p className="text-white font-semibold">{t("errorLoadingData")}</p>
+          <p className="text-white/60 text-sm mt-2">
+            {t("tryAgainLater") || "Probá de nuevo en unos minutos."}
           </p>
         </div>
       );
@@ -174,11 +183,9 @@ const ArticleDetails = ({
 
     if (!resolvedArticle) {
       return (
-        <div className="flex flex-col justify-center items-center h-96 bg-gray-50 rounded-2xl p-8">
+        <div className="flex flex-col justify-center items-center h-96 bg-[#0B0B0B] rounded-2xl border border-white/10 p-8">
           <div className="text-6xl mb-4">📦</div>
-          <p className="text-gray-500 font-medium">
-            {t("noArticleSelected")}
-          </p>
+          <p className="text-white/70 font-medium">{t("noArticleSelected")}</p>
         </div>
       );
     }
@@ -186,16 +193,14 @@ const ArticleDetails = ({
     return (
       <div className="flex flex-col lg:flex-row gap-6 items-stretch p-4">
         {/* Card del artículo */}
-        <div className="w-full lg:max-w-md xl:max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
+        <div className="w-full lg:max-w-md xl:max-w-lg rounded-2xl overflow-hidden bg-white/5 backdrop-blur border border-white/10 shadow-2xl flex flex-col relative">
           {/* Header con iconos y tag */}
           <div className="relative">
             <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-start">
-              {/* Indicador de stock */}
               <div className="flex-shrink-0">
                 <StripeStock articleId={resolvedArticle.id} />
               </div>
 
-              {/* Iconos del menú */}
               <div className="flex items-center gap-1">
                 <ArticleMenu
                   onAddToFavourites={toggleFavourite}
@@ -205,7 +210,6 @@ const ArticleDetails = ({
               </div>
             </div>
 
-            {/* Tag */}
             {resolvedArticle.tag && (
               <div className="absolute top-10 left-3 z-20">
                 <Tag tag={resolvedArticle.tag} />
@@ -213,15 +217,15 @@ const ArticleDetails = ({
             )}
 
             {/* Imagen */}
-            <div className="bg-white pt-12 px-4 pb-4">
-              <div className="h-56 flex items-center justify-center">
+            <div className="pt-12 px-4 pb-4">
+              <div className="h-56 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl">
                 <ArticleImage img={resolvedArticle.images || [""]} />
               </div>
             </div>
           </div>
 
           {/* Información del producto */}
-          <div className="px-6 pb-4 space-y-4 flex-1 flex flex-col justify-between">
+          <div className="px-6 pb-4 space-y-4 flex-1 flex flex-col justify-between text-white">
             <div className="space-y-4">
               <ArticleName
                 name={resolvedArticle.name}
@@ -235,7 +239,7 @@ const ArticleDetails = ({
                     article={resolvedArticle}
                     selectedClientId={selectedClientId}
                   />
-                  <div className="border-t border-gray-200" />
+                  <div className="border-t border-white/10" />
                 </>
               )}
 
@@ -247,7 +251,7 @@ const ArticleDetails = ({
           </div>
 
           {/* Sección de agregar al carrito */}
-          <div className="p-6 bg-gray-50 border-t border-gray-200">
+          <div className="p-6 bg-white/5 border-t border-white/10">
             <AddToCart
               articleId={resolvedArticle.id}
               onAddToCart={toggleShoppingCart}
@@ -261,10 +265,13 @@ const ArticleDetails = ({
           <div className="w-full">
             <StripeStock articleId={resolvedArticle.id} isBar />
           </div>
+
+          {/* Acento marca */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#E10600] opacity-90" />
         </div>
 
         {/* Descripción */}
-        <div className="flex-1 bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="flex-1 rounded-2xl bg-white/5 backdrop-blur border border-white/10 shadow-2xl p-6 text-white">
           <Description
             article={resolvedArticle}
             description={resolvedArticle.description}
@@ -276,18 +283,27 @@ const ArticleDetails = ({
 
   return (
     <div
-      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-white rounded-xl"
+      className="z-50 min-h-[400px] max-h-[90vh] overflow-y-auto hide-scrollbar bg-[#0B0B0B] rounded-xl border border-white/10"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header del modal */}
-      <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-40 p-4 pb-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
+      <div className="flex justify-between items-center sticky top-0 z-40 p-4 pb-4 border-b border-white/10 bg-[#0B0B0B]">
+        <h2 className="text-xl font-extrabold text-white">
           {t("articleDetails")}
+          <span className="text-[#E10600]">.</span>
         </h2>
+
         <button
           onClick={closeModal}
-          className="bg-gradient-to-r from-red-500 via-white to-blue-500 hover:opacity-90 text-black rounded-full h-8 w-8 flex justify-center items-center transition-all shadow-md hover:shadow-lg"
           aria-label={t("close")}
+          className="
+          h-9 w-9 rounded-full flex justify-center items-center
+          bg-white/5 border border-white/10
+          text-white
+          transition-all
+          hover:bg-[#E10600] hover:border-[#E10600]
+          shadow-lg
+        "
         >
           <IoMdClose className="text-lg" />
         </button>

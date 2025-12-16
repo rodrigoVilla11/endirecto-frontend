@@ -24,19 +24,23 @@ const VehicleFilter = () => {
   } = useFilters();
 
   // Consultas (dependen del contexto)
-  const { data: brandsData = [], isLoading: isLoadingBrands } = useGetArticleVehicleBrandsQuery(null);
-  const { data: modelsData = [], isLoading: isLoadingModels } = useGetArticleVehicleModelsQuery(
-    { brand: vehicleBrand },
-    { skip: !vehicleBrand }
-  );
-  const { data: enginesData = [], isLoading: isLoadingEngines } = useGetArticleVehicleEnginesQuery(
-    { brand: vehicleBrand },
-    { skip: !vehicleBrand }
-  );
-  const { data: yearsData = [], isLoading: isLoadingYears } = useGetArticleVehicleYearsQuery(
-    { brand: vehicleBrand, model },
-    { skip: !vehicleBrand || !model }
-  );
+  const { data: brandsData = [], isLoading: isLoadingBrands } =
+    useGetArticleVehicleBrandsQuery(null);
+  const { data: modelsData = [], isLoading: isLoadingModels } =
+    useGetArticleVehicleModelsQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+  const { data: enginesData = [], isLoading: isLoadingEngines } =
+    useGetArticleVehicleEnginesQuery(
+      { brand: vehicleBrand },
+      { skip: !vehicleBrand }
+    );
+  const { data: yearsData = [], isLoading: isLoadingYears } =
+    useGetArticleVehicleYearsQuery(
+      { brand: vehicleBrand, model },
+      { skip: !vehicleBrand || !model }
+    );
 
   // Cada vez que se actualice alguno de estos valores, se notifican (si fuera necesario)
   // Aquí el componente es "controlado" por el contexto
@@ -74,11 +78,27 @@ const VehicleFilter = () => {
   };
 
   return (
-    <div className="text-xs font-semibold">
+    <div className="text-xs font-semibold text-white">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-sm">{t("vehicleFilters")}</h3>
+        <h3 className="font-extrabold text-sm text-white">
+          {t("vehicleFilters")}
+          <span className="text-[#E10600]">.</span>
+        </h3>
+
         {(vehicleBrand || model || engine || year) && (
-          <button onClick={handleClearFilters} className="text-blue-600 hover:text-blue-800 text-xs">
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="
+            text-xs font-extrabold
+            text-white/80
+            hover:text-white
+            bg-white/5 border border-white/10
+            px-3 py-1.5 rounded-xl
+            hover:border-[#E10600]/40 hover:bg-[#E10600]/10
+            transition-all
+          "
+          >
             {t("clearFilters")}
           </button>
         )}

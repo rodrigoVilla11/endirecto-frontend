@@ -18,7 +18,7 @@ const CardShortcuts: React.FC<CardShortcutsProps> = ({
   logo,
   logout = false,
   onClick,
-  color = "#a855f7", // Purple-500 por defecto
+  color = "#808080", // Purple-500 por defecto
   subtitle,
 }) => {
   const { selectedClientId, setSelectedClientId } = useClient();
@@ -45,19 +45,19 @@ const CardShortcuts: React.FC<CardShortcutsProps> = ({
     <button
       onClick={handleClick}
       className={`
-    group relative
-    w-[240px]        /* ← ancho uniforme */
-   h-[95px]        /* altura mínima coherente */
-    flex items-center gap-4
-    bg-white rounded-2xl border-2 border-gray-200
-    shadow-lg hover:shadow-2xl
-    p-5 transition-all duration-300
-    hover:scale-[1.03] hover:border-purple-300
-    overflow-hidden
-    ${logout ? "hover:border-red-300" : ""}
-  `}
+      group relative
+      w-[240px] h-[95px]
+      flex items-center gap-4
+      bg-white/5 backdrop-blur
+      rounded-2xl border border-white/10
+      shadow-lg hover:shadow-2xl
+      p-5 transition-all duration-300
+      hover:scale-[1.03] hover:border-[#E10600]/40
+      overflow-hidden
+      ${logout ? "hover:border-red-500/40" : ""}
+    `}
     >
-      {/* Barra de color lateral */}
+      {/* Barra lateral */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-300 group-hover:w-2"
         style={{
@@ -65,40 +65,43 @@ const CardShortcuts: React.FC<CardShortcutsProps> = ({
         }}
       />
 
-      {/* Contenedor del icono */}
+      {/* Icono */}
       <div
         className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
         style={{
           background: logout
-            ? "linear-gradient(135deg, #fee2e220, #fef2f210)"
-            : `linear-gradient(135deg, ${color}20, ${color}10)`,
-          border: logout ? "2px solid #fca5a540" : `2px solid ${color}40`,
+            ? "linear-gradient(135deg, #ef444420, #ef444410)"
+            : `linear-gradient(135deg, ${color}22, ${color}10)`,
+          border: logout ? "1px solid #ef444460" : `1px solid ${color}55`,
         }}
       >
         {logout ? <LogOut className="w-6 h-6 text-red-500" /> : logo}
       </div>
 
-      {/* Título y subtítulo */}
+      {/* Texto */}
       <div className="flex-1 text-left min-w-0">
         <h3
-          className={`text-base font-bold leading-tight transition-colors ${
+          className={`text-base font-extrabold leading-tight transition-colors ${
             logout
-              ? "text-gray-900 group-hover:text-red-600"
-              : "text-gray-900 group-hover:text-purple-600"
+              ? "text-white group-hover:text-red-500"
+              : "text-white group-hover:text-white"
           }`}
         >
           {title}
         </h3>
+
         {subtitle && (
-          <p className="text-xs text-gray-600 mt-1 font-medium">{subtitle}</p>
+          <p className="text-xs text-white/60 mt-1 font-semibold truncate">
+            {subtitle}
+          </p>
         )}
       </div>
 
-      {/* Flecha indicadora */}
+      {/* Flecha */}
       <div
-        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 border border-white/10"
         style={{
-          backgroundColor: logout ? "#ef444420" : `${color}20`,
+          backgroundColor: logout ? "#ef444420" : `${color}22`,
         }}
       >
         <ChevronRight
@@ -109,20 +112,20 @@ const CardShortcuts: React.FC<CardShortcutsProps> = ({
         />
       </div>
 
-      {/* Efecto de brillo en hover */}
+      {/* Glow hover */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
           background: logout
-            ? "linear-gradient(135deg, transparent 0%, #fee2e210 50%, transparent 100%)"
-            : `linear-gradient(135deg, transparent 0%, ${color}10 50%, transparent 100%)`,
+            ? "linear-gradient(135deg, transparent 0%, #ef444415 50%, transparent 100%)"
+            : `linear-gradient(135deg, transparent 0%, ${color}14 50%, transparent 100%)`,
         }}
       />
 
-      {/* Badge "Logout" (opcional) */}
+      {/* Badge Logout */}
       {logout && (
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/30">
             SALIR
           </span>
         </div>

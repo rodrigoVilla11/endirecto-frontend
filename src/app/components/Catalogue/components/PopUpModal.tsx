@@ -11,7 +11,11 @@ const PopUpModal = ({
   handleRedirect: any;
 }) => {
   const filterBy = "popups";
-  const { data: marketing, error, isLoading } = useGetMarketingByFilterQuery({ filterBy });
+  const {
+    data: marketing,
+    error,
+    isLoading,
+  } = useGetMarketingByFilterQuery({ filterBy });
 
   const marketingData =
     Array.isArray(marketing) && marketing.length > 0 ? marketing[0] : null;
@@ -28,28 +32,41 @@ const PopUpModal = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-4 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="relative bg-white/5 backdrop-blur-xl rounded-3xl p-4 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
         {/* Botón de cierre */}
-        <div className="flex justify-end pb-4">
+        <div className="flex justify-end pb-3">
           <button
             onClick={closeModal}
-            className="bg-gray-300 hover:bg-gray-400 rounded-full h-5 w-5 flex justify-center items-center"
+            className="
+            w-8 h-8 flex items-center justify-center
+            rounded-full
+            bg-white/10 text-white
+            hover:bg-[#E10600]/20 hover:text-[#E10600]
+            transition-all
+          "
+            aria-label="Cerrar"
           >
-            <IoMdClose />
+            <IoMdClose className="text-lg" />
           </button>
         </div>
 
-        {/* Contenido del popup */}
+        {/* Contenido */}
         {marketingData?.popups?.web && (
           <div
             onClick={() => handleRedirect(marketingData.popups.url)}
-            className="cursor-pointer pt-4" 
+            className="
+            cursor-pointer
+            rounded-2xl overflow-hidden
+            border border-white/10
+            hover:border-[#E10600]/40
+            transition-all
+          "
           >
             <img
               src={marketingData.popups.web}
               alt={marketingData.popups.name || "Popup"}
-              className="w-full h-auto"
+              className="w-full h-auto object-contain"
             />
           </div>
         )}

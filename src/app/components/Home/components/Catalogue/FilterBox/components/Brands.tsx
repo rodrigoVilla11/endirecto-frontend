@@ -28,26 +28,53 @@ const Brands = ({ onChange, brand }: any) => {
     <div className="px-4 text-sm">
       <div className="mb-4">
         <label
-          className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="brands"
+          className="block text-white/80 text-sm font-extrabold mb-2"
         >
           {t("brands")}
         </label>
-        <div className="relative flex gap-1 justify-center items-center">
+
+        <div className="relative flex items-center">
           <select
             id="brands"
             value={selectedBrand}
             onChange={handleBrandChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="
+            w-full
+            bg-white/5
+            border border-white/10
+            rounded-xl
+            py-2.5 pl-3 pr-10
+            text-white
+            text-sm
+            font-semibold
+            appearance-none
+            transition-all duration-200
+            focus:outline-none
+            focus:border-[#E10600]/60
+            focus:ring-2 focus:ring-[#E10600]/30
+            hover:border-[#E10600]/40
+          "
           >
-            {selectedBrand === "" && <option value="">{t("selectABrand")}</option>}
+            {selectedBrand === "" && (
+              <option value="" className="bg-[#0B0B0B] text-white">
+                {t("selectABrand")}
+              </option>
+            )}
+
             {brands?.map((brand) => (
-              <option key={brand.id} value={brand.id}>
+              <option
+                key={brand.id}
+                value={brand.id}
+                className="bg-[#0B0B0B] text-white"
+              >
                 {brand.name}
               </option>
             ))}
           </select>
-          <FaAngleDown className="absolute right-3 pointer-events-none" />
+
+          {/* Chevron */}
+          <FaAngleDown className="absolute right-3 text-white/60 pointer-events-none" />
         </div>
       </div>
     </div>

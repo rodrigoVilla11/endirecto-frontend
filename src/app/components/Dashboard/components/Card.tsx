@@ -15,7 +15,7 @@ const Card: React.FC<CardProps> = ({
   title,
   subtitle,
   text,
-  color = "#a855f7", // Purple-500 por defecto
+  color = "#808080", // Purple-500 por defecto
   className = "",
   onClick,
 }) => {
@@ -23,75 +23,73 @@ const Card: React.FC<CardProps> = ({
     <div
       onClick={onClick}
       className={`
-    group relative 
-    w-[280px]       /* ancho uniforme */
-    h-[180px]                 /* ↙ alto fijo */
-    bg-white rounded-2xl border-2 border-gray-200 
-    shadow-lg hover:shadow-2xl 
-    transition-all duration-300 
-    cursor-pointer overflow-hidden
-    hover:scale-[1.03] hover:border-purple-300
-    flex flex-col             /* para que el contenido se acomode */
-    ${className}
-  `}
+      group relative
+      w-[280px] h-[180px]
+      bg-white/5 backdrop-blur
+      rounded-2xl border border-white/10
+      shadow-lg hover:shadow-2xl
+      transition-all duration-300
+      cursor-pointer overflow-hidden
+      hover:scale-[1.03] hover:border-[#E10600]/35
+      flex flex-col
+      ${className}
+    `}
     >
-      {/* Barra de color superior */}
+      {/* Barra superior */}
       <div
         className="absolute top-0 left-0 right-0 h-1.5 transition-all duration-300 group-hover:h-2"
         style={{ backgroundColor: color }}
       />
 
-      {/* Contenido principal */}
+      {/* Contenido */}
       <div className="p-6 flex flex-col gap-4">
-        {/* Icono + Título + Subtitle */}
         <div className="flex items-start gap-4">
-          {/* Contenedor del icono con gradiente */}
+          {/* Icon box */}
           <div
             className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center text-3xl shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
             style={{
-              background: `linear-gradient(135deg, ${color}20, ${color}10)`,
-              border: `2px solid ${color}40`,
+              background: `linear-gradient(135deg, ${color}22, ${color}10)`,
+              border: `1px solid ${color}55`,
             }}
           >
             {logo}
           </div>
 
-          {/* Título y subtítulo */}
+          {/* Text */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1 group-hover:text-purple-600 transition-colors">
+            <h3 className="text-lg font-extrabold text-white leading-tight mb-1 transition-colors">
               {title}
             </h3>
 
             {subtitle && (
-              <p className="text-sm text-gray-600 leading-tight font-medium">
+              <p className="text-sm text-white/70 leading-tight font-semibold">
                 {subtitle}
               </p>
             )}
           </div>
         </div>
 
-        {/* Texto inferior */}
         {text && (
-          <div className="pt-3 border-t-2 border-gray-100">
-            <p className="text-center text-sm text-gray-700 font-medium leading-relaxed">
+          <div className="pt-3 border-t border-white/10">
+            <p className="text-center text-sm text-white/70 font-semibold leading-relaxed">
               {text}
             </p>
           </div>
         )}
       </div>
 
-      {/* Efecto de brillo en hover */}
+      {/* Glow hover */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: `linear-gradient(135deg, transparent 0%, ${color}10 50%, transparent 100%)`,
+          background: `linear-gradient(135deg, transparent 0%, ${color}14 50%, transparent 100%)`,
         }}
       />
 
-      {/* Indicador de click */}
+      {/* Flecha */}
       <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
+          className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg border border-white/10"
           style={{ backgroundColor: color }}
         >
           <svg

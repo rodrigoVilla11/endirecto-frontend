@@ -210,7 +210,7 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("page.favouritesTitle")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("page.favouritesTitle")}</h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={filteredTableData} />
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>

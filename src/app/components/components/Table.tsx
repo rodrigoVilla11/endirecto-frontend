@@ -46,20 +46,27 @@ export default function Table({
         toggle();
       }
     };
-
     return (
       <div
         key={row.key ?? index}
-        className="rounded-2xl border border-purple-100 bg-white shadow-md hover:shadow-lg transition-all duration-300 mb-4 overflow-hidden"
+        className="
+      rounded-2xl
+      border border-white/10
+      bg-white/5 backdrop-blur
+      shadow-xl hover:shadow-2xl
+      transition-all duration-300
+      mb-4 overflow-hidden
+      hover:border-[#E10600]/40
+    "
       >
-        {/* Header de la card con gradiente */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-purple-100 bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-red-500 to-blue-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+        {/* Header de la card */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#0B0B0B]">
+          <span className="inline-flex items-center rounded-full bg-[#E10600] px-3 py-1 text-xs font-extrabold text-white shadow-lg">
             {row.key ?? t("na")}
           </span>
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-gray-600 font-medium">
+            <span className="text-xs text-white/60 font-medium">
               {t("tapToExpand") || "Tocar para ver más"}
             </span>
           </div>
@@ -79,13 +86,22 @@ export default function Table({
             {primary.map((header) => (
               <div
                 key={header.key}
-                className="flex items-start justify-between gap-3 rounded-xl bg-gradient-to-r from-pink-50/50 via-purple-50/50 to-blue-50/50 px-4 py-3 border border-purple-100"
+                className="
+              flex items-start justify-between gap-3
+              rounded-xl
+              bg-white/5
+              px-4 py-3
+              border border-white/10
+              hover:bg-white/10
+              transition-colors
+            "
               >
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                <span className="text-xs font-semibold uppercase tracking-wide text-white/70">
                   {labelOf(header)}
                 </span>
+
                 <span
-                  className="max-w-[60%] text-sm font-medium text-gray-900 truncate"
+                  className="max-w-[60%] text-sm font-semibold text-white truncate"
                   title={
                     typeof row[header.key] === "string"
                       ? row[header.key]
@@ -98,11 +114,19 @@ export default function Table({
             ))}
           </div>
 
-          {/* caret con gradiente */}
+          {/* caret */}
           <div className="mt-3 flex items-center justify-center">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-red-500 via-white to-blue-500 shadow-md">
+            <span
+              className="
+            inline-flex h-8 w-8 items-center justify-center rounded-full
+            bg-white/10 border border-white/20
+            shadow-lg
+            hover:bg-[#E10600] hover:border-[#E10600]
+            transition-all
+          "
+            >
               <AiFillCaretDown
-                className={`text-black text-sm transition-transform ${
+                className={`text-white text-sm transition-transform ${
                   isExpanded ? "rotate-180" : ""
                 }`}
               />
@@ -112,18 +136,27 @@ export default function Table({
 
         {/* Expandible: todos los campos */}
         {isExpanded && (
-          <div className="px-4 pb-4 bg-gray-50">
-            <div className="mt-2 grid grid-cols-1 xs:grid-cols-2 gap-3">
+          <div className="px-4 pb-4 bg-[#0B0B0B] border-t border-white/10">
+            <div className="mt-4 grid grid-cols-1 xs:grid-cols-2 gap-3">
               {headers.map((header) => (
                 <div
                   key={`exp-${header.key}`}
-                  className="rounded-xl border border-purple-100 bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow"
+                  className="
+                rounded-xl
+                border border-white/10
+                bg-white/5 backdrop-blur
+                px-4 py-3
+                shadow-lg hover:shadow-xl
+                transition-all
+                hover:border-[#E10600]/30
+              "
                 >
-                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">
                     {labelOf(header)}
                   </div>
+
                   <div
-                    className="text-sm font-medium text-gray-900 break-words"
+                    className="text-sm font-medium text-white/85 break-words"
                     title={
                       typeof row[header.key] === "string"
                         ? row[header.key]
@@ -135,15 +168,21 @@ export default function Table({
                 </div>
               ))}
             </div>
+
+            {/* acento marca */}
+            <div className="mt-4 h-0.5 w-16 bg-[#E10600] opacity-80 rounded-full" />
           </div>
         )}
+
+        {/* firma abajo */}
+        <div className="h-1 w-full bg-[#E10600] opacity-90" />
       </div>
     );
   };
 
   const renderDesktopTable = () => (
     <table className="min-w-full table-auto lg:table-fixed">
-      <thead className="bg-gradient-to-r from-red-500 via-white to-blue-500 sticky top-0 z-10">
+      <thead className="sticky top-0 z-10 bg-[#0B0B0B] border-b border-white/10">
         <tr>
           {headers.map((header) => {
             const isCurrentSort = sortField === header.key;
@@ -154,15 +193,20 @@ export default function Table({
               return (
                 <th
                   key={header.key}
-                  className="px-4 py-4 text-xs font-bold text-black uppercase tracking-wider text-center"
+                  className="px-4 py-4 text-xs font-extrabold text-white uppercase tracking-wider text-center"
                 >
                   <div
-                    className="flex justify-center items-center cursor-pointer select-none hover:opacity-80 transition-opacity"
+                    className="
+                    flex justify-center items-center gap-2
+                    cursor-pointer select-none
+                    hover:text-[#E10600]
+                    transition-colors
+                  "
                     onClick={() => onSort?.(header.key)}
                   >
                     {header.component || header.name}
                     <AiFillCaretDown
-                      className={`text-sm ml-2 transition-transform ${iconRotation}`}
+                      className={`text-sm transition-transform ${iconRotation}`}
                     />
                   </div>
                 </th>
@@ -172,7 +216,7 @@ export default function Table({
             return (
               <th
                 key={header.key}
-                className="px-4 py-4 text-xs font-bold text-black uppercase tracking-wider text-center"
+                className="px-4 py-4 text-xs font-extrabold text-white uppercase tracking-wider text-center"
               >
                 <div className="flex justify-center items-center select-none">
                   {header.component || header.name}
@@ -182,26 +226,32 @@ export default function Table({
           })}
         </tr>
       </thead>
-      <tbody className="bg-white divide-y divide-purple-100">
+
+      <tbody>
         {validData.length === 0 ? (
           <tr>
             <td
               colSpan={headers.length}
-              className="px-4 py-8 text-center text-gray-500 text-sm"
+              className="px-4 py-10 text-center text-white/60 text-sm italic"
             >
               {t("noDataFound")}
             </td>
           </tr>
         ) : (
           validData.map((row: any, index: number) => (
-            <tr 
-              key={row.key || index} 
-              className="hover:bg-gradient-to-r hover:from-pink-50/30 hover:via-purple-50/30 hover:to-blue-50/30 transition-all duration-200"
+            <tr
+              key={row.key || index}
+              className={`
+              border-b border-white/10
+              transition-colors
+              ${index % 2 === 0 ? "bg-white/0" : "bg-white/5"}
+              hover:bg-white/10
+            `}
             >
               {headers.map((header, i) => (
                 <td
                   key={i}
-                  className="px-4 py-3 text-xs font-medium text-gray-700 border-x border-purple-50 text-center"
+                  className="px-4 py-3 text-xs font-medium text-white/80 text-center"
                 >
                   {row[header.key]}
                 </td>
@@ -214,12 +264,12 @@ export default function Table({
   );
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-lg border border-purple-100 mx-2 md:mx-4">
+    <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-white/5 backdrop-blur mx-2 md:mx-4">
       <div className="w-full">
         {/* Mobile (cards) */}
-        <div className="md:hidden p-3">
+        <div className="md:hidden p-3 space-y-3">
           {validData.length === 0 ? (
-            <div className="rounded-2xl border border-purple-100 bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50 p-6 text-center text-sm font-medium text-gray-600">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm font-medium text-white/60 italic">
               {t("noDataFound")}
             </div>
           ) : (
@@ -232,6 +282,9 @@ export default function Table({
           {renderDesktopTable()}
         </div>
       </div>
+
+      {/* Acento marca */}
+      <div className="h-1 w-full bg-[#E10600] opacity-90" />
     </div>
   );
 }

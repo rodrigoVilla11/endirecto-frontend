@@ -413,7 +413,7 @@ const PageReclaims = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">{t("pageReclaims.title")}</h3>
+        <h3 className="font-bold p-4 text-white">{t("pageReclaims.title")}</h3>
         <Header headerBody={headerBody} />
         {isLoading && brands.length === 0 ? (
           <div className="flex justify-center py-4">

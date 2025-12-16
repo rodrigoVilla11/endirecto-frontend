@@ -16,54 +16,61 @@ const NavBar = () => {
   const isSelectCustomers = pathname === "/selectCustomer";
 
   return (
-    <nav className="w-full fixed z-40 bg-zinc-950">
+    <nav className="w-full fixed z-40 bg-[#0B0B0B]/90 backdrop-blur-xl border-b border-white/10">
       {/* Desktop */}
       {!isMobile ? (
-        <div className="h-16 flex items-center justify-between px-4 gap-4">
-          {/* Left Section */}
-          <div className="flex items-center gap-4">
-            <Logo />
-            <ButtonSideMenu />
-            {!isSelectCustomers && (
-              <div className="w-96">
-                <Search />
-              </div>
-            )}
-          </div>
+        <div className="h-16 px-4">
+          <div className="h-full mx-auto flex items-center justify-between gap-4">
+            {/* Left */}
+            <div className="flex items-center gap-4 min-w-[360px]">
+              <Logo />
+              <ButtonSideMenu />
+              {!isSelectCustomers && (
+                <div className="w-96">
+                  <Search />
+                </div>
+              )}
+            </div>
 
-          {/* Center Section */}
-          <div className="flex items-center flex-1 justify-center">
-            <SliderLogos />
-          </div>
+            {/* Center */}
+            <div className="flex items-center flex-1 justify-center min-w-0">
+              <SliderLogos />
+            </div>
 
-          {/* Right Section */}
-          <div className="flex items-center gap-4">
-            <ButtonsIcons isMobile={isMobile} />
-            <Profile isMobile={isMobile} />
+            {/* Right */}
+            <div className="flex items-center gap-4 min-w-[240px] justify-end">
+              <ButtonsIcons isMobile={isMobile} />
+              <Profile isMobile={isMobile} />
+            </div>
           </div>
         </div>
       ) : (
         /* Mobile */
-        <div className="h-16 flex items-center justify-between px-3 gap-3">
-          {/* Left: Menu Button */}
-          <div className="flex-shrink-0">
-            <ButtonSideMenu />
-          </div>
-
-          {/* Center: Search (only if not selectCustomers) */}
-          {!isSelectCustomers && (
-            <div className="flex-1 min-w-0 mx-2">
-              <Search />
+        <div className="h-16 px-3">
+          <div className="h-full max-w-7xl mx-auto flex items-center justify-between gap-3">
+            {/* Left */}
+            <div className="flex-shrink-0">
+              <ButtonSideMenu />
             </div>
-          )}
 
-          {/* Right: Icons */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <ButtonsIcons isMobile={isMobile} />
-            <Profile isMobile={isMobile} />
+            {/* Center */}
+            {!isSelectCustomers && (
+              <div className="flex-1 min-w-0 mx-2">
+                <Search />
+              </div>
+            )}
+
+            {/* Right */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <ButtonsIcons isMobile={isMobile} />
+              <Profile isMobile={isMobile} />
+            </div>
           </div>
         </div>
       )}
+
+      {/* Accent line brand */}
+      <div className="h-[2px] w-full bg-[#E10600]/80" />
     </nav>
   );
 };

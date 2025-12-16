@@ -17,7 +17,7 @@ export function ButtonOnOff({
       className={`flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-md
         ${
           active
-            ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black"
+            ? "bg-[#E10600]  text-black"
             : "bg-white text-gray-600 border border-gray-200 hover:border-purple-300"
         }`}
     >
@@ -27,7 +27,7 @@ export function ButtonOnOff({
             ${active ? "bg-white shadow-lg" : "bg-gray-300"}`}
         />
         {active && (
-          <div className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-red-500 via-white to-blue-500" />
+          <div className="absolute w-2 h-2 rounded-full bg-[#E10600] " />
         )}
       </div>
       <span className={`text-sm font-semibold ${active ? "text-black" : "text-gray-700"}`}>

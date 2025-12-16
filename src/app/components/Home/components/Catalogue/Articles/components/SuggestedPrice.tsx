@@ -12,7 +12,9 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
   const { data: customer } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  const priceEntry = data?.find((item) => item.price_list_id === customer?.price_list_id);
+  const priceEntry = data?.find(
+    (item) => item.price_list_id === customer?.price_list_id
+  );
   const price = priceEntry ? priceEntry.price : "N/A";
 
   // Función para calcular el precio con IVA
@@ -41,19 +43,14 @@ const SuggestedPrice = ({ articleId, showPurchasePrice }: any) => {
   const [integerPart, decimalPart] = formatPrice(priceWithVAT);
 
   return (
-    <div
-      className={`flex justify-between items-center ${
-        showPurchasePrice ? "text-xs" : "text-xs"
-      } pb-2 h-4`}
-    >
-      <p>Suggested Price</p>
-      <p>
+    <div className={`flex justify-between items-center text-xs pb-2 h-4`}>
+      <p className="text-white/70 font-semibold">Suggested Price</p>
+
+      <p className="text-white">
         $
-        <span className="font-semibold text-gray-600 text-lg">
-          {integerPart}
-        </span>
+        <span className="font-extrabold text-white text-lg">{integerPart}</span>
         {decimalPart && (
-          <span className="font-semibold text-gray-600">,{decimalPart}</span>
+          <span className="font-extrabold text-white/80">,{decimalPart}</span>
         )}
       </p>
     </div>

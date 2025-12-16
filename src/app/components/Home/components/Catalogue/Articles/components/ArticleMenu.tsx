@@ -38,27 +38,45 @@ const ArticleMenu = ({ article }: { article: any }) => {
   };
 
   return (
-    <div className="relative flex" ref={menuRef}>
+    <div className="relative flex gap-2" ref={menuRef}>
       <button
-        className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
+        type="button"
+        className="
+        p-2 rounded-xl
+        bg-white/5 border border-white/10
+        text-white/70
+        hover:text-white hover:bg-white/10
+        hover:border-[#E10600]/40
+        transition-all z-40
+      "
         onClick={() => {
           openEquivalencesModal(article.id);
         }}
         title={t("viewEquivalences")}
+        aria-label={t("viewEquivalences")}
       >
-        <GoTag className="w-4 h-4 text-gray-400" />
+        <GoTag className="w-4 h-4" />
       </button>
 
       {article?.article_vehicles && article.article_vehicles.length > 0 && (
         <button
-          className="p-1.5 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors z-40"
+          type="button"
+          className="
+          p-2 rounded-xl
+          bg-white/5 border border-white/10
+          text-white/70
+          hover:text-white hover:bg-white/10
+          hover:border-[#E10600]/40
+          transition-all z-40
+        "
           onClick={(e) => {
             e.stopPropagation();
             openArticleVehicleModal();
           }}
           title={t("viewArticleApplications")}
+          aria-label={t("viewArticleApplications")}
         >
-          <FaCar className="w-4 h-4 text-gray-400" />
+          <FaCar className="w-4 h-4" />
         </button>
       )}
 
@@ -70,6 +88,7 @@ const ArticleMenu = ({ article }: { article: any }) => {
           />
         )}
       </Modal>
+
       <Modal
         isOpen={isArticleVehicleModalOpen}
         onClose={closeArticleVehicleModal}

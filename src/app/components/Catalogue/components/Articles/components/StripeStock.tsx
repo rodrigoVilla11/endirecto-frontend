@@ -1,7 +1,13 @@
 import { useGetStockByArticleIdQuery } from "@/redux/services/stockApi";
 import React from "react";
 
-const StripeStock = ({ articleId, isBar = false }: { articleId: any; isBar?: boolean }) => {
+const StripeStock = ({
+  articleId,
+  isBar = false,
+}: {
+  articleId: any;
+  isBar?: boolean;
+}) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } = useGetStockByArticleIdQuery({
     articleId: encodedId,
@@ -27,20 +33,38 @@ const StripeStock = ({ articleId, isBar = false }: { articleId: any; isBar?: boo
   };
 
   // Si es barra (parte inferior)
+  // Barra inferior
   if (isBar) {
     return (
       <div
-        className={`${getStockColor()} font-bold text-white text-center py-2 text-xs uppercase`}
+        className={`
+        ${getStockColor()}
+        font-extrabold
+        text-white
+        text-center
+        py-2
+        text-[10px]
+        uppercase
+        tracking-wider
+        border-t border-white/10
+      `}
       >
-        <p>{getStockText()}</p>
+        {getStockText()}
       </div>
     );
   }
 
-  // Si es círculo (indicador superior)
+  // Indicador circular (superior)
   return (
     <div
-      className={`${getStockColor()} w-6 h-6 rounded-full border-2 border-white shadow-lg`}
+      className={`
+      ${getStockColor()}
+      w-6 h-6
+      rounded-full
+      border-2 border-white/80
+      shadow-lg
+      ring-1 ring-black/30
+    `}
       title={getStockText()}
     />
   );

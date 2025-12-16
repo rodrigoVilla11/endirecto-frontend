@@ -118,7 +118,7 @@ const ButtonsIcons: React.FC<ButtonsIconsProps> = ({ icon }) => {
               <div
                 key={index}
                 className={`text-sm px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-zinc-800 ${
-                  isSubActive ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black" : "text-gray-400"
+                  isSubActive ? "bg-[#E10600]  text-black" : "text-gray-400"
                 }`}
                 onClick={(event) => {
                   event.stopPropagation();

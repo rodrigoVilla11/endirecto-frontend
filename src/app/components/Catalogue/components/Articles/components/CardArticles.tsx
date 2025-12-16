@@ -109,9 +109,11 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
   return (
     <div>
-      <div className={`relative flex flex-col bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 ${
-        isMobile ? 'w-full' : 'w-full max-w-sm'
-      }`}>
+      <div
+        className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${
+          isMobile ? "w-full" : "w-full max-w-sm"
+        } bg-white/5 backdrop-blur border border-white/10 shadow-xl hover:shadow-2xl hover:border-[#E10600]/40`}
+      >
         {/* Header con iconos */}
         <div className="absolute top-2 left-2 right-2 z-30 flex justify-between items-start">
           {/* Indicador de stock circular a la izquierda */}
@@ -138,20 +140,23 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
         {/* Indicador de equivalencia */}
         {article.foundEquivalence && (
-          <div className="absolute bottom-32 left-2 bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-full z-20">
+          <div className="absolute bottom-32 left-2 bg-[#E10600] text-white text-[10px] font-extrabold px-2 py-1 rounded-full z-20 shadow">
             EQUIVALENCIA
           </div>
         )}
 
         {/* Contenido principal */}
-        <div onClick={() => handleOpenModal(article)} className="cursor-pointer">
+        <div
+          onClick={() => handleOpenModal(article)}
+          className="cursor-pointer"
+        >
           {/* Imagen */}
-          <div className="relative bg-white pt-8 px-2">
+          <div className="relative pt-8 px-2">
             <ArticleImage img={article.images} />
           </div>
 
           {/* Información del producto */}
-          <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-2`}>
+          <div className={`${isMobile ? "p-3" : "p-4"} space-y-2 text-white`}>
             <ArticleName
               name={article.name}
               id={article.id}
@@ -164,7 +169,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
                   article={article}
                   selectedClientId={selectedClientId}
                 />
-                <div className="border-t border-gray-200" />
+                <div className="border-t border-white/10" />
               </>
             )}
 
@@ -176,7 +181,11 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
         </div>
 
         {/* Sección de agregar al carrito */}
-        <div className={`${isMobile ? 'p-2' : 'p-4'} bg-gray-50 border-t border-gray-200`}>
+        <div
+          className={`${
+            isMobile ? "p-2" : "p-4"
+          } bg-white/5 border-t border-white/10`}
+        >
           <AddToCart
             articleId={article.id}
             onAddToCart={toggleShoppingCart}
@@ -189,6 +198,9 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
         <div className="w-full">
           <StripeStock articleId={article.id} isBar />
         </div>
+
+        {/* Acento marca */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#E10600] opacity-90" />
       </div>
 
       {/* Modal */}

@@ -97,7 +97,7 @@ const CRM: React.FC<CRMProps> = ({ selectedClientId, closeModal }) => {
   const customerNameLabel = customer?.name || t("crm.defaultCustomerName");
 
   return (
-    <section className="h-[90vh] flex flex-col rounded-3xl overflow-hidden bg-gradient-to-br from-red-500 via-white to-blue-500 p-[3px] shadow-2xl">
+    <section className="h-[90vh] flex flex-col rounded-3xl overflow-hidden bg-[#E10600]  p-[3px] shadow-2xl">
       <div className="bg-zinc-950 rounded-3xl h-full flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex-shrink-0 px-6 py-4 border-b border-gray-700">

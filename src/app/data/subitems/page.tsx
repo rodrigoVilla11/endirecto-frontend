@@ -30,7 +30,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold p-4">SUBITEMS</h3>
+        <h3 className="font-bold p-4 text-white">SUBITEMS</h3>
         <Header headerBody={headerBody} />
         {/* <Table headers={tableHeader} /> */}
       </div>

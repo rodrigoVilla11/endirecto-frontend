@@ -392,7 +392,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold pt-4 px-4">{t("articles")}</h3>
+        <h3 className="font-bold pt-4 px-4 text-white">{t("articles")}</h3>
         <Header headerBody={headerBody} />
 
         {articles.length === 0 ? (

@@ -6,16 +6,27 @@ const LazyImage = ({ src, alt }: any) => {
   return (
     <div className="h-10 w-auto relative">
       {!isLoaded && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+        <div
+          className="
+          absolute inset-0
+          bg-white/10 backdrop-blur
+          animate-pulse
+          rounded-md
+          border border-white/10
+        "
+        />
       )}
+
       <img
         src={src}
         alt={alt}
-        className={`h-full w-auto object-contain transition-opacity duration-300 ${
-          isLoaded ? "opacity-100" : "opacity-0"
-        }`}
         loading="lazy"
         onLoad={() => setIsLoaded(true)}
+        className={`
+        h-full w-auto object-contain
+        transition-opacity duration-300
+        ${isLoaded ? "opacity-100" : "opacity-0"}
+      `}
       />
     </div>
   );

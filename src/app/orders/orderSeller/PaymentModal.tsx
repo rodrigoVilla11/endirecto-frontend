@@ -1507,7 +1507,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-red-500 via-white to-blue-500">
+        <div className="p-6 flex items-center justify-between bg-[#E10600] ">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -1658,7 +1658,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 onClick={() => setActiveTab(tabKey)}
                 className={`p-4 text-sm font-bold transition-all ${
                   activeTab === tabKey
-                    ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
+                    ? "bg-[#E10600]  text-black shadow-lg"
                     : "bg-zinc-950  text-white hover:bg-gray-200"
                 }`}
               >
@@ -1703,7 +1703,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "cta_cte"
-                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
+                        ? "bg-[#E10600]  text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                     onClick={() => setPaymentTypeUI("cta_cte")}
@@ -1714,7 +1714,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "pago_anticipado"
-                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
+                        ? "bg-[#E10600]  text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     } ${
                       hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""
@@ -1792,7 +1792,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     </button>
                   ) : (
                     <button
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      className="px-6 py-3 rounded-xl bg-[#E10600]  font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                       onClick={() => {
                         if (hasInvoiceToday) {
                           alert(

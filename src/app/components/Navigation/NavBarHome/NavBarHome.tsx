@@ -1,14 +1,24 @@
-import React from 'react'
-import Logo from './components/Logo'
-import Buttons from './components/Buttons'
+import React from "react";
+import Logo from "./components/Logo";
+import Buttons from "./components/Buttons";
 
 const NavBarHome = () => {
   return (
-    <nav className='w-full h-24 sm:h-20 bg-gradient-to-r from-red-500 via-white to-blue-500 fixed z-50 flex justify-around items-center top-0 shadow-2xl'>
-      <Logo/>
+    <nav
+      className="
+      w-full h-24 sm:h-20
+      bg-[#0B0B0B]
+      fixed top-0 z-50
+      flex justify-between items-center
+      px-6 sm:px-10
+      shadow-xl
+      border-b-4 border-[#E10600]
+    "
+    >
+      <Logo />
       <Buttons />
     </nav>
-  )
-}
+  );
+};
 
-export default NavBarHome
+export default NavBarHome;

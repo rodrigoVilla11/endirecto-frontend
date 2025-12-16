@@ -88,23 +88,38 @@ const ArticleMenu = ({
   return (
     <div className="relative flex items-center gap-1" ref={menuRef}>
       {/* Botón de etiqueta/equivalencias */}
-      {article.article_equivalence && article.article_equivalence.length > 0 && (
-        <button
-          className="p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white transition-all shadow-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            openEquivalencesModal(article.id);
-          }}
-          title={t("viewEquivalences")}
-        >
-          <GoTag className="w-4 h-4" />
-        </button>
-      )}
+      {article.article_equivalence &&
+        article.article_equivalence.length > 0 && (
+          <button
+            className="
+          p-2 rounded-full
+          bg-white/10 backdrop-blur
+          border border-white/20
+          text-white
+          hover:bg-[#E10600] hover:border-[#E10600]
+          transition-all shadow-lg
+        "
+            onClick={(e) => {
+              e.stopPropagation();
+              openEquivalencesModal(article.id);
+            }}
+            title={t("viewEquivalences")}
+          >
+            <GoTag className="w-4 h-4" />
+          </button>
+        )}
 
       {/* Botón de vehículos */}
       {article.article_vehicles && article.article_vehicles.length > 0 && (
         <button
-          className="p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white transition-all shadow-sm"
+          className="
+          p-2 rounded-full
+          bg-white/10 backdrop-blur
+          border border-white/20
+          text-white
+          hover:bg-[#E10600] hover:border-[#E10600]
+          transition-all shadow-lg
+        "
           onClick={(e) => {
             e.stopPropagation();
             openArticleVehicleModal(article.article_vehicles);
@@ -117,21 +132,43 @@ const ArticleMenu = ({
 
       {/* Botón de menú */}
       <button
-        className="p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
+        className="
+        p-2 rounded-full
+        bg-white/10 backdrop-blur
+        border border-white/20
+        text-white
+        hover:bg-[#E10600] hover:border-[#E10600]
+        transition-all shadow-lg
+      "
         onClick={(e) => {
           e.stopPropagation();
           handleToggleMenu();
         }}
         title={t("options")}
       >
-        <CiMenuKebab className="w-5 h-5 text-gray-700" />
+        <CiMenuKebab className="w-5 h-5 text-white" />
       </button>
 
       {/* Dropdown del menú */}
       {isMenuOpen && (
-        <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 min-w-[180px]">
+        <div
+          className="
+        absolute right-0 top-full mt-2
+        bg-[#0B0B0B]/95 backdrop-blur
+        rounded-2xl shadow-2xl
+        border border-white/10
+        py-2 z-50 min-w-[190px]
+        overflow-hidden
+      "
+        >
           <button
-            className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="
+            w-full flex items-center
+            px-4 py-2.5 text-sm
+            text-white/80 hover:text-white
+            hover:bg-white/5
+            transition-colors
+          "
             onClick={(e) => {
               e.stopPropagation();
               onAddToFavourites();
@@ -141,14 +178,20 @@ const ArticleMenu = ({
           >
             <FaHeart
               className={`w-4 h-4 mr-3 ${
-                isFavourite ? "text-red-500" : "text-gray-400"
+                isFavourite ? "text-[#E10600]" : "text-white/40"
               }`}
             />
             {t("favourites")}
           </button>
 
           <button
-            className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="
+            w-full flex items-center
+            px-4 py-2.5 text-sm
+            text-white/80 hover:text-white
+            hover:bg-white/5
+            transition-colors
+          "
             onClick={(e) => {
               e.stopPropagation();
               addArticleId(article);
@@ -156,12 +199,20 @@ const ArticleMenu = ({
             }}
             title={t("viewDetails")}
           >
-            <TbSquares className="w-4 h-4 mr-3 text-gray-400" />
+            <TbSquares className="w-4 h-4 mr-3 text-white/40" />
             {t("details")}
           </button>
 
+          <div className="my-1 border-t border-white/10" />
+
           <button
-            className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="
+            w-full flex items-center
+            px-4 py-2.5 text-sm
+            text-white/80 hover:text-white
+            hover:bg-[#E10600]/15
+            transition-colors
+          "
             onClick={(e) => {
               e.stopPropagation();
               openInformErrorModal(article.id);
@@ -190,6 +241,7 @@ const ArticleMenu = ({
           />
         )}
       </Modal>
+
       <Modal
         isOpen={isArticleVehicleModalOpen}
         onClose={closeArticleVehicleModal}

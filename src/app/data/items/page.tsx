@@ -267,7 +267,7 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="flex flex-col gap-4 ">
-        <h3 className="font-bold pt-4 px-4">{t("page.itemsTitle")}</h3>
+        <h3 className="font-bold pt-4 px-4 text-white">{t("page.itemsTitle")}</h3>
         <Header headerBody={headerBody} />
 
         {isLoading && items.length === 0 ? (

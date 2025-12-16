@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import Image from 'next/image';
-import { useFilters } from '@/app/context/FiltersContext';
-import { useClient } from '@/app/context/ClientContext';
-import { useGetCustomerByIdQuery } from '@/redux/services/customersApi';
-import { useGetArticlesQuery } from '@/redux/services/articlesApi';
-import CardArticles from './components/CardArticles';
-import ListArticle from './components/ListArticle';
-import { useMobile } from '@/app/context/ResponsiveContext';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import Image from "next/image";
+import { useFilters } from "@/app/context/FiltersContext";
+import { useClient } from "@/app/context/ClientContext";
+import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
+import { useGetArticlesQuery } from "@/redux/services/articlesApi";
+import CardArticles from "./components/CardArticles";
+import ListArticle from "./components/ListArticle";
+import { useMobile } from "@/app/context/ResponsiveContext";
 
 interface ArticlesProps {
   brand?: string;
@@ -39,7 +45,7 @@ const Articles: React.FC<ArticlesProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const filtersStringRef = useRef<string>('');
+  const filtersStringRef = useRef<string>("");
 
   const { engine, model, year } = useFilters();
   const filters = useMemo(() => {
@@ -80,7 +86,7 @@ const Articles: React.FC<ArticlesProps> = ({
       page,
       limit: 20,
       priceListId,
-      ...filters
+      ...filters,
     },
     { skip: !priceListId }
   );
@@ -95,9 +101,9 @@ const Articles: React.FC<ArticlesProps> = ({
 
   useEffect(() => {
     if (articlesData && articlesData.articles) {
-      setItems(prevItems => {
+      setItems((prevItems) => {
         const newArticles = articlesData.articles.filter(
-          (article: any) => !prevItems.some(item => item.id === article.id)
+          (article: any) => !prevItems.some((item) => item.id === article.id)
         );
         return [...prevItems, ...newArticles];
       });
@@ -110,11 +116,15 @@ const Articles: React.FC<ArticlesProps> = ({
       if (isFetching) return;
       if (observerRef.current) observerRef.current.disconnect();
 
-      observerRef.current = new IntersectionObserver(entries => {
+      observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
-          if (articlesData && articlesData.articles && articlesData.articles.length === 20) {
+          if (
+            articlesData &&
+            articlesData.articles &&
+            articlesData.articles.length === 20
+          ) {
             setIsLoadingMore(true);
-            setPage(prevPage => prevPage + 1);
+            setPage((prevPage) => prevPage + 1);
           }
         }
       });
@@ -127,59 +137,93 @@ const Articles: React.FC<ArticlesProps> = ({
   // Pantalla de carga inicial
   if (page === 1 && isFetching && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
-        <div className="relative">
-          <Image 
-            src="/dma.png" 
-            alt="Logo" 
-            width={isMobile ? 120 : 150} 
-            height={isMobile ? 120 : 150}
-            className="animate-pulse"
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm bg-black backdrop-blur rounded-3xl shadow-2xl border border-white/60 p-8 text-center">
+          <Image
+            src="/endirecto.png"
+            alt="Logo"
+            width={isMobile ? 110 : 140}
+            height={isMobile ? 110 : 140}
+            className="mx-auto drop-shadow animate-pulse"
           />
+
+          <p className="mt-6 text-sm font-bold text-gray-700">
+            Cargando artículos...
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Estamos preparando el catálogo para vos
+          </p>
+
+          {/* Barra */}
+          <div className="mt-6 h-2 w-full rounded-full bg-black/10 overflow-hidden">
+            <div className="h-full w-1/2 rounded-full bg-[#E10600]  animate-[loading_1.2s_ease-in-out_infinite]" />
+          </div>
+
+          <style jsx>{`
+            @keyframes loading {
+              0% {
+                transform: translateX(-120%);
+              }
+              50% {
+                transform: translateX(40%);
+              }
+              100% {
+                transform: translateX(220%);
+              }
+            }
+          `}</style>
         </div>
-        <div className="mt-6 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-red-500 via-white to-blue-500 animate-loading-bar rounded-full"></div>
-        </div>
-        <p className="mt-4 text-sm font-medium text-gray-600 animate-pulse">
-          Cargando artículos...
-        </p>
       </div>
     );
   }
 
   return (
-    <div className={`${isMobile ? 'p-2' : 'p-4'} min-h-screen`}>
+    <div className={`${isMobile ? "p-2" : "p-4"} min-h-screen`}>
       {items.length === 0 && !isFetching ? (
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
-          <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+        <div className="flex items-center justify-center min-h-[50vh] p-6">
+          <div className="text-center p-8 bg-white/80 backdrop-blur rounded-3xl shadow-2xl border border-white/60">
             <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
+            <h3 className="text-xl font-extrabold text-gray-800 mb-2">
               No se encontraron artículos
             </h3>
-            <p className="text-gray-500 text-sm">
-              Intenta ajustar los filtros de búsqueda
+            <p className="text-gray-600 text-sm">
+              Probá ajustar filtros o buscar con otro término
             </p>
+
+            <div className="mt-6 h-1 w-40 mx-auto rounded-full bg-[#E10600] " />
           </div>
         </div>
       ) : (
         <>
           {showArticles === "catalogue" ? (
-            <div className={`grid gap-3 md:gap-4 ${
-              isMobile 
-                ? 'grid-cols-2' 
-                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'
-            }`}>
+            <div
+              className={`grid gap-3 md:gap-4 ${
+                isMobile
+                  ? "grid-cols-2"
+                  : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4"
+              }`}
+            >
               {items.map((article, index) => {
                 if (index === items.length - 1) {
                   return (
-                    <div key={article.id} ref={lastArticleRef} className="w-full">
-                      <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
+                    <div
+                      key={article.id}
+                      ref={lastArticleRef}
+                      className="w-full"
+                    >
+                      <CardArticles
+                        article={article}
+                        showPurchasePrice={showPurchasePrice}
+                      />
                     </div>
                   );
                 }
                 return (
                   <div key={article.id} className="w-full">
-                    <CardArticles article={article} showPurchasePrice={showPurchasePrice} />
+                    <CardArticles
+                      article={article}
+                      showPurchasePrice={showPurchasePrice}
+                    />
                   </div>
                 );
               })}
@@ -190,19 +234,25 @@ const Articles: React.FC<ArticlesProps> = ({
                 if (index === items.length - 1) {
                   return (
                     <div key={article.id} ref={lastArticleRef}>
-                      <ListArticle article={article} showPurchasePrice={showPurchasePrice} />
+                      <ListArticle
+                        article={article}
+                        showPurchasePrice={showPurchasePrice}
+                      />
                     </div>
                   );
                 }
                 return (
                   <div key={article.id}>
-                    <ListArticle article={article} showPurchasePrice={showPurchasePrice} />
+                    <ListArticle
+                      article={article}
+                      showPurchasePrice={showPurchasePrice}
+                    />
                   </div>
                 );
               })}
             </div>
           )}
-          
+
           {/* Indicador de carga para scroll infinito */}
           {isFetching && page > 1 && (
             <div className="flex justify-center mt-6 mb-6">
@@ -211,13 +261,15 @@ const Articles: React.FC<ArticlesProps> = ({
           )}
 
           {/* Indicador de fin de resultados */}
-          {!isFetching && (articlesData?.articles?.length ?? 0) < 20 && items.length > 0 && (
-            <div className="flex justify-center mt-8 mb-4">
-              <div className="bg-gray-100 text-gray-600 px-6 py-3 rounded-full text-sm font-medium">
-                ✓ Todos los artículos cargados
+          {!isFetching &&
+            (articlesData?.articles?.length ?? 0) < 20 &&
+            items.length > 0 && (
+              <div className="flex justify-center mt-8 mb-4">
+                <div className="bg-white/70 backdrop-blur px-6 py-3 rounded-full text-sm font-bold text-gray-700 shadow-lg border border-white/60">
+                  ✓ Todos los artículos cargados
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </>
       )}
     </div>
@@ -232,6 +284,8 @@ const Spinner = () => (
       <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
       <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 border-r-pink-500 animate-spin"></div>
     </div>
-    <p className="text-sm text-gray-600 font-medium">Cargando más artículos...</p>
+    <p className="text-sm text-gray-600 font-medium">
+      Cargando más artículos...
+    </p>
   </div>
 );

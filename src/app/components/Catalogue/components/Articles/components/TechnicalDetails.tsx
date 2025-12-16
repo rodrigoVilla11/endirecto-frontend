@@ -14,17 +14,23 @@ const TechnicalDetails = ({ articleId, technicalDetailId }: any) => {
 
   // Verificar si data es un array y luego buscar el detalle
   const technicalDetail = Array.isArray(data)
-    ? data.find((detail: any) => detail.technical_detail_id === technicalDetailId)
+    ? data.find(
+        (detail: any) => detail.technical_detail_id === technicalDetailId
+      )
     : null;
 
   return (
     <div>
       {technicalDetail ? (
-        <div>
-          {technicalDetail.value || t("noValue")}
+        <div className="text-white font-medium text-sm">
+          {technicalDetail.value || (
+            <span className="text-white/60 italic">{t("noValue")}</span>
+          )}
         </div>
       ) : (
-        <p>{t("noTechnicalDetailFound")}</p>
+        <p className="text-white/60 text-sm italic">
+          {t("noTechnicalDetailFound")}
+        </p>
       )}
     </div>
   );

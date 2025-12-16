@@ -1233,7 +1233,7 @@ const PaymentsChargedPage = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4">
+        <h3 className="font-bold p-4 text-white">
           {t("chargedPayments") || "Pagos cobrados"}
         </h3>
         <Header headerBody={headerBody} />

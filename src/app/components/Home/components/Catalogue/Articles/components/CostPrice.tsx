@@ -1,21 +1,19 @@
-import {
-  useGetArticlePriceByArticleIdQuery,
-} from "@/redux/services/articlesPricesApi";
+import { useGetArticlePriceByArticleIdQuery } from "@/redux/services/articlesPricesApi";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import React from "react";
 
-const CostPrice = ({ articleId, selectedClientId}: any) => {
+const CostPrice = ({ articleId, selectedClientId }: any) => {
   const encodedId = encodeURIComponent(articleId);
   const { data, error, isLoading, refetch } =
     useGetArticlePriceByArticleIdQuery({ articleId: encodedId });
 
-   const {
-      data: customer
-    } = useGetCustomerByIdQuery({
-      id: selectedClientId || "",
-    });
+  const { data: customer } = useGetCustomerByIdQuery({
+    id: selectedClientId || "",
+  });
 
-  const priceEntry = data?.find((item) => item.price_list_id === customer?.price_list_id);
+  const priceEntry = data?.find(
+    (item) => item.price_list_id === customer?.price_list_id
+  );
   const price = priceEntry ? priceEntry.price : "N/A";
 
   // Función para formatear el precio con separadores de miles
@@ -34,11 +32,15 @@ const CostPrice = ({ articleId, selectedClientId}: any) => {
   const [integerPart, decimalPart] = formatPrice(price);
 
   return (
-    <div className="flex justify-between text-xs h-4 items-center">
-      <p>Cost Price s/IVA</p>
-      <p>
-        $<span className="font-semibold text-gray-800 text-lg">{integerPart}</span>
-        {decimalPart && <span className="font-semibold text-gray-800">,{decimalPart}</span>}
+    <div className="flex justify-between items-center text-xs h-4">
+      <p className="text-white/70 font-semibold">Cost Price s/IVA</p>
+
+      <p className="text-white">
+        $
+        <span className="font-extrabold text-white text-lg">{integerPart}</span>
+        {decimalPart && (
+          <span className="font-extrabold text-white/80">,{decimalPart}</span>
+        )}
       </p>
     </div>
   );

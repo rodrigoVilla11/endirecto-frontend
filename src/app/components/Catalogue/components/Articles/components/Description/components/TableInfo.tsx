@@ -9,10 +9,10 @@ const TableInfo = ({ article }: any) => {
     { label: t("supplierCode"), value: article.supplier_code },
     { label: t("brand"), value: article.brand || t("notAvailable") },
     { label: t("item"), value: article.item || t("notAvailable") },
-    { 
-      label: t("description"), 
+    {
+      label: t("description"),
       value: article.description,
-      isLong: true 
+      isLong: true,
     },
   ];
 
@@ -20,17 +20,38 @@ const TableInfo = ({ article }: any) => {
     <div className="space-y-2">
       {infoRows.map((row, index) => (
         <div key={index}>
-          <div className="flex justify-between items-start p-3 rounded-lg hover:bg-gradient-to-r hover:from-pink-50 hover:via-purple-50 hover:to-blue-50 transition-all duration-200">
-            <p className="font-bold text-gray-700 text-sm">{row.label}</p>
-            <p className={`font-normal text-gray-600 text-sm text-right ${
-              row.isLong ? 'max-w-xs break-words overflow-y-auto max-h-24 hide-scrollbar' : 'max-w-xs'
-            }`}>
+          <div
+            className="
+            flex justify-between items-start
+            p-3 rounded-xl
+            bg-white/0
+            hover:bg-white/5
+            transition-all duration-200
+          "
+          >
+            {/* Label */}
+            <p className="font-extrabold text-white text-sm tracking-wide">
+              {row.label}
+            </p>
+
+            {/* Value */}
+            <p
+              className={`
+              font-normal
+              text-white/70
+              text-sm text-right
+              ${
+                row.isLong
+                  ? "max-w-xs break-words overflow-y-auto max-h-24 hide-scrollbar"
+                  : "max-w-xs"
+              }
+            `}
+            >
               {row.value}
             </p>
           </div>
-          {index < infoRows.length - 1 && (
-            <hr className="border-gray-200" />
-          )}
+
+          {index < infoRows.length - 1 && <hr className="border-white/10" />}
         </div>
       ))}
     </div>

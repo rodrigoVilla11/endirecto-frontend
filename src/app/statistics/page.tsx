@@ -260,10 +260,10 @@ const StatsPage: React.FC = () => {
         {/* HEADER */}
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-semibold text-slate-900">
+            <h1 className="text-2xl md:text-3xl font-semibold text-white">
               Dashboard de estadísticas
             </h1>
-            <p className="text-sm text-slate-500 max-w-xl">
+            <p className="text-sm text-white max-w-xl">
               Visualizá el rendimiento de ventas, clientes, productos y
               cobranzas en un solo lugar.
             </p>
@@ -550,7 +550,7 @@ const StatsPage: React.FC = () => {
                     className={`px-3 py-2 rounded-t-xl border-b-2 -mb-px transition ${
                       activeTab === tab.id
                         ? "border-sky-500 text-sky-600 font-medium bg-sky-50/60"
-                        : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        : "border-transparent text-white hover:text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     {tab.label}
@@ -1491,9 +1491,9 @@ const SectionTitle = ({
   subtitle?: string;
 }) => (
   <div className="flex flex-col gap-1">
-    <h2 className="font-semibold text-lg text-slate-900">{title}</h2>
+    <h2 className="font-semibold text-lg text-white">{title}</h2>
     {subtitle && (
-      <p className="text-xs md:text-sm text-slate-500 max-w-2xl">{subtitle}</p>
+      <p className="text-xs md:text-sm text-white max-w-2xl">{subtitle}</p>
     )}
   </div>
 );

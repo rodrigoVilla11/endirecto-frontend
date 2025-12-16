@@ -7,7 +7,6 @@ import { useClient } from "@/app/context/ClientContext";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, Lock, User } from "lucide-react";
 
-
 const LoginPage = () => {
   const { t } = useTranslation();
   const { setIsAuthenticated, setRole, setUserData } = useAuth();
@@ -53,7 +52,7 @@ const LoginPage = () => {
         role: data.role,
         branch: data.branch,
         seller_id: data.seller_id,
-        notifications: data.notifications
+        notifications: data.notifications,
       };
 
       if (userData._id.length < 10) {
@@ -73,27 +72,27 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 p-4 overflow-hidden relative mt-12">
-      {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0B0B] p-4 overflow-hidden relative mt-8">
+      {/* Glow sutil */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-24 -left-24 w-[520px] h-[520px] bg-[#E10600] opacity-10 blur-3xl rounded-full" />
+        <div className="absolute -bottom-24 -right-24 w-[520px] h-[520px] bg-white opacity-5 blur-3xl rounded-full" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border-2 border-white/50">
-          {/* Header con gradiente */}
-          <div className="bg-gradient-to-r from-red-500 via-white to-blue-500 relative h-32 pt-6 pl-8">
-            <h1 className="text-3xl font-bold text-black mb-2">
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/10">
+          {/* Header */}
+          <div className="relative p-12 border-b border-white/10">
+            <h1 className="text-3xl font-extrabold text-white mb-2">
               {t("signIn")}
+              <span className="text-[#E10600]">.</span>
             </h1>
-            <p className="text-black/90 text-sm">Bienvenido de vuelta 👋</p>
+            <p className="text-white/70 text-sm">Bienvenido de vuelta 👋</p>
 
-            {/* Logo flotante */}
-            <div className="absolute -bottom-10 left-8 bg-white rounded-2xl h-20 w-20 flex justify-center items-center shadow-xl border-4 border-white">
+            {/* Logo */}
+            <div className="absolute -bottom-10 left-8 bg-[#0B0B0B] rounded-2xl h-20 w-20 flex justify-center items-center shadow-xl border border-white/10">
               <img
-                src="/dma.png"
+                src="/ed.png"
                 alt="logo"
                 className="w-14 h-14 object-contain"
               />
@@ -106,56 +105,78 @@ const LoginPage = () => {
           >
             {/* Error message */}
             {error && (
-              <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-shake">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="bg-[#E10600]/10 border border-[#E10600]/30 text-white px-4 py-3 rounded-2xl flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#E10600]" />
                 <span className="text-sm font-semibold">{error}</span>
               </div>
             )}
 
-            {/* Username field */}
+            {/* Username */}
             <div>
               <label
-                className="block text-sm font-bold text-gray-700 mb-2"
+                className="block text-sm font-extrabold text-white/80 mb-2"
                 htmlFor="username"
               >
                 👤 {t("username")}
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                 <input
                   id="username"
                   type="text"
                   placeholder={t("enterUsername")}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all font-medium"
+                  className="
+                  w-full pl-12 pr-4 py-3
+                  bg-[#0B0B0B]
+                  border border-white/10
+                  rounded-2xl
+                  text-white
+                  placeholder:text-white/40
+                  focus:outline-none
+                  focus:border-[#E10600]/60
+                  focus:ring-2 focus:ring-[#E10600]/25
+                  transition-all font-semibold
+                "
                   required
                 />
               </div>
             </div>
 
-            {/* Password field */}
+            {/* Password */}
             <div>
               <label
-                className="block text-sm font-bold text-gray-700 mb-2"
+                className="block text-sm font-extrabold text-white/80 mb-2"
                 htmlFor="password"
               >
                 🔒 {t("password")}
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder={t("enterPassword")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all font-medium"
+                  className="
+                  w-full pl-12 pr-12 py-3
+                  bg-[#0B0B0B]
+                  border border-white/10
+                  rounded-2xl
+                  text-white
+                  placeholder:text-white/40
+                  focus:outline-none
+                  focus:border-[#E10600]/60
+                  focus:ring-2 focus:ring-[#E10600]/25
+                  transition-all font-semibold
+                "
                   required
                 />
                 <button
                   type="button"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-600 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
                   onClick={togglePasswordVisibility}
                   aria-label={
                     showPassword ? t("hidePassword") : t("showPassword")
@@ -178,21 +199,44 @@ const LoginPage = () => {
                   id="rememberMe"
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-500"></div>
+                <div
+                  className="
+                w-11 h-6
+                bg-white/15
+                rounded-full
+                peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#E10600]/25
+                peer-checked:bg-[#E10600]
+                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                peer-checked:after:translate-x-full
+              "
+                />
               </label>
               <label
                 htmlFor="rememberMe"
-                className="text-sm text-gray-700 font-medium cursor-pointer"
+                className="text-sm text-white/70 font-semibold cursor-pointer"
               >
                 {t("rememberMe")}
               </label>
             </div>
 
-            {/* Submit button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-red-500 via-white to-blue-500 text-black py-4 px-4 rounded-2xl font-bold text-lg hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all focus:outline-none focus:ring-4 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              className="
+              w-full
+              bg-[#E10600] text-white
+              py-4 px-4
+              rounded-2xl
+              font-extrabold text-lg
+              hover:bg-[#c80500]
+              transition-all
+              focus:outline-none focus:ring-2 focus:ring-[#E10600]/25
+              disabled:opacity-50 disabled:cursor-not-allowed
+              shadow-lg hover:shadow-xl
+              transform hover:scale-[1.02] active:scale-[0.98]
+            "
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -206,10 +250,10 @@ const LoginPage = () => {
           </form>
 
           {/* Footer */}
-          <div className="pb-8 pt-4 text-center border-t-2 border-gray-100 mx-8">
+          <div className="pb-8 pt-4 text-center border-t border-white/10 mx-8">
             <a
               href="#"
-              className="text-sm font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all"
+              className="text-sm font-extrabold text-white/70 hover:text-[#E10600] transition-all"
             >
               🔑 {t("forgotPassword")}
             </a>
@@ -217,8 +261,8 @@ const LoginPage = () => {
         </div>
 
         {/* Copyright */}
-        <p className="text-center mt-6 text-sm text-gray-600 font-medium">
-          © 2025 DMA. Todos los derechos reservados.
+        <p className="text-center mt-6 text-sm text-white/50 font-semibold">
+          © 2025 En Directo. Todos los derechos reservados.
         </p>
       </div>
     </div>

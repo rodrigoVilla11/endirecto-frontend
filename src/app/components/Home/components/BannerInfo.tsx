@@ -10,66 +10,70 @@ import { Users, Tag, Package } from "lucide-react";
 const BannerInfo = () => {
   const { t } = useTranslation();
   const { data: countCustomersData } = useCountCustomersQuery({});
-  const { data } = useGetArticlesQuery({
-    page: 1,
-    limit: 1,
-    priceListId: "3",
-  });
+  const { data } = useGetArticlesQuery({ page: 1, limit: 1, priceListId: "3" });
   const { data: brands } = useGetBrandsQuery(null);
   const { isMobile } = useMobile();
 
   const stats = [
-    {
-      icon: <Users className="w-12 h-12 text-pink-500" />,
-      value: countCustomersData || 0,
-      label: t("customers"),
-      gradient: "from-pink-500 to-rose-500"
-    },
-    {
-      icon: <Tag className="w-12 h-12 text-purple-500" />,
-      value: brands?.length || 0,
-      label: t("brands"),
-      gradient: "from-purple-500 to-indigo-500"
-    },
-    {
-      icon: <Package className="w-12 h-12 text-blue-500" />,
-      value: data?.totalItems || 0,
-      label: t("articles"),
-      gradient: "from-blue-500 to-cyan-500"
-    }
+    { icon: Users, value: countCustomersData || 0, label: t("customers") },
+    { icon: Tag, value: brands?.length || 0, label: t("brands") },
+    { icon: Package, value: data?.totalItems || 0, label: t("articles") },
   ];
 
   return (
-    <div className={`w-full py-20 bg-gradient-to-br from-red-500 via-white to-blue-500 relative overflow-hidden`}>
-      {/* Elementos decorativos */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-      </div>
+    <section className="w-full py-16 sm:py-20 bg-[#0B0B0B] relative overflow-hidden">
+      {/* Glow rojo sutil */}
+      <div className="absolute -top-40 -right-40 w-[520px] h-[520px] bg-[#E10600] opacity-20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-48 -left-48 w-[560px] h-[560px] bg-white opacity-5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-3"} gap-8`}>
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-3xl"
-            >
-              <div className="flex flex-col items-center gap-4">
-                <div className={`p-4 rounded-2xl bg-white bg-opacity-10`}>
-                  {stat.icon}
+        {/* Título opcional (si no lo querés, borrá este bloque) */}
+        <div className="mb-10 text-center">
+          <h2 className="text-white text-2xl sm:text-3xl font-extrabold tracking-tight">
+            En Directo en números
+          </h2>
+          <p className="text-white/70 mt-2">
+            Datos generales del catálogo y clientes
+          </p>
+        </div>
+
+        <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-3"} gap-6 sm:gap-8`}>
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className="
+                  rounded-3xl p-8
+                  bg-white/5 backdrop-blur-md
+                  border border-white/10
+                  shadow-xl
+                  hover:border-[#E10600]/40 hover:bg-white/7
+                  transition-all duration-300
+                "
+              >
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 rounded-2xl bg-[#E10600]/10 border border-[#E10600]/25">
+                    <Icon className="w-10 h-10 text-[#E10600]" />
+                  </div>
+
+                  <p className="text-5xl sm:text-6xl font-extrabold text-white tracking-tight">
+                    {stat.value}
+                  </p>
+
+                  <p className="text-white/70 font-bold text-sm sm:text-base uppercase tracking-widest">
+                    {stat.label}
+                  </p>
+
+                  {/* Línea roja sutil */}
+                  <div className="h-1 w-14 rounded-full bg-[#E10600]" />
                 </div>
-                <p className="text-6xl font-bold bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent">
-                  {stat.value}
-                </p>
-                <p className="text-gray-600 font-bold text-lg uppercase tracking-wide">
-                  {stat.label}
-                </p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

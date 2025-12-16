@@ -35,41 +35,68 @@ const Tables = ({ article }: any) => {
   const buttons = [
     { id: "info", icon: <FaInfo />, label: t("infoButton") },
     { id: "prices", icon: <MdAttachMoney />, label: t("pricesButton") },
-    { id: "technical", icon: <GrDocumentText />, label: t("technicalDetailsButton") },
+    {
+      id: "technical",
+      icon: <GrDocumentText />,
+      label: t("technicalDetailsButton"),
+    },
   ];
 
   // Agregar botones condicionales
-  if (Array.isArray(article.article_vehicles) && article.article_vehicles.length > 0) {
+  if (
+    Array.isArray(article.article_vehicles) &&
+    article.article_vehicles.length > 0
+  ) {
     buttons.push({ id: "vehicle", icon: <FaCar />, label: t("vehicleButton") });
   }
-  if (Array.isArray(article.article_equivalence) && article.article_equivalence.length > 0) {
-    buttons.push({ id: "equivalences", icon: <GoTag />, label: t("equivalencesButton") });
+  if (
+    Array.isArray(article.article_equivalence) &&
+    article.article_equivalence.length > 0
+  ) {
+    buttons.push({
+      id: "equivalences",
+      icon: <GoTag />,
+      label: t("equivalencesButton"),
+    });
   }
 
   return (
-    <div className="w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="w-full rounded-2xl overflow-hidden bg-white/5 backdrop-blur border border-white/10 shadow-2xl">
       {/* Botones de navegación */}
-      <div className="flex bg-gradient-to-r from-gray-100 to-gray-50 border-b border-gray-200">
-        {buttons.map((button) => (
-          <button
-            key={button.id}
-            className={`flex-1 flex justify-center items-center py-3 transition-all duration-200 ${
-              activeTable === button.id
-                ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-md"
-                : "text-gray-600 hover:bg-gray-200"
-            }`}
-            onClick={() => setActiveTable(button.id)}
-            title={button.label}
-          >
-            <span className="text-lg">{button.icon}</span>
-          </button>
-        ))}
+      <div className="flex border-b border-white/10 bg-[#0B0B0B]">
+        {buttons.map((button) => {
+          const isActive = activeTable === button.id;
+
+          return (
+            <button
+              key={button.id}
+              onClick={() => setActiveTable(button.id)}
+              title={button.label}
+              className={`
+              flex-1 flex justify-center items-center gap-2
+              py-3
+              text-sm font-bold
+              transition-all duration-200
+              ${
+                isActive
+                  ? "bg-[#E10600] text-white shadow-lg"
+                  : "text-white/60 hover:bg-white/5 hover:text-white"
+              }
+            `}
+            >
+              <span className="text-lg">{button.icon}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Contenido de la tabla */}
-      <div className="p-6 bg-white min-h-[200px]">
+      {/* Contenido */}
+      <div className="p-6 bg-[#0B0B0B] min-h-[200px] text-white">
         {renderTable()}
       </div>
+
+      {/* Acento marca */}
+      <div className="h-1 w-full bg-[#E10600] opacity-90" />
     </div>
   );
 };

@@ -41,7 +41,7 @@ const AddToCart: React.FC<AddToCartProps> = ({
 
   const updateQuantity = (value: string) => {
     if (disabled) return;
-    
+
     setInputValue(value);
     const parsed = Number(value);
     if (value.trim() !== "" && !isNaN(parsed) && parsed > 0) {
@@ -51,12 +51,12 @@ const AddToCart: React.FC<AddToCartProps> = ({
 
   const handleAddToCart = () => {
     if (disabled) return;
-    
+
     const qty = inputValue.trim() === "" ? 1 : Number(inputValue);
     const validQty = Math.max(1, qty);
     setQuantity(validQty);
     onAddToCart(validQty);
-    
+
     setShowTick(true);
     setTimeout(() => {
       setShowTick(false);
@@ -65,16 +65,12 @@ const AddToCart: React.FC<AddToCartProps> = ({
 
   return (
     <div className="flex items-center justify-center gap-2 w-full">
+      {/* Input cantidad */}
       <input
         type="number"
         value={inputValue}
         onChange={(e) => updateQuantity(e.target.value)}
         placeholder="1"
-        className={`border-2 rounded-lg ${isMobile ? 'w-12 px-2 py-1.5 text-xs' : 'w-16 px-3 py-2 text-sm'} text-center font-medium ${
-          disabled 
-            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" 
-            : "bg-white text-gray-900 border-gray-300 focus:border-purple-500 focus:outline-none"
-        }`}
         min="1"
         disabled={disabled}
         onBlur={() => {
@@ -83,21 +79,40 @@ const AddToCart: React.FC<AddToCartProps> = ({
             setQuantity(1);
           }
         }}
-      />
-      <button
-        className={`${isMobile ? 'p-2' : 'p-3'} rounded-full transition-all text-black shadow-md ${
+        className={`
+        border rounded-xl text-center font-semibold
+        ${isMobile ? "w-12 px-2 py-1.5 text-xs" : "w-16 px-3 py-2 text-sm"}
+        transition-all
+        ${
           disabled
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-gradient-to-r from-red-500 via-white to-blue-500 hover:shadow-lg hover:scale-110"
-        }`}
+            ? "bg-white/5 text-white/40 border-white/10 cursor-not-allowed"
+            : "bg-white/10 text-white border-white/20 focus:border-[#E10600] focus:outline-none"
+        }
+      `}
+      />
+
+      {/* Botón agregar */}
+      <button
         onClick={handleAddToCart}
         aria-label={t("addToCart")}
         disabled={disabled}
+        className={`
+        ${isMobile ? "p-2" : "p-3"}
+        rounded-full
+        flex items-center justify-center
+        transition-all duration-300
+        shadow-lg
+        ${
+          disabled
+            ? "bg-white/10 text-white/40 cursor-not-allowed"
+            : "bg-[#E10600] text-white hover:shadow-xl hover:scale-110"
+        }
+      `}
       >
         {showTick ? (
-          <FaCheck className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+          <FaCheck className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
         ) : (
-          <FaShoppingCart className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+          <FaShoppingCart className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
         )}
       </button>
     </div>

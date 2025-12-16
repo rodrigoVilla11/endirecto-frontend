@@ -699,7 +699,7 @@ const DashboardPage = () => {
 
   // ------------------ Renderizado ------------------
   return (
-    <div className="min-h-screen bg-gray-100  bg-gradient-to-r from-red-500 via-white to-blue-500">
+    <div className="min-h-screen">
       <Header />
 
       {/* CONTENEDOR PRINCIPAL */}
