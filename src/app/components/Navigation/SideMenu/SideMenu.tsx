@@ -378,8 +378,8 @@ const SideMenu = () => {
       ref={menuRef}
       className={`${
         isOpen
-          ? `fixed inset-0 w-full h-full z-50 bg-zinc-950 pl-4 sm:relative sm:inset-auto sm:w-72 sm:h-auto sm:z-auto sm:bg-zinc-950`
-          : "hidden sm:flex sm:w-16 sm:items-center sm:bg-zinc-950 sm:opacity-100"
+          ? `fixed inset-0 w-full h-full z-50 bg-[#0B0B0B]/90 pl-4 sm:relative sm:inset-auto sm:w-72 sm:h-auto sm:z-auto sm:bg-[#0B0B0B]/90`
+          : "hidden sm:flex sm:w-16 sm:items-center sm:bg-[#0B0B0B]/90 sm:opacity-100"
       } py-3 flex flex-col justify-start gap-2 transition-all duration-300 overflow-y-auto hide-scrollbar sm:mt-16 ${
         isSelectCustomers ? "mt-16" : "mt-16"
       } pt-2`}
