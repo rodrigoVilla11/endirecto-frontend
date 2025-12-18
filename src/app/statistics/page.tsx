@@ -100,6 +100,17 @@ const StatsPage: React.FC = () => {
     return `${nameToShow}`;
   };
 
+  const { userData } = useAuth();
+
+  useEffect(() => {
+    if (userData?.seller_id) {
+      setFilters((prev) => ({
+        ...prev,
+        sellerId: userData.seller_id,
+      }));
+    }
+  }, [userData?.seller_id]);
+
   const periodOptions = [
     { value: PeriodType.DAY, label: "Día" },
     { value: PeriodType.WEEK, label: "Semana" },
@@ -320,8 +331,8 @@ const StatsPage: React.FC = () => {
           </div>
         </header>
 
-        {/* FILTROS - barra sticky */}
-        <div className="sticky top-0 z-20 pb-3 mb-4">
+        {/* FILTROS */}
+        <div className=" top-0 z-20 pb-3 mb-4">
           <section className="bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-3 py-3 md:px-4 md:py-4">
             <div className="flex flex-wrap gap-2 mb-3 items-center">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
@@ -397,7 +408,10 @@ const StatsPage: React.FC = () => {
               {/* Vendedor */}
               <FilterField label="Vendedor">
                 <select
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white"
+                  disabled={!!userData?.seller_id}
+                  className={`border border-slate-200 rounded-lg px-2 py-1.5 text-xs md:text-sm w-full bg-white ${
+                    userData?.seller_id ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                   value={filters.sellerId || ""}
                   onChange={(e) =>
                     setFilters((prev) => ({

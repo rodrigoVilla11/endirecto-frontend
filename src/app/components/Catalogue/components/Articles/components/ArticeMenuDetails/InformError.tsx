@@ -10,6 +10,10 @@ import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
 import { useGetReclaimsTypesQuery } from "@/redux/services/reclaimsTypes";
+import {
+  Roles,
+  useAddNotificationToUsersByRolesMutation,
+} from "@/redux/services/usersApi";
 
 type InformErrorProps = {
   articleId: string;
@@ -28,6 +32,35 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
     { id: selectedClientId || "" },
     { skip: !selectedClientId }
   );
+
+  const [addNotificationToUsersByRoles] =
+    useAddNotificationToUsersByRolesMutation();
+
+  const buildReclaimNotificationText = () => {
+    const reclaimType = articleReclaimTypes.find(
+      (rt) => String(rt.id) === String(selectedReclaimTypeId)
+    );
+
+    const reclamoLabel = reclaimType
+      ? `${reclaimType.categoria}${
+          reclaimType.tipo ? ` - ${reclaimType.tipo}` : ""
+        }`
+      : String(selectedReclaimTypeId || "—");
+
+    const customerLabel = customer
+      ? `${customer.id} - ${customer.name}`
+      : String(selectedClientId || "—");
+
+    return [
+      "Nuevo Reclamo",
+      "Estado: PENDIENTE",
+      `Cliente: ${customerLabel}`,
+      `Sucursal: ${customer?.branch_id || "—"}`,
+      `Tipo de reclamo: ${reclamoLabel}`,
+      `Artículo: ${articleId}`,
+      `Descripción: ${description.trim() || "—"}`,
+    ].join("\n");
+  };
 
   // Traemos todos los tipos de reclamo
   const { data: reclaimTypes, isLoading: isLoadingTypes } =
@@ -79,7 +112,35 @@ const InformError = ({ articleId, closeModal }: InformErrorProps) => {
         description: description.trim(),
       };
 
-      await createReclaim(payload).unwrap();
+      const created = await createReclaim(payload).unwrap();
+
+      // ✅ Notificar a todos los ADMINISTRADOR
+      try {
+        const nowN = new Date();
+        const schedule_from = nowN.toISOString();
+        const schedule_to = new Date(
+          nowN.getTime() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString();
+
+        await addNotificationToUsersByRoles({
+          roles: [Roles.ADMINISTRADOR],
+          notification: {
+            title: "Nuevo reclamo creado",
+            type: "CONTACTO", // ajustá si tu backend usa enum específico
+            description: buildReclaimNotificationText(),
+            link: "/reclaims",
+            schedule_from,
+            schedule_to,
+            customer_id: selectedClientId, // si tu backend lo soporta
+          },
+        } as any).unwrap();
+      } catch (notifErr) {
+        console.error(
+          "No se pudo enviar notificación a ADMINISTRADOR:",
+          notifErr
+        );
+      }
+
       closeModal();
     } catch (err) {
       console.error("Error creating reclaim:", err);

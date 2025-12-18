@@ -77,7 +77,7 @@ const UpdateReclaimComponent = ({
         article_id: reclaim.article_id,
         valid: reclaim.valid as Valid,
         date: reclaim.date,
-        status: reclaim.status as Status,
+        status: Status.ANSWERED,
         cause: reclaim.cause || "",
         solution: reclaim.public_solution || "",
         internal_solution: reclaim.internal_solution || "",

@@ -903,6 +903,11 @@ const PaymentsChargedPage = () => {
             <ImputedPill imputed={p.rendido} />
           </span>
         ),
+        status: (
+          <span>
+            <StatusPill status={p.status} />
+          </span>
+        ),
         total: currencyFmt.format(p.totals?.values_raw ?? 0),
         notes: p.comments ?? "",
       };
@@ -938,6 +943,7 @@ const PaymentsChargedPage = () => {
     { name: t("documents"), key: "documents", important: true },
     { name: t("imputed"), key: "imputed" },
     { name: t("rendido"), key: "rendido", important: true },
+    { name: t("status"), key: "status", important: true },
     { name: t("total"), key: "total", important: true },
     { name: t("notes"), key: "notes" },
   ];

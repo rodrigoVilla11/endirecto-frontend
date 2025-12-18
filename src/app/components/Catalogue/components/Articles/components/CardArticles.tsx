@@ -140,7 +140,7 @@ const CardArticles = ({ article, showPurchasePrice }: any) => {
 
         {/* Indicador de equivalencia */}
         {article.foundEquivalence && (
-          <div className="absolute bottom-32 left-2 bg-[#E10600] text-white text-[10px] font-extrabold px-2 py-1 rounded-full z-20 shadow">
+          <div className="absolute bottom-[260px] left-2 bg-[#E10600] text-white text-[10px] font-extrabold px-2 py-1 rounded-full z-20 shadow">
             EQUIVALENCIA
           </div>
         )}

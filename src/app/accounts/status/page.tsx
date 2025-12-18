@@ -23,6 +23,7 @@ import { useAuth } from "@/app/context/AuthContext";
 
 import {
   useGetAllDocumentsQuery,
+  useGetBalancesSummaryQuery,
   useLazyExportDocumentsQuery,
 } from "@/redux/services/customersInformations";
 import {
@@ -155,6 +156,15 @@ export default function Page() {
     setSelectedDocs([]);
     setAllDocs([]);
   }, []);
+
+  const queryParams =
+    selectedClientId && selectedClientId !== ""
+      ? { customerId: selectedClientId }
+      : userData?.role === "VENDEDOR"
+      ? { sellerId: userData.seller_id }
+      : {};
+
+  const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
   // Fetch documents
   const { data: documentsData, isLoading } = useGetAllDocumentsQuery(
@@ -522,9 +532,7 @@ export default function Page() {
             filters: headerFilters,
             secondSection: {
               title: t("totalOwed"),
-              amount: formatCurrency(
-                selectedSum || documentsData?.totalDocumentBalance || 0
-              ),
+              amount: formatCurrency(totalDebt?.documents_balance || 0),
             },
             results: t("results", { count: documentsData?.totalData || 0 }),
           }}

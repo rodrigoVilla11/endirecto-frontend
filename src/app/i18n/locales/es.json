@@ -1548,7 +1548,7 @@
   "paymentStatus": {
     "pending": "Pendiente",
     "confirmed": "Confirmado",
-    "reversed": "Revertido"
+    "reversed": "Anulado"
   },
   "paymentType": {
     "contra_entrega": "Contra entrega",

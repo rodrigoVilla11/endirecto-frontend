@@ -23,6 +23,7 @@ import { useSideMenu } from "@/app/context/SideMenuContext";
 import Link from "next/link";
 import { useCountCustomersQuery } from "@/redux/services/customersApi";
 import {
+  useGetMonthlyInvoicesQuery,
   useSumAmountsQuery,
   useSumExpiredAmountsQuery,
 } from "@/redux/services/documentsApi";
@@ -34,6 +35,7 @@ import {
 import { useClient } from "@/app/context/ClientContext";
 import { useTranslation } from "react-i18next";
 import { FiTarget } from "react-icons/fi";
+import { useGetMonthlySalesQuery } from "@/redux/services/ordersApi";
 
 const DashboardSeller = () => {
   const { t } = useTranslation();
@@ -56,6 +58,14 @@ const DashboardSeller = () => {
       : userData?.role === "VENDEDOR"
       ? { sellerId: userData.seller_id }
       : {};
+
+  const formatCurrency = (value: any) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
 
   const { data: totalDebt } = useGetBalancesSummaryQuery(queryParams);
 
@@ -83,6 +93,92 @@ const DashboardSeller = () => {
     color?: string; // propiedad opcional
     className?: string;
   }
+
+  const canQuery = true;
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // Mes 1-12
+  const lastYear = currentYear - 1;
+  const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+
+  const { data: currentYearSalesData } = useGetMonthlySalesQuery(
+    {
+      startDate: `${currentYear}-01-01`,
+      endDate: `${currentYear}-12-31`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
+
+  const { data: lastYearSalesData } = useGetMonthlySalesQuery(
+    {
+      startDate: `${lastYear}-01-01`,
+      endDate: `${lastYear}-12-31`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
+
+  const endOfMonth = new Date(currentYear, currentMonth, 0).getDate(); // día real de fin de mes
+  const { data: currentYearInvoicesData } = useGetMonthlyInvoicesQuery(
+    {
+      startDate: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
+      endDate: `${currentYear}-${String(currentMonth).padStart(
+        2,
+        "0"
+      )}-${endOfMonth}`,
+      ...queryParams,
+    },
+    { skip: !canQuery, refetchOnMountOrArgChange: false }
+  );
+  // Extraer datos específicos para ventas e ingresos
+  const currentMonthSalesData = currentYearSalesData?.find(
+    (d) => d.month === currentMonth
+  );
+  const lastYearSameMonthSalesData = lastYearSalesData?.find(
+    (d) => d.month === currentMonth
+  );
+  const previousMonthSalesData =
+    currentMonth === 1
+      ? lastYearSalesData?.find((d) => d.month === 12)
+      : currentYearSalesData?.find((d) => d.month === previousMonth);
+
+  const currentMonthInvoiceData = currentYearInvoicesData?.find(
+    (d) => d.month === currentMonth
+  );
+
+  // Cálculo de porcentajes
+  const interannualPercentage =
+    lastYearSameMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
+      ? (currentMonthSalesData.totalSales /
+          lastYearSameMonthSalesData.totalSales) *
+        100
+      : 0;
+
+  const monthlyPercentage =
+    previousMonthSalesData?.totalSales && currentMonthSalesData?.totalSales
+      ? (currentMonthSalesData.totalSales / previousMonthSalesData.totalSales) *
+        100
+      : 0;
+
+  // Comparaciones reales
+  const interannualColor =
+    currentMonthSalesData?.totalSales >
+    (lastYearSameMonthSalesData?.totalSales || 0)
+      ? "green"
+      : currentMonthSalesData?.totalSales ===
+        (lastYearSameMonthSalesData?.totalSales || 0)
+      ? "yellow"
+      : "red";
+
+  const monthlyColor =
+    currentMonthSalesData?.totalSales >
+    (previousMonthSalesData?.totalSales || 0)
+      ? "green"
+      : currentMonthSalesData?.totalSales ===
+        (previousMonthSalesData?.totalSales || 0)
+      ? "yellow"
+      : "red";
 
   const itemsCard: CardItem[] = [
     {
@@ -141,32 +237,148 @@ const DashboardSeller = () => {
       allowedRoles: ["ADMINISTRADOR"],
     },
     {
-      logo: <BsCash />,
+      logo: (
+        <BsCash
+          className={
+            interannualColor === "green"
+              ? "text-green-500"
+              : interannualColor === "yellow"
+              ? "text-yellow-500"
+              : "text-red-500"
+          }
+        />
+      ),
       title: t("interannualSell"),
-      subtitle: "0 %",
+      subtitle:
+        interannualPercentage !== null ? (
+          `${interannualPercentage.toFixed(0)}%`
+        ) : (
+          <SkeletonText width="w-10" />
+        ),
+
       text: (
-        <>
-          {t("currentMonth")}: $ 0
-          <br />
-          {t("lastYearMonth")}: $ 0
-        </>
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                (currentMonthSalesData?.totalSales || 0) >
+                (lastYearSameMonthSalesData?.totalSales || 0)
+                  ? "text-green-600"
+                  : (currentMonthSalesData?.totalSales || 0) ===
+                    (lastYearSameMonthSalesData?.totalSales || 0)
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }
+            >
+              {t("currentMonth")}:
+            </span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                (currentMonthSalesData?.totalSales || 0) >
+                (lastYearSameMonthSalesData?.totalSales || 0)
+                  ? "text-green-600"
+                  : (currentMonthSalesData?.totalSales || 0) ===
+                    (lastYearSameMonthSalesData?.totalSales || 0)
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }
+            >
+              {t("lastYearMonth")}:
+            </span>
+            {lastYearSalesData ? (
+              <span>
+                {formatCurrency(lastYearSameMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+        </div>
       ),
+
       href: "",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+      color: interannualColor,
     },
+    // Venta mensual
     {
-      logo: <BsCash />,
-      title: t("monthlySell"),
-      subtitle: "0 %",
-      text: (
-        <>
-          {t("currentMonth")}: $ 0
-          <br />
-          {t("lastYearMonth")}: $ 0
-        </>
+      logo: (
+        <BsCash
+          className={
+            monthlyColor === "green"
+              ? "text-green-500"
+              : monthlyColor === "yellow"
+              ? "text-yellow-500"
+              : "text-red-500"
+          }
+        />
       ),
-      href: "",
+      title: t("monthlySell"),
+      subtitle: monthlyPercentage ? (
+        `${monthlyPercentage.toFixed(0)}%`
+      ) : (
+        <SkeletonText width="w-8" />
+      ),
+      text: (
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                currentMonthSalesData?.totalSales >
+                (previousMonthSalesData?.totalSales || 0)
+                  ? "text-green-600"
+                  : currentMonthSalesData?.totalSales ===
+                    (previousMonthSalesData?.totalSales || 0)
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }
+            >
+              {t("currentMonth")}:
+            </span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(currentMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                currentMonthSalesData?.totalSales >
+                (previousMonthSalesData?.totalSales || 0)
+                  ? "text-green-600"
+                  : currentMonthSalesData?.totalSales ===
+                    (previousMonthSalesData?.totalSales || 0)
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }
+            >
+              {t("lastMonth")}:
+            </span>
+            {currentYearSalesData ? (
+              <span>
+                {formatCurrency(previousMonthSalesData?.totalSales || 0)}
+              </span>
+            ) : (
+              <SkeletonText width="w-20" />
+            )}
+          </div>
+        </div>
+      ),
+      href: "/orders/orders",
       allowedRoles: ["ADMINISTRADOR", "VENDEDOR"],
+      color: monthlyColor,
     },
     {
       logo: <FaInfo />,
@@ -423,10 +635,7 @@ const DashboardSeller = () => {
               href={item.href}
               className="transform transition-all duration-300 hover:scale-105"
             >
-              <CardShortcuts
-                title={item.title}
-                logo={item.logo}
-              />
+              <CardShortcuts title={item.title} logo={item.logo} />
             </Link>
           ))}
         </div>
@@ -436,3 +645,7 @@ const DashboardSeller = () => {
 };
 
 export default DashboardSeller;
+
+const SkeletonText = ({ width = "w-16" }) => (
+  <div className={`bg-gray-200 animate-pulse h-4 rounded ${width}`} />
+);

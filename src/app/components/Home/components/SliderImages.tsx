@@ -89,7 +89,7 @@ const SliderImages = () => {
                 <img
                   src={item.headers.homeWeb}
                   alt={`Banner for ${item._id}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-contain transition-transform duration-500"
                 />
 
                 {/* Overlay fijo para contraste (siempre se ve bien) */}
