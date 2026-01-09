@@ -17,13 +17,13 @@ const Logo = () => {
   const logoUrl =
     selectedClientId && data?.logo
       ? data.logo
-      : "http://res.cloudinary.com/dw3folb8p/image/upload/v1735302458/in36sypq4u5ryxvpy9tc.png";
+      : "https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png";
 
   return (
     <div className="flex items-center group z-40">
       <div className="rounded-2xl p-3 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
         <img
-          src="endirecto.png"
+          src={logoUrl}
           alt="logo-navbar"
           className="h-16 object-contain"
         />

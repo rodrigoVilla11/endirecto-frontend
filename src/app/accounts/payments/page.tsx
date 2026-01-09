@@ -63,6 +63,7 @@ const PaymentsChargedPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortQuery, setSortQuery] = useState<string>("");
   const [customer_id, setCustomer_id] = useState<string>("");
+  const [showAnulados, setShowAnulados] = useState(false);
   const [uploadPdf, { data: dataPdf, isLoading: isLoadingPdf }] =
     useUploadPdfMutation();
   const [methodFilter, setMethodFilter] = useState<
@@ -230,6 +231,9 @@ const PaymentsChargedPage = () => {
   // ================== VISIBLE (aplica filtro por método) ==================
   const visibleItems = useMemo(() => {
     let arr = items;
+    if (!showAnulados) {
+      arr = arr.filter((p) => !isAnulado(p));
+    }
 
     if (methodFilter) {
       arr = arr.filter((p) =>
@@ -243,7 +247,7 @@ const PaymentsChargedPage = () => {
     }
 
     return arr;
-  }, [items, methodFilter, rendidoFilter]);
+  }, [items, methodFilter, rendidoFilter, showAnulados]);
 
   // ================== EFECTIVOS (si hay selección, intersección con visible) ==================
   const effectiveItems = useMemo(
@@ -271,6 +275,21 @@ const PaymentsChargedPage = () => {
     () => Object.values(methodTotals).reduce((a, b) => a + b, 0),
     [methodTotals]
   );
+
+  async function urlToDataUrl(url: string): Promise<string> {
+    const resp = await fetch(url);
+    if (!resp.ok)
+      throw new Error(`No se pudo descargar imagen: ${resp.status}`);
+    const blob = await resp.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+
   // ================== Get user (para el PDF) ==================
   // Reemplaza COMPLETO tu downloadPDFFor por esta versión
   const downloadPDFFor = async (
@@ -286,6 +305,9 @@ const PaymentsChargedPage = () => {
     }
   ) => {
     if (!rows.length) return;
+
+    const LOGO_URL =
+      "https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png";
 
     const currencyFmt = new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -345,30 +367,69 @@ const PaymentsChargedPage = () => {
     const margin = { left: 40, right: 40 };
     const wAvail = pageW - margin.left - margin.right;
 
+    let logoDataUrl = "";
+    try {
+      logoDataUrl = await urlToDataUrl(LOGO_URL);
+    } catch (e) {
+      console.warn("No pude cargar el logo, sigo sin logo:", e);
+    }
+
     // ===== Título (con vendedor) =====
     const firstRow: any = rows[0];
+    const userName = userData?.username || "";
     const sellerId = firstRow?.seller.id;
-
     let sellerName = "";
     if (sellerId && Array.isArray(sellersData)) {
       const seller = usersData?.find((s) => s.seller_id === sellerId);
       sellerName = seller?.username || "";
     }
-    const title = sellerName
-      ? `Rendición de pagos - ${sellerName}`
-      : "Rendición de pagos";
+    const hasSeller = Boolean(sellerName);
+    const hasUser = Boolean(userName);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(title, margin.left, 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    const title =
+      hasSeller || hasUser
+        ? sellerName && userName
+          ? sellerName === userName
+            ? `Rendición de pagos - ${sellerName}`
+            : `Rendición de pagos - ${sellerName} - ${userName}`
+          : `Rendición de pagos - ${sellerName || userName}`
+        : "Rendición de pagos";
+
+    // altura reservada para header
+    const headerH = 82;
+
+    // medidas logo
+    const logoMaxH = 44;
+    const logoMaxW = 112;
     const now = new Date();
-    doc.text(
-      `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-      margin.left,
-      58
-    );
+
+    function drawHeader() {
+      const topY = 22;
+      // Logo
+      let x = margin.left;
+      if (logoDataUrl) {
+        doc.addImage(logoDataUrl, "PNG", x, topY, logoMaxW, logoMaxH);
+        x += logoMaxW + 12;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(title, x, topY + 18);
+
+      // Fecha
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(
+        `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+        x,
+        topY + 36
+      );
+
+      // Línea separadora
+      doc.setDrawColor(220);
+      doc.setLineWidth(1);
+      doc.line(margin.left, headerH - 10, pageW - margin.right, headerH - 10);
+    }
 
     // Total bruto de todos los valores
     const sumValuesGross = rows.reduce(
@@ -392,9 +453,18 @@ const PaymentsChargedPage = () => {
 
     // ===== BLOQUE 1: tabla principal =====
     autoTable(doc, {
-      startY: 72,
+      startY: headerH,
       tableWidth: wAvail,
-      pageBreak: "avoid",
+      pageBreak: "auto",
+      margin: {
+        left: margin.left,
+        right: margin.right,
+        top: headerH,
+        bottom: 40,
+      },
+      didDrawPage: () => {
+        drawHeader();
+      },
       head: [
         ["Fecha", "Cliente", "Docs", "Métodos", "Cobrado", "Total Cobrado"],
       ],
@@ -445,7 +515,6 @@ const PaymentsChargedPage = () => {
           overflow: "visible",
         },
       },
-      margin,
       foot: [
         [
           {
@@ -481,6 +550,7 @@ const PaymentsChargedPage = () => {
     const estimatedHeight = 120; // estimación simple
     if (totalsStartY + estimatedHeight > pageH - 40) {
       doc.addPage();
+      drawHeader();
       totalsStartY = 60;
     }
 
@@ -491,6 +561,15 @@ const PaymentsChargedPage = () => {
     autoTable(doc, {
       startY: totalsStartY + 20,
       tableWidth: wAvail,
+      margin: {
+        left: margin.left,
+        right: margin.right,
+        top: headerH,
+        bottom: 40,
+      },
+      didDrawPage: () => {
+        drawHeader();
+      },
       head: [["Método", "Cant. valores", "Total bruto", "% del total"]],
       body: totalsEntries.map(([m, o]) => [
         prettyMethod(m),
@@ -515,7 +594,6 @@ const PaymentsChargedPage = () => {
         2: { cellWidth: wAvail * 0.22, halign: "right" },
         3: { cellWidth: wAvail * 0.14, halign: "right" },
       },
-      margin,
     });
 
     // ===== Subida + actualización de pagos (sin cambios) =====
@@ -1150,6 +1228,22 @@ const PaymentsChargedPage = () => {
         </select>
       ),
     },
+    {
+      content: (
+        <button
+          type="button"
+          onClick={() => setShowAnulados((s) => !s)}
+          className={`px-3 py-2 rounded text-white ${
+            showAnulados
+              ? "bg-rose-600 hover:bg-rose-700"
+              : "bg-zinc-700 hover:bg-zinc-800"
+          }`}
+          title={showAnulados ? "Ocultar anulados" : "Mostrar anulados"}
+        >
+          {showAnulados ? "Ocultar Anulados" : "Mostrar Anulados"}
+        </button>
+      ),
+    },
   ];
 
   // 👉 Botón "Rendir": solo si NO es CUSTOMER
@@ -1227,6 +1321,17 @@ const PaymentsChargedPage = () => {
     filters: headerFilters,
     results: `${data?.total ?? 0} ${t("page.header.results")}`,
   };
+
+  useEffect(() => {
+    if (showAnulados) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const p of items) {
+        if (isAnulado(p)) next.delete((p as any)._id);
+      }
+      return next;
+    });
+  }, [showAnulados, items]);
 
   return (
     <PrivateRoute

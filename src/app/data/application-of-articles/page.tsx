@@ -268,14 +268,14 @@ const Page = () => {
         title: t("exportExcel"),
         onClick: openExportModal,
       },
-      {
-        logo: <IoSync className={isSyncing ? "animate-spin" : ""} />,
-        title: isSyncing
-          ? t("syncing", { defaultValue: "Sincronizando..." })
-          : t("syncApplications", { defaultValue: "Sincronizar aplicaciones" }),
-        onClick: handleSyncEquivalences,
-        disabled: isSyncing,
-      },
+      // {
+      //   logo: <IoSync className={isSyncing ? "animate-spin" : ""} />,
+      //   title: isSyncing
+      //     ? t("syncing", { defaultValue: "Sincronizando..." })
+      //     : t("syncApplications", { defaultValue: "Sincronizar aplicaciones" }),
+      //   onClick: handleSyncEquivalences,
+      //   disabled: isSyncing,
+      // },
     ],
     filters: [
       {
