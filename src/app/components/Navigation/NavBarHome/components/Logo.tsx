@@ -5,7 +5,7 @@ const Logo = () => {
     <div className='flex items-center group'>
       <div className='rounded-2xl p-3 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3'>
         <img 
-          src="endirecto.png" 
+          src="https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png" 
           alt="logo-navbar" 
           className='h-16 object-contain' 
         />
