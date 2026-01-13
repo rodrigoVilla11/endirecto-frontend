@@ -276,6 +276,8 @@ export function DocumentsView({
     days_until_expiration_today: Number.isFinite(days_since_invoice)
       ? days_since_invoice
       : NaN,
+    manual_ten_applied: eligibleManual10 && manualTenApplied,
+    manual_ten_note: eligibleManual10 && manualTenApplied ? "10% (30–37)" : "",
   };
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
@@ -507,8 +509,7 @@ export function DocumentsView({
                       >
                         💵{" "}
                         {isDesc
-                          ? t("document.finalConDescuento") ||
-                            "Final c/desc."
+                          ? t("document.finalConDescuento") || "Final c/desc."
                           : t("document.finalConRecargo") || "Final c/rec."}
                       </span>
                       <span

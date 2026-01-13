@@ -23,6 +23,7 @@ export type ValueItem = {
   overrideGraceDays?: number; // solo cheques
   cf?: number;
 };
+export type PaymentTypeUI = "cta_cte" | "pago_anticipado";
 
 export default function ValueView({
   newValues,
@@ -41,7 +42,9 @@ export default function ValueView({
   docsDaysMin,
   /** fecha del recibo (default: hoy) */
   receiptDate = new Date(),
+  applyManualTenToCheques,
   blockChequeInterest = false,
+  paymentTypeUI,
 }: {
   newValues: ValueItem[];
   setNewValues: React.Dispatch<React.SetStateAction<ValueItem[]>>;
@@ -54,6 +57,8 @@ export default function ValueView({
   docsDaysMin?: number;
   receiptDate?: Date;
   blockChequeInterest?: boolean;
+  applyManualTenToCheques?: boolean;
+  paymentTypeUI: PaymentTypeUI;
 }) {
   const currencyFmt = useMemo(
     () =>
@@ -125,45 +130,110 @@ export default function ValueView({
       ? Math.max(0, Math.round(n))
       : undefined;
 
+  function toYMDLocal(x: Date | string) {
+    // ✅ evita problemas de UTC con strings "YYYY-MM-DD"
+    const d =
+      typeof x === "string"
+        ? new Date(`${x}T00:00:00`)
+        : x instanceof Date
+        ? x
+        : new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function dayDiffCalendar(a: Date, b: Date) {
+    const A = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+    const B = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+    return Math.round((A - B) / MS_PER_DAY);
+  }
+
+  function isSameDayLooseCheque(
+    chequeISO?: string,
+    receipt: Date = new Date()
+  ) {
+    if (!chequeISO) return false;
+    const cd = toYMDLocal(chequeISO);
+    const rd = toYMDLocal(receipt);
+    // ±1 día calendario
+    return Math.abs(dayDiffCalendar(cd, rd)) <= 1;
+  }
+
+  const nominalOfValue = (v: ValueItem) => {
+    if (v.method === "cheque") {
+      const raw = (v.raw_amount ?? "").trim();
+      return raw !== "" ? toNum(raw) : toNum(v.amount);
+    }
+    return toNum(v.amount);
+  };
+
   function getChequePromoRate({
+    paymentType,
     invoiceAgeAtReceiptDaysMin,
     invoiceIssueDateApprox,
     receiptDate,
     chequeDateISO,
+    promoWindowDays = 30,
   }: {
+    paymentType: PaymentTypeUI;
     invoiceAgeAtReceiptDaysMin?: number;
     invoiceIssueDateApprox?: Date;
     receiptDate: Date;
     chequeDateISO?: string;
+    promoWindowDays?: number;
   }) {
+    // ✅ Solo aplica a Cuenta Corriente
+    if (paymentType !== "cta_cte") return 0;
     if (!chequeDateISO) return 0;
 
-    // ⚠️ Asegurate de usar la versión de toYMD que NO pierde el día por TZ
-    const cd = toYMD(chequeDateISO); // cheque date (normalizado)
-    const rd = toYMD(receiptDate);
-    const age = clampInt(invoiceAgeAtReceiptDaysMin); // redondeo/clamp
+    const cd = toYMDLocal(chequeDateISO);
+    const rd = toYMDLocal(receiptDate);
+    const age = clampInt(invoiceAgeAtReceiptDaysMin);
 
-    // “cheque al día” con tolerancia de ±1 día (por TZ/operativa)
-    const isSameDayLoose = Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY;
+    // ✅ “cheque al día” = hoy o mañana (±1 día calendario)
+    const isSameDayLoose = Math.abs(dayDiffCalendar(cd, rd)) <= 1;
 
-    if (typeof age === "number") {
-      // A) 0–7 INCLUSIVE + cheque ≤30 días desde emisión → 13%
-      if (age >= 0 && age <= 7 && invoiceIssueDateApprox) {
-        const daysFromIssueToCheque = Math.round(
-          (cd.getTime() - invoiceIssueDateApprox.getTime()) / MS_PER_DAY
-        );
-        if (daysFromIssueToCheque <= 30) return 0.13;
-      }
+    // ✅ Ventana de 30 días desde emisión (aprox)
+    const daysFromIssueToCheque =
+      invoiceIssueDateApprox instanceof Date
+        ? dayDiffCalendar(cd, toYMDLocal(invoiceIssueDateApprox))
+        : undefined;
 
-      // B) 7–15 INCLUSIVE + cheque “al día” (±1 día) → 13%
-      if (age >= 7 && age <= 15 && isSameDayLoose) return 0.13;
+    // si no hay issueDateApprox no podemos aplicar “antes de 30 días desde factura”
+    if (typeof daysFromIssueToCheque !== "number") return 0;
 
-      // C) 16–30 INCLUSIVE + cheque “al día” (±1 día) → 10%
-      if (age >= 16 && age <= 30 && isSameDayLoose) return 0.1;
+    // debe ser entre 0 y promoWindowDays días desde emisión
+    if (daysFromIssueToCheque > promoWindowDays) return 0;
+
+    // si no hay age, no se puede decidir el tramo por reglas
+    if (typeof age !== "number") return 0;
+
+    // =========================
+    // REGLAS NUEVAS (CTA CTE)
+    // =========================
+
+    // 1) Factura <= 7 días:
+    //    cualquier cheque dentro de 30 días desde emisión => 13%
+    if (age >= 0 && age <= 7) {
+      return 0.13;
+    }
+
+    // 2) Factura 8–15 días:
+    //    - al día => 13%
+    //    - NO al día => 10%
+    if (age > 7 && age <= 15) {
+      return isSameDayLoose ? 0.13 : 0.1;
+    }
+    console.log(promoWindowDays);
+    // 3) Factura 16–30 días:
+    //    - al día => 10%
+    //    - NO al día => 10% (igual)
+    if (age > 15 && age <= promoWindowDays) {
+      return 0.1;
     }
 
     return 0;
   }
+
   /** Base nominal para promo: raw_amount si existe (>0), si no, neto */
   const promoBaseOf = (v: ValueItem) => {
     const raw = Number((v.raw_amount ?? "").replace(",", ".")) || 0;
@@ -253,11 +323,6 @@ export default function ValueView({
 
   const daysBetweenToday = (iso?: string) => diffFromTodayToDate(iso);
 
-  const graceFor = (v: ValueItem) =>
-    v.selectedReason === "Refinanciación"
-      ? v.overrideGraceDays ?? chequeGraceDays ?? 45
-      : chequeGraceDays ?? 45;
-
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
     () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
@@ -336,14 +401,6 @@ export default function ValueView({
   const [isEditing, setIsEditing] = useState<Record<number, boolean>>({});
   const [draftText, setDraftText] = useState<Record<number, string>>({});
 
-  const toEditable = (s?: string) => {
-    // Convierte "1234.50" a "1.234,50" amigable para AR, o deja vacío si es 0
-    const n = parseMaskedCurrencyToNumber(s ?? "");
-    if (!n) return "";
-    // Usamos coma para decimales al editar
-    return n.toFixed(2).replace(".", ",");
-  };
-
   const startEdit = (i: number, v: ValueItem) => {
     const current = v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
     const n = parseMaskedCurrencyToNumber(current ?? "");
@@ -368,6 +425,7 @@ export default function ValueView({
       return c;
     });
   };
+  const round2 = (n: number) => Math.round(n * 100) / 100;
 
   const applyMaskedEdit = (
     rowIndex: number,
@@ -424,6 +482,118 @@ export default function ValueView({
     [newValues]
   );
 
+  // ===== Descuento/recargo aplicado a valores (igual lógica que handleCreatePayment) =====
+  const valuesNominal = useMemo(
+    () => round2(totalNominalValues),
+    [totalNominalValues]
+  );
+
+  const valuesNetTotal = useMemo(
+    () =>
+      round2(
+        newValues.reduce(
+          (acc, v) => acc + (parseFloat(v.amount || "0") || 0),
+          0
+        )
+      ),
+    [newValues]
+  );
+
+  const valuesNetNonCheque = useMemo(
+    () =>
+      round2(
+        newValues.reduce(
+          (acc, v) =>
+            acc +
+            (v.method !== "cheque" ? parseFloat(v.amount || "0") || 0 : 0),
+          0
+        )
+      ),
+    [newValues]
+  );
+
+  // ✅ Nominal SOLO de cheques al día (±1)
+  const valuesNominalSameDayCheques = useMemo(() => {
+    return round2(
+      newValues.reduce((acc, v) => {
+        if (v.method !== "cheque") return acc;
+        if (!isSameDayLooseCheque(v.chequeDate, receiptDate)) return acc;
+        return acc + nominalOfValue(v);
+      }, 0)
+    );
+  }, [newValues, receiptDate]);
+
+  // ✅ Base para manual10: efectivo/transfer (neto) + cheques al día (nominal)
+  const valuesBaseForManual10 = useMemo(() => {
+    return round2(valuesNetNonCheque + valuesNominalSameDayCheques);
+  }, [valuesNetNonCheque, valuesNominalSameDayCheques]);
+
+  // Neto aportado por valores (nominal - interés cheques)
+  const netFromValues = useMemo(
+    () => round2(valuesNominal - Math.abs(totalChequeInterest || 0)),
+    [valuesNominal, totalChequeInterest]
+  );
+
+  const isDiscountContext = docAdjustmentSigned > 0;
+  const isSurchargeContext = docAdjustmentSigned < 0;
+
+  const rate = gross > 0 ? docAdjustmentSigned / gross : 0;
+
+  // Total a pagar (docsFinal) para comparar cuando hay DESCUENTO sin cheques
+  const totalToPay = round2(netToPay || 0);
+
+  // Umbral: si hay DESCUENTO y NO hay cheques → comparar contra docsFinal, si no → gross
+  const threshold =
+    isDiscountContext && !hasCheques ? totalToPay : round2(gross);
+
+  // comparación en centavos
+  const valuesDoNotReachTotal =
+    Math.round(netFromValues * 100) < Math.round(threshold * 100);
+
+  const discountAppliedToValues = useMemo(() => {
+    let discountAmt = 0;
+
+    if (isDiscountContext) {
+      const discountOnCashOnly = -round2(valuesNetNonCheque * rate);
+
+      if (hasCheques) {
+        // ✅ MIXTO (hay cheques)
+        if (applyManualTenToCheques) {
+          // ✅ aplicar manual10 SOLO a cheques al día (±1) + efectivo/transfer
+          discountAmt = -round2(valuesBaseForManual10 * rate);
+        } else {
+          // ✅ default: solo efectivo/transfer
+          discountAmt = discountOnCashOnly;
+        }
+      } else {
+        // ✅ SIN cheques
+        discountAmt = valuesDoNotReachTotal
+          ? discountOnCashOnly
+          : -round2(docAdjustmentSigned);
+      }
+    } else if (isSurchargeContext) {
+      // recargo (mantengo tu lógica)
+      const recargoSobreValores = -1 * (valuesNetTotal * rate);
+      discountAmt = valuesDoNotReachTotal
+        ? recargoSobreValores
+        : -round2(docAdjustmentSigned);
+    }
+
+    return round2(discountAmt);
+  }, [
+    isDiscountContext,
+    isSurchargeContext,
+    hasCheques,
+    applyManualTenToCheques,
+    valuesNominal,
+    valuesNetNonCheque,
+    valuesNetTotal,
+    valuesBaseForManual10,
+    rate,
+    valuesDoNotReachTotal,
+    docAdjustmentSigned,
+  ]);
+
   const EPS = 1; // tolerancia de $1
   const reachesNetToPay = Math.abs(totalNominalValues - (netToPay || 0)) <= EPS;
   const shouldApplyChequePromo = !(
@@ -438,12 +608,17 @@ export default function ValueView({
     }
     return newValues.map((v) => {
       if (v.method !== "cheque") return { rate: 0, amount: 0 };
+      const promoWindowDays = applyManualTenToCheques ? 37 : 30;
+
       const rate = getChequePromoRate({
+        paymentType: paymentTypeUI, // <- tenés que recibirlo por props (ver abajo)
         invoiceAgeAtReceiptDaysMin: docsDaysMin,
         invoiceIssueDateApprox,
         receiptDate,
         chequeDateISO: v.chequeDate,
+        promoWindowDays,
       });
+
       const base = promoBaseOf(v);
       const amount = +(base * rate).toFixed(2); // descuento
       return { rate, amount };
@@ -454,6 +629,8 @@ export default function ValueView({
     invoiceIssueDateApprox,
     receiptDate,
     shouldApplyChequePromo,
+    paymentTypeUI,
+    applyManualTenToCheques,
   ]);
 
   const totalChequePromo = useMemo(
@@ -465,15 +642,9 @@ export default function ValueView({
     [chequePromoItems]
   );
 
-  // Total combinado de ajustes: documentos (+/-) + costo financiero de cheques
   const totalDescCostF = useMemo(
     () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
     [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
-  );
-
-  const realValue = useMemo(
-    () => totalNominalValues - totalDescCostF,
-    [totalDescCostF, totalNominalValues]
   );
 
   const netToApply = useMemo(
@@ -484,18 +655,6 @@ export default function ValueView({
     () => +(gross - netToApply).toFixed(2),
     [gross, netToApply]
   );
-
-  const totalEfectivoTransferencia = useMemo(
-    () =>
-      newValues.reduce((acc, v) => {
-        if (v.method === "efectivo" || v.method === "transferencia") {
-          return acc + toNum(v.amount);
-        }
-        return acc;
-      }, 0),
-    [newValues]
-  );
-  const round2 = (n: number) => Math.round(n * 100) / 100;
 
   const saldoAPagarHoy = useMemo(() => {
     // netToPay = total a pagar según documentos
@@ -1350,13 +1509,21 @@ function RowSummary({
       : "bg-white";
 
   return (
-    <div className={`flex justify-between items-center p-3 rounded-xl ${bgColor} transition-colors`}>
-      <span className={`text-gray-700 ${bold ? "font-bold" : "font-semibold"} text-sm`}>
+    <div
+      className={`flex justify-between items-center p-3 rounded-xl ${bgColor} transition-colors`}
+    >
+      <span
+        className={`text-gray-700 ${
+          bold ? "font-bold" : "font-semibold"
+        } text-sm`}
+      >
         {label}
       </span>
       <div className="flex items-center gap-2">
         <span
-          className={`${color} tabular-nums ${bold ? "font-bold" : "font-semibold"} text-sm`}
+          className={`${color} tabular-nums ${
+            bold ? "font-bold" : "font-semibold"
+          } text-sm`}
         >
           {value}
         </span>
@@ -1510,7 +1677,10 @@ function LabelWithTip({
         tabIndex={0}
       >
         <span className="font-semibold">{label}</span>
-        <InfoIcon className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" aria-hidden="true" />
+        <InfoIcon
+          className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors"
+          aria-hidden="true"
+        />
       </span>
     </Tip>
   );
