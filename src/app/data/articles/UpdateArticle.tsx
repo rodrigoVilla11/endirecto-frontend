@@ -84,7 +84,8 @@ const UpdateArticleComponent = ({
       const responses = await Promise.all(
         selectedFiles.map(async (file) => {
           const response = await uploadImage(file).unwrap();
-          return response.url;
+          console.log(response);
+          return response.secure_url;
         })
       );
 
@@ -97,6 +98,7 @@ const UpdateArticleComponent = ({
 
   const [form, setForm] = useState({
     id: "",
+    name: "",
     supplier_code: "",
     description: "",
     images: [] as string[],
@@ -104,19 +106,18 @@ const UpdateArticleComponent = ({
 
   useEffect(() => {
     if (!articleId) return;
-  
-    refetchArticles();
-  
+
     if (article) {
       setForm({
         id: article.id ?? "",
+        name: article.name ?? "",
         supplier_code: article.supplier_code ?? "",
         description: article.description ?? "",
         images: article.images ?? [],
       });
     }
-  }, [articleId, article, refetchArticles]);
-  
+  }, [articleId, article]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
