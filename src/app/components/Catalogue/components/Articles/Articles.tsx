@@ -140,7 +140,7 @@ const Articles: React.FC<ArticlesProps> = ({
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-sm bg-black backdrop-blur rounded-3xl shadow-2xl border border-white/60 p-8 text-center">
           <Image
-            src="/endirecto.png"
+            src="https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png"
             alt="Logo"
             width={isMobile ? 110 : 140}
             height={isMobile ? 110 : 140}

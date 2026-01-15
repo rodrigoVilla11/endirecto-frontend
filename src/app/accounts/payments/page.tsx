@@ -1499,15 +1499,73 @@ function DetailsModal({
     netFromValues < gross;
 
   const daysUsed = (mainDoc as any)?.days_used;
-  const discountRate = (mainDoc as any)?.discount_rate; // fracción
-  const discountRateTxt =
-    typeof discountRate === "number"
-      ? `${(discountRate * 100).toFixed(2)}%`
-      : undefined;
+  const documentsSafe: any[] = Array.isArray(payment?.documents)
+    ? payment!.documents
+    : [];
+
+  const docsMeta = (() => {
+    let baseSum = 0;
+    let adjAbsSum = 0;
+    let daysAcc = 0;
+
+    for (const d of documentsSafe) {
+      const base = typeof d?.base === "number" ? d.base : 0;
+
+      // ojo: discount_amount puede venir con signo distinto según tu backend.
+      // Para % del encabezado necesitamos magnitud del ajuste del doc:
+      const adjAbs =
+        typeof d?.discount_amount === "number"
+          ? Math.abs(d.discount_amount)
+          : 0;
+
+      const days =
+        typeof d?.days_used === "number"
+          ? d.days_used
+          : typeof d?.days === "number"
+          ? d.days
+          : undefined;
+
+      if (base > 0) {
+        baseSum += base;
+        adjAbsSum += adjAbs;
+        if (typeof days === "number") daysAcc += base * days;
+      }
+    }
+
+    const rate = baseSum > 0 ? adjAbsSum / baseSum : 0; // fracción (0.1495 = 14.95%)
+    const rateTxt = `${(rate * 100).toFixed(2)}%`;
+
+    const daysWeighted =
+      baseSum > 0 ? Math.round((daysAcc / baseSum) * 100) / 100 : 0;
+
+    // label del encabezado: si el total de docs es recargo vs descuento
+    // (si querés 100% exacto según tu convención, cambiá la condición)
+    const docsTotalSigned =
+      typeof (payment?.totals as any)?.discount === "number"
+        ? (payment!.totals as any).discount
+        : 0;
+
+    const label = docsTotalSigned < 0 ? "Costo Financiero" : "Descuento";
+
+    return { baseSum, adjAbsSum, daysWeighted, rateTxt, label };
+  })();
+
+  const docsAdjTotal =
+    typeof (payment?.totals as any)?.discount === "number"
+      ? (payment!.totals as any).discount
+      : 0;
+
+  const globalRateSigned =
+    typeof gross === "number" && gross > 0 ? docsAdjTotal / gross : 0;
+
+  // Si NO llega al total: aplico la tasa global sobre el NETO REAL aportado por valores
+  // Convención "sobre valores": descuento NEGATIVO, recargo POSITIVO
 
   const discountAmt =
-    valuesDoNotReachTotal && typeof netFromValues === "number" && discountRate
-      ? -1 * (netFromValues * discountRate) // Aplicar la tasa sobre el neto real
+    valuesDoNotReachTotal && typeof netFromValues === "number"
+      ? Math.round(
+          (-1 * netFromValues * globalRateSigned + Number.EPSILON) * 100
+        ) / 100
       : discountAmtOriginal;
 
   // Monto aplicado a valores que vino en el payload (handleCreatePayment v04/11/2025)
@@ -1601,9 +1659,10 @@ function DetailsModal({
     lines.push(`-------------------------------------------`);
 
     if (typeof gross === "number") lines.push(`Documentos: ${fmtMoney(gross)}`);
-    if (typeof daysUsed === "number" && discountRateTxt) {
+
+    if (docsMeta.baseSum > 0 && docsMeta.adjAbsSum > 0) {
       lines.push(
-        `Desc/Costo Financiero: ${daysUsed} días - ${discountRateTxt}`
+        `${docsMeta.label}: ${docsMeta.daysWeighted} días - ${docsMeta.rateTxt}`
       );
     }
     if (typeof appliedDiscount === "number") {
@@ -1761,8 +1820,6 @@ function DetailsModal({
           className="inline-flex items-center gap-1 text-xs font-medium underline decoration-dotted hover:decoration-solid"
           title={name || "Comprobante"}
         >
-          {/* Si usás lucide-react podés poner un ícono si querés */}
-          {/* <FileText className="h-3.5 w-3.5" /> */}
           {t?.("viewReceipt") || "Ver comprobante"}
           {name ? ` · ${name}` : ""}
         </a>
@@ -2002,13 +2059,13 @@ function DetailsModal({
               <div className="space-y-2">
                 <div className="space-y-2">
                   <AmountRow label="Documentos:" value={gross} fmt={fmtMoney} />
-                  {typeof daysUsed === "number" && discountRateTxt && (
+                  {docsMeta.baseSum > 0 && docsMeta.adjAbsSum > 0 && (
                     <Row>
                       <span className="text-xs text-zinc-500">
-                        Desc/Costo Financiero
+                        {docsMeta.label}
                       </span>
                       <span className="text-xs font-medium text-zinc-700">
-                        {daysUsed} días · {discountRateTxt}
+                        {docsMeta.daysWeighted} días · {docsMeta.rateTxt}
                       </span>
                     </Row>
                   )}
@@ -2161,34 +2218,6 @@ function DetailsModal({
                     Anular
                   </button>
                 )}
-
-                {/* Desmarcar cobrado (no permitido si está anulado) */}
-                {/* <button
-                  className={`w-full sm:w-auto px-3 py-2 rounded text-white ${
-                    isToggling || anulado
-                      ? "bg-amber-500/60 cursor-not-allowed"
-                      : "bg-rose-600 hover:bg-rose-700"
-                  }`}
-                  onClick={onUnmark}
-                  disabled={isToggling || anulado}
-                  title={
-                    anulado
-                      ? "Pago anulado (no se puede desmarcar como cobrado)"
-                      : t("areYouSureUnmarkCharged") ||
-                        "¿Desmarcar este pago como cobrado?"
-                  }
-                >
-                  {isToggling ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <FaSpinner className="animate-spin" />
-                      {t("processing") || "Procesando..."}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <FaCheck /> {t("unmarkAsCharged") || "Desmarcar cobrado"}
-                    </span>
-                  )}
-                </button> */}
               </>
             )}
           </div>

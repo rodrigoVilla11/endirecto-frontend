@@ -1457,6 +1457,24 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return daysArray.length > 0 ? Math.max(...daysArray) : undefined;
   }, [computedDiscounts]);
 
+  function round6(n: number) {
+    return Math.round(n * 1e6) / 1e6;
+  }
+
+  function buildGpsString(lat: number, lon: number) {
+    const la = round6(lat);
+    const lo = round6(lon);
+    return `${la},${lo}`; // sin espacio
+  }
+
+  function googleMapsUrlFromLatLon(lat: number, lon: number) {
+    const la = round6(lat);
+    const lo = round6(lon);
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${la},${lo}`
+    )}`;
+  }
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setLocError("Geolocalización no soportada");
@@ -1470,12 +1488,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const gpsStr = `${latitude}, ${longitude}`;
+
+          // ✅ normalizado
+          const gpsStr = buildGpsString(latitude, longitude);
           setGPS(gpsStr);
 
           if (!selectedClientId) {
             setLocError("No hay cliente seleccionado");
-            setIsLocating(false);
             return;
           }
 
@@ -1491,6 +1510,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             gps: gpsStr,
             insitu: response.insitu,
           }));
+
+          // (Opcional) si querés probar rápido:
+          // window.open(googleMapsUrlFromLatLon(latitude, longitude), "_blank");
         } catch (err) {
           console.error(err);
           setLocError("No se pudo validar la ubicación");
@@ -1500,8 +1522,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       },
       (err) => {
         console.error(err);
-        // Podés mapear códigos si querés más detalle
-        // err.code === 1: PERMISSION_DENIED, 2: POSITION_UNAVAILABLE, 3: TIMEOUT
         setLocError(
           err.code === 1
             ? "Permiso de ubicación denegado"
@@ -1513,8 +1533,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000, // 10s
-        maximumAge: 10000, // cache hasta 10s
+        timeout: 10000,
+        maximumAge: 10000,
       }
     );
   };

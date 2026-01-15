@@ -319,7 +319,7 @@ const ShoppingCart: React.FC = () => {
             type="number"
             value={item.quantity}
             min={1}
-            className="w-16 text-center text-xs"
+            className="w-16 text-center text-xs text-black rounded-md border border-gray-300 p-1"
             onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
             onClick={(e) => e.stopPropagation()}
           />
@@ -449,8 +449,8 @@ const ShoppingCart: React.FC = () => {
           isOpen={isConfirmModalOpen}
           onClose={() => setConfirmModalOpen(false)}
         >
-          <div className="p-4">
-            <h2 className="font-semibold">Confirmar vaciado del carrito</h2>
+          <div className="p-4 bg-black text-white border border-red-600 rounded-lg shadow-lg">
+            <h2 className="font-semibold ">Confirmar vaciado del carrito</h2>
             <p className="mt-2">
               ¿Estás seguro? Esta acción no se puede deshacer.
             </p>
@@ -463,7 +463,7 @@ const ShoppingCart: React.FC = () => {
               </button>
               <button
                 onClick={handleEmptyCart}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
               >
                 Confirmar
               </button>
