@@ -307,7 +307,7 @@ const PaymentsChargedPage = () => {
     if (!rows.length) return;
 
     const LOGO_URL =
-      "https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png";
+      "https://res.cloudinary.com/db7kbwl5n/image/upload/v1768567334/LOGO_PNG_En_Directo_Negro_ipkc3b.png";
 
     const currencyFmt = new Intl.NumberFormat("es-AR", {
       style: "currency",
