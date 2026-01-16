@@ -32,7 +32,7 @@ export interface Document {
   payment_condition_id: string;
 }
 
-// Interfaz para la respuesta del endpoint lookup
+// Respuesta del endpoint lookup
 export interface LookupDocumentsResponse {
   totalData: number;
   data: LookupDocument[];
@@ -45,27 +45,60 @@ export interface DocumentsResponse {
   totalDocumentBalance: number;
 }
 
+/** NUEVO: tipo de CustomersInformations alineado al schema */
+export interface CustomerInformation {
+  id: string;
+  customer_id: string;
+
+  // existentes
+  documents_balance: string;
+  documents_balance_expired: string;
+
+  documents?: Array<{
+    id?: string;
+    document_balance?: string;
+  }>;
+
+  // NUEVOS CAMPOS (schema)
+  credit_limit?: string; // Límite de Crédito
+  overdue_balance?: string; // Saldo Vencido
+  due_soon_balance?: string; // A Vencer
+  total_debt?: string; // Total Deuda
+
+  avg_payment_days?: number; // Promedio de Días de Pago
+  avg_cheque_days?: number; // Promedio de Cheque (días)
+  avg_payment_term_days?: number; // Plazo Promedio de Pago (días)
+}
+
 export const customersInformationsApi = createApi({
   reducerPath: "customersInformationsApi",
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    // Otros endpoints ya existentes
-    getCustomersInformations: builder.query<any, null>({
+    getCustomersInformations: builder.query<CustomerInformation[], null>({
       query: () =>
         `/customers-informations?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    getCustomerInformationByCustomerId: builder.query<any, { id?: string }>({
+
+    getCustomerInformationByCustomerId: builder.query<
+      CustomerInformation | CustomerInformation[] | null,
+      { id?: string }
+    >({
       query: ({ id }) =>
         id
           ? `/customers-informations/customer/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`
           : `/customers-informations/customer?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
-    getCustomerWithDocuments: builder.query<any, { id: string }>({
+
+    getCustomerWithDocuments: builder.query<
+      CustomerInformation,
+      { id: string }
+    >({
       query: ({ id }) =>
         `/customers-informations/${id}/documents?token=${process.env.NEXT_PUBLIC_TOKEN}`,
     }),
+
     getLookupDocuments: builder.query<
       LookupDocumentsResponse,
       {
@@ -104,6 +137,7 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
+
     getAllDocuments: builder.query<
       DocumentsResponse,
       {
@@ -142,9 +176,8 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
-    // Nuevo endpoint para obtener el resumen de balances
-    // Suma de documents_balance = documents_balance + documents_balance_expired
-    // Suma de documents_balance_expired = documents_balance_expired
+
+    // Resumen balances (si tu backend sigue devolviendo numbers, lo dejamos así)
     getBalancesSummary: builder.query<
       { documents_balance: number; documents_balance_expired: number },
       { customerId?: string; sellerId?: string }
@@ -156,6 +189,7 @@ export const customersInformationsApi = createApi({
         return queryString;
       },
     }),
+
     exportDocuments: builder.query<
       Blob,
       {
@@ -189,7 +223,6 @@ export const customersInformationsApi = createApi({
         return {
           url,
           method: "GET",
-          // Necesario para recibir el archivo binario
           responseHandler: async (response) => await response.blob(),
         };
       },
