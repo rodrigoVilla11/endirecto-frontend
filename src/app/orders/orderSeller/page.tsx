@@ -24,6 +24,7 @@ import {
 import { useMobile } from "@/app/context/ResponsiveContext";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/app/context/AuthContext";
+import { useSumAmountsByCustomerQuery } from "@/redux/services/documentsApi";
 
 interface CustomerDashboardProps {
   customer: {
@@ -32,6 +33,26 @@ interface CustomerDashboardProps {
     accountBalance: number;
     expiredBalance: number;
   };
+}
+
+function ymdArgentina(d: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Cordoba",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d); // YYYY-MM-DD
+}
+
+function monthRangeArgentina(base = new Date()) {
+  // “hoy” en formato AR (sin hora)
+  const todayYmd = ymdArgentina(base);
+  const [y, m] = todayYmd.split("-").map(Number);
+
+  const startDate = `${y}-${String(m).padStart(2, "0")}-01`;
+  const endDate = todayYmd; // hasta hoy
+
+  return { startDate, endDate };
 }
 
 export default function CustomerDashboard() {
@@ -43,6 +64,20 @@ export default function CustomerDashboard() {
   const { t } = useTranslation();
   const { userData } = useAuth();
 
+  const { startDate, endDate } = monthRangeArgentina();
+
+  const { data: salesSoldTotal = 0, isFetching: isFetchingSalesSold } =
+    useSumAmountsByCustomerQuery(
+      {
+        customer_id: selectedClientId!,
+        startDate,
+        endDate,
+      },
+      {
+        skip: !selectedClientId,
+      }
+    );
+
   const {
     data: customer,
     error,
@@ -51,13 +86,7 @@ export default function CustomerDashboard() {
   } = useGetCustomerByIdQuery({
     id: selectedClientId || "",
   });
-  const {
-    data,
-    error: errorCustomerInfo,
-    isLoading: isLoadingCustomerInfo,
-  } = useGetCustomerInformationByCustomerIdQuery({
-    id: selectedClientId ?? undefined,
-  });
+
   const queryParams =
     selectedClientId && selectedClientId !== ""
       ? { customerId: selectedClientId }
@@ -100,7 +129,9 @@ export default function CustomerDashboard() {
     Math.max(min, Math.min(max, v));
 
   const salesTarget = Number(customer.obs6) || 0;
-  const salesSold = 320_000;
+
+  // ✅ Este reemplaza el hardcode
+  const salesSold = salesSoldTotal;
 
   const pct = salesTarget > 0 ? clamp((salesSold / salesTarget) * 100) : 0;
 
@@ -110,6 +141,7 @@ export default function CustomerDashboard() {
   // DATOS HARDCODEADOS (avisar cuáles son):
   const monthlyOrders = 2; // HARDCODEADO - Total de pedidos mensuales
   const notificationsCount = 0; // HARDCODEADO - Cantidad de notificaciones
+
 
   return (
     <PrivateRoute
