@@ -287,7 +287,7 @@ const DashboardPage = () => {
       {
         logo: <FiTarget />,
         title: t("sellersTarget"),
-        subtitle: '',
+        subtitle: "",
         href: "/sellersTarget",
         allowedRoles: ["VENDEDOR"],
       },
@@ -723,18 +723,31 @@ const DashboardPage = () => {
               </span>
             </div>
 
-            {/* Barra de progreso */}
             <div className="mt-3 w-full">
-              <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
+              <div className="flex items-center gap-3">
+                {/* Barra */}
+                <div className="relative flex-1">
+                  <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-4 transition-all duration-500"
+                      style={{
+                        width: `${purchasePercent.toFixed(0)}%`,
+                        background:
+                          "linear-gradient(90deg, #ef4444 0%, #facc15 50%, #22c55e 100%)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* 🎁 Incentivo */}
                 <div
-                  className="h-4"
-                  style={{
-                    width: `${purchasePercent.toFixed(0)}%`,
-                    background:
-                      "linear-gradient(90deg, #ef4444 0%, #facc15 50%, #22c55e 100%)",
-                  }}
-                />
+                  className="flex items-center justify-center text-3xl cursor-pointer animate-pulse"
+                  title="🎁 Al alcanzar el objetivo de compra recibís un incentivo especial"
+                >
+                  {purchasePercent >= 100 ? "🎉" : "🎁"}
+                </div>
               </div>
+
               <div className="mt-1 text-center text-xs font-semibold text-gray-700">
                 {purchasePercent.toFixed(0)}%
               </div>
