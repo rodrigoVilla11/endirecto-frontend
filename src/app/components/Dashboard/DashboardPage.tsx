@@ -723,7 +723,7 @@ const DashboardPage = () => {
               </span>
             </div>
 
-            <div className="mt-3 w-full">
+            <div className="mt-3 w-full text-white">
               <div className="flex items-center gap-3">
                 {/* Barra */}
                 <div className="relative flex-1">
@@ -741,7 +741,7 @@ const DashboardPage = () => {
 
                 {/* 🎁 Incentivo */}
                 <div
-                  className="flex items-center justify-center text-3xl cursor-pointer animate-pulse"
+                  className="flex items-center justify-center text-3xl animate-pulse"
                   title="🎁 Al alcanzar el objetivo de compra recibís un incentivo especial"
                 >
                   {purchasePercent >= 100 ? "🎉" : "🎁"}
