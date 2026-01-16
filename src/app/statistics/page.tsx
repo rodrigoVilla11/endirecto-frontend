@@ -1159,12 +1159,28 @@ const StatsPage: React.FC = () => {
                         value={fmtMoney(financialStats?.totalDiscount)}
                       />
                       <InfoRow
-                        label="Balance vencido"
-                        value={fmtMoney(financialStats?.expiredBalance)}
+                        label="Balance vencido (FILTRO)"
+                        value={fmtMoney(
+                          financialStats?.expiredTotals?.withBalance?.balance ??
+                            0
+                        )}
                       />
                       <InfoRow
-                        label="Docs vencidos"
-                        value={financialStats?.expiredDocumentCount ?? 0}
+                        label="Docs vencidos (FILTRO)"
+                        value={
+                          financialStats?.expiredTotals?.withBalance?.count ?? 0
+                        }
+                      />
+
+                      <InfoRow
+                        label="Balance vencido (TOTAL)"
+                        value={fmtMoney(
+                          financialStats?.expiredTotals?.all?.balance ?? 0
+                        )}
+                      />
+                      <InfoRow
+                        label="Docs vencidos (TOTAL)"
+                        value={financialStats?.expiredTotals?.all?.count ?? 0}
                       />
 
                       <div className="mt-2 border-t border-slate-200 pt-2">

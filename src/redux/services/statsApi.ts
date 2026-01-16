@@ -151,10 +151,22 @@ export interface FinancialStats {
   totalBalance: number;
   totalAmount: number;
   totalNetAmount: number;
+
   totalDiscount: number;
   discountPercentage: number;
+
+  // Vencidos (compat: todos los vencidos)
   expiredBalance: number;
   expiredDocumentCount: number;
+
+  // Vencidos (extras)
+  expiredDocumentCountWithBalance: number;
+  expiredBalanceWithBalance: number;
+  expiredTotals: {
+    all: { count: number; balance: number };
+    withBalance: { count: number; balance: number };
+  };
+
   collectionRate: number;
   paymentConditions: PaymentCondition[];
 }
@@ -266,7 +278,14 @@ export const statsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Stats", "Sellers", "Customers", "Products", "Financial", "Targets"],
+  tagTypes: [
+    "Stats",
+    "Sellers",
+    "Customers",
+    "Products",
+    "Financial",
+    "Targets",
+  ],
   endpoints: (builder) => ({
     // ========================================================================
     // GET ALL STATS - Endpoint principal con todas las estadísticas
@@ -278,8 +297,12 @@ export const statsApi = createApi({
           periodType: params.periodType,
           ...(params.startDate && { startDate: params.startDate }),
           ...(params.endDate && { endDate: params.endDate }),
-          ...(params.compareStartDate && { compareStartDate: params.compareStartDate }),
-          ...(params.compareEndDate && { compareEndDate: params.compareEndDate }),
+          ...(params.compareStartDate && {
+            compareStartDate: params.compareStartDate,
+          }),
+          ...(params.compareEndDate && {
+            compareEndDate: params.compareEndDate,
+          }),
           ...(params.sellerId && { sellerId: params.sellerId }),
           ...(params.branchId && { branchId: params.branchId }),
           ...(params.customerId && { customerId: params.customerId }),
@@ -299,8 +322,12 @@ export const statsApi = createApi({
           periodType: params.periodType,
           ...(params.startDate && { startDate: params.startDate }),
           ...(params.endDate && { endDate: params.endDate }),
-          ...(params.compareStartDate && { compareStartDate: params.compareStartDate }),
-          ...(params.compareEndDate && { compareEndDate: params.compareEndDate }),
+          ...(params.compareStartDate && {
+            compareStartDate: params.compareStartDate,
+          }),
+          ...(params.compareEndDate && {
+            compareEndDate: params.compareEndDate,
+          }),
           ...(params.sellerId && { sellerId: params.sellerId }),
           ...(params.branchId && { branchId: params.branchId }),
         },
