@@ -54,7 +54,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [addNotificationToCustomer] = useAddNotificationToCustomerMutation();
   const [addNotificationToUserById] = useAddNotificationToUserByIdMutation();
   const [graceDiscount, setGraceDiscount] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const [isValuesValid, setIsValuesValid] = useState(true);
   const { data: checkGrace } = useGetChequeGraceDaysQuery();
@@ -75,11 +75,16 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     gps: "",
     insitu: false,
   });
+  const [planAmountNoDocs, setPlanAmountNoDocs] = useState<string>("");
+  const planAmountNoDocsNum = useMemo(() => {
+    const n = parseFloat(planAmountNoDocs || "0");
+    return Number.isFinite(n) ? n : 0;
+  }, [planAmountNoDocs]);
 
   const retryAskLocation = () => {
     if (permState === "denied") {
       setLocError(
-        "El permiso de ubicación está bloqueado para este sitio. Habilitalo en Configuración del sitio y reintentá."
+        "El permiso de ubicación está bloqueado para este sitio. Habilitalo en Configuración del sitio y reintentá.",
       );
       return;
     }
@@ -100,7 +105,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       setAnnualInterestPct(interestSetting.value);
       localStorage.setItem(
         "interest_annual_pct",
-        String(interestSetting.value)
+        String(interestSetting.value),
       );
     } else {
       const cached = Number(localStorage.getItem("interest_annual_pct"));
@@ -163,7 +168,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const start = new Date(
       today.getFullYear(),
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     ).getTime();
     const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
@@ -178,8 +183,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       (Number.isFinite(v.overrideGraceDays)
         ? (v.overrideGraceDays as number)
         : isRefi
-        ? 0 // ✅ Refinanciación: 0 días
-        : checkGrace?.value) ?? 45;
+          ? 0 // ✅ Refinanciación: 0 días
+          : checkGrace?.value) ?? 45;
 
     setGrace(grace);
     const days_charged = days_total - grace;
@@ -258,7 +263,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     days: number,
     blockedNoDiscount = false,
     manualTenPct = false,
-    promo1310 = false
+    promo1310 = false,
   ) => {
     if (blockedNoDiscount) return `${paymentTypeUI}:cond_pago_sin_descuento`;
     if (paymentTypeUI === "pago_anticipado") return "pago_anticipado:sin_regla";
@@ -273,7 +278,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   };
   const { data: customer } = useGetCustomerByIdQuery(
     { id: selectedClientId ?? "" },
-    { skip: !selectedClientId }
+    { skip: !selectedClientId },
   );
   const canSend = isValuesValid && newValues.length > 0;
 
@@ -297,8 +302,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           typeof dateLike === "string" || typeof dateLike === "number"
             ? new Date(dateLike)
             : dateLike instanceof Date
-            ? dateLike
-            : new Date();
+              ? dateLike
+              : new Date();
 
         const dd = String(d.getUTCDate()).padStart(2, "0");
         const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -381,8 +386,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           typeof doc?.days_used === "number"
             ? doc.days_used
             : typeof doc?.days === "number"
-            ? doc.days
-            : undefined;
+              ? doc.days
+              : undefined;
 
         lines.push(`  • ${docNumber}: ${fmtMoney(docBase)}`);
 
@@ -424,8 +429,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             typeof d?.days_used === "number"
               ? d.days_used
               : typeof d?.days === "number"
-              ? d.days
-              : undefined;
+                ? d.days
+                : undefined;
           if (b > 0 && typeof dy === "number") {
             baseSum += b;
             acc += b * dy;
@@ -460,8 +465,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           typeof v?.raw_amount === "number"
             ? v.raw_amount
             : typeof ch?.net_amount === "number"
-            ? r2((ch.net_amount || 0) + (ch.interest_amount || 0))
-            : safeNum(v?.amount, 0);
+              ? r2((ch.net_amount || 0) + (ch.interest_amount || 0))
+              : safeNum(v?.amount, 0);
 
         lines.push(`Cheque ${dTxt}: ${fmtMoney(nominal)}`);
 
@@ -474,7 +479,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         if (typeof daysCharged === "number" || pct) {
           lines.push(
-            `Costo Financiero: ${daysCharged ?? "—"}d - ${pct ?? "—"}`
+            `Costo Financiero: ${daysCharged ?? "—"}d - ${pct ?? "—"}`,
           );
         }
 
@@ -689,7 +694,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       const invoiceIssueDateApprox = inferInvoiceIssueDate(
         receiptDate,
-        minDaysAtReceipt
+        minDaysAtReceipt,
       );
 
       // ✅ Ventana promo NO depende de manual10 (si querés 37, lo hablamos, pero así evitás duplicación)
@@ -733,8 +738,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             Number.isFinite(raw) && raw > 0
               ? raw
               : Number.isFinite(net)
-              ? net
-              : 0;
+                ? net
+                : 0;
 
           const promoAmount = round2(baseForPromo * promoRate);
 
@@ -758,18 +763,18 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
       // Neto aportado por valores (nominal - interés cheques)
       const netFromValues = round2(
-        valuesNominal - Math.abs(chequeInterestTotal || 0)
+        valuesNominal - Math.abs(chequeInterestTotal || 0),
       );
 
       // Totales netos ingresados
       const valuesNetTotal = newValues.reduce(
         (acc, v) => acc + (parseFloat(v.amount || "0") || 0),
-        0
+        0,
       );
       const valuesNetNonCheque = newValues.reduce(
         (acc, v) =>
           acc + (v.method !== "cheque" ? parseFloat(v.amount || "0") || 0 : 0),
-        0
+        0,
       );
 
       // Contextos
@@ -807,7 +812,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       }, 0);
 
       const valuesBaseForManual10 = round2(
-        valuesNetNonCheque + valuesNominalSameDayCheques
+        valuesNetNonCheque + valuesNominalSameDayCheques,
       );
 
       // Redondeo a centavos en la comparación
@@ -842,7 +847,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           : -docAdjTotal;
       }
       const discountAmtWithChequePromo = round2(
-        discountAmt + chequePromoDiscountTotal
+        discountAmt + chequePromoDiscountTotal,
       );
       // Total Desc/CF = desc/rec aplicado + intereses cheques
       const totalDescCostF =
@@ -898,7 +903,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           rule_applied: buildRuleApplied(
             d.days,
             d.noDiscountBlocked,
-            d.manualTenApplied
+            d.manualTenApplied,
           ),
           base: round2(d.base),
           discount_rate: round4(d.rate),
@@ -954,7 +959,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     } catch (e) {
       console.error("CreatePayment error:", e);
       alert(
-        "No se pudo crear el pago. Revisá enums/minúsculas y los IDs anidados."
+        "No se pudo crear el pago. Revisá enums/minúsculas y los IDs anidados.",
       );
     } finally {
       setIsSubmittingPayment(false);
@@ -980,7 +985,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     days: number,
     type: PaymentType,
     docPaymentCondition?: string,
-    forceTenPct: boolean = false
+    forceTenPct: boolean = false,
   ): { rate: number; note?: string } {
     if (isNoDiscountCondition(docPaymentCondition)) {
       return { rate: 0, note: "Sin descuento por condición de pago" };
@@ -1030,7 +1035,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       days,
       paymentTypeUI,
       doc.payment_condition,
-      forceTen // 👈
+      forceTen, // 👈
     );
 
     const base = parseFloat(doc.saldo_a_pagar || "0") || 0;
@@ -1054,12 +1059,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const applyManualTenToCheques = useMemo(
     () => computedDiscounts.some((d) => !!d.manualTenApplied),
-    [computedDiscounts]
+    [computedDiscounts],
   );
   const promoWindowDays = applyManualTenToCheques ? 37 : 30;
   // ===== TOTALES (ajuste aplicado sobre VALORES prorrateado por documento) =====
   const blockChequeInterest = computedDiscounts.some(
-    (d) => d.noDiscountBlocked
+    (d) => d.noDiscountBlocked,
   );
 
   // total base de documentos
@@ -1070,34 +1075,34 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       newValues.reduce(
         (acc, v) =>
           acc + (v.method !== "cheque" ? parseFloat(v.amount || "0") || 0 : 0),
-        0
+        0,
       ),
-    [newValues]
+    [newValues],
   );
 
   // total de valores ingresados
   const totalValues = newValues.reduce(
     (total, v) => total + parseFloat(v.amount || "0"),
-    0
+    0,
   );
 
   // 🔑 Nueva versión: reparte cada valor proporcionalmente entre documentos
   function computeAdjustmentOnValuesFull(values: ValueItem[], docs: any[]) {
     const valuesTotal = values.reduce(
       (a, v) => a + parseFloat(v.amount || "0"),
-      0
+      0,
     );
     if (valuesTotal <= 0 || docs.length === 0) return 0;
 
     // Ajuste por documentos (sobre BASE)
     const docAdjustment = docs.reduce(
       (acc: number, d: any) => acc + (d.base || 0) * (d.rate || 0),
-      0
+      0,
     );
 
     const docsBaseTotal = docs.reduce(
       (acc: number, d: any) => acc + (d.base || 0),
-      0
+      0,
     );
     if (docsBaseTotal <= 0) return 0;
 
@@ -1108,7 +1113,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     //   - recargo: todos
     const sumNonCheque = values.reduce(
       (a, v) => a + (v.method !== "cheque" ? parseFloat(v.amount || "0") : 0),
-      0
+      0,
     );
 
     const baseForAdj = globalRateOnBase > 0 ? sumNonCheque : valuesTotal;
@@ -1123,7 +1128,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // 2) AJUSTE TOTAL aplicado sobre VALORES
   const rawAdjustmentOnValues = computeAdjustmentOnValuesFull(
     newValues,
-    computedDiscounts
+    computedDiscounts,
   );
 
   // (UI)
@@ -1135,7 +1140,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const handleRowSelect = (id: string, checked: boolean) => {
     setSelectedRows((prev) =>
-      checked ? [...prev, id] : prev.filter((rowId) => rowId !== id)
+      checked ? [...prev, id] : prev.filter((rowId) => rowId !== id),
     );
   };
 
@@ -1172,7 +1177,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   const totalDocsFinal = computedDiscounts.reduce(
     (acc, d) => acc + d.finalAmount,
-    0
+    0,
   );
 
   // Flag para saber si estamos en “pagar total por comprobante”
@@ -1246,7 +1251,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // Si querés capear SIEMPRE:
   const totalAdjustmentSigned = capAdjustmentOnValues(
     rawAdjustmentOnValues,
-    docAdjustmentSigned
+    docAdjustmentSigned,
   );
 
   function capAdjustmentOnValues(adjOnValues: number, docAdjSigned: number) {
@@ -1278,7 +1283,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   })();
   const invoiceIssueDateApprox = inferInvoiceIssueDate(
     receiptDate,
-    minDaysAtReceipt
+    minDaysAtReceipt,
   );
 
   // Calcular promo total por cheques NO-REFI
@@ -1313,7 +1318,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
   // Hay refinanciación si existe al menos un cheque marcado como "Refinanciación"
   const hasRefiValues = newValues.some(
-    (v) => v.method === "cheque" && v.selectedReason === "Refinanciación"
+    (v) => v.method === "cheque" && v.selectedReason === "Refinanciación",
   );
   const targetForRefi =
     docAdjustmentSigned < 0 ? round2(totalDocsFinal) : round2(totalBase);
@@ -1327,15 +1332,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   // ¿Algún comprobante tiene menos de 45 días de emisión?
   // (si querés que sean TODOS <45, cambiá 'some' por 'every')
   const hasAnyUnder45Days = computedDiscounts.some(
-    (d) => typeof d.days === "number" && d.days < 45
+    (d) => typeof d.days === "number" && d.days < 45,
   );
 
   const hasInvoiceToday = useMemo(
     () =>
       computedDiscounts.some(
-        (d) => typeof d.days === "number" && Math.round(d.days) === 0
+        (d) => typeof d.days === "number" && Math.round(d.days) === 0,
       ),
-    [computedDiscounts]
+    [computedDiscounts],
   );
 
   // Si hay <45 días, sumar el ajuste; si no, usar solo remainingToRefi
@@ -1343,29 +1348,62 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     ? remainingToRefi + totalAdjustmentSigned - chequePromoDiscountTotal
     : remainingToRefi;
 
+  const [planTargetNoDocs, setPlanTargetNoDocs] = useState<number>(0);
+  const hasDocs = computedDiscounts.length > 0;
+
+  const canCalcNoDocs = !hasDocs && planAmountNoDocsNum > 0;
+
+  const handleCalcNoDocs = () => {
+    if (hasDocs) return;
+
+    const n = round2(planAmountNoDocsNum);
+    if (!(n > 0)) {
+      alert("Ingresá un monto a planificar.");
+      return;
+    }
+
+    setPlanTargetNoDocs(n);
+  };
+  // si hay docs => usás tu lógica actual
+  // si NO hay docs => el usuario ingresa el monto a planificar
+  const planTarget = hasDocs ? remainingToRefiWithSurchage : planTargetNoDocs;
+  useEffect(() => {
+    if (hasDocs) {
+      // si volvieron docs, no usar cálculo manual
+      setPlanTargetNoDocs(0);
+      return;
+    }
+  }, [hasDocs]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPlanTargetNoDocs(0);
+      setPlanAmountNoDocs("");
+      setRefiPreviewDays(null);
+    }
+  }, [isOpen]);
   // 2) Úsalo dentro de proposeChequesPreset
   function proposeChequesPreset(daysList: number[]) {
     // saldo restante a refinanciar
-    const targetPV = remainingToRefi;
+    const targetPV = planTarget; // 👈 antes remainingToRefi
 
-    if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0) {
-      alert("No se puede refinanciar sin documentos seleccionados.");
-      return;
-    }
     if (!Array.isArray(daysList) || daysList.length === 0) {
       alert("Debes elegir al menos un plazo para los cheques (30/60/90, etc).");
       return;
     }
-    if (targetPV <= 0) {
-      alert("No hay saldo pendiente para refinanciar.");
+
+    if (!(targetPV > 0)) {
+      alert(
+        hasDocs
+          ? "No hay saldo pendiente para refinanciar."
+          : "Ingresá un monto a planificar.",
+      );
       return;
     }
 
-    // ⚠️ Reglas de gracia para REFINANCIACIÓN:
-    // - Si hay “según pliego” => sin CF (gracia gigante)
-    // - Si NO, en refi la gracia debe ser 0 (NO 10)
+    // ✅ si NO hay docs, no bloquees por “sin documentos”
+    // (sólo mantené la regla de gracia)
     const grace = blockChequeInterest ? 100000 : 0;
-
     const daily = dailyRateFromAnnual(annualInterestPct);
 
     function isoInDays(d: number) {
@@ -1373,7 +1411,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const dt = new Date(
         base.getFullYear(),
         base.getMonth(),
-        base.getDate() + d
+        base.getDate() + d,
       );
       return dt.toISOString().slice(0, 10);
     }
@@ -1441,6 +1479,123 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     mergeRefiCheques(cheques);
   }
 
+  const [refiPreviewDays, setRefiPreviewDays] = useState<number[] | null>(null);
+
+  function ddmmyyLocal(iso?: string) {
+    if (!iso) return "—";
+    const d = new Date(`${iso}T00:00:00`);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}/${mm}/${yy}`;
+  }
+
+  function isoInDaysFromToday(days: number) {
+    const base = new Date();
+    const dt = new Date(
+      base.getFullYear(),
+      base.getMonth(),
+      base.getDate() + days,
+    );
+    return dt.toISOString().slice(0, 10);
+  }
+
+  /** Preview detallado: fechas + importes + % + CF */
+  function buildRefiChequesPreview(daysList: number[]) {
+    const targetPV = planTarget;
+
+    if (!Array.isArray(daysList) || daysList.length === 0) return [];
+    if (!Number.isFinite(targetPV) || targetPV <= 0) return [];
+
+    // mismas reglas que proposeChequesPreset
+    const grace = blockChequeInterest ? 100000 : 0;
+    const daily = dailyRateFromAnnual(annualInterestPct);
+
+    const denoms = daysList.map((d) => {
+      const daysTotal = d;
+      const daysCharged = Math.max(0, daysTotal - grace);
+      const interestPct = daily * daysCharged; // fracción (0.12 = 12%)
+      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+      return { daysTotal, daysCharged, interestPct, safeDen };
+    });
+
+    const sumSafeDen = denoms.reduce((a, x) => a + x.safeDen, 0);
+    const Rraw = sumSafeDen > 0 ? targetPV / sumSafeDen : targetPV;
+
+    let accNet = 0;
+
+    return denoms.map((x, idx) => {
+      const iso = isoInDaysFromToday(x.daysTotal);
+
+      let nominal = round2(Rraw);
+      let net = round2(nominal * x.safeDen);
+
+      // último ajusta centavos para cerrar EXACTO a targetPV
+      if (idx === denoms.length - 1) {
+        const neededNet = round2(targetPV - accNet);
+        const safeDenLast = x.safeDen <= 0 ? 1 : x.safeDen;
+        nominal = round2(neededNet / safeDenLast);
+        net = round2(nominal * safeDenLast);
+      }
+
+      accNet = round2(accNet + net);
+
+      const cfAmount = round2(nominal - net);
+      const pctTxt = `${(x.interestPct * 100).toFixed(2)}%`;
+
+      return {
+        iso,
+        dateTxt: ddmmyyLocal(iso),
+        daysTotal: x.daysTotal,
+        daysCharged: x.daysCharged,
+        nominal,
+        net,
+        pctTxt,
+        cfAmount,
+      };
+    });
+  }
+
+  function previewChequeAmounts(daysList: number[]) {
+    const targetPV = remainingToRefi; // mismo target que usa proposeChequesPreset
+
+    if (!Array.isArray(daysList) || daysList.length === 0) return null;
+    if (!Number.isFinite(targetPV) || targetPV <= 0) return null;
+
+    // mismas reglas que en proposeChequesPreset:
+    const grace = blockChequeInterest ? 100000 : 0;
+
+    const daily = dailyRateFromAnnual(annualInterestPct);
+
+    const denoms = daysList.map((d) => {
+      const daysCharged = Math.max(0, d - grace);
+      const interestPct = daily * daysCharged;
+      const safeDen = 1 - interestPct <= 0 ? 1 : 1 - interestPct;
+      return { d, safeDen };
+    });
+
+    const sumSafeDen = denoms.reduce((a, x) => a + x.safeDen, 0);
+    const Rraw = sumSafeDen > 0 ? targetPV / sumSafeDen : targetPV;
+
+    // "cheque típico" (el último ajusta centavos al generar, pero esto da una referencia)
+    const nominalEach = round2(Rraw);
+    const netEach = round2(nominalEach * (denoms[0]?.safeDen ?? 1));
+
+    return { nominalEach, netEach };
+  }
+
+  const options = [
+    { label: "1 cheque (30 días)", days: [30] },
+    { label: "2 cheques (30/60)", days: [30, 60] },
+    { label: "3 cheques (30/60/90)", days: [30, 60, 90] },
+    { label: "4 cheques (30/60/90/120)", days: [30, 60, 90, 120] },
+    { label: "5 cheques (30/60/90/120/150)", days: [30, 60, 90, 120, 150] },
+    {
+      label: "6 cheques (30/60/90/120/150/180)",
+      days: [30, 60, 90, 120, 150, 180],
+    },
+  ];
+
   const docsDaysMin = useMemo(() => {
     if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0)
       return undefined;
@@ -1450,7 +1605,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       .map((d) => (typeof d?.days === "number" ? d.days : undefined))
       .filter(
         (n): n is number =>
-          typeof n === "number" && Number.isFinite(n) && n >= 0
+          typeof n === "number" && Number.isFinite(n) && n >= 0,
       );
 
     // Devolvemos el mayor número de días de antigüedad (más vieja)
@@ -1471,7 +1626,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     const la = round6(lat);
     const lo = round6(lon);
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${la},${lo}`
+      `${la},${lo}`,
     )}`;
   }
 
@@ -1526,8 +1681,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
           err.code === 1
             ? "Permiso de ubicación denegado"
             : err.code === 3
-            ? "Tiempo de espera agotado"
-            : "No se pudo obtener tu ubicación"
+              ? "Tiempo de espera agotado"
+              : "No se pudo obtener tu ubicación",
         );
         setIsLocating(false);
       },
@@ -1535,7 +1690,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 10000,
-      }
+      },
     );
   };
 
@@ -1710,8 +1865,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       ? docAdjustmentSigned < 0
                         ? totalAdjustmentSigned
                         : hasRefiValues
-                        ? 0
-                        : totalAdjustmentSigned
+                          ? 0
+                          : totalAdjustmentSigned
                       : docAdjustmentSigned;
 
                     const isDiscount = showSobrePago
@@ -1720,7 +1875,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
                     const displayAbs = Math.abs(signedRaw);
                     const text = `${isDiscount ? "−" : "+"}${currencyFmt.format(
-                      displayAbs
+                      displayAbs,
                     )}`;
                     const cls = isDiscount ? "text-green-600" : "text-red-600";
 
@@ -1838,7 +1993,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
                       setNewValues((prev) => {
                         const idx = prev.findIndex(
-                          (v) => v.selectedReason === base.selectedReason
+                          (v) => v.selectedReason === base.selectedReason,
                         );
                         if (idx >= 0) {
                           const clone = [...prev];
@@ -1848,7 +2003,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         return [base, ...prev];
                       });
                     }}
-                    disabled={computedDiscounts.length === 0}
+                    disabled={computedDiscounts.length === 0 || hasInvoiceToday}
                   >
                     ✅ Pagar total
                   </button>
@@ -1859,15 +2014,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       onClick={() => {
                         if (hasInvoiceToday) {
                           alert(
-                            "No se puede refinanciar saldo cuando hay una factura de hoy."
+                            "No se puede refinanciar saldo cuando hay una factura de hoy.",
                           );
                           return;
                         }
                         openCreateModal();
                       }}
-                      disabled={
-                        computedDiscounts.length === 0 || hasInvoiceToday
-                      }
+                      disabled={hasInvoiceToday}
                       title={
                         hasInvoiceToday
                           ? "No disponible: hay una factura de hoy"
@@ -1881,24 +2034,27 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     <button
                       className="px-6 py-3 rounded-xl bg-[#E10600]  font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                       onClick={() => {
-                        if (hasInvoiceToday) {
+                        if (hasInvoiceToday && hasDocs) {
                           alert(
-                            "No se puede refinanciar saldo cuando hay una factura de hoy."
+                            "No se puede refinanciar saldo cuando hay una factura de hoy.",
                           );
                           return;
                         }
                         setShowRefi((s) => !s);
                       }}
-                      disabled={
-                        computedDiscounts.length === 0 || hasInvoiceToday
-                      }
+                      disabled={hasInvoiceToday && hasDocs}
                       title={
                         hasInvoiceToday
                           ? "No disponible: hay una factura de hoy"
                           : "Armar plan en 30/60/90 con cheques iguales"
                       }
                     >
-                      🔄 {showRefi ? "Cerrar refinanciación" : "Refinanciar"}
+                      🔄{" "}
+                      {showRefi
+                        ? "Cerrar"
+                        : hasDocs
+                          ? "Refinanciación"
+                          : "Calculadora de Cheques"}
                     </button>
                   )}
                 </div>
@@ -1906,61 +2062,144 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 {showRefi && (
                   <div className="mt-4 rounded-2xl border-2 border-gray-200 p-6 bg-zinc-950  space-y-4">
                     <div className="text-sm text-gray-700 font-semibold bg-white p-3 rounded-xl">
-                      💰 Saldo a refinanciar:{" "}
+                      💰{" "}
+                      {hasDocs ? "Saldo a refinanciar:" : "Monto a planificar:"}{" "}
                       <span className="text-purple-600 font-bold">
-                        {currencyFmt.format(remainingToRefi)}
+                        {currencyFmt.format(planTarget || 0)}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() => proposeChequesPreset([30])}
-                      >
-                        1 cheque (30 días)
-                      </button>
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() => proposeChequesPreset([30, 60])}
-                      >
-                        2 cheques (30/60)
-                      </button>
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() => proposeChequesPreset([30, 60, 90])}
-                      >
-                        3 cheques (30/60/90)
-                      </button>
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() => proposeChequesPreset([30, 60, 90, 120])}
-                      >
-                        4 cheques (30/60/90/120)
-                      </button>
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() =>
-                          proposeChequesPreset([30, 60, 90, 120, 150])
-                        }
-                      >
-                        5 cheques (30/60/90/120/150)
-                      </button>
-                      <button
-                        className="px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all"
-                        onClick={() =>
-                          proposeChequesPreset([30, 60, 90, 120, 150, 180])
-                        }
-                      >
-                        6 cheques (30/60/90/120/150/180)
-                      </button>
-                    </div>
+                    {computedDiscounts.length === 0 && (
+                      <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-2">
+                        <div className="text-sm font-semibold text-gray-700">
+                          💰 Monto a planificar (sin comprobantes)
+                        </div>
 
-                    <p className="text-xs text-gray-600 bg-white p-3 rounded-lg border border-gray-200">
-                      ℹ️ Cada cheque se calcula para que el{" "}
-                      <i>neto imputable</i> total coincida con el saldo a
-                      refinanciar. Se respeta la tasa anual y los días de gracia
-                      configurados.
-                    </p>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            value={planAmountNoDocs}
+                            onChange={(e) =>
+                              setPlanAmountNoDocs(e.target.value)
+                            }
+                            inputMode="decimal"
+                            placeholder="Ej: 150000"
+                            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={handleCalcNoDocs}
+                            disabled={!canCalcNoDocs}
+                            className="px-4 py-2 rounded-lg bg-purple-600 text-white font-extrabold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Calcular
+                          </button>
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          Tocá <b>Calcular</b> para ver los importes estimados
+                          en cada opción.
+                        </div>
+
+                        {!!planTargetNoDocs && (
+                          <div className="text-xs font-bold text-purple-700">
+                            Monto calculado:{" "}
+                            {currencyFmt.format(planTargetNoDocs)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {options.map((opt) => {
+                        const preview = buildRefiChequesPreview(opt.days);
+                        const nominalEach = preview[0]?.nominal ?? 0;
+
+                        const isOpen =
+                          Array.isArray(refiPreviewDays) &&
+                          refiPreviewDays.length === opt.days.length &&
+                          refiPreviewDays.every((v, i) => v === opt.days[i]);
+
+                        return (
+                          <div key={opt.label} className="space-y-2">
+                            <button
+                              className="w-full px-4 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 font-semibold transition-all text-left"
+                              onClick={() => proposeChequesPreset(opt.days)}
+                            >
+                              <div className="flex flex-col items-center justify-between gap-3">
+                                <span>{opt.label}</span>
+                                {!!nominalEach && (
+                                  <span className="text-xs font-extrabold text-purple-700">
+                                    {currencyFmt.format(nominalEach)}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+
+                            {/* Toggle preview */}
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 rounded-lg bg-white/80 border border-gray-200 text-xs font-bold text-gray-700 hover:bg-white"
+                              onClick={() =>
+                                setRefiPreviewDays(isOpen ? null : opt.days)
+                              }
+                            >
+                              {isOpen ? "Ocultar detalle" : "Ver detalles"}
+                            </button>
+
+                            {/* Panel scrollable */}
+                            {isOpen && (
+                              <div className="rounded-xl border border-gray-200 bg-white p-3">
+                                <div className="max-h-44 overflow-y-auto pr-1 space-y-2">
+                                  {preview.map((c, idx) => (
+                                    <div
+                                      key={`${c.iso}-${idx}`}
+                                      className="text-xs text-gray-800 border border-gray-100 rounded-lg p-2"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="font-extrabold">
+                                          Cheque {c.dateTxt} ({c.daysTotal}d)
+                                        </span>
+                                        <span className="font-extrabold text-purple-700">
+                                          {currencyFmt.format(c.nominal)}
+                                        </span>
+                                      </div>
+
+                                      <div className="mt-1 flex flex-col gap-x-1 gap-y-1 justify-center items-center">
+                                        <div className="text-gray-600 ">
+                                          CF:{" "}
+                                          <span className="font-bold text-gray-900">
+                                            {currencyFmt.format(c.cfAmount)}
+                                          </span>
+                                        </div>
+
+                                        <div className="text-gray-600">
+                                          % CF:{" "}
+                                          <span className="font-bold text-gray-900">
+                                            {c.pctTxt}
+                                          </span>
+                                        </div>
+                                        <div className="text-gray-600 ">
+                                          Días CF:{" "}
+                                          <span className="font-bold text-gray-900">
+                                            {c.daysCharged}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="mt-2 text-[11px] text-gray-500 font-semibold">
+                                  * Preview. El último cheque ajusta centavos
+                                  para cerrar exacto el neto total.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -1976,13 +2215,13 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       ? docAdjustmentSigned < 0
                         ? -totalAdjustmentSigned
                         : hasRefiValues
-                        ? 0
-                        : -totalAdjustmentSigned
+                          ? 0
+                          : -totalAdjustmentSigned
                       : docAdjustmentSigned
                   }
                   onValidityChange={setIsValuesValid}
                   chequeGraceDays={
-                    blockChequeInterest ? 100000 : checkGrace?.value ?? 45 // ✅ CAMBIAR: usar 45 en vez de 10
+                    blockChequeInterest ? 100000 : (checkGrace?.value ?? 45) // ✅ CAMBIAR: usar 45 en vez de 10
                   }
                   docsDaysMin={docsDaysMin}
                   receiptDate={receiptDateRef.current}
@@ -2008,7 +2247,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 alert(
                   newValues.length === 0
                     ? "Agregá al menos un pago (valor) para confirmar."
-                    : "Completá los datos requeridos del/los valores."
+                    : "Completá los datos requeridos del/los valores.",
                 );
                 return;
               }
@@ -2207,7 +2446,7 @@ function ModalCalculator({
         </div>
       </div>
     </div>,
-    container
+    container,
   );
 }
 
@@ -2283,8 +2522,8 @@ function ConfirmDialog({
                 disabled
                   ? "bg-zinc-500 cursor-not-allowed"
                   : isLoading
-                  ? "bg-amber-500 cursor-wait"
-                  : "bg-emerald-600 hover:bg-emerald-700"
+                    ? "bg-amber-500 cursor-wait"
+                    : "bg-emerald-600 hover:bg-emerald-700"
               }`}
             title={
               !canConfirm && !isLoading
@@ -2297,7 +2536,7 @@ function ConfirmDialog({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 /** Tooltip simple, accesible y sin dependencias */
@@ -2314,10 +2553,10 @@ function Tip({
     side === "top"
       ? "bottom-full mb-1 left-1/2 -translate-x-1/2"
       : side === "bottom"
-      ? "top-full mt-1 left-1/2 -translate-x-1/2"
-      : side === "left"
-      ? "right-full mr-1 top-1/2 -translate-y-1/2"
-      : "left-full ml-1 top-1/2 -translate-y-1/2";
+        ? "top-full mt-1 left-1/2 -translate-x-1/2"
+        : side === "left"
+          ? "right-full mr-1 top-1/2 -translate-y-1/2"
+          : "left-full ml-1 top-1/2 -translate-y-1/2";
 
   return (
     <span
