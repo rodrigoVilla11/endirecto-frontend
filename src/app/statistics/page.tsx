@@ -45,6 +45,7 @@ import {
 import { useGetSumsByIdsAndBrandMutation } from "@/redux/services/documentsDetailsApi";
 import { useGetDocumentIdsBySellerQuery } from "@/redux/services/documentsApi";
 import { useAuth } from "../context/AuthContext";
+import { useClient } from "../context/ClientContext";
 
 // ============================================================================
 // HELPERS
@@ -103,12 +104,26 @@ const StatsPage: React.FC = () => {
   const { userData } = useAuth();
 
   useEffect(() => {
-    if (userData?.seller_id) {
-      setFilters((prev) => ({
-        ...prev,
-        sellerId: userData.seller_id,
-      }));
-    }
+    const sellerId = userData?.seller_id;
+
+    setFilters((prev) => {
+      // Si el usuario es vendedor, fijamos sellerId y limpiamos customerId (si no querés mezcla)
+      if (sellerId) {
+        return {
+          ...prev,
+          sellerId,
+          customerId: undefined,
+        };
+      }
+
+      // Si NO es vendedor, limpiamos sellerId para evitar que quede "pegado" de otra sesión
+      if (prev.sellerId) {
+        const { sellerId: _old, ...rest } = prev as any;
+        return { ...rest, sellerId: undefined };
+      }
+
+      return prev;
+    });
   }, [userData?.seller_id]);
 
   const periodOptions = [
@@ -133,7 +148,7 @@ const StatsPage: React.FC = () => {
         : brand?.id || brand?._id || brand?.brandId || brand?.brand_id;
 
     const found = brandsQuery.data?.find(
-      (b: any) => b.id === brandId || b._id === brandId
+      (b: any) => b.id === brandId || b._id === brandId,
     );
 
     const nameToShow =
@@ -155,7 +170,7 @@ const StatsPage: React.FC = () => {
           pc?.payment_condition;
 
     const found = paymentConditionsData.data?.find(
-      (p: any) => p.id === pcId || p._id === pcId
+      (p: any) => p.id === pcId || p._id === pcId,
     );
 
     const nameToShow = found?.name || pc?.name || pcId || "Sin condición";
@@ -163,8 +178,33 @@ const StatsPage: React.FC = () => {
     return `${nameToShow}`;
   };
 
+  const finalFilters = useMemo<StatsQueryParams>(() => {
+    if (userData?.seller_id) {
+      return { ...filters, sellerId: userData.seller_id };
+    }
+    return filters;
+  }, [filters, userData?.seller_id]);
+
   const { data, isLoading, isFetching, error, refetch } =
-    useGetStatsQuery(filters);
+    useGetStatsQuery(finalFilters);
+
+  useEffect(() => {
+    if (!userData?.seller_id) return;
+
+    setFilters((prev) => ({
+      periodType: prev.periodType ?? PeriodType.MONTH,
+      startDate:
+        prev.periodType === PeriodType.CUSTOM ? prev.startDate : undefined,
+      endDate: prev.periodType === PeriodType.CUSTOM ? prev.endDate : undefined,
+      brandId: undefined,
+      customerId: undefined,
+      // NO pongas sellerId acá (se inyecta con finalFilters)
+    }));
+  }, [userData?.seller_id]);
+
+  useEffect(() => {
+    console.log("finalFilters =>", finalFilters);
+  }, [finalFilters]);
 
   const general = data?.general?.current;
   const variation = data?.general?.variation;
@@ -187,7 +227,7 @@ const StatsPage: React.FC = () => {
             .sort((a, b) => b.totalSales - a.totalSales)
             .slice(0, 8)
         : [],
-    [sellersStats]
+    [sellersStats],
   );
 
   const topSellersChartData = topSellers.map((s: any, idx: number) => ({
@@ -203,7 +243,7 @@ const StatsPage: React.FC = () => {
             .sort((a, b) => b.totalPurchases - a.totalPurchases)
             .slice(0, 8)
         : [],
-    [customersStats]
+    [customersStats],
   );
 
   const topCustomersChartData = topCustomers.map((c: any, idx: number) => ({
@@ -734,7 +774,7 @@ const StatsPage: React.FC = () => {
                                       key={idx}
                                       fill={COLORS[idx % COLORS.length]}
                                     />
-                                  )
+                                  ),
                                 )}
                               </Pie>
                               <Tooltip
@@ -973,7 +1013,7 @@ const StatsPage: React.FC = () => {
                                       key={idx}
                                       fill={COLORS[idx % COLORS.length]}
                                     />
-                                  )
+                                  ),
                                 )}
                               </Bar>
                             </BarChart>
@@ -1067,7 +1107,7 @@ const StatsPage: React.FC = () => {
                                       key={idx}
                                       fill={COLORS[idx % COLORS.length]}
                                     />
-                                  )
+                                  ),
                                 )}
                               </Bar>
                               {productsStats &&
@@ -1162,7 +1202,7 @@ const StatsPage: React.FC = () => {
                         label="Balance vencido (FILTRO)"
                         value={fmtMoney(
                           financialStats?.expiredTotals?.withBalance?.balance ??
-                            0
+                            0,
                         )}
                       />
                       <InfoRow
@@ -1175,7 +1215,7 @@ const StatsPage: React.FC = () => {
                       <InfoRow
                         label="Balance vencido (TOTAL)"
                         value={fmtMoney(
-                          financialStats?.expiredTotals?.all?.balance ?? 0
+                          financialStats?.expiredTotals?.all?.balance ?? 0,
                         )}
                       />
                       <InfoRow
@@ -1240,7 +1280,7 @@ const StatsPage: React.FC = () => {
                                     key={idx}
                                     fill={COLORS[idx % COLORS.length]}
                                   />
-                                )
+                                ),
                               )}
                             </Pie>
                             <Tooltip
@@ -1294,7 +1334,7 @@ const StatsPage: React.FC = () => {
                                       {fmtMoney(pc.totalAmount || pc.total)}
                                     </td>
                                   </tr>
-                                )
+                                ),
                               )
                             ) : (
                               <tr>
@@ -1570,17 +1610,17 @@ const SalesTargetsView = ({
 
   const startDate = `${currentYear}-${String(currentMonth).padStart(
     2,
-    "0"
+    "0",
   )}-01`;
   const endDate = `${currentYear}-${String(currentMonth).padStart(
     2,
-    "0"
+    "0",
   )}-${String(lastDayOfMonth).padStart(2, "0")}`;
 
   // Queries
   const { data: seller, isLoading: isLoadingSeller } = useGetSellerByIdQuery(
     { id: sellerId! },
-    { skip: !sellerId }
+    { skip: !sellerId },
   );
 
   const userQuery = useGetUserByIdQuery({ id: userData?._id || "" });
@@ -1594,7 +1634,7 @@ const SalesTargetsView = ({
         startDate,
         endDate,
       },
-      { skip: !sellerId }
+      { skip: !sellerId },
     );
 
   // Mutation para obtener sumas
@@ -1661,7 +1701,7 @@ const SalesTargetsView = ({
           } catch (error) {
             console.error(
               `Error al obtener datos para marca ${brand.name}:`,
-              error
+              error,
             );
             return {
               brandId: brand.id,

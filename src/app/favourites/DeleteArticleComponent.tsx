@@ -38,7 +38,7 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({ articleId, close
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-gray-100 rounded-xl">
       <h2 className="text-lg mb-4">{t("deleteArticle.confirmDelete")}</h2>
       <p>{t("deleteArticle.confirmPrompt")}</p>
       <p className="mt-2 text-sm text-gray-600">

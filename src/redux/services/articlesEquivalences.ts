@@ -1,9 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type ArticlesEquivalencesPagResponse = {
-  equivalences: ArticleEquivalence[],
-  total: number
-}
+  equivalences: ArticleEquivalence[];
+  total: number;
+};
 type ArticleEquivalence = {
   id: string;
   code: string;
@@ -12,12 +12,12 @@ type ArticleEquivalence = {
   articles_group_id: string;
   deleted_at: string;
 };
-type CreateArticleEquivalencePayload ={
+type CreateArticleEquivalencePayload = {
   id: string;
   code: string;
   brand: string;
   article_id: string;
-}
+};
 type UpdateArticleEquivalencePayload = {
   id: string;
   code?: string;
@@ -32,7 +32,9 @@ export const articlesEquivalencesApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_URL_BACKEND || "http://localhost:3000",
   }),
   endpoints: (builder) => ({
-    getArticlesEquivalences: builder.query<ArticlesEquivalencesPagResponse,  { page?: number; limit?: number; query?: string; sort?: string }
+    getArticlesEquivalences: builder.query<
+      ArticlesEquivalencesPagResponse,
+      { page?: number; limit?: number; query?: string; sort?: string }
     >({
       query: ({ page = 1, limit = 10, query = "", sort = "" } = {}) => {
         return `/articles-equivalences?page=${page}&limit=${limit}&q=${query}&sort=${sort}&token=${process.env.NEXT_PUBLIC_TOKEN}`;
@@ -67,7 +69,10 @@ export const articlesEquivalencesApi = createApi({
         body: newArticleEquivalence,
       }),
     }),
-    updateArticleEquivalence: builder.mutation<ArticleEquivalence, UpdateArticleEquivalencePayload>({
+    updateArticleEquivalence: builder.mutation<
+      ArticleEquivalence,
+      UpdateArticleEquivalencePayload
+    >({
       query: (payload) => ({
         url: `/articles-equivalences/${payload.id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
         method: "PUT",
@@ -84,6 +89,15 @@ export const articlesEquivalencesApi = createApi({
         body: formData,
       }),
     }),
+    deleteArticleEquivalence: builder.mutation<
+      ArticleEquivalence, // devuelve ArticlesEquivalences
+      { id: string }
+    >({
+      query: ({ id }) => ({
+        url: `/articles-equivalences/${id}?token=${process.env.NEXT_PUBLIC_TOKEN}`,
+        method: "DELETE",
+      }),
+    }),
     // Endpoint para exportar a Excel
     exportArticleEquivalenceExcel: builder.query<Blob, { query?: string }>({
       query: ({ query = "" } = {}) => ({
@@ -94,12 +108,12 @@ export const articlesEquivalencesApi = createApi({
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          
+
           const blob = await response.blob();
           if (blob.size === 0) {
-            throw new Error('El archivo descargado está vacío');
+            throw new Error("El archivo descargado está vacío");
           }
-          
+
           return blob;
         },
       }),
@@ -115,4 +129,5 @@ export const {
   useUpdateArticleEquivalenceMutation,
   useImportArticleEquivalenceExcelMutation,
   useLazyExportArticleEquivalenceExcelQuery,
+  useDeleteArticleEquivalenceMutation,
 } = articlesEquivalencesApi;

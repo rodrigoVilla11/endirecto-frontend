@@ -44,7 +44,7 @@ const DeleteArticleComponent: React.FC<DeleteArticleProps> = ({
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-gray-100 rounded-xl">
       <h2 className="text-lg mb-4 font-semibold">{t("deleteArticle.title")}</h2>
       <p>{t("deleteArticle.confirmMessage")}</p>
       <p className="mt-2 text-sm text-gray-600">

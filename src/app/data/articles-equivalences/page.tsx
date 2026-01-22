@@ -3,10 +3,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Input from "@/app/components/components/Input";
 import Header from "@/app/components/components/Header";
 import Table from "@/app/components/components/Table";
-import { FaPlus, FaTimes, FaEdit } from "react-icons/fa";
+import { FaPlus, FaTimes, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
 import { AiFillFileExcel } from "react-icons/ai";
 import { IoSync } from "react-icons/io5";
 import {
+  useDeleteArticleEquivalenceMutation,
   useGetArticlesEquivalencesQuery,
   useUpdateArticleEquivalenceMutation,
 } from "@/redux/services/articlesEquivalences";
@@ -49,12 +50,41 @@ const Page = () => {
     refetch,
   } = useGetArticlesEquivalencesQuery(
     { page, limit: ITEMS_PER_PAGE, query: searchQuery },
-    { refetchOnMountOrArgChange: true }
+    { refetchOnMountOrArgChange: true },
   );
 
   const [syncEquivalences, { isLoading: isSyncing }] =
     useSyncEquivalencesMutation();
   const [updateArticleEquivalence] = useUpdateArticleEquivalenceMutation();
+
+  const [deleteArticleEquivalence, { isLoading: isDeleting }] =
+    useDeleteArticleEquivalenceMutation();
+
+  const handleDelete = async (item: any) => {
+    const ok = confirm(
+      `${t("confirmDelete") || "¿Eliminar equivalencia?"}\n\n${item.brand} - ${item.code}`,
+    );
+    if (!ok) return;
+
+    try {
+      await deleteArticleEquivalence({ id: item.id }).unwrap();
+
+      // Opción A (recomendado): actualizar estado local (no depende de refetch)
+      setEquivalences((prev) => prev.filter((x) => x.id !== item.id));
+
+      // Mantener el total coherente: lo más fácil es refetch
+      refetch();
+
+      // Si justo estaba editando esa equivalencia
+      if (selectedEquivalence?.id === item.id) {
+        setEditModalOpen(false);
+        setSelectedEquivalence(null);
+      }
+    } catch (e) {
+      // opcional: toast
+      alert(t("deleteError") || "Error eliminando la equivalencia");
+    }
+  };
 
   const handleSync = async () => {
     if (isSyncing) return; // evita doble click
@@ -72,7 +102,7 @@ const Page = () => {
       setEquivalences(data.equivalences);
     } else {
       const newItems = data.equivalences.filter(
-        (eq) => !equivalences.some((item) => item.id === eq.id)
+        (eq) => !equivalences.some((item) => item.id === eq.id),
       );
       setEquivalences((prev) => [...prev, ...newItems]);
     }
@@ -94,16 +124,16 @@ const Page = () => {
             setPage((prev) => prev + 1);
           }
         },
-        { rootMargin: "200px" }
+        { rootMargin: "200px" },
       );
       if (node) observerRef.current.observe(node);
     },
-    [hasMore, isQueryLoading]
+    [hasMore, isQueryLoading],
   );
 
   const tableData = equivalences.map((item) => {
     const article = articlesData?.find(
-      (a) => a.id.trim().toLowerCase() === item.article_id.trim().toLowerCase()
+      (a) => a.id.trim().toLowerCase() === item.article_id.trim().toLowerCase(),
     );
     return {
       key: `${item.article_id}-${item.brand}-${item.code}`,
@@ -111,12 +141,51 @@ const Page = () => {
       brand: item?.brand || t("notFound"),
       code: item?.code || t("notFound"),
       actions: (
-        <button
-          onClick={() => handleEdit(item)}
-          className="text-blue-500 hover:text-blue-700"
-        >
-          <FaEdit />
-        </button>
+        <div className="flex items-center justify-center gap-2">
+          {/* Edit */}
+          <button
+            type="button"
+            onClick={() => handleEdit(item)}
+            className="
+        inline-flex items-center gap-2 rounded-lg border border-blue-200
+        bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700
+        hover:bg-blue-100 hover:border-blue-300
+        focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
+        transition
+      "
+            aria-label={"Editar"}
+            title={"Editar"}
+          >
+            <FaEdit className="text-base" />
+            <span className="hidden sm:inline">{"Editar"}</span>
+          </button>
+
+          {/* Delete */}
+          <button
+            type="button"
+            onClick={() => handleDelete(item)}
+            disabled={isDeleting}
+            className={`
+        inline-flex items-center gap-2 rounded-lg border border-red-200
+        bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700
+        hover:bg-red-100 hover:border-red-300
+        focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
+        transition
+        ${isDeleting ? "opacity-60 cursor-not-allowed" : ""}
+      `}
+            aria-label={"Eliminar"}
+            title={isDeleting ? "Eliminando..." : "Eliminar"}
+          >
+            {isDeleting ? (
+              <FaSpinner className="animate-spin text-base" />
+            ) : (
+              <FaTrash className="text-base" />
+            )}
+            <span className="hidden sm:inline">
+              {isDeleting ? "Eliminando..." : "Eliminar"}
+            </span>
+          </button>
+        </div>
       ),
     };
   });
@@ -193,7 +262,9 @@ const Page = () => {
   return (
     <PrivateRoute requiredRoles={["ADMINISTRADOR"]}>
       <div className="gap-4">
-        <h3 className="font-bold pt-4 px-4 text-white">{t("articlesEquivalences")}</h3>
+        <h3 className="font-bold pt-4 px-4 text-white">
+          {t("articlesEquivalences")}
+        </h3>
         <Header headerBody={headerBody} />
         <Table
           headers={[

@@ -44,7 +44,7 @@ const AddToCartComponent: React.FC<AddToCartProps> = ({
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-gray-100 rounded-xl">
       <h2 className="text-lg mb-4">{t("addToCartPage.title")}</h2>
       <p>{t("addToCartPage.prompt")}</p>
       <input

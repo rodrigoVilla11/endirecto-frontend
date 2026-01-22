@@ -35,7 +35,10 @@ const Page = () => {
     error: customerError,
     isLoading: isCustomerLoading,
     refetch: refetchCustomer,
-  } = useGetCustomerByIdQuery({ id: selectedClientId || "" });
+  } = useGetCustomerByIdQuery(
+    { id: selectedClientId || "" },
+    { skip: !selectedClientId }, // ✅ clave
+  );
 
   const {
     data: articles,
@@ -79,20 +82,26 @@ const Page = () => {
   // Filtrar los datos de la tabla según el término de búsqueda
   const filteredTableData = useMemo(() => {
     if (
+      !selectedClientId ||
       !customer ||
       !articles ||
       !stockData ||
       !articlePricesData ||
       !brandData
-    )
+    ) {
       return [];
+    }
 
-    return customer.favourites
+    const favourites = Array.isArray(customer.favourites)
+      ? customer.favourites
+      : [];
+
+    return favourites
       .map((articleId) => {
         const article = articles.find((data) => data.id === articleId);
         const stock = stockData.find((data) => data.article_id === article?.id);
         const articlePrice = articlePricesData.find(
-          (data) => data.article_id === article?.id
+          (data) => data.article_id === article?.id,
         );
         const brand = brandData.find((data) => data.id === article?.brand_id);
         const price = articlePrice?.price || 0;
@@ -118,14 +127,14 @@ const Page = () => {
           price: `$ ${formattedPrice} ${t("table.plusTaxes")}`,
           stock: (
             <div
-              className={`h-4 w-full ${
-                stock?.status === "IN-STOCK"
+              className={`h-4 w-full rounded-xl ${
+                stock?.status === "STOCK"
                   ? "bg-success"
                   : stock?.status === "NO-STOCK"
-                  ? "bg-red-600"
-                  : stock?.status === "LIMITED-STOCK"
-                  ? "bg-orange-600"
-                  : "bg-gray-500"
+                    ? "bg-red-600"
+                    : stock?.status === "LIMITED-STOCK"
+                      ? "bg-orange-600"
+                      : "bg-gray-500"
               } font-bold text-white flex justify-center items-center`}
             >
               {stock?.status || t("table.notFound")}
@@ -157,7 +166,15 @@ const Page = () => {
           item.price.toLowerCase().includes(lowerSearchTerm)
         );
       });
-  }, [customer, articles, stockData, articlePricesData, brandData, searchTerm, t]);
+  }, [
+    customer,
+    articles,
+    stockData,
+    articlePricesData,
+    brandData,
+    searchTerm,
+    t,
+  ]);
 
   const tableHeader = [
     { name: t("table.brand"), key: "brand" },
@@ -165,7 +182,10 @@ const Page = () => {
     { name: t("table.article"), key: "name" },
     { name: t("table.price"), key: "price" },
     { name: t("table.stock"), key: "stock" },
-    { component: <FaShoppingCart className="text-center text-xl" />, key: "shoppingCart" },
+    {
+      component: <FaShoppingCart className="text-center text-xl" />,
+      key: "shoppingCart",
+    },
     { component: <FaTrashCan className="text-center text-xl" />, key: "erase" },
   ];
 
@@ -185,20 +205,51 @@ const Page = () => {
     results: t("page.results", { count: filteredTableData.length }),
   };
 
-  if (isCustomerLoading || isArticlesLoading) {
+  if (!selectedClientId) {
+    return (
+      <PrivateRoute
+        requiredRoles={[
+          "ADMINISTRADOR",
+          "OPERADOR",
+          "MARKETING",
+          "VENDEDOR",
+          "CUSTOMER",
+        ]}
+      >
+        {/* tu UI de “seleccioná un cliente” */}
+        <div className="min-h-[70vh] flex items-center justify-center p-6">
+          <div className="w-full max-w-xl">
+            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              <div className="h-2 w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500" />
+              <div className="p-6 sm:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 rounded-2xl bg-blue-50 p-3 border border-blue-100">
+                    <FaShoppingCart className="text-blue-600 text-2xl" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900">
+                      Seleccioná un cliente para ver Favoritos
+                    </h2>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 sm:px-8 py-4 bg-gray-50 border-t border-gray-100 text-xs sm:text-sm text-gray-500">
+                Una vez seleccionado, vas a poder buscar, ver stock y agregar al
+                carrito desde Favoritos.
+              </div>
+            </div>
+          </div>
+        </div>
+      </PrivateRoute>
+    );
+  }
+
+  if (isCustomerLoading || isArticlesLoading)
     return <div>{t("page.loading")}</div>;
-  }
 
-  if (
-    customerError ||
-    articlesError ||
-    stockError ||
-    brandError ||
-    pricesError
-  ) {
+  if (customerError || articlesError || stockError || brandError || pricesError)
     return <div>{t("page.errorLoadingData")}</div>;
-  }
-
+  
   return (
     <PrivateRoute
       requiredRoles={[
@@ -210,7 +261,9 @@ const Page = () => {
       ]}
     >
       <div className="gap-4">
-        <h3 className="font-bold p-4 text-white">{t("page.favouritesTitle")}</h3>
+        <h3 className="font-bold p-4 text-white">
+          {t("page.favouritesTitle")}
+        </h3>
         <Header headerBody={headerBody} />
         <Table headers={tableHeader} data={filteredTableData} />
         <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
