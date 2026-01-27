@@ -18,11 +18,10 @@ import {
 import PrivateRoute from "@/app/context/PrivateRoutes";
 import Modal from "@/app/components/components/Modal";
 import CreateArticlesEquivalencesModal from "./CreateEquivalence";
-import ImportExcelModal from "../application-of-articles/ImportExcel";
-import ExportExcelModal from "../application-of-articles/ExportExcelButton";
 import { useTranslation } from "react-i18next";
 import { IoMdClose } from "react-icons/io";
 import ExportArticlesEquivalencesModal from "./ExportExcel";
+import ImportArticlesEquivalencesModal from "./ImportExcel";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -288,7 +287,7 @@ const Page = () => {
           isOpen={isImportModalOpen}
           onClose={() => setImportModalOpen(false)}
         >
-          <ImportExcelModal closeModal={() => setImportModalOpen(false)} />
+          <ImportArticlesEquivalencesModal closeModal={() => setImportModalOpen(false)} />
         </Modal>
         <Modal
           isOpen={isExportModalOpen}
