@@ -208,7 +208,7 @@ const Page = () => {
           email: user.email,
           role: user.role,
           branch: branch?.name || t("noBranch"),
-          zone: user.zone || t("noZone"),
+          seller_id: user.seller_id || t("-"),
           edit: (
             <div className="flex justify-center items-center">
               <GoPencil
@@ -238,7 +238,7 @@ const Page = () => {
       { name: t("email"), key: "email" },
       { name: t("role"), key: "role", important: true, sortable: true },
       { name: t("branch"), key: "branch" },
-      { name: t("zone"), key: "zone" },
+      { name: t("seller"), key: "seller_id" },
       { component: <GoPencil className="text-center text-lg" />, key: "edit" },
       {
         component: <IoIosTrash className="text-center text-lg" />,

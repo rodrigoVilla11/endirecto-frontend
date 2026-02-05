@@ -8,7 +8,8 @@ import { useTranslation } from "react-i18next";
 
 const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
   const { t } = useTranslation();
-  const { data: branchData, isLoading: isLoadingBranch } = useGetBranchesQuery(null);
+  const { data: branchData, isLoading: isLoadingBranch } =
+    useGetBranchesQuery(null);
   const [createUser, { isLoading: isLoadingCreate, isSuccess, isError }] =
     useCreateUserMutation();
   const { data: sellersData } = useGetSellersQuery(null);
@@ -27,7 +28,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     setForm((prevForm) => ({
       ...prevForm,
@@ -168,6 +169,7 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
             <label className="flex flex-col">
               {t("createUser.sellerId")}:
               <select
+                name="seller_id"
                 value={form.seller_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded p-2"
@@ -198,7 +200,9 @@ const CreateUserComponent = ({ closeModal }: { closeModal: () => void }) => {
               }`}
               disabled={isLoadingCreate}
             >
-              {isLoadingCreate ? t("createUser.creating") : t("createUser.create")}
+              {isLoadingCreate
+                ? t("createUser.creating")
+                : t("createUser.create")}
             </button>
           </div>
 

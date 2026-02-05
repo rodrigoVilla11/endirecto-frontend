@@ -57,7 +57,7 @@ const UpdateUserComponent = ({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     setForm((prevForm) => ({
       ...prevForm,
@@ -164,10 +164,18 @@ const UpdateUserComponent = ({
               className="border border-gray-300 rounded-md p-2"
             >
               <option value="">{t("updateUser.selectRole")}</option>
-              <option value={Roles.ADMINISTRADOR}>{t("updateUser.roleAdmin")}</option>
-              <option value={Roles.OPERADOR}>{t("updateUser.roleOperator")}</option>
-              <option value={Roles.MARKETING}>{t("updateUser.roleMarketing")}</option>
-              <option value={Roles.VENDEDOR}>{t("updateUser.roleSeller")}</option>
+              <option value={Roles.ADMINISTRADOR}>
+                {t("updateUser.roleAdmin")}
+              </option>
+              <option value={Roles.OPERADOR}>
+                {t("updateUser.roleOperator")}
+              </option>
+              <option value={Roles.MARKETING}>
+                {t("updateUser.roleMarketing")}
+              </option>
+              <option value={Roles.VENDEDOR}>
+                {t("updateUser.roleSeller")}
+              </option>
             </select>
           </label>
 
@@ -194,6 +202,7 @@ const UpdateUserComponent = ({
             <label className="flex flex-col">
               {t("updateUser.sellerId")}:
               <select
+                name="seller_id"
                 value={form.seller_id}
                 onChange={handleChange}
                 className="border border-gray-300 rounded p-2"

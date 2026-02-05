@@ -22,7 +22,7 @@ const DeleteUserComponent = ({ userId, closeModal }: DeleteUserProps) => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-white rounded-xl">
       <h2 className="text-lg mb-4">{t("deleteUser.title")}</h2>
       <p>{t("deleteUser.confirmMessage")}</p>
       <div className="flex justify-end gap-4 mt-4">
