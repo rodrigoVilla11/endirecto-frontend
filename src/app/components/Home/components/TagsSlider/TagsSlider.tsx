@@ -46,9 +46,6 @@ const SliderTags = () => {
             🎯 {t("featuredCategories") || "Categorías Destacadas"}
             <span className="text-[#E10600]">.</span>
           </h2>
-          <p className="text-white/70 mt-2">
-            {t("featuredCategoriesSubtitle") || "Accesos rápidos a las categorías más consultadas"}
-          </p>
         </div>
 
         <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-2 lg:grid-cols-4"} gap-6`}>

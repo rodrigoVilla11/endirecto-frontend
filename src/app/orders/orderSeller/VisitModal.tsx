@@ -223,20 +223,17 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
 
   if (!isOpen) return null;
 
-  return (
-    <div
-      className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50"
-      onClick={onClose}
-    >
+return (
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50" onClick={onClose}>
       <div
         className="h-full flex flex-col bg-zinc-900 max-w-4xl mx-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between bg-[#E10600] ">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-red-500 via-white to-blue-500">
           <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
+            <button 
+              onClick={onClose} 
               className="text-white hover:bg-white/20 rounded-full p-2 transition-colors text-2xl"
             >
               ←
@@ -268,14 +265,11 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                 isLocating ? (
                   <span className="flex items-center gap-2 text-zinc-300">
                     <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    {t("visitModal.info.waitingLocation") ||
-                      "Obteniendo ubicación..."}
+                    {t("visitModal.info.waitingLocation") || "Obteniendo ubicación..."}
                   </span>
                 ) : locError ? (
                   <span className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <span className="text-red-400 font-semibold">
-                      {locError}
-                    </span>
+                    <span className="text-red-400 font-semibold">{locError}</span>
                     <button
                       type="button"
                       onClick={retryAskLocation}
@@ -289,19 +283,9 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
                           ¿Cómo habilitar?
                         </summary>
                         <div className="mt-2 text-xs text-zinc-300 max-w-md bg-zinc-800 p-3 rounded-lg border border-zinc-700">
-                          <p className="mb-2">
-                            • <strong>Chrome (desktop):</strong> clic en el
-                            candado → Permisos del sitio → Ubicación → Permitir,
-                            y recargá la página.
-                          </p>
-                          <p className="mb-2">
-                            • <strong>Android (Chrome):</strong> candado →
-                            Permisos → Ubicación → Permitir.
-                          </p>
-                          <p>
-                            • <strong>iOS (Safari):</strong> Ajustes → Safari →
-                            Ubicación → Preguntar/Permitir; luego recargá.
-                          </p>
+                          <p className="mb-2">• <strong>Chrome (desktop):</strong> clic en el candado → Permisos del sitio → Ubicación → Permitir, y recargá la página.</p>
+                          <p className="mb-2">• <strong>Android (Chrome):</strong> candado → Permisos → Ubicación → Permitir.</p>
+                          <p>• <strong>iOS (Safari):</strong> Ajustes → Safari → Ubicación → Preguntar/Permitir; luego recargá.</p>
                         </div>
                       </details>
                     )}
@@ -358,9 +342,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
             {/* Listado de seleccionados */}
             {selectedLeafs.length > 0 && (
               <div className="px-6 pb-6 border-t-2 border-zinc-800">
-                <p className="text-xs text-zinc-400 mb-3 font-semibold mt-4">
-                  📌 Seleccionados:
-                </p>
+                <p className="text-xs text-zinc-400 mb-3 font-semibold mt-4">📌 Seleccionados:</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedLeafs.map((path) => (
                     <button
@@ -384,8 +366,7 @@ export default function VisitModal({ isOpen, onClose }: VisitModalProps) {
           {/* Observación libre */}
           <div className="p-6 bg-zinc-900">
             <label className="block text-white font-bold mb-3 text-lg">
-              📝{" "}
-              {t("visitModal.observations.label") || "Observación (opcional)"}
+              📝 {t("visitModal.observations.label") || "Observación (opcional)"}
             </label>
             <textarea
               value={observations}

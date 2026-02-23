@@ -75,9 +75,7 @@ const SliderBrands = () => {
             🏷️ {t("ourBrands") || "Nuestras Marcas"}
             <span className="text-[#E10600]">.</span>
           </h2>
-          <p className="text-white/70 mt-2">
-            {t("ourBrandsSubtitle") || "Trabajamos con marcas líderes del rubro"}
-          </p>
+  
         </div>
 
         <Swiper

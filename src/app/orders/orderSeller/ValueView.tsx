@@ -68,8 +68,10 @@ export default function ValueView({
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }),
-    []
+    [],
   );
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
   const { t } = useTranslation();
   const NO_CONCEPTO = t("document.noConcepto") || "Sin Concepto";
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
@@ -87,7 +89,9 @@ export default function ValueView({
 
     // Monto requerido (> 0). En cheque se valida el ORIGINAL (rawAmount)
     const amountStr =
-      v.method === "cheque" ? v.raw_amount ?? v.amount ?? "" : v.amount ?? "";
+      v.method === "cheque"
+        ? (v.raw_amount ?? v.amount ?? "")
+        : (v.amount ?? "");
     const amountNum = parseFloat((amountStr || "").replace(",", "."));
     const amountErr = !Number.isFinite(amountNum) || amountNum <= 0;
 
@@ -136,8 +140,8 @@ export default function ValueView({
       typeof x === "string"
         ? new Date(`${x}T00:00:00`)
         : x instanceof Date
-        ? x
-        : new Date();
+          ? x
+          : new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
@@ -149,7 +153,7 @@ export default function ValueView({
 
   function isSameDayLooseCheque(
     chequeISO?: string,
-    receipt: Date = new Date()
+    receipt: Date = new Date(),
   ) {
     if (!chequeISO) return false;
     const cd = toYMDLocal(chequeISO);
@@ -202,7 +206,8 @@ export default function ValueView({
     if (typeof daysFromIssueToCheque !== "number") return 0;
 
     // debe ser entre 0 y promoWindowDays días desde emisión
-    if (daysFromIssueToCheque > promoWindowDays) return 0;
+    if (daysFromIssueToCheque < 0 || daysFromIssueToCheque > promoWindowDays)
+      return 0;
 
     // si no hay age, no se puede decidir el tramo por reglas
     if (typeof age !== "number") return 0;
@@ -223,7 +228,6 @@ export default function ValueView({
     if (age > 7 && age <= 15) {
       return isSameDayLoose ? 0.13 : 0.1;
     }
-    console.log(promoWindowDays);
     // 3) Factura 16–30 días:
     //    - al día => 10%
     //    - NO al día => 10% (igual)
@@ -232,6 +236,27 @@ export default function ValueView({
     }
 
     return 0;
+  }
+  function chequeQualifiesForDocDiscount(v: ValueItem, windowDays: number) {
+    if (v.method !== "cheque") return false;
+    if (!v.chequeDate) return false;
+
+    // ✅ CHEQUES AL DÍA siempre califican para descuento de docs
+    if (isSameDayLooseCheque(v.chequeDate, receiptDate)) {
+      return true;
+    }
+
+    // ✅ Para cheques DIFERIDOS (no al día):
+    // Solo califican si están dentro de la ventana desde EMISIÓN de factura
+    if (!(invoiceIssueDateApprox instanceof Date)) return false;
+
+    const cd = toYMDLocal(v.chequeDate);
+    const issue = toYMDLocal(invoiceIssueDateApprox);
+
+    const daysFromIssueToCheque = dayDiffCalendar(cd, issue);
+
+    // ✅ El cheque debe cobrarse entre 0 y windowDays (30 o 37) desde emisión
+    return daysFromIssueToCheque >= 0 && daysFromIssueToCheque <= windowDays;
   }
 
   /** Base nominal para promo: raw_amount si existe (>0), si no, neto */
@@ -252,7 +277,7 @@ export default function ValueView({
   const numberToDigitsStr = (n: number) => String(Math.round((n || 0) * 100));
 
   const hasErrors = rowErrors.some(
-    (e) => e.bank || e.chequeNumber || e.chequeDate || e.amount
+    (e) => e.bank || e.chequeNumber || e.chequeDate || e.amount,
   );
 
   useEffect(() => {
@@ -280,13 +305,13 @@ export default function ValueView({
   /** Dado un string numérico interno (ej "1234.56") devuelve el texto formateado */
   const formatInternalString = (
     s: string | undefined,
-    fmt: Intl.NumberFormat
+    fmt: Intl.NumberFormat,
   ) => formatCurrencyAR(Number(s || 0), fmt);
 
   const handleAmountChangeMasked = (
     idx: number,
     input: string,
-    v: ValueItem
+    v: ValueItem,
   ) => {
     const n = parseMaskedCurrencyToNumber(input); // número en pesos
 
@@ -299,7 +324,7 @@ export default function ValueView({
     // Para cheques, el input controla el "monto original" (rawAmount)
     const { neto } = computeChequeNeto(
       n.toFixed(2),
-      v.chequeDate ? v : { ...v, chequeDate: "" }
+      v.chequeDate ? v : { ...v, chequeDate: "" },
     ); // 👈
     patchRow(idx, {
       raw_amount: n.toFixed(2),
@@ -326,7 +351,7 @@ export default function ValueView({
   // Fecha de emisión estimada
   const invoiceIssueDateApprox = useMemo(
     () => inferInvoiceIssueDate(receiptDate, docsDaysMin),
-    [receiptDate, docsDaysMin]
+    [receiptDate, docsDaysMin],
   );
 
   /**
@@ -357,7 +382,7 @@ export default function ValueView({
     const cd = toYMD(v.chequeDate); // fecha cobro del cheque
     const rd = toYMD(receiptDate); // fecha del recibo (hoy)
     const daysCheque = clampNonNegInt(
-      (cd.getTime() - rd.getTime()) / MS_PER_DAY
+      (cd.getTime() - rd.getTime()) / MS_PER_DAY,
     );
 
     // Refinanciación: siempre cobrar los días del cheque (si es al día, será 0)
@@ -402,7 +427,8 @@ export default function ValueView({
   const [draftText, setDraftText] = useState<Record<number, string>>({});
 
   const startEdit = (i: number, v: ValueItem) => {
-    const current = v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
+    const current =
+      v.method === "cheque" ? (v.raw_amount ?? v.amount) : v.amount;
     const n = parseMaskedCurrencyToNumber(current ?? "");
     const digits = n === 0 ? "" : numberToDigitsStr(n);
     setDigitsByRow((d) => ({ ...d, [i]: digits }));
@@ -425,13 +451,33 @@ export default function ValueView({
       return c;
     });
   };
-  const round2 = (n: number) => Math.round(n * 100) / 100;
+
+  // Ventana para calificar cheques en descuento de documentos
+  const promoWindowDays = useMemo(
+    () => (applyManualTenToCheques ? 37 : 30),
+    [applyManualTenToCheques],
+  );
+
+  const valuesNominalQualifyingForDocDiscount = useMemo(() => {
+    return round2(
+      newValues.reduce((acc, v) => {
+        if (v.method !== "cheque") {
+          return acc + toNum(v.amount);
+        }
+
+        // cheque: SOLO si califica (30 / 37)
+        if (!chequeQualifiesForDocDiscount(v, promoWindowDays)) return acc;
+
+        return acc + nominalOfValue(v);
+      }, 0),
+    );
+  }, [newValues, invoiceIssueDateApprox, promoWindowDays]);
 
   const applyMaskedEdit = (
     rowIndex: number,
     nextDigits: string,
     v: ValueItem,
-    inputEl?: HTMLInputElement | null
+    inputEl?: HTMLInputElement | null,
   ) => {
     const masked = formatDigitsAsCurrencyAR(nextDigits);
     setDigitsByRow((m) => ({ ...m, [rowIndex]: nextDigits }));
@@ -446,11 +492,13 @@ export default function ValueView({
       });
     }
   };
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const getInputEl = (idx: number) => inputRefs.current[idx] ?? null;
+
   // ===== Totales =====
   const totalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + toNum(v.amount), 0),
-    [newValues]
+    [newValues],
   );
   const nominalOf = (v: ValueItem) => {
     if (v.method === "cheque") {
@@ -463,7 +511,7 @@ export default function ValueView({
   // Total NOMINAL solo para mostrar (cheques por raw_amount)
   const totalNominalValues = useMemo(
     () => newValues.reduce((acc, v) => acc + nominalOf(v), 0),
-    [newValues]
+    [newValues],
   );
 
   const totalChequeInterest = useMemo(
@@ -472,20 +520,20 @@ export default function ValueView({
         if (v.method !== "cheque") return acc;
         return acc + chequeInterest(v); // devolverá 0 si blockChequeInterest
       }, 0),
-    [newValues, blockChequeInterest] // NEW: depende del flag
+    [newValues, blockChequeInterest], // NEW: depende del flag
   );
 
   // Promo por cheque (suma)
 
   const hasCheques = useMemo(
     () => newValues.some((v) => v.method === "cheque"),
-    [newValues]
+    [newValues],
   );
 
   // ===== Descuento/recargo aplicado a valores (igual lógica que handleCreatePayment) =====
   const valuesNominal = useMemo(
     () => round2(totalNominalValues),
-    [totalNominalValues]
+    [totalNominalValues],
   );
 
   const valuesNetTotal = useMemo(
@@ -493,10 +541,10 @@ export default function ValueView({
       round2(
         newValues.reduce(
           (acc, v) => acc + (parseFloat(v.amount || "0") || 0),
-          0
-        )
+          0,
+        ),
       ),
-    [newValues]
+    [newValues],
   );
 
   const valuesNetNonCheque = useMemo(
@@ -506,10 +554,10 @@ export default function ValueView({
           (acc, v) =>
             acc +
             (v.method !== "cheque" ? parseFloat(v.amount || "0") || 0 : 0),
-          0
-        )
+          0,
+        ),
       ),
-    [newValues]
+    [newValues],
   );
 
   // ✅ Nominal SOLO de cheques al día (±1)
@@ -519,7 +567,7 @@ export default function ValueView({
         if (v.method !== "cheque") return acc;
         if (!isSameDayLooseCheque(v.chequeDate, receiptDate)) return acc;
         return acc + nominalOfValue(v);
-      }, 0)
+      }, 0),
     );
   }, [newValues, receiptDate]);
 
@@ -531,13 +579,19 @@ export default function ValueView({
   // Neto aportado por valores (nominal - interés cheques)
   const netFromValues = useMemo(
     () => round2(valuesNominal - Math.abs(totalChequeInterest || 0)),
-    [valuesNominal, totalChequeInterest]
+    [valuesNominal, totalChequeInterest],
   );
+  const docAdjEffective = useMemo(() => {
+    // Si docAdjustmentSigned viene 0 pero tengo gross/netToPay, lo reconstruyo
+    const fromGrossNet = round2((gross || 0) - (netToPay || 0));
+    // si docAdjustmentSigned es ~0, uso el reconstruido
+    if (Math.abs(docAdjustmentSigned || 0) < 0.000001) return fromGrossNet;
+    return docAdjustmentSigned || 0;
+  }, [docAdjustmentSigned, gross, netToPay]);
 
-  const isDiscountContext = docAdjustmentSigned > 0;
-  const isSurchargeContext = docAdjustmentSigned < 0;
-
-  const rate = gross > 0 ? docAdjustmentSigned / gross : 0;
+  const isDiscountContext = docAdjEffective > 0;
+  const isSurchargeContext = docAdjEffective < 0;
+  const rate = gross > 0 ? docAdjEffective / gross : 0;
 
   // Total a pagar (docsFinal) para comparar cuando hay DESCUENTO sin cheques
   const totalToPay = round2(netToPay || 0);
@@ -554,29 +608,34 @@ export default function ValueView({
     let discountAmt = 0;
 
     if (isDiscountContext) {
-      const discountOnCashOnly = -round2(valuesNetNonCheque * rate);
+      // ✅ Comparar con netToPay (monto final a pagar de facturas)
+      const isFullPayment =
+        Math.abs(valuesNominal - (netToPay || 0)) <= (netToPay || 0) * 0.01;
 
       if (hasCheques) {
-        // ✅ MIXTO (hay cheques)
-        if (applyManualTenToCheques) {
-          // ✅ aplicar manual10 SOLO a cheques al día (±1) + efectivo/transfer
-          discountAmt = -round2(valuesBaseForManual10 * rate);
+        // ✅ Solo aplicar descuento si hay cheques que califiquen
+        const qualifyingAmount = valuesNominalQualifyingForDocDiscount;
+
+        // Si NO hay cheques que califiquen, descuento = 0
+        if (qualifyingAmount <= 0) {
+          discountAmt = 0;
         } else {
-          // ✅ default: solo efectivo/transfer
-          discountAmt = discountOnCashOnly;
+          const base = isFullPayment
+            ? gross // Pago completo: descuento sobre factura
+            : qualifyingAmount; // Parcial: sobre lo pagado que califica
+
+          discountAmt = -round2(base * rate);
         }
       } else {
-        // ✅ SIN cheques
-        discountAmt = valuesDoNotReachTotal
-          ? discountOnCashOnly
-          : -round2(docAdjustmentSigned);
+        const base = isFullPayment
+          ? gross // Pago completo: descuento sobre factura
+          : valuesNominal; // Parcial: sobre lo pagado
+
+        discountAmt = -round2(base * rate);
       }
     } else if (isSurchargeContext) {
-      // recargo (mantengo tu lógica)
-      const recargoSobreValores = -1 * (valuesNetTotal * rate);
-      discountAmt = valuesDoNotReachTotal
-        ? recargoSobreValores
-        : -round2(docAdjustmentSigned);
+      // Recargo siempre sobre lo pagado
+      discountAmt = -round2(valuesNominal * rate);
     }
 
     return round2(discountAmt);
@@ -584,34 +643,89 @@ export default function ValueView({
     isDiscountContext,
     isSurchargeContext,
     hasCheques,
-    applyManualTenToCheques,
     valuesNominal,
-    valuesNetNonCheque,
-    valuesNetTotal,
-    valuesBaseForManual10,
+    valuesNominalQualifyingForDocDiscount,
+    gross,
+    netToPay,
     rate,
-    valuesDoNotReachTotal,
+  ]);
+  const docAdjEffectiveAbs = Math.abs(docAdjEffective); // si ya lo tenés, si no, usá docAdjustmentSigned
+  const showApplied = hasCheques; // o: Math.abs(discountAppliedToValues) > 0
+  const dtoShown = showApplied ? discountAppliedToValues : -docAdjEffectiveAbs; // negativo para mostrar "-"
+
+  useEffect(() => {
+    console.log("DTO debug", {
+      docAdjustmentSigned,
+      gross,
+      rate,
+      valuesNominal,
+      discountAppliedToValues,
+      newValues,
+    });
+  }, [
     docAdjustmentSigned,
+    gross,
+    rate,
+    valuesNominal,
+    discountAppliedToValues,
+    newValues,
   ]);
 
   const EPS = 1; // tolerancia de $1
   const reachesNetToPay = Math.abs(totalNominalValues - (netToPay || 0)) <= EPS;
-  const shouldApplyChequePromo = !(
-    docAdjustmentSigned > 0 &&
-    hasCheques &&
-    reachesNetToPay
-  );
-  const chequePromoItems = useMemo(() => {
-    if (!shouldApplyChequePromo) {
-      // mismo shape, pero todo en 0 para no romper la UI
-      return newValues.map(() => ({ rate: 0, amount: 0 }));
-    }
-    return newValues.map((v) => {
-      if (v.method !== "cheque") return { rate: 0, amount: 0 };
+  const shouldApplyChequePromo = useMemo(() => {
+    // si no hay cheques, no hay promo
+    if (!hasCheques) return false;
+
+    // si no es CTA_CTE, no hay promo
+    if (paymentTypeUI !== "cta_cte") return false;
+
+    // ✅ CAMBIO: verificar si algún cheque REALMENTE tiene promo > 0
+    // Si ningún cheque tiene promo, permitir que se use el descuento de docs normal
+    const hasAnyPromo = newValues.some((v) => {
+      if (v.method !== "cheque") return false;
+
       const promoWindowDays = applyManualTenToCheques ? 37 : 30;
 
       const rate = getChequePromoRate({
-        paymentType: paymentTypeUI, // <- tenés que recibirlo por props (ver abajo)
+        paymentType: paymentTypeUI,
+        invoiceAgeAtReceiptDaysMin: docsDaysMin,
+        invoiceIssueDateApprox,
+        receiptDate,
+        chequeDateISO: v.chequeDate,
+        promoWindowDays,
+      });
+
+      return rate > 0;
+    });
+
+    // ✅ Si ya hay descuento por docs Y algún cheque tiene promo, no duplicar
+    if (docAdjEffective > 0 && hasAnyPromo) return false;
+
+    return hasAnyPromo; // Solo aplicar si realmente hay promo
+  }, [
+    hasCheques,
+    paymentTypeUI,
+    docAdjEffective,
+    newValues,
+    docsDaysMin,
+    invoiceIssueDateApprox,
+    receiptDate,
+    applyManualTenToCheques,
+  ]);
+
+  const chequePromoItems = useMemo(() => {
+    if (!shouldApplyChequePromo) {
+      return newValues.map(() => ({ rate: 0, amount: 0 }));
+    }
+
+    return newValues.map((v) => {
+      if (v.method !== "cheque") return { rate: 0, amount: 0 };
+
+      const promoWindowDays = applyManualTenToCheques ? 37 : 30;
+
+      const rate = getChequePromoRate({
+        paymentType: paymentTypeUI,
         invoiceAgeAtReceiptDaysMin: docsDaysMin,
         invoiceIssueDateApprox,
         receiptDate,
@@ -620,15 +734,15 @@ export default function ValueView({
       });
 
       const base = promoBaseOf(v);
-      const amount = +(base * rate).toFixed(2); // descuento
+      const amount = +(base * rate).toFixed(2);
       return { rate, amount };
     });
   }, [
     newValues,
+    shouldApplyChequePromo,
     docsDaysMin,
     invoiceIssueDateApprox,
     receiptDate,
-    shouldApplyChequePromo,
     paymentTypeUI,
     applyManualTenToCheques,
   ]);
@@ -637,30 +751,54 @@ export default function ValueView({
     () =>
       chequePromoItems.reduce(
         (acc, x) => acc + (x.amount > 0 ? x.amount : 0),
-        0
+        0,
       ),
-    [chequePromoItems]
+    [chequePromoItems],
   );
-
-  const totalDescCostF = useMemo(
-    () => totalChequeInterest + -docAdjustmentSigned - totalChequePromo,
-    [docAdjustmentSigned, totalChequeInterest, totalChequePromo]
-  );
+  const totalDescCostF = useMemo(() => {
+    if (hasCheques) {
+      return round2(
+        discountAppliedToValues + totalChequeInterest - totalChequePromo,
+      );
+    }
+    // Sin cheques usa -docAdjEffective, pero arriba usa discountAppliedToValues
+    return round2(totalChequeInterest + -docAdjEffective - totalChequePromo);
+  }, [
+    hasCheques,
+    discountAppliedToValues,
+    totalChequeInterest,
+    totalChequePromo,
+    docAdjEffective,
+  ]);
 
   const netToApply = useMemo(
     () => +(totalNominalValues - totalDescCostF).toFixed(2),
-    [totalNominalValues, totalDescCostF]
+    [totalNominalValues, totalDescCostF],
   );
   const saldo = useMemo(
     () => +(gross - netToApply).toFixed(2),
-    [gross, netToApply]
+    [gross, netToApply],
   );
 
   const saldoAPagarHoy = useMemo(() => {
-    // netToPay = total a pagar según documentos
-    // totalValues = total de TODOS los pagos (incluye cheques por neto)
-    return round2((netToPay || 0) - totalValues);
-  }, [netToPay, totalValues]);
+    // ✅ Si hay cheques que NO califican, comparar contra GROSS (sin descuento)
+    // Si todos los cheques califican, comparar contra netToPay (con descuento)
+
+    const hasCheques = newValues.some((v) => v.method === "cheque");
+    const qualifyingAmount = valuesNominalQualifyingForDocDiscount;
+    const allChequesQualify = hasCheques ? qualifyingAmount > 0 : false;
+
+    // Si hay cheques pero NO califican, usar GROSS
+    const target = hasCheques && !allChequesQualify ? gross : netToPay || 0;
+
+    return round2(target - totalValues);
+  }, [
+    netToPay,
+    totalValues,
+    gross,
+    newValues,
+    valuesNominalQualifyingForDocDiscount,
+  ]);
 
   const isImage = (url?: string) =>
     !!url && !url.toLowerCase().endsWith(".pdf");
@@ -697,7 +835,43 @@ export default function ValueView({
   };
 
   const removeRow = (idx: number) => {
+    // Limpiar la referencia del input
+    if (inputRefs.current[idx]) {
+      delete inputRefs.current[idx];
+    }
+
     setNewValues((prev) => prev.filter((_, i) => i !== idx));
+
+    // Limpiar estados de edición relacionados
+    setIsEditing((e) => {
+      const newE = { ...e };
+      delete newE[idx];
+      return newE;
+    });
+
+    setDraftText((d) => {
+      const newD = { ...d };
+      delete newD[idx];
+      return newD;
+    });
+
+    setDigitsByRow((d) => {
+      const newD = { ...d };
+      delete newD[idx];
+      return newD;
+    });
+
+    setSummaryOpenRows((s) => {
+      const newS = { ...s };
+      delete newS[idx];
+      return newS;
+    });
+
+    setOpenRows((o) => {
+      const newO = { ...o };
+      delete newO[idx];
+      return newO;
+    });
   };
 
   const patchRow = (idx: number, patch: Partial<ValueItem>) => {
@@ -713,7 +887,7 @@ export default function ValueView({
   const handleMethodChange = (
     idx: number,
     method: PaymentMethod,
-    v: ValueItem
+    v: ValueItem,
   ) => {
     if (method !== "cheque") {
       patchRow(idx, { method, raw_amount: undefined });
@@ -722,7 +896,7 @@ export default function ValueView({
     const raw = v.raw_amount ?? v.amount ?? "0";
     const { neto } = computeChequeNeto(
       raw,
-      v.chequeDate ? v : { ...v, chequeDate: "" }
+      v.chequeDate ? v : { ...v, chequeDate: "" },
     ); // 👈
     patchRow(idx, { method, raw_amount: raw, amount: neto.toFixed(2) });
   };
@@ -759,41 +933,40 @@ export default function ValueView({
 
   useEffect(() => {
     const abs = Math.abs(saldo);
+    const EPS_AUTOFIX = 0.99; // tolerancia para aplicar auto-fix
 
-    // reset de la traba si el saldo es grande (no aplicable) o ya quedó en cero
-    if (abs >= 1 || saldo === 0) {
-      autoFixAppliedRef.current = false;
+    // reset si el saldo cambió significativamente
+    if (abs >= 1.5 || abs === 0) {
+      if (autoFixAppliedRef.current) {
+        autoFixAppliedRef.current = false;
+      }
       return;
     }
 
-    // aplicar solo si hay diferencia menor a $1 y aún no lo hicimos
+    // aplicar solo si: diferencia pequeña, no aplicado aún, y hay valores
     if (
       abs > 0 &&
-      abs < 1 &&
+      abs <= EPS_AUTOFIX &&
       !autoFixAppliedRef.current &&
       newValues.length > 0
     ) {
       autoFixAppliedRef.current = true;
 
-      const delta = round2(saldo); // si es >0 falta imputar; si es <0 sobra
+      const delta = round2(saldo);
 
       setNewValues((prev) => {
         const clone = [...prev];
         const i = clone.length - 1;
         const v = clone[i];
 
-        // nuevo neto del ítem (clamp a 0 para no dejar montos negativos)
         const newAmount = Math.max(0, round2((Number(v.amount) || 0) + delta));
 
-        // anotamos el concepto para rastrear el ajuste
         const concept = (v.selectedReason || NO_CONCEPTO).includes(
-          "(ajuste redondeo)"
+          "(ajuste redondeo)",
         )
           ? v.selectedReason
           : `${v.selectedReason || NO_CONCEPTO} (ajuste redondeo)`;
 
-        // En cheques: ajustamos el neto imputable (amount).
-        // (No tocamos rawAmount; el cambio es < $1 y el costo financiero no varía en la práctica)
         clone[i] = {
           ...v,
           amount: newAmount.toFixed(2),
@@ -803,7 +976,7 @@ export default function ValueView({
         return clone;
       });
     }
-  }, [saldo, newValues.length, setNewValues]);
+  }, [saldo, newValues.length, setNewValues, NO_CONCEPTO]);
 
   const getMethodColor = (method: string) => {
     const colors: { [key: string]: string } = {
@@ -826,7 +999,7 @@ export default function ValueView({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-xl font-bold bg-[#E10600] bg-clip-text text-transparent">
+        <h4 className="text-xl font-bold bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-transparent">
           Pagos
         </h4>
       </div>
@@ -860,7 +1033,7 @@ export default function ValueView({
               : 0;
           const interest$ = v.method === "cheque" ? chequeInterest(v) : 0;
           const shownAmountInput =
-            v.method === "cheque" ? v.raw_amount ?? v.amount : v.amount;
+            v.method === "cheque" ? (v.raw_amount ?? v.amount) : v.amount;
           const hasRowError =
             rowErrors[idx].amount ||
             rowErrors[idx].bank ||
@@ -879,7 +1052,7 @@ export default function ValueView({
               {/* CABECERA */}
               <div
                 className={`bg-gradient-to-r ${getMethodColor(
-                  v.method
+                  v.method,
                 )} px-6 py-4`}
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -896,7 +1069,7 @@ export default function ValueView({
                           handleMethodChange(
                             idx,
                             e.target.value as PaymentMethod,
-                            v
+                            v,
                           )
                         }
                         className="w-full rounded-xl border-0 bg-white/20 backdrop-blur-sm text-white font-bold px-4 py-2 focus:ring-2 focus:ring-white/50 focus:outline-none"
@@ -968,24 +1141,36 @@ export default function ValueView({
                       />
                     </label>
                     <input
-                      ref={inputRef}
+                      onChange={() => {}}
+                      onBlur={() => endEdit(idx, v)}
+                      className={`w-full px-4 py-3 rounded-xl text-gray-900 font-bold text-lg outline-none transition-all ${
+                        rowErrors[idx].amount
+                          ? "bg-red-50 border-2 border-red-500 focus:ring-2 focus:ring-red-500"
+                          : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                      }`}
+                      ref={(el) => {
+                        inputRefs.current[idx] = el;
+                      }}
                       type="text"
                       inputMode="numeric"
                       placeholder="$ 0,00"
                       value={
                         isEditing[idx]
-                          ? draftText[idx] ?? ""
+                          ? (draftText[idx] ?? "")
                           : shownAmountInput?.trim()
-                          ? formatInternalString(shownAmountInput, currencyFmt)
-                          : ""
+                            ? formatInternalString(
+                                shownAmountInput,
+                                currencyFmt,
+                              )
+                            : ""
                       }
                       onFocus={() => {
                         startEdit(idx, v);
                         requestAnimationFrame(() => {
                           const masked = formatDigitsAsCurrencyAR(
-                            digitsByRow[idx] || ""
+                            digitsByRow[idx] || "",
                           );
-                          const el = inputRef.current;
+                          const el = getInputEl(idx);
                           if (el) {
                             const len = masked.length;
                             el.setSelectionRange(len, len);
@@ -993,7 +1178,7 @@ export default function ValueView({
                         });
                       }}
                       onKeyDown={(e) => {
-                        const el = inputRef.current;
+                        const el = getInputEl(idx);
                         const key = e.key;
 
                         if (!isEditing[idx]) return;
@@ -1003,6 +1188,7 @@ export default function ValueView({
                           el?.blur();
                           return;
                         }
+
                         if (key === "Escape") {
                           e.preventDefault();
                           setIsEditing((E) => ({ ...E, [idx]: false }));
@@ -1039,13 +1225,6 @@ export default function ValueView({
                           e.preventDefault();
                         }
                       }}
-                      onChange={() => {}}
-                      onBlur={() => endEdit(idx, v)}
-                      className={`w-full px-4 py-3 rounded-xl text-gray-900 font-bold text-lg outline-none transition-all ${
-                        rowErrors[idx].amount
-                          ? "bg-red-50 border-2 border-red-500 focus:ring-2 focus:ring-red-500"
-                          : "bg-gray-100 border-2 border-transparent focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-                      }`}
                     />
                   </div>
                   {/* N° de cheque */}
@@ -1155,8 +1334,8 @@ export default function ValueView({
                               ? "⏳ Subiendo..."
                               : "🔄 Reemplazar"
                             : isUploading
-                            ? "⏳ Subiendo..."
-                            : "📤 Adjuntar"}
+                              ? "⏳ Subiendo..."
+                              : "📤 Adjuntar"}
                           <input
                             type="file"
                             accept="image/*,application/pdf"
@@ -1177,7 +1356,7 @@ export default function ValueView({
                                 )
                               ) {
                                 alert(
-                                  "Formato no soportado. Usá imagen o PDF."
+                                  "Formato no soportado. Usá imagen o PDF.",
                                 );
                                 return;
                               }
@@ -1191,7 +1370,7 @@ export default function ValueView({
                                   (res as any)?.data?.url;
                                 if (!url)
                                   throw new Error(
-                                    "No se recibió URL del servidor."
+                                    "No se recibió URL del servidor.",
                                   );
 
                                 patchRow(idx, {
@@ -1199,11 +1378,17 @@ export default function ValueView({
                                   receiptOriginalName: file.name,
                                 });
                               } catch (err) {
+                                const info = prettyUploadError(err);
+
                                 console.error(
                                   "Falló la subida del comprobante:",
-                                  err
+                                  {
+                                    info,
+                                    err,
+                                  },
                                 );
-                                alert("No se pudo subir el comprobante.");
+
+                                alert(`${info.title}\n\n${info.detail}`);
                               }
                             }}
                           />
@@ -1313,7 +1498,7 @@ export default function ValueView({
                             </span>
                             <span className="text-gray-900 font-bold tabular-nums">
                               {currencyFmt.format(
-                                toNum(v.raw_amount || v.amount)
+                                toNum(v.raw_amount || v.amount),
                               )}
                             </span>
                           </div>
@@ -1401,13 +1586,11 @@ export default function ValueView({
           <RowSummary
             label={
               <LabelWithTip
-                label="DTO/COSTO FINACIERO"
+                label="DTO/COSTO FINANCIERO"
                 tip={EXPLAIN.dtoRecFact}
               />
             }
-            value={`${docAdjustmentSigned >= 0 ? "-" : "+"}${currencyFmt.format(
-              Math.abs(docAdjustmentSigned)
-            )}`}
+            value={`${dtoShown >= 0 ? "+" : "-"}${currencyFmt.format(Math.abs(dtoShown))}`}
           />
 
           {hasCheques && (
@@ -1449,7 +1632,19 @@ export default function ValueView({
             label={
               <LabelWithTip
                 label="SALDO A PAGAR HOY"
-                tip="Monto que falta pagar en efectivo o transferencia para cancelar el total a pagar. No incluye cheques (ni al día ni diferidos)."
+                tip={(() => {
+                  const hasCheques = newValues.some(
+                    (v) => v.method === "cheque",
+                  );
+                  const qualifyingAmount =
+                    valuesNominalQualifyingForDocDiscount;
+
+                  if (hasCheques && qualifyingAmount <= 0) {
+                    return "Cheque no califica para descuento. Monto a pagar: precio completo de factura (sin descuento).";
+                  }
+
+                  return "Monto que falta pagar en efectivo o transferencia para cancelar el total a pagar. No incluye cheques (ni al día ni diferidos).";
+                })()}
               />
             }
             value={currencyFmt.format(Math.max(0, saldoAPagarHoy))}
@@ -1494,19 +1689,19 @@ function RowSummary({
     highlight === "ok"
       ? "text-green-600"
       : highlight === "bad"
-      ? "text-red-600"
-      : highlight === "warn"
-      ? "text-orange-600"
-      : "text-gray-900";
+        ? "text-red-600"
+        : highlight === "warn"
+          ? "text-orange-600"
+          : "text-gray-900";
 
   const bgColor =
     highlight === "ok"
       ? "bg-green-50"
       : highlight === "bad"
-      ? "bg-red-50"
-      : highlight === "warn"
-      ? "bg-orange-50"
-      : "bg-white";
+        ? "bg-red-50"
+        : highlight === "warn"
+          ? "bg-orange-50"
+          : "bg-white";
 
   return (
     <div
@@ -1571,10 +1766,10 @@ function Tip({
     side === "top"
       ? "bottom-full mb-2 left-1/2"
       : side === "bottom"
-      ? "top-full mt-2 left-1/2"
-      : side === "left"
-      ? "right-full mr-2 top-1/2"
-      : "left-full ml-2 top-1/2";
+        ? "top-full mt-2 left-1/2"
+        : side === "left"
+          ? "right-full mr-2 top-1/2"
+          : "left-full ml-2 top-1/2";
 
   const tipRef = React.useRef<HTMLSpanElement>(null);
   const wrapRef = React.useRef<HTMLSpanElement>(null);
@@ -1647,10 +1842,10 @@ function Tip({
             side === "top"
               ? "bottom-[-7px] left-1/2 -translate-x-1/2 border-b-2 border-r-2"
               : side === "bottom"
-              ? "top-[-7px] left-1/2 -translate-x-1/2 border-t-2 border-l-2"
-              : side === "left"
-              ? "right-[-7px] top-1/2 -translate-y-1/2 border-t-2 border-r-2"
-              : "left-[-7px] top-1/2 -translate-y-1/2 border-b-2 border-l-2"
+                ? "top-[-7px] left-1/2 -translate-x-1/2 border-t-2 border-l-2"
+                : side === "left"
+                  ? "right-[-7px] top-1/2 -translate-y-1/2 border-t-2 border-r-2"
+                  : "left-[-7px] top-1/2 -translate-y-1/2 border-b-2 border-l-2"
           }`}
         />
       </span>
@@ -1716,3 +1911,82 @@ const EXPLAIN = {
   totalDescCostF:
     "Suma del ajuste por documentos (descuento/recargo) y el costo financiero de cheques.",
 };
+
+function prettyUploadError(err: any) {
+  // RTK Query (fetchBaseQuery) suele dar:
+  // { status: number | "FETCH_ERROR" | "PARSING_ERROR", data?: any, error?: string }
+  const status = err?.status;
+
+  // Cuando es error de red/CORS/etc
+  if (status === "FETCH_ERROR") {
+    return {
+      title: "Error de red / CORS",
+      detail:
+        "No se pudo conectar con el servidor. Revisá CORS, URL del backend, o conexión.",
+      raw: err?.error,
+    };
+  }
+
+  if (status === "PARSING_ERROR") {
+    return {
+      title: "Respuesta inválida del servidor",
+      detail: "El servidor devolvió una respuesta que no se pudo parsear.",
+      raw: err?.originalStatus,
+    };
+  }
+
+  // Error HTTP normal
+  if (typeof status === "number") {
+    const data = err?.data;
+
+    // Intentar sacar mensaje de distintas formas comunes
+    const msg =
+      data?.message ||
+      data?.error ||
+      data?.msg ||
+      data?.details ||
+      (Array.isArray(data?.message) ? data.message.join(" | ") : undefined);
+
+    // Mapeos útiles por status
+    if (status === 413) {
+      return {
+        title: "Archivo demasiado grande",
+        detail: msg || "El servidor rechazó el archivo por tamaño (413).",
+        raw: data,
+      };
+    }
+    if (status === 401 || status === 403) {
+      return {
+        title: "No autorizado",
+        detail:
+          msg || "Tu sesión no tiene permisos para subir archivos (401/403).",
+        raw: data,
+      };
+    }
+    if (status === 400) {
+      return {
+        title: "Solicitud inválida",
+        detail: msg || "El backend rechazó el archivo (400).",
+        raw: data,
+      };
+    }
+    if (status >= 500) {
+      return {
+        title: "Error del servidor",
+        detail: msg || `El servidor falló al subir el archivo (${status}).`,
+        raw: data,
+      };
+    }
+
+    return {
+      title: `Error HTTP ${status}`,
+      detail: msg || "Falló la subida por un error HTTP.",
+      raw: data,
+    };
+  }
+
+  // Errores “raros” (throw new Error, etc.)
+  const fallback =
+    err?.message || err?.error || "Error desconocido al subir el comprobante.";
+  return { title: "Error", detail: fallback, raw: err };
+}

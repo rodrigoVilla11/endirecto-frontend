@@ -685,16 +685,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       // ====== PROMO por CHEQUES (según reglas) ======
       const receiptDate = receiptDateRef.current;
 
-      const minDaysAtReceipt = (() => {
-        const xs = (computedDiscounts || [])
-          .map((d) => (typeof d?.days === "number" ? d.days : undefined))
-          .filter((v) => typeof v === "number") as number[];
-        return xs.length ? Math.min(...xs) : undefined;
-      })();
+      // 👇 usar SOLO discountables
+      const minDaysAtReceiptDiscountable = docsDaysMinDiscountable;
 
-      const invoiceIssueDateApprox = inferInvoiceIssueDate(
+      const invoiceIssueDateApproxDiscountable = inferInvoiceIssueDate(
         receiptDate,
-        minDaysAtReceipt,
+        minDaysAtReceiptDiscountable,
       );
 
       // ✅ Ventana promo NO depende de manual10 (si querés 37, lo hablamos, pero así evitás duplicación)
@@ -724,11 +720,11 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
         const promoRate = getChequePromoRate({
           paymentType: paymentTypeUI,
-          invoiceAgeAtReceiptDaysMin: minDaysAtReceipt,
-          invoiceIssueDateApprox,
+          invoiceAgeAtReceiptDaysMin: minDaysAtReceiptDiscountable,
+          invoiceIssueDateApprox: invoiceIssueDateApproxDiscountable,
           receiptDate,
           chequeDateISO: v.chequeDate || null,
-          promoWindowDays,
+          promoWindowDays: applyManualTenToCheques ? 37 : 30,
         });
 
         if (promoRate > 0) {
@@ -798,12 +794,44 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         const rd = toYMDDate(receiptDate);
         return Math.abs(cd.getTime() - rd.getTime()) <= MS_PER_DAY; // ±1 día
       }
-
       function chequeNominal(v: ValueItem) {
         const net = parseFloat(v.amount || "0") || 0;
         const raw = parseFloat(v.raw_amount || "");
         return Number.isFinite(raw) && raw > 0 ? raw : net;
       }
+
+      function chequeQualifiesForDocDiscount(v: ValueItem) {
+        if (v.method !== "cheque") return false;
+        if (!v.chequeDate) return false;
+
+        // ✅ CHEQUES AL DÍA siempre califican
+        if (isSameDayLooseISO(v.chequeDate, receiptDate)) {
+          return true;
+        }
+
+        if (!invoiceIssueDateApprox) return false;
+
+        const cd = parseISODateLocal(v.chequeDate);
+        if (!cd) return false;
+
+        const issue = toYMDLocal(invoiceIssueDateApprox);
+        const daysFromIssueToCheque = dayDiffCalendar(cd, issue);
+
+        const windowDays = applyManualTenToCheques ? 37 : 30;
+
+        return (
+          daysFromIssueToCheque >= 0 && daysFromIssueToCheque <= windowDays
+        );
+      }
+
+      const valuesBaseForDocDiscountWhenCheques = round2(
+        newValues.reduce((acc, v) => {
+          if (v.method !== "cheque")
+            return acc + (parseFloat(v.amount || "0") || 0);
+          if (!chequeQualifiesForDocDiscount(v)) return acc;
+          return acc + chequeNominal(v);
+        }, 0),
+      );
 
       const valuesNominalSameDayCheques = newValues.reduce((acc, v) => {
         if (v.method !== "cheque") return acc;
@@ -824,31 +852,31 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       const rate = gross > 0 ? docAdjTotal / gross : 0;
 
       if (isDiscountContext) {
-        const discountOnCashOnly = -round2(valuesNetNonCheque * rate);
+        // ✅ Comparar con netToPay (monto final a pagar de facturas)
+        // Si el pago cubre el netToPay (±1%), es pago completo
+        const netToPay = round2(totalDocsFinal);
+        const isFullPayment =
+          Math.abs(valuesNominal - netToPay) <= netToPay * 0.01;
 
         if (hasCheques) {
-          if (applyManualTenToCheques) {
-            // ✅ manual10: efectivo/transfer + SOLO cheques al día (nominal)
-            discountAmt = -round2(valuesBaseForManual10 * rate);
-          } else {
-            // ✅ default: solo efectivo/transfer
-            discountAmt = discountOnCashOnly;
-          }
+          const base = isFullPayment
+            ? gross // Pago completo: descuento sobre factura
+            : valuesBaseForDocDiscountWhenCheques; // Parcial: sobre lo pagado que califica
+
+          discountAmt = -round2(base * rate);
         } else {
-          // ✅ SIN cheques (comportamiento actual)
-          discountAmt = valuesDoNotReachTotal
-            ? discountOnCashOnly
-            : -docAdjTotal;
+          const base = isFullPayment
+            ? gross // Pago completo: descuento sobre factura
+            : valuesNominal; // Parcial: sobre lo pagado
+
+          discountAmt = -round2(base * rate);
         }
       } else if (isSurchargeContext) {
-        const recargoSobreValores = -1 * (valuesNetTotal * rate);
-        discountAmt = valuesDoNotReachTotal
-          ? recargoSobreValores
-          : -docAdjTotal;
+        // Recargo siempre sobre lo pagado
+        discountAmt = -round2(valuesNominal * rate);
       }
-      const discountAmtWithChequePromo = round2(
-        discountAmt + chequePromoDiscountTotal,
-      );
+      const discountAmtWithChequePromo = round2(discountAmt);
+
       // Total Desc/CF = desc/rec aplicado + intereses cheques
       const totalDescCostF =
         (typeof discountAmtWithChequePromo === "number"
@@ -1275,15 +1303,37 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const receiptDateRef = useRef<Date>(new Date());
 
   const receiptDate = receiptDateRef.current;
-  const minDaysAtReceipt = (() => {
+  const minDaysAtReceiptDiscountable = (() => {
     const xs = (computedDiscounts || [])
+      .filter(
+        (d) =>
+          !d.noDiscountBlocked &&
+          paymentTypeUI === "cta_cte" &&
+          typeof d.signedAdjustment === "number" &&
+          d.signedAdjustment > 0,
+      )
       .map((d) => (typeof d?.days === "number" ? d.days : undefined))
-      .filter((v) => typeof v === "number") as number[];
-    return xs.length ? Math.min(...xs) : undefined;
+      .filter(
+        (v): v is number =>
+          typeof v === "number" && Number.isFinite(v) && v >= 0,
+      );
+
+    // fallback al min general si no hay docs con descuento
+    if (xs.length) return Math.min(...xs);
+
+    const all = (computedDiscounts || [])
+      .map((d) => (typeof d?.days === "number" ? d.days : undefined))
+      .filter(
+        (v): v is number =>
+          typeof v === "number" && Number.isFinite(v) && v >= 0,
+      );
+
+    return all.length ? Math.min(...all) : undefined;
   })();
+
   const invoiceIssueDateApprox = inferInvoiceIssueDate(
     receiptDate,
-    minDaysAtReceipt,
+    minDaysAtReceiptDiscountable,
   );
 
   // Calcular promo total por cheques NO-REFI
@@ -1297,7 +1347,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     const promoRate = getChequePromoRate({
       paymentType: paymentTypeUI,
-      invoiceAgeAtReceiptDaysMin: minDaysAtReceipt,
+      invoiceAgeAtReceiptDaysMin: minDaysAtReceiptDiscountable,
       invoiceIssueDateApprox,
       receiptDate,
       chequeDateISO: v.chequeDate || null,
@@ -1347,7 +1397,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const remainingToRefiWithSurchage = hasAnyUnder45Days
     ? remainingToRefi + totalAdjustmentSigned - chequePromoDiscountTotal
     : remainingToRefi;
-
   const [planTargetNoDocs, setPlanTargetNoDocs] = useState<number>(0);
   const hasDocs = computedDiscounts.length > 0;
 
@@ -1405,6 +1454,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     // (sólo mantené la regla de gracia)
     const grace = blockChequeInterest ? 100000 : 0;
     const daily = dailyRateFromAnnual(annualInterestPct);
+
+    if (!Array.isArray(daysList) || daysList.length === 0) {
+      alert("Debes elegir al menos un plazo para los cheques (30/60/90, etc).");
+      return;
+    }
+    if (targetPV <= 0) {
+      alert("No hay saldo pendiente para refinanciar.");
+      return;
+    }
 
     function isoInDays(d: number) {
       const base = new Date();
@@ -1478,7 +1536,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
 
     mergeRefiCheques(cheques);
   }
-
   const [refiPreviewDays, setRefiPreviewDays] = useState<number[] | null>(null);
 
   function ddmmyyLocal(iso?: string) {
@@ -1612,23 +1669,44 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     return daysArray.length > 0 ? Math.max(...daysArray) : undefined;
   }, [computedDiscounts]);
 
-  function round6(n: number) {
-    return Math.round(n * 1e6) / 1e6;
-  }
+  // ✅ mínimo de días (factura más “nueva”) de TODOS los docs (si te sirve)
+  const docsDaysMinAll = useMemo(() => {
+    if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0)
+      return undefined;
 
-  function buildGpsString(lat: number, lon: number) {
-    const la = round6(lat);
-    const lo = round6(lon);
-    return `${la},${lo}`; // sin espacio
-  }
+    const daysArray = computedDiscounts
+      .map((d) => (typeof d?.days === "number" ? d.days : undefined))
+      .filter(
+        (n): n is number =>
+          typeof n === "number" && Number.isFinite(n) && n >= 0,
+      );
 
-  function googleMapsUrlFromLatLon(lat: number, lon: number) {
-    const la = round6(lat);
-    const lo = round6(lon);
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${la},${lo}`,
-    )}`;
-  }
+    return daysArray.length ? Math.min(...daysArray) : undefined;
+  }, [computedDiscounts]);
+
+  // ✅ mínimo de días SOLO de docs que realmente tienen DESCUENTO (>0)
+  const docsDaysMinDiscountable = useMemo(() => {
+    if (!Array.isArray(computedDiscounts) || computedDiscounts.length === 0)
+      return undefined;
+
+    const discounted = computedDiscounts.filter(
+      (d) =>
+        !d.noDiscountBlocked &&
+        paymentTypeUI === "cta_cte" &&
+        typeof d.signedAdjustment === "number" &&
+        d.signedAdjustment > 0, // 👈 tiene descuento
+    );
+
+    const daysArray = discounted
+      .map((d) => (typeof d?.days === "number" ? d.days : undefined))
+      .filter(
+        (n): n is number =>
+          typeof n === "number" && Number.isFinite(n) && n >= 0,
+      );
+
+    // si no hay ninguno con descuento, fallback al min general
+    return daysArray.length ? Math.min(...daysArray) : docsDaysMinAll;
+  }, [computedDiscounts, docsDaysMinAll, paymentTypeUI]);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -1643,13 +1721,12 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-
-          // ✅ normalizado
-          const gpsStr = buildGpsString(latitude, longitude);
+          const gpsStr = `${latitude}, ${longitude}`;
           setGPS(gpsStr);
 
           if (!selectedClientId) {
             setLocError("No hay cliente seleccionado");
+            setIsLocating(false);
             return;
           }
 
@@ -1665,9 +1742,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
             gps: gpsStr,
             insitu: response.insitu,
           }));
-
-          // (Opcional) si querés probar rápido:
-          // window.open(googleMapsUrlFromLatLon(latitude, longitude), "_blank");
         } catch (err) {
           console.error(err);
           setLocError("No se pudo validar la ubicación");
@@ -1677,6 +1751,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       },
       (err) => {
         console.error(err);
+        // Podés mapear códigos si querés más detalle
+        // err.code === 1: PERMISSION_DENIED, 2: POSITION_UNAVAILABLE, 3: TIMEOUT
         setLocError(
           err.code === 1
             ? "Permiso de ubicación denegado"
@@ -1688,8 +1764,8 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 10000,
+        timeout: 10000, // 10s
+        maximumAge: 10000, // cache hasta 10s
       },
     );
   };
@@ -1749,7 +1825,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between bg-[#E10600] ">
+        <div className="p-6 flex items-center justify-between bg-gradient-to-r from-red-500 via-white to-blue-500">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -1900,7 +1976,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 onClick={() => setActiveTab(tabKey)}
                 className={`p-4 text-sm font-bold transition-all ${
                   activeTab === tabKey
-                    ? "bg-[#E10600]  text-black shadow-lg"
+                    ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                     : "bg-zinc-950  text-white hover:bg-gray-200"
                 }`}
               >
@@ -1945,7 +2021,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "cta_cte"
-                        ? "bg-[#E10600]  text-black shadow-lg"
+                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                     onClick={() => setPaymentTypeUI("cta_cte")}
@@ -1956,7 +2032,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   <button
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${
                       paymentTypeUI === "pago_anticipado"
-                        ? "bg-[#E10600]  text-black shadow-lg"
+                        ? "bg-gradient-to-r from-red-500 via-white to-blue-500 text-black shadow-lg"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     } ${
                       hasSelectedDocs ? "opacity-50 cursor-not-allowed" : ""
@@ -2032,7 +2108,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     </button>
                   ) : (
                     <button
-                      className="px-6 py-3 rounded-xl bg-[#E10600]  font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold hover:from-red-600 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                       onClick={() => {
                         if (hasInvoiceToday && hasDocs) {
                           alert(
@@ -2043,11 +2119,6 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         setShowRefi((s) => !s);
                       }}
                       disabled={hasInvoiceToday && hasDocs}
-                      title={
-                        hasInvoiceToday
-                          ? "No disponible: hay una factura de hoy"
-                          : "Armar plan en 30/60/90 con cheques iguales"
-                      }
                     >
                       🔄{" "}
                       {showRefi
@@ -2203,6 +2274,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   </div>
                 )}
 
+                {/* Valores manuales */}
                 <ValueView
                   paymentTypeUI={paymentTypeUI}
                   newValues={newValues}
@@ -2223,7 +2295,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   chequeGraceDays={
                     blockChequeInterest ? 100000 : (checkGrace?.value ?? 45) // ✅ CAMBIAR: usar 45 en vez de 10
                   }
-                  docsDaysMin={docsDaysMin}
+                  docsDaysMin={docsDaysMinDiscountable}
                   receiptDate={receiptDateRef.current}
                   blockChequeInterest={blockChequeInterest}
                   applyManualTenToCheques={applyManualTenToCheques}

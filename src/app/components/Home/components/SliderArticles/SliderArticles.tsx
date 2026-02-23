@@ -77,10 +77,6 @@ const SliderArticles = () => {
             🛍️ {t("featuredProducts") || "Productos Destacados"}
             <span className="text-[#E10600]">.</span>
           </h2>
-          <p className="text-white/70 mt-2">
-            {t("featuredProductsSubtitle") ||
-              "Selección de artículos más buscados"}
-          </p>
         </div>
 
         <Swiper

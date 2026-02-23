@@ -176,7 +176,7 @@ const tableData =
                   parseFloat(e.target.value)
                 )
               }
-              className="w-16 text-center border border-gray-300 rounded-md"
+              className="w-16 text-center text-black border border-gray-300 rounded-md"
             />
             <button
               onClick={() => handleSave(customersBrand._id)}

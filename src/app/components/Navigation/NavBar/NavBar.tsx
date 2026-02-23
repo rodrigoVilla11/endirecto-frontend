@@ -16,7 +16,7 @@ const NavBar = () => {
   const isSelectCustomers = pathname === "/selectCustomer";
 
   return (
-    <nav className="w-full fixed z-40 bg-[#0B0B0B]/90 backdrop-blur-xl border-b border-white/10">
+    <nav className="w-full fixed z-40 bg-[#0B0B0B]/90  border-b border-white/10">
       {/* Desktop */}
       {!isMobile ? (
         <div className="h-16 px-4">

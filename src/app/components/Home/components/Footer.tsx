@@ -51,7 +51,7 @@ const Footer = () => {
           >
             <div className="rounded-2xl p-4 bg-white/5 border border-white/10 shadow-xl backdrop-blur">
               <img
-                src="/endirecto.png"
+                src="https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png"
                 alt="EN DIRECTO Logo"
                 className="h-40 object-contain"
               />

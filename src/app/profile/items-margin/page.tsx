@@ -159,7 +159,7 @@ const Page = () => {
                   parseFloat(e.target.value)
                 )
               }
-              className="w-16 text-center border border-gray-300 rounded-md"
+              className="w-16 text-center text-black border border-gray-300 rounded-md"
             />
             <button
               onClick={() => handleSave(customerItem._id)}
