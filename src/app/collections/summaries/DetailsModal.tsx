@@ -4,7 +4,11 @@ import { useGetUserByIdQuery } from "@/redux/services/usersApi";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { FaCheck, FaCopy, FaSpinner, FaTimes } from "react-icons/fa";
-import { isPaymentRendido } from "./page";
+
+function isPaymentRendido(p?: Payment): boolean {
+  if (!p) return false;
+  return p.rendido === true;
+}
 
 type DetailsModalProps = {
   payment: Payment;

@@ -32,7 +32,7 @@ import {
 import DetailsModal from "./DetailsModal";
 
 const ITEMS_PER_PAGE = 15;
-export function isPaymentRendido(p?: Payment): boolean {
+function isPaymentRendido(p?: Payment): boolean {
   if (!p) return false;
   return p.rendido === true;
 }
