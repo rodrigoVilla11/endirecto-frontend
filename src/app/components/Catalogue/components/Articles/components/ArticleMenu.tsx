@@ -93,8 +93,8 @@ const ArticleMenu = ({
           <button
             className="
           p-2 rounded-full
-          bg-white/10 backdrop-blur
-          border border-white/20
+          bg-black backdrop-blur
+          border border-white/50
           text-white
           hover:bg-[#E10600] hover:border-[#E10600]
           transition-all shadow-lg
@@ -114,8 +114,8 @@ const ArticleMenu = ({
         <button
           className="
           p-2 rounded-full
-          bg-white/10 backdrop-blur
-          border border-white/20
+        bg-black backdrop-blur
+          border border-white/50
           text-white
           hover:bg-[#E10600] hover:border-[#E10600]
           transition-all shadow-lg
@@ -134,8 +134,8 @@ const ArticleMenu = ({
       <button
         className="
         p-2 rounded-full
-        bg-white/10 backdrop-blur
-        border border-white/20
+          bg-black backdrop-blur
+          border border-white/50
         text-white
         hover:bg-[#E10600] hover:border-[#E10600]
         transition-all shadow-lg

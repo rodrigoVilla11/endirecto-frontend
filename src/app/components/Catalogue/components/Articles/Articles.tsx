@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import Image from "next/image";
 import { useFilters } from "@/app/context/FiltersContext";
 import { useClient } from "@/app/context/ClientContext";
 import { useGetCustomerByIdQuery } from "@/redux/services/customersApi";
@@ -139,7 +138,7 @@ const Articles: React.FC<ArticlesProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-sm bg-black backdrop-blur rounded-3xl shadow-2xl border border-white/60 p-8 text-center">
-          <Image
+          <img
             src="https://res.cloudinary.com/db7kbwl5n/image/upload/v1767962680/endirecto_iggio2.png"
             alt="Logo"
             width={isMobile ? 110 : 140}

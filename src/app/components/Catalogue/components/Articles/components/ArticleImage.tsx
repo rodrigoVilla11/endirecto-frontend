@@ -23,7 +23,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? img.length - 1 : prevIndex - 1
+      prevIndex === 0 ? img.length - 1 : prevIndex - 1,
     );
   };
 
@@ -44,14 +44,13 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
   return (
     <div className="relative w-full mx-auto">
       {/* Contenedor imagen */}
-      <div className="flex justify-center items-center bg-white backdrop-blur border border-white/10 rounded-2xl mx-10 my-4">
+      <div className="flex justify-center items-center bg-white">
         <img
-          className={`w-full object-contain ${isMobile ? "h-20" : "h-32"} p-2`}
+          className={`w-full object-contain ${isMobile ? "h-20" : "h-32"}`}
           src={img[currentIndex]}
           alt={t("articleImageAlt", { number: currentIndex + 1 })}
         />
       </div>
-
       {/* Flechas */}
       {img.length > 1 && (
         <>
@@ -64,7 +63,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
             rounded-full
             bg-white/10 backdrop-blur
             border border-white/20
-            text-white
+            text-black
             ${isMobile ? "p-1 text-xs" : "p-2 text-sm"}
             shadow-lg
             hover:bg-[#E10600] hover:border-[#E10600]
@@ -84,7 +83,7 @@ const ArticleImageSlider: React.FC<ArticleImageProps> = ({ img }) => {
             rounded-full
             bg-white/10 backdrop-blur
             border border-white/20
-            text-white
+            text-black
             ${isMobile ? "p-1 text-xs" : "p-2 text-sm"}
             shadow-lg
             hover:bg-[#E10600] hover:border-[#E10600]
