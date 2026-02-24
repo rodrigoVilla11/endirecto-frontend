@@ -36,11 +36,10 @@ const ArticleSearchResults = ({
     data: searchResults,
     error,
     isLoading,
-  } = useSearchArticlesQuery({
-    query,
-    page: 1,
-    limit: 6,
-  });
+  } = useSearchArticlesQuery(
+    { query, page: 1, limit: 6 },
+    { skip: !query }
+  );
   const { setSearch } = useFilters();
   const { setArticleId } = useArticleId();
   const [isModalOpen, setModalOpen] = useState(false);

@@ -92,7 +92,7 @@ const LoginPage = () => {
             {/* Logo */}
             <div className="absolute -bottom-10 left-8 bg-[#0B0B0B] rounded-2xl h-20 w-20 flex justify-center items-center shadow-xl border border-white/10">
               <img
-                src="/ed.png"
+                src="https://res.cloudinary.com/dw3folb8p/image/upload/v1771943697/ed_cimcok.png"
                 alt="logo"
                 className="w-14 h-14 object-contain"
               />
