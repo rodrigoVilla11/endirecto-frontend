@@ -202,10 +202,6 @@ const StatsPage: React.FC = () => {
     }));
   }, [userData?.seller_id]);
 
-  useEffect(() => {
-    console.log("finalFilters =>", finalFilters);
-  }, [finalFilters]);
-
   const general = data?.general?.current;
   const variation = data?.general?.variation;
   const sellersStats = data?.sellers?.current || [];

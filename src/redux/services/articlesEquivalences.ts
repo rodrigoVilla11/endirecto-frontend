@@ -81,7 +81,6 @@ export const articlesEquivalencesApi = createApi({
     }),
     importArticleEquivalenceExcel: builder.mutation<any, FormData>({
       query: (formData) => {
-        console.log("[RTK] sending FormData:", [...formData.entries()]);
         return {
           url: `/articles-equivalences/import?token=${process.env.NEXT_PUBLIC_TOKEN}`,
           method: "POST",

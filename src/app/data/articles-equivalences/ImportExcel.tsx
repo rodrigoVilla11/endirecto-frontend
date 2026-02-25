@@ -28,32 +28,14 @@ const ImportArticlesEquivalencesModal: React.FC<
       return;
     }
 
-    console.log("[IMPORT] file:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: file.lastModified,
-    });
 
     const formData = new FormData();
     formData.append("file", file, file.name);
 
-    // 👇 ver FormData (clave para confirmar que va 'file')
-    console.log("[IMPORT] formData entries:");
-    for (const [k, v] of formData.entries()) {
-      console.log(
-        " -",
-        k,
-        v instanceof File ? { name: v.name, type: v.type, size: v.size } : v,
-      );
-    }
-
     try {
-      console.log("[IMPORT] mutation fn:", importEquivalences);
-      console.log("[IMPORT] isLoading before:", isLoading);
 
       const res = await importEquivalences(formData).unwrap();
-      console.log("[IMPORT] success:", res);
+
       closeModal();
     } catch (err: any) {
       console.error("[IMPORT] error raw:", err);

@@ -653,23 +653,6 @@ export default function ValueView({
   const showApplied = hasCheques; // o: Math.abs(discountAppliedToValues) > 0
   const dtoShown = showApplied ? discountAppliedToValues : -docAdjEffectiveAbs; // negativo para mostrar "-"
 
-  useEffect(() => {
-    console.log("DTO debug", {
-      docAdjustmentSigned,
-      gross,
-      rate,
-      valuesNominal,
-      discountAppliedToValues,
-      newValues,
-    });
-  }, [
-    docAdjustmentSigned,
-    gross,
-    rate,
-    valuesNominal,
-    discountAppliedToValues,
-    newValues,
-  ]);
 
   const EPS = 1; // tolerancia de $1
   const reachesNetToPay = Math.abs(totalNominalValues - (netToPay || 0)) <= EPS;

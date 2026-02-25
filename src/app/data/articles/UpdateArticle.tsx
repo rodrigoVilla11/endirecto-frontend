@@ -84,7 +84,7 @@ const UpdateArticleComponent = ({
       const responses = await Promise.all(
         selectedFiles.map(async (file) => {
           const response = await uploadImage(file).unwrap();
-          console.log(response);
+
           return response.secure_url;
         })
       );
